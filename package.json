@@ -2,7 +2,7 @@
   "name": "social-media",
   "version": "1.0.0",
   "description": "Social media application server",
-  "main": "app.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "nodemon server.js"
