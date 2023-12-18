@@ -1,5 +1,5 @@
 {
-  "name": "social-media",
+  "name": "i9lyfe",
   "version": "1.0.0",
   "description": "Social media application server",
   "main": "server.js",
@@ -12,10 +12,12 @@
   "dependencies": {
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
+    "connect-pg-simple": "^9.0.1",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-jwt": "^8.4.1",
+    "express-session": "^1.17.3",
     "express-validator": "^7.0.1",
     "jest": "^29.7.0",
     "nodemailer": "^6.9.7",
