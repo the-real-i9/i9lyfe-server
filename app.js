@@ -1,9 +1,8 @@
-import express from "express";
+import express from "express"
+import authRoutes from "./routes/auth_routes.js"
 
-const app = express();
+const app = express()
 
-app.get("/", (req, res) => {
-  res.json({ greeting: "Hello World!" });
-});
+app.use("/auth", authRoutes)
 
 export default app
