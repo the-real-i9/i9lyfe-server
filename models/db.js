@@ -1,9 +1,12 @@
-import { Pool } from "pg"
+import pg from "pg"
+
+const { Pool } = pg
 
 const pool = new Pool()
 
-export const dbQuery = (queryText, values, callback) => {
-  return pool.query(queryText, values, callback)
+/** @param {import('pg').QueryConfig} query */
+export const dbQuery = (query) => {
+  return pool.query(query)
 }
 
 export const getDBClient = () => {
