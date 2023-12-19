@@ -1,15 +1,17 @@
 import express from "express"
-import expressSession from 'express-session'
-import pgSession from 'connect-pg-simple'
+import expressSession from "express-session"
+import pgSession from "connect-pg-simple"
 
 import authRoutes from "./routes/authRoutes.js"
 import { getDBPool } from "./models/db.js"
 
-(await import('dotenv')).config()
+;(await import("dotenv")).config()
 
 const app = express()
-const PGStore = pgSession(expressSession)
 
+app.use(express.json())
+
+const PGStore = pgSession(expressSession)
 app.use(
   "/auth/signup",
   expressSession({
@@ -24,7 +26,7 @@ app.use(
     cookie: {
       maxAge: 1 * 60 * 60 * 1000,
       secure: false,
-    }
+    },
   })
 )
 
