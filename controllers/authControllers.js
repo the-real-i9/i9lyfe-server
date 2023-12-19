@@ -1,11 +1,8 @@
-// eslint-disable-next-line no-unused-vars
-import { Request, Response } from "@types/express"
-
-import { newAccountRequestService } from "../services/authServices"
+import { newAccountRequestService } from "../services/authServices.js"
 
 /**
- * @param {Request} req
- * @param {Response} res
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
  */
 export const newAccountRequestController = async (req, res) => {
   try {
