@@ -19,7 +19,7 @@ export const newAccountRequestController = async (req, res) => {
   }
 }
 
-export const emailVerificationController = async (req, res) => {
+/* export const emailVerificationController = async (req, res) => {
   try {
   } catch (error) {}
 }
@@ -32,4 +32,4 @@ export const signupController = async (req, res) => {
 export const signinController = async (req, res) => {
   try {
   } catch (error) {}
-}
+} */

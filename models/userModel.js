@@ -1,9 +1,9 @@
 import { commaSeparateString } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
-const createNewUser = (fields) => {}
+// const createNewUser = (fields) => {}
 
-const getUserById = (id) => {}
+// const getUserById = (id) => {}
 
 /**
  * @param {string} email
@@ -25,4 +25,4 @@ export const getUserByEmail = async (email, colsString) => {
   }
 }
 
-const getUserByUsername = (username) => {}
+// const getUserByUsername = (username) => {}
