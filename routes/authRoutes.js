@@ -1,7 +1,4 @@
 import express from "express"
-import expressSession from "express-session"
-import pgSession from "connect-pg-simple"
-import { getDBPool } from "../models/db.js"
 
 import {
   emailVerificationController,
@@ -11,26 +8,6 @@ import {
 } from "../controllers/authControllers.js"
 
 const router = express.Router()
-
-const PGStore = pgSession(expressSession)
-router.use(
-  "/signup",
-  expressSession({
-    store: new PGStore({
-      pool: getDBPool(),
-      tableName: "ongoing_registration",
-      createTableIfMissing: true,
-    }),
-    resave: false,
-    saveUninitialized: false,
-    // eslint-disable-next-line no-undef
-    secret: process.env.SIGNUP_SESSION_COOKIE_SECRET,
-    cookie: {
-      maxAge: 1 * 60 * 60 * 1000,
-      secure: false,
-    }
-  })
-)
 
 router.post("/signup/request_new_account", newAccountRequestController)
 
