@@ -1,12 +1,25 @@
-export const newAccountRequestController = async (req, res) => {
-  // parse the request body
-  // contact registrationRequestService which will respond with {ok, err: { code, reason} | null} response
-  // if ok === false, then check reason, else
-  // res.status(200).json({ message: "Check the verification code sent to email" })
+// eslint-disable-next-line no-unused-vars
+import { Request, Response } from "@types/express"
 
+import { newAccountRequestService } from "../services/authServices"
+
+/**
+ * @param {Request} req
+ * @param {Response} res
+ */
+export const newAccountRequestController = async (req, res) => {
   try {
     const { email } = req.body
-  } catch (error) {}
+
+    const response = await newAccountRequestService(email)
+
+    return res
+      .status(response.statusCode)
+      .send({ message: response.statusMessage })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
 }
 
 export const emailVerificationController = async (req, res) => {
