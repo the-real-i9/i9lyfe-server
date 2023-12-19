@@ -1,22 +1,15 @@
 import { Pool } from "pg"
 
-class PoolSingleton {
-  constructor(poolConfig) {
-    if (!PoolSingleton.instance) {
-      PoolSingleton.instance = new Pool(poolConfig)
-      return PoolSingleton.instance
-    }
+const pool = new Pool()
 
-    return PoolSingleton.instance
-  }
-}
-
-const pool = new PoolSingleton()
-
-export const query = (queryText, values, callback) => {
+export const dbQuery = (queryText, values, callback) => {
   return pool.query(queryText, values, callback)
 }
 
-export const getClient = () => {
+export const getDBClient = () => {
   return pool.connect()
+}
+
+export const getDBPool = () => {
+  return pool
 }
