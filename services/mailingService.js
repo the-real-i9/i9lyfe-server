@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 const sendMail = ({to, subject, html}) => {
   // use nodemailer to send message to email
   transporter.sendMail({
-    from: 'app@i9lyfe.com',
+    from: '<no-reply@accounts.i9lyfe.com>',
     to,
     subject,
     html,
