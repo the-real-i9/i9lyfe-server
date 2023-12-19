@@ -1,7 +1,7 @@
 import express from "express"
 import expressSession from "express-session"
 import pgSession from "connect-pg-simple"
-import { Pool } from "pg"
+import { getDBPool } from "../models/db.js"
 
 import {
   emailVerificationController,
@@ -17,7 +17,7 @@ router.use(
   "/signup",
   expressSession({
     store: new PGStore({
-      pool: new Pool(),
+      pool: getDBPool(),
       tableName: "ongoing_registration",
       createTableIfMissing: true,
     }),
