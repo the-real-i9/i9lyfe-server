@@ -21,6 +21,10 @@ module.exports = {
         "ecmaVersion": "latest",
         "sourceType": "module"
     },
+    "globals": {
+        "process": "readonly",
+        "require": "readonly",
+    },
     "rules": {
         "no-empty": "off"
     }

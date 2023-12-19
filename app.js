@@ -20,7 +20,6 @@ app.use(
     }),
     resave: false,
     saveUninitialized: false,
-    // eslint-disable-next-line no-undef
     secret: process.env.SIGNUP_SESSION_COOKIE_SECRET,
     cookie: {
       maxAge: 1 * 60 * 60 * 1000,

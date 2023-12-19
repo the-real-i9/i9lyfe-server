@@ -5,9 +5,7 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    // eslint-disable-next-line no-undef
     user: process.env.MAILING_EMAIL,
-    // eslint-disable-next-line no-undef
     pass: process.env.MAILING_PASSWORD,
   },
 });
