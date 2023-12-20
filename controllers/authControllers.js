@@ -72,7 +72,7 @@ export const signupController = async (req, res) => {
     req.session.destroy()
 
     res
-      .send(201)
+      .status(201)
       .send({
         msg: "Registration success! You're automatically logged in.",
         jwtToken: response.data.jwtToken,
