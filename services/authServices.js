@@ -1,4 +1,6 @@
 import { getUserByEmail } from "../models/userModel.js"
+import { generateCodeWithExpiration } from "../utils/helpers.js"
+import sendMail from "./mailingService.js"
 
 /** @param {string} email */
 export const userAlreadyExists = async (email) => {
@@ -8,24 +10,104 @@ export const userAlreadyExists = async (email) => {
 
 /** @param {string} email */
 export const newAccountRequestService = async (email) => {
-  // check if a user with email exists, if yes return { ok: false, err: { code: 422, reason: 'A user with the email already exists' } }; else
-  // generate a 6-digit verification code and send to the email
-  // create a potential_users session for the email, along with verification data
-  // return {ok: true, err: null}
   try {
     if (await userAlreadyExists(email))
       return {
-        statusCode: 422,
-        statusMessage: "A user with this email already exists",
+        ok: false,
+        err: {
+          code: 422,
+          reason: "A user with this email already exists",
+        },
+        data: null,
       }
+
+    const [verfCode, verfCodeExpiration] = generateCodeWithExpiration()
+
+    sendMail({
+      to: email,
+      subject: "i9lyfe - Verify your email",
+      html: `<p>Your email verification code is <strong>${verfCode}</strong></p>`,
+    })
+
     return {
-      statusCode: 200,
-      statusMessage: `Enter the 6-digit code sent to ${email} from i9apps`,
+      ok: true,
+      err: null,
+      verfData: {
+        email,
+        verified: false,
+        verfCode,
+        verfCodeExpiration,
+      },
     }
   } catch (error) {
     console.log(error)
-    return {statusCode: 500, statusMessage: "Server Error"}
+    return {
+      ok: false,
+      err: {
+        code: 500,
+        reason: "Internal Server Error",
+      },
+      verfData: null,
+    }
   }
 }
 
-// export const emailVerificationService = (email) => {}
+/**
+ * @param {number} verfCode
+ * @param {number} userInputCode
+*/
+const codesMatch = (verfCode, userInputCode) => verfCode === userInputCode
+
+/** @param {Date} verfCodeExpiration */
+const codeLives = (verfCodeExpiration) => Date.now() < new Date(verfCodeExpiration)
+
+/**
+ * @param {Object} sessionUserVerfInfo
+ * @param {string} sessionUserVerfInfo.email
+ * @param {number} sessionUserVerfInfo.verfCode
+ * @param {Date} sessionUserVerfInfo.verfCodeExpiration
+ * @param {number} userInputCode
+ */
+export const emailVerificationService = (sessionUserVerfData, userInputCode) => {
+  const { email, verfCode, verfCodeExpiration } = sessionUserVerfData
+
+  if (!codesMatch(verfCode, userInputCode)) {
+    return {
+      ok: false,
+      err: {
+        code: 422,
+        reason:
+          "Incorrect Verification Code! Check your email or Resubmit your email.",
+      },
+      updatedVerfdata: null,
+    }
+  }
+
+  if (!codeLives(verfCodeExpiration)) {
+    return {
+      ok: false,
+      err: {
+        code: 422,
+        reason: "Verification Code Expired! Resubmit your email .",
+      },
+      updatedVerfdata: null,
+    }
+  }
+
+  sendMail({
+    to: email,
+    subject: "i9lyfe - Email verification success",
+    html: `<p>Your email <strong>${email}</strong> verification has been verified!</p>`,
+  })
+
+  return {
+    ok: true,
+    err: null,
+    updatedVerfdata: {
+      email,
+      verified: true,
+      verfCode: null,
+      verfCodeExpiration: null,
+    }
+  }
+}
