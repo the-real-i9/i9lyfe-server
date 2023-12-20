@@ -26,6 +26,7 @@ app.use(
     cookie: {
       maxAge: 1 * 60 * 60 * 1000,
       secure: false,
+      path: "/auth/signup"
     },
   })
 )
