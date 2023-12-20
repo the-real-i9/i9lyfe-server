@@ -1,23 +1,32 @@
-import nodemailer from 'nodemailer'
+import nodemailer from "nodemailer"
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.MAILING_EMAIL,
-    pass: process.env.MAILING_PASSWORD,
-  },
-});
+/**
+ * @param {Object} mailInfo
+ * @param {string} mailInfo.to
+ * @param {string} mailInfo.subject
+ * @param {string} mailInfo.html
+ */
+export const sendMail = ({ to, subject, html }) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.MAILING_EMAIL,
+        pass: process.env.MAILING_PASSWORD,
+      },
+    })
 
-const sendMail = ({to, subject, html}) => {
-  // use nodemailer to send message to email
-  transporter.sendMail({
-    from: '<no-reply@accounts.i9lyfe.com>',
-    to,
-    subject,
-    html,
-  })
+    transporter.sendMail({
+      from: "<no-reply@accounts.i9lyfe.com>",
+      to,
+      subject,
+      html,
+    })
+  } catch (error) {
+    console.error("sendMail Error", error)
+  }
 }
 
 export default sendMail
