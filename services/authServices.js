@@ -123,7 +123,6 @@ export const emailVerificationService = (
   }
 }
 
-
 /** @param {string|Buffer|JSON} payload */
 const generateJwtToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" })
@@ -131,7 +130,8 @@ const generateJwtToken = (payload) => {
 
 /** @param {string} password */
 export const hashPassword = async (password) => {
-  return await bcrypt.hash(password, 50)
+  return await bcrypt.hash(password, 10)
+  
 }
 
 /**
@@ -142,7 +142,7 @@ export const hashPassword = async (password) => {
  * @param {string} userData.name
  * @param {Date} userData.birthday
  * @param {string} userData.bio
-*/
+ */
 export const userRegistrationService = async (userData) => {
   try {
     const hashedPassword = await hashPassword(userData.password)
