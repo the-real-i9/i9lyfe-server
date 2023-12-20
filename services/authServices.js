@@ -1,4 +1,7 @@
-import { getUserByEmail } from "../models/userModel.js"
+import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
+
+import { createNewUser, getUserByEmail } from "../models/userModel.js"
 import { generateCodeWithExpiration } from "../utils/helpers.js"
 import sendMail from "./mailingService.js"
 
@@ -32,11 +35,13 @@ export const newAccountRequestService = async (email) => {
     return {
       ok: true,
       err: null,
-      verfData: {
-        email,
-        verified: false,
-        verfCode,
-        verfCodeExpiration,
+      data: {
+        verfData: {
+          email,
+          verified: false,
+          verfCode,
+          verfCodeExpiration,
+        },
       },
     }
   } catch (error) {
@@ -47,7 +52,7 @@ export const newAccountRequestService = async (email) => {
         code: 500,
         reason: "Internal Server Error",
       },
-      verfData: null,
+      data: null,
     }
   }
 }
@@ -55,11 +60,12 @@ export const newAccountRequestService = async (email) => {
 /**
  * @param {number} verfCode
  * @param {number} userInputCode
-*/
+ */
 const codesMatch = (verfCode, userInputCode) => verfCode === userInputCode
 
 /** @param {Date} verfCodeExpiration */
-const codeLives = (verfCodeExpiration) => Date.now() < new Date(verfCodeExpiration)
+const codeLives = (verfCodeExpiration) =>
+  Date.now() < new Date(verfCodeExpiration)
 
 /**
  * @param {Object} sessionUserVerfInfo
@@ -68,7 +74,10 @@ const codeLives = (verfCodeExpiration) => Date.now() < new Date(verfCodeExpirati
  * @param {Date} sessionUserVerfInfo.verfCodeExpiration
  * @param {number} userInputCode
  */
-export const emailVerificationService = (sessionUserVerfData, userInputCode) => {
+export const emailVerificationService = (
+  sessionUserVerfData,
+  userInputCode
+) => {
   const { email, verfCode, verfCodeExpiration } = sessionUserVerfData
 
   if (!codesMatch(verfCode, userInputCode)) {
@@ -79,7 +88,7 @@ export const emailVerificationService = (sessionUserVerfData, userInputCode) => 
         reason:
           "Incorrect Verification Code! Check your email or Resubmit your email.",
       },
-      updatedVerfdata: null,
+      data: null,
     }
   }
 
@@ -90,7 +99,7 @@ export const emailVerificationService = (sessionUserVerfData, userInputCode) => 
         code: 422,
         reason: "Verification Code Expired! Resubmit your email .",
       },
-      updatedVerfdata: null,
+      data: null,
     }
   }
 
@@ -103,11 +112,59 @@ export const emailVerificationService = (sessionUserVerfData, userInputCode) => 
   return {
     ok: true,
     err: null,
-    updatedVerfdata: {
-      email,
-      verified: true,
-      verfCode: null,
-      verfCodeExpiration: null,
+    data: {
+      updatedVerfdata: {
+        email,
+        verified: true,
+        verfCode: null,
+        verfCodeExpiration: null,
+      },
+    },
+  }
+}
+
+
+/** @param {string|Buffer|JSON} payload */
+const generateJwtToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" })
+}
+
+/** @param {string} password */
+export const hashPassword = async (password) => {
+  return await bcrypt.hash(password, 50)
+}
+
+/**
+ * @param {Object} userData
+ * @param {string} userData.email
+ * @param {string} userData.username
+ * @param {string} userData.password
+ * @param {string} userData.name
+ * @param {Date} userData.birthday
+ * @param {string} userData.bio
+*/
+export const userRegistrationService = async (userData) => {
+  try {
+    const hashedPassword = await hashPassword(userData.password)
+
+    await createNewUser({
+      ...userData,
+      password: hashedPassword,
+      birthday: new Date(userData.birthday),
+    })
+
+    const token = generateJwtToken({
+      email: userData.email,
+      username: userData.username,
+    })
+
+    return { ok: true, err: null, data: { jwtToken: token } }
+  } catch (error) {
+    console.log(error)
+    return {
+      ok: false,
+      err: { code: 500, reason: "Internal Server Error" },
+      data: null,
     }
   }
 }

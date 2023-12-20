@@ -1,6 +1,7 @@
 import {
   emailVerificationService,
   newAccountRequestService,
+  userRegistrationService,
 } from "../services/authServices.js"
 
 /**
@@ -16,7 +17,7 @@ export const newAccountRequestController = async (req, res) => {
       return res.status(response.err.code).send({ reason: response.err.reason })
     }
 
-    req.session.potential_user_verfification_data = response.verfData
+    req.session.potential_user_verification_data = response.data.verfData
 
     res.status(200).send({
       msg: `Enter the 6-digit code sent to ${email} to verify your email`,
@@ -36,7 +37,7 @@ export const emailVerificationController = async (req, res) => {
     const { code: userInputCode } = req.body
 
     const response = emailVerificationService(
-      req.session.potential_user_verfification_data,
+      req.session.potential_user_verification_data,
       userInputCode
     )
 
@@ -44,10 +45,10 @@ export const emailVerificationController = async (req, res) => {
       return res.status(response.err.code).json({ reason: response.err.reason })
     }
 
-    req.session.potential_user_verfification_data = response.updatedVerfdata
+    req.session.potential_user_verification_data = response.data.updatedVerfdata
 
     res.status(200).send({
-      msg: `Your email ${req.session.potential_user_verfification_data.email} has been verified!`,
+      msg: `Your email ${req.session.potential_user_verification_data.email} has been verified!`,
     })
   } catch (error) {
     console.log(error)
@@ -55,9 +56,31 @@ export const emailVerificationController = async (req, res) => {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 export const signupController = async (req, res) => {
   try {
-  } catch (error) {}
+    const { email } = req.session.potential_user_verification_data
+    const response = await userRegistrationService({ email, ...req.body })
+
+    if (!response.ok) {
+      return res.sendStatus(500)
+    }
+
+    req.session.destroy()
+
+    res
+      .send(201)
+      .send({
+        msg: "Registration success! You're automatically logged in.",
+        jwtToken: response.data.jwtToken,
+      })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
 }
 
 export const signinController = async (req, res) => {
