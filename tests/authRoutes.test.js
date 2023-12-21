@@ -2,7 +2,7 @@ import { describe, it, expect } from "@jest/globals"
 import request from "supertest"
 import app from "../app.js"
 
-import { userAlreadyExists } from "../services/authServices.js"
+import { userExists } from "../services/authServices.js"
 ;(await import("dotenv")).config()
 
 describe("POST /auth/signup/request_new_account", () => {
@@ -16,7 +16,7 @@ describe("POST /auth/signup/request_new_account", () => {
           email: testEmail,
         })
 
-      if (await userAlreadyExists(testEmail)) {
+      if (await userExists(testEmail)) {
         expect(res.statusCode).toBe(422)
         console.log(res.body.reason)
       } else {
