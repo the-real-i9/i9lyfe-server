@@ -23,7 +23,6 @@ module.exports = {
     },
     "globals": {
         "process": "readonly",
-        "require": "readonly",
     },
     "rules": {
         "no-empty": "off"

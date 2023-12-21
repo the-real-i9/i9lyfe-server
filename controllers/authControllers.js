@@ -96,7 +96,8 @@ export const signinController = async (req, res) => {
       res.status(response.err.code).send({ reason: response.err.reason })
     }
 
-    res.status(200).send({ userData: response.data.userData, jwtToken: response.data.jwtToken })
+    const { userData, jwtToken } = response.data
+    res.status(200).send({ userData, jwtToken })
 
   } catch (error) {
     console.log(error)
