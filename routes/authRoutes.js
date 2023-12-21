@@ -1,35 +1,16 @@
 import express from "express"
 
-import {
-  emailVerificationController,
-  newAccountRequestController,
-  signinController,
-  signupController,
-} from "../controllers/authControllers.js"
-import {
-  confirmOngoingRegistration,
-  rejectUnverifiedEmail,
-  rejectVerifiedEmail,
-} from "../middlewares/authMiddlewares.js"
+import { signupProgressValidation } from "../middlewares/authMiddlewares.js"
+import { signupController } from "../controllers/authControllers/signupController.js"
+import { signinController } from "../controllers/authControllers/signinController.js"
+import { passwordResetController } from "../controllers/authControllers/passwordResetController.js"
 
 const router = express.Router()
 
-router.post("/signup/request_new_account", newAccountRequestController)
-
-router.post(
-  "/signup/verify_email",
-  confirmOngoingRegistration,
-  rejectVerifiedEmail,
-  emailVerificationController
-)
-
-router.post(
-  "/signup/register_user",
-  confirmOngoingRegistration,
-  rejectUnverifiedEmail,
-  signupController
-)
+router.post("/signup/:step", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
+
+router.post("/password_reset/:step", passwordResetController)
 
 export default router

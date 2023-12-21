@@ -2,14 +2,29 @@ import {
   emailVerificationService,
   newAccountRequestService,
   userRegistrationService,
-  userSigninService,
-} from "../services/authServices.js"
+} from "../../services/authServices.js"
 
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const newAccountRequestController = async (req, res) => {
+export const signupController = async (req, res) => {
+  const { step } = req.params
+
+  const stepHandlers = {
+    request_new_account: (req, res) => newAccountRequest(req, res),
+    verify_email: (req, res) => emailVerification(req, res),
+    register_user: (req, res) => registerUser(req, res),
+  }
+
+  stepHandlers[step](req, res)
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+const newAccountRequest = async (req, res) => {
   try {
     const { email } = req.body
 
@@ -33,7 +48,7 @@ export const newAccountRequestController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const emailVerificationController = async (req, res) => {
+const emailVerification = async (req, res) => {
   try {
     const { code: userInputCode } = req.body
 
@@ -61,7 +76,7 @@ export const emailVerificationController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const signupController = async (req, res) => {
+const registerUser = async (req, res) => {
   try {
     const { email } = req.session.potential_user_verification_data
     const response = await userRegistrationService({ email, ...req.body })
@@ -76,28 +91,6 @@ export const signupController = async (req, res) => {
       msg: "Registration success! You're automatically logged in.",
       jwtToken: response.data.jwtToken,
     })
-  } catch (error) {
-    console.log(error)
-    res.sendStatus(500)
-  }
-}
-
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
-export const signinController = async (req, res) => {
-  try {
-    const { email, password } = req.body
-
-    const response = await userSigninService(email, password)
-
-    if (!response.ok) {
-      return res.status(response.err.code).send({ reason: response.err.reason })
-    }
-
-    res.status(200).send({ userData: response.data.userData, jwtToken: response.data.jwtToken })
-
   } catch (error) {
     console.log(error)
     res.sendStatus(500)
