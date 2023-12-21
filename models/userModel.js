@@ -16,7 +16,7 @@ export const createNewUser = async (fields) => {
     const query = {
       text: `INSERT INTO "User"(email, username, password, name, birthday, bio) 
       VALUES($1, $2, $3, $4, $5, $6) 
-      RETURNING id, email, username, name, profile_picture_url`,
+      RETURNING id, email, username, name, profile_pic_url`,
       values: [
         fields.email,
         fields.username,
