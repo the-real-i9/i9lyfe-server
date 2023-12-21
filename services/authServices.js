@@ -131,29 +131,31 @@ export const hashPassword = async (password) => {
 }
 
 /**
- * @param {Object} userData
- * @param {string} userData.email
- * @param {string} userData.username
- * @param {string} userData.password
- * @param {string} userData.name
- * @param {Date} userData.birthday
- * @param {string} userData.bio
+ * @param {Object} userDataInput
+ * @param {string} userDataInput.email
+ * @param {string} userDataInput.username
+ * @param {string} userDataInput.password
+ * @param {string} userDataInput.name
+ * @param {Date} userDataInput.birthday
+ * @param {string} userDataInput.bio
  */
-export const userRegistrationService = async (userData) => {
+export const userRegistrationService = async (userDataInput) => {
   try {
-    const passwordHash = await hashPassword(userData.password)
+    const passwordHash = await hashPassword(userDataInput.password)
 
-    await createNewUser({
-      ...userData,
+    const result = await createNewUser({
+      ...userDataInput,
       password: passwordHash,
-      birthday: new Date(userData.birthday),
+      birthday: new Date(userDataInput.birthday),
     })
 
-    const token = generateJwtToken({
-      email: userData.email,
-    })
+    const userData = result.rows[0]
 
-    return { ok: true, err: null, data: { jwtToken: token } }
+    const jwtToken = generateJwtToken({
+      email: userDataInput.email,
+    })
+    
+    return { ok: true, err: null, data: { userData, jwtToken } }
   } catch (error) {
     console.log(error)
     return {
@@ -165,23 +167,23 @@ export const userRegistrationService = async (userData) => {
 }
 
 /**
- * @param {string} inputPassword Password supplied by user
+ * @param {string} passwordInput Password supplied by user
  * @param {string} passwordHash The hashed version stored in database
  * @returns The compare result; true if both match and false otherwise
  */
-const passwordMatch = async (inputPassword, passwordHash) => {
-  return await bcrypt.compare(inputPassword, passwordHash)
+const passwordMatch = async (passwordInput, passwordHash) => {
+  return await bcrypt.compare(passwordInput, passwordHash)
 }
 
 /**
  * @param {string} email
- * @param {string} inputPassword
+ * @param {string} passwordInput
  */
-export const userSigninService = async (email, inputPassword) => {
+export const userSigninService = async (email, passwordInput) => {
   try {
     const result = await getUserByEmail(
       email,
-      "email username password profile_picture_url"
+      "id email username password name profile_picture_url"
     )
 
     if (result.rowCount === 0) {
@@ -192,8 +194,9 @@ export const userSigninService = async (email, inputPassword) => {
       }
     }
 
+
     const { password: passwordHash, ...userData } = result.rows[0]
-    if (!passwordMatch(inputPassword, passwordHash)) {
+    if (!passwordMatch(passwordInput, passwordHash)) {
       return {
         ok: false,
         err: { code: 422, reason: "Incorrect email or password" },
@@ -201,13 +204,13 @@ export const userSigninService = async (email, inputPassword) => {
       }
     }
 
-    const token = generateJwtToken({ email })
+    const jwtToken = generateJwtToken({ email })
     return {
       ok: true,
       err: null,
       data: {
-        userData,
-        jwtToken: token,
+        userData, // observe that password has been excluded above
+        jwtToken,
       },
     }
   } catch (error) {

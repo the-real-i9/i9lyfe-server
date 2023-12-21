@@ -14,7 +14,9 @@ export const createNewUser = async (fields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
-      text: 'INSERT INTO "User"(email, username, password, name, birthday, bio) VALUES($1, $2, $3, $4, $5, $6) ',
+      text: `INSERT INTO "User"(email, username, password, name, birthday, bio) 
+      VALUES($1, $2, $3, $4, $5, $6) 
+      RETURNING id, email, username, name, profile_picture_url`,
       values: [
         fields.email,
         fields.username,
@@ -38,14 +40,14 @@ export const createNewUser = async (fields) => {
 
 /**
  * @param {string} email
- * @param {string} fieldString
+ * @param {string} selectFields
  */
-export const getUserByEmail = async (email, colsString) => {
+export const getUserByEmail = async (email, selectFields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
       text: `SELECT ${commaSeparateString(
-        colsString
+        selectFields
       )} FROM "User" WHERE email = $1`,
       values: [email],
     }
@@ -59,4 +61,3 @@ export const getUserByEmail = async (email, colsString) => {
   }
 }
 
-// const getUserByUsername = (username) => {}
