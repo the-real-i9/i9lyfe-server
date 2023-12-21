@@ -152,9 +152,10 @@ export const userRegistrationService = async (userDataInput) => {
     const userData = result.rows[0]
 
     const jwtToken = generateJwtToken({
-      email: userDataInput.email,
+      user_id: userData.id,
+      email: userData.email,
     })
-    
+
     return { ok: true, err: null, data: { userData, jwtToken } }
   } catch (error) {
     console.log(error)
@@ -183,7 +184,7 @@ export const userSigninService = async (email, passwordInput) => {
   try {
     const result = await getUserByEmail(
       email,
-      "id email username password name profile_picture_url"
+      "id email username password name profile_pic_url"
     )
 
     if (result.rowCount === 0) {
@@ -194,9 +195,8 @@ export const userSigninService = async (email, passwordInput) => {
       }
     }
 
-
     const { password: passwordHash, ...userData } = result.rows[0]
-    if (!passwordMatch(passwordInput, passwordHash)) {
+    if (!(await passwordMatch(passwordInput, passwordHash))) {
       return {
         ok: false,
         err: { code: 422, reason: "Incorrect email or password" },
@@ -204,7 +204,10 @@ export const userSigninService = async (email, passwordInput) => {
       }
     }
 
-    const jwtToken = generateJwtToken({ email })
+    const jwtToken = generateJwtToken({
+      user_id: userData.id,
+      email: userData.email,
+    })
     return {
       ok: true,
       err: null,
