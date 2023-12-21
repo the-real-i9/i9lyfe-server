@@ -1,12 +1,14 @@
-import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 
 import { createNewUser, getUserByEmail } from "../models/userModel.js"
-import { generateCodeWithExpiration } from "../utils/helpers.js"
+import {
+  generateCodeWithExpiration,
+  generateJwtToken,
+} from "../utils/helpers.js"
 import sendMail from "./mailingService.js"
 
 /** @param {string} email */
-export const userAlreadyExists = async (email) => {
+export const userExists = async (email) => {
   const result = await getUserByEmail(email, "1")
   return result.rowCount > 0 ? true : false
 }
@@ -14,7 +16,7 @@ export const userAlreadyExists = async (email) => {
 /** @param {string} email */
 export const newAccountRequestService = async (email) => {
   try {
-    if (await userAlreadyExists(email))
+    if (await userExists(email))
       return {
         ok: false,
         err: {
@@ -123,15 +125,9 @@ export const emailVerificationService = (
   }
 }
 
-/** @param {string|Buffer|JSON} payload */
-const generateJwtToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" })
-}
-
 /** @param {string} password */
 export const hashPassword = async (password) => {
   return await bcrypt.hash(password, 10)
-  
 }
 
 /**
@@ -145,20 +141,75 @@ export const hashPassword = async (password) => {
  */
 export const userRegistrationService = async (userData) => {
   try {
-    const hashedPassword = await hashPassword(userData.password)
+    const passwordHash = await hashPassword(userData.password)
 
     await createNewUser({
       ...userData,
-      password: hashedPassword,
+      password: passwordHash,
       birthday: new Date(userData.birthday),
     })
 
     const token = generateJwtToken({
       email: userData.email,
-      username: userData.username,
     })
 
     return { ok: true, err: null, data: { jwtToken: token } }
+  } catch (error) {
+    console.log(error)
+    return {
+      ok: false,
+      err: { code: 500, reason: "Internal Server Error" },
+      data: null,
+    }
+  }
+}
+
+/**
+ * @param {string} inputPassword Password supplied by user
+ * @param {string} passwordHash The hashed version stored in database
+ * @returns The compare result; true if both match and false otherwise
+ */
+const passwordMatch = async (inputPassword, passwordHash) => {
+  return await bcrypt.compare(inputPassword, passwordHash)
+}
+
+/**
+ * @param {string} email
+ * @param {string} inputPassword
+ */
+export const userSigninService = async (email, inputPassword) => {
+  try {
+    const result = await getUserByEmail(
+      email,
+      "email username password profile_picture_url"
+    )
+
+    if (result.rowCount === 0) {
+      return {
+        ok: false,
+        err: { code: 422, reason: "Incorrect email or password" },
+        data: null,
+      }
+    }
+
+    const { password: passwordHash, ...userData } = result.rows[0]
+    if (!passwordMatch(inputPassword, passwordHash)) {
+      return {
+        ok: false,
+        err: { code: 422, reason: "Incorrect email or password" },
+        data: null,
+      }
+    }
+
+    const token = generateJwtToken({ email })
+    return {
+      ok: true,
+      err: null,
+      data: {
+        userData,
+        jwtToken: token,
+      },
+    }
   } catch (error) {
     console.log(error)
     return {

@@ -2,6 +2,7 @@ import {
   emailVerificationService,
   newAccountRequestService,
   userRegistrationService,
+  userSigninService,
 } from "../services/authServices.js"
 
 /**
@@ -71,19 +72,34 @@ export const signupController = async (req, res) => {
 
     req.session.destroy()
 
-    res
-      .status(201)
-      .send({
-        msg: "Registration success! You're automatically logged in.",
-        jwtToken: response.data.jwtToken,
-      })
+    res.status(201).send({
+      msg: "Registration success! You're automatically logged in.",
+      jwtToken: response.data.jwtToken,
+    })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 export const signinController = async (req, res) => {
   try {
-  } catch (error) {}
+    const { email, password } = req.body
+
+    const response = await userSigninService(email, password)
+
+    if (!response.ok) {
+      res.status(response.err.code).send({ reason: response.err.reason })
+    }
+
+    res.status(200).send({ userData: response.data.userData, jwtToken: response.data.jwtToken })
+
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
 }
