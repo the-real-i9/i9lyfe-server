@@ -7,10 +7,10 @@ import { passwordResetController } from "../controllers/authControllers/password
 
 const router = express.Router()
 
-router.post("/signup/:step", signupProgressValidation, signupController)
+router.post("/signup", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
 
-router.post("/password_reset/:step", passwordResetController)
+router.post("/password_reset", passwordResetController)
 
 export default router

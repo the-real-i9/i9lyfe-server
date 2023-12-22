@@ -9,7 +9,7 @@ import {
  * @param {import('express').Response} res
  */
 export const signupController = async (req, res) => {
-  const { step } = req.params
+  const { step } = req.query
 
   const stepHandlers = {
     request_new_account: (req, res) => newAccountRequest(req, res),

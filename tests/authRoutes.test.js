@@ -1,14 +1,17 @@
 import { describe, it, expect } from "@jest/globals"
 import request from "supertest"
-import app from "../app.js"
-;(await import("dotenv")).config()
+import dotenv from "dotenv"
 
-describe("POST /auth/signup/request_new_account", () => {
+import app from "../app.js"
+
+dotenv.config()
+
+describe("POST /auth/signup?step=request_new_account", () => {
   it("it should request new account or fail, if user with email already exists", async () => {
     const testEmail = "oluwarinolasa@gmail.com"
 
     const res = await request(app)
-      .post("/auth/signup/request_new_account")
+      .post("/auth/signup?step=request_new_account")
       .send({
         email: testEmail,
       })
