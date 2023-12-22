@@ -1,42 +1,85 @@
+import { userExists } from "../../models/userModel.js"
+import { userRegistrationService } from "../../services/authServices/signupServices.js"
+import { emailConfirmationService } from "../../services/emailConfirmationService.js"
 import {
-  emailVerificationService,
-  newAccountRequestService,
-  userRegistrationService,
-} from "../../services/authServices.js"
+  EmailVerificationSuccessMailSender,
+  EmailVerificationTokenMailSender,
+} from "../../services/mailingService.js"
 
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 export const signupController = async (req, res) => {
-  const { step } = req.query
+  if (!req.session.email_confirmation_data)
+    return newAccountRequestHandler(req, res)
 
-  const stepHandlers = {
-    request_new_account: (req, res) => newAccountRequest(req, res),
-    verify_email: (req, res) => emailVerification(req, res),
-    register_user: (req, res) => registerUser(req, res),
-  }
+  if (
+    req.session.email_confirmation_data.confirmationStage === "token validation"
+  )
+    return emailVerificationHandler(req, res)
 
-  stepHandlers[step](req, res)
+  if (
+    req.session.email_confirmation_data.confirmationStage === "email confirmed"
+  )
+    return userRegistrationHandler(req, res)
 }
 
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-const newAccountRequest = async (req, res) => {
+const newAccountRequestHandler = async (req, res) => {
   try {
     const { email } = req.body
 
-    const response = await newAccountRequestService(email)
+    if (await userExists(email))
+      return {
+        ok: false,
+        err: {
+          code: 422,
+          reason: "A user with this email already exists",
+        },
+        data: null,
+      }
+
+    const response = await emailConfirmationService(
+      req,
+      "email submission",
+      null,
+      new EmailVerificationTokenMailSender()
+    )
+    if (!response.ok)
+      return res.status(response.err.code).send({ reason: response.err.reason })
+
+    res.status(200).send({
+      msg: `Enter the 6-digit token sent to ${email} to verify your email`,
+    })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+const emailVerificationHandler = async (req, res) => {
+  try {
+    const response = await emailConfirmationService(
+      req,
+      "token validation",
+      new EmailVerificationSuccessMailSender(),
+      null
+    )
+
     if (!response.ok) {
       return res.status(response.err.code).send({ reason: response.err.reason })
     }
 
-    req.session.potential_user_verification_data = response.data.verfData
-
     res.status(200).send({
-      msg: `Enter the 6-digit code sent to ${email} to verify your email`,
+      msg: `Your email ${req.session.email_confirmation_data.email} has been verified!`,
     })
   } catch (error) {
     console.log(error)
@@ -48,35 +91,7 @@ const newAccountRequest = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-const emailVerification = async (req, res) => {
-  try {
-    const { code: userInputCode } = req.body
-
-    const response = emailVerificationService(
-      req.session.potential_user_verification_data,
-      userInputCode
-    )
-
-    if (!response.ok) {
-      return res.status(response.err.code).json({ reason: response.err.reason })
-    }
-
-    req.session.potential_user_verification_data = response.data.updatedVerfdata
-
-    res.status(200).send({
-      msg: `Your email ${req.session.potential_user_verification_data.email} has been verified!`,
-    })
-  } catch (error) {
-    console.log(error)
-    res.sendStatus(500)
-  }
-}
-
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
-const registerUser = async (req, res) => {
+const userRegistrationHandler = async (req, res) => {
   try {
     const { email } = req.session.potential_user_verification_data
     const response = await userRegistrationService({ email, ...req.body })

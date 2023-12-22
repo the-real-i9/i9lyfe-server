@@ -61,3 +61,13 @@ export const getUserByEmail = async (email, selectFields) => {
   }
 }
 
+/** @param {string} email */
+export const userExists = async (email) => {
+  try {
+    const result = await getUserByEmail(email, "1")
+    return result.rowCount > 0 ? true : false
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
