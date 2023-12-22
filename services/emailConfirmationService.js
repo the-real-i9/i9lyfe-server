@@ -1,34 +1,29 @@
-import { generateTokenWithExpiration } from "../utils/helpers"
+import { generateTokenWithExpiration } from "../utils/helpers.js"
 
 /**
  * @param {import('express').Request} req
- * @param {string} confirmationStage
- * @param {import('./mailingService.js').PrimaryMailSender} primaryMailSender
- * @param {import('./mailingService.js').TokenMailSender} tokenMailSender
+ * @param {Object} mailSender
+ * @param {import('./mailingService.js').PrimaryMailSender} mailSender.primaryMailSender
+ * @param {import('./mailingService.js').TokenMailSender} mailSender.tokenMailSender
  */
-export const emailConfirmationService = async (
-  req,
-  confirmationStage,
-  primaryMailSender,
-  tokenMailSender,
-) => {
+export const emailConfirmationService = async (req, mailSender) => {
   try {
+    const { stage } = req.query
     /* Abstract here */
-    if (confirmationStage === "email submission") {
+    if (stage === "email_submission") {
       const { email } = req.body
       const [token, tokenExpires] = generateTokenWithExpiration()
 
       // users of this service each have varying message styles which includes this token,
       // therefore we employed patterns and principles
       // OO Principles: Dependency inversion, Dependency injection
-      tokenMailSender.sendToken(email, token)
+      mailSender.tokenMailSender.sendToken(email, token)
 
       req.session.email_confirmation_data = {
         email,
         confirmed: false,
         confirmationToken: token,
         confirmationTokenExpires: tokenExpires,
-        confirmationStage: "token validation",
       }
 
       return {
@@ -38,7 +33,7 @@ export const emailConfirmationService = async (
     }
 
     /* Abstract here */
-    if (confirmationStage === "token validation") {
+    if (stage === "token_validation") {
       const { email, confirmationToken, confirmationTokenExpires } =
         req.session.email_confirmation_data
       const { token: userInputToken } = req.body
@@ -48,7 +43,8 @@ export const emailConfirmationService = async (
           ok: false,
           err: {
             code: 422,
-            reason: "Incorrect confirmation token! Check or Re-submit your email.",
+            reason:
+              "Incorrect confirmation token! Check or Re-submit your email.",
           },
         }
       }
@@ -63,14 +59,13 @@ export const emailConfirmationService = async (
         }
       }
 
-      primaryMailSender.send(email)
+      mailSender.primaryMailSender.send(email)
 
       req.session.email_confirmation_data = {
         email,
         confirmed: true,
         confirmationToken: null,
         confirmationTokenExpires: null,
-        confirmationStage: "email confirmed",
       }
 
       return {

@@ -8,14 +8,27 @@ import { getDBPool } from "../models/db.js"
  * @param {import('express').NextFunction} next
  */
 export const signupProgressValidation = (req, res, next) => {
-  const { step } = req.query
+  const { stage } = req.query
 
-  if (["verify_email", "register_user"].includes(step))
+  if (["token_validation", "user_registration"].includes(stage))
     confirmOngoingRegistration(req, res)
 
-  if (step === "verify_email") rejectVerifiedEmail(req, res)
+  if (stage === "token_validation") rejectConfirmedEmail(req, res)
 
-  if (step === "register_user") rejectUnverifiedEmail(req, res)
+  if (stage === "user_registration") rejectUnconfirmedEmail(req, res)
+
+  next()
+}
+
+export const passwordResetProgressValidation = (req, res, next) => {
+  const { stage } = req.query
+
+  if (["token_validation", "password_reset"].includes(stage))
+    confirmOngoingRegistration(req, res)
+
+  if (stage === "token_validation") rejectConfirmedEmail(req, res)
+
+  if (stage === "password_reset") rejectUnconfirmedEmail(req, res)
 
   next()
 }
@@ -26,7 +39,7 @@ export const signupProgressValidation = (req, res, next) => {
  * @param {import('express').NextFunction} next
  */
 const confirmOngoingRegistration = (req, res) => {
-  if (!req.session.potential_user_verification_data) {
+  if (!req.session.email_confirmation_data) {
     return res.status(403).send({ errorMessage: "No ongoing registration!" })
   }
 }
@@ -36,8 +49,8 @@ const confirmOngoingRegistration = (req, res) => {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-const rejectVerifiedEmail = (req, res) => {
-  if (req.session.potential_user_verification_data.verified) {
+const rejectConfirmedEmail = (req, res) => {
+  if (req.session.email_confirmation_data.confirmed) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has already being verified!" })
@@ -49,8 +62,8 @@ const rejectVerifiedEmail = (req, res) => {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-const rejectUnverifiedEmail = (req, res) => {
-  if (!req.session.potential_user_verification_data.verified) {
+const rejectUnconfirmedEmail = (req, res) => {
+  if (!req.session.email_confirmation_data.confirmed) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has not been verified!" })

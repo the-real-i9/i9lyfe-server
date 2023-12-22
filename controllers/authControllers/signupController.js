@@ -1,5 +1,5 @@
 import { userExists } from "../../models/userModel.js"
-import { userRegistrationService } from "../../services/authServices/signupServices.js"
+import { userRegistrationService } from "../../services/authServices.js"
 import { emailConfirmationService } from "../../services/emailConfirmationService.js"
 import {
   EmailVerificationSuccessMailSender,
@@ -11,18 +11,14 @@ import {
  * @param {import('express').Response} res
  */
 export const signupController = async (req, res) => {
-  if (!req.session.email_confirmation_data)
-    return newAccountRequestHandler(req, res)
+  const { stage } = req.query
 
-  if (
-    req.session.email_confirmation_data.confirmationStage === "token validation"
-  )
-    return emailVerificationHandler(req, res)
-
-  if (
-    req.session.email_confirmation_data.confirmationStage === "email confirmed"
-  )
-    return userRegistrationHandler(req, res)
+  const stageHandlers = {
+    email_submission: (req, res) => newAccountRequestHandler(req, res),
+    token_validation: (req, res) => emailVerificationHandler(req, res),
+    user_registration: (req, res) => userRegistrationHandler(req, res),
+  }
+  stageHandlers[stage](req, res)
 }
 
 /**
@@ -43,12 +39,9 @@ const newAccountRequestHandler = async (req, res) => {
         data: null,
       }
 
-    const response = await emailConfirmationService(
-      req,
-      "email submission",
-      null,
-      new EmailVerificationTokenMailSender()
-    )
+    const response = await emailConfirmationService(req, {
+      tokenMailSender: new EmailVerificationTokenMailSender(),
+    })
     if (!response.ok)
       return res.status(response.err.code).send({ reason: response.err.reason })
 
@@ -67,12 +60,9 @@ const newAccountRequestHandler = async (req, res) => {
  */
 const emailVerificationHandler = async (req, res) => {
   try {
-    const response = await emailConfirmationService(
-      req,
-      "token validation",
-      new EmailVerificationSuccessMailSender(),
-      null
-    )
+    const response = await emailConfirmationService(req, {
+      primaryMailSender: new EmailVerificationSuccessMailSender(),
+    })
 
     if (!response.ok) {
       return res.status(response.err.code).send({ reason: response.err.reason })
