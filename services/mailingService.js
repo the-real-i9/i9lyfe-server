@@ -1,65 +1,10 @@
 import nodemailer from "nodemailer"
 
-/** @interface */
-export class PrimaryMailSender {
-  /** @param {string} email */
-  // eslint-disable-next-line no-unused-vars
-  send(email) {
-    throw new Error("send method must be implemented")
-  }
-}
-
-export class EmailVerificationSuccessMailSender extends PrimaryMailSender {
-  send(email) {
-    sendMail({
-      to: email,
-      subject: "i9lyfe - Email verification success",
-      html: `<p>Your email <strong>${email}</strong> has been verified!</p>`,
-    })
-  }
-}
-
-export class PwdResetSuccessMailSender extends PrimaryMailSender {
-  send(email) {
-    sendMail({
+/* sendMail({
       to: email,
       subject: "i9lyfe - Password reset successful",
       html: `<p>${email}, your password has been changed successfully!</p>`,
-    })
-  }
-}
-
-/** @interface */
-export class TokenMailSender {
-  /**
-   * @param {string} email
-   * @param {number} token
-   */
-  // eslint-disable-next-line no-unused-vars
-  sendToken(email, token) {
-    throw new Error("send method must be implemented")
-  }
-}
-
-export class EmailVerificationTokenMailSender extends TokenMailSender {
-  sendToken(email, token) {
-    sendMail({
-      to: email,
-      subject: "i9lyfe - Verify your email",
-      html: `<p>Your email verification token is <strong>${token}</strong></p>`,
-    })
-  }
-}
-
-export class PwdResetTokenMailSender extends TokenMailSender {
-  sendToken(email, token) {
-    sendMail({
-      to: email,
-      subject: "i9lyfe - Confirm your email: Password Reset",
-      html: `<p>Your password reset token is <strong>${token}</strong></p>`,
-    })
-  }
-}
+    }) */
 
 /**
  * @param {Object} mailInfo
