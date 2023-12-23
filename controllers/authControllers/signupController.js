@@ -77,6 +77,7 @@ const userRegistrationHandler = async (req, res) => {
 
     res.status(201).send({
       msg: "Registration success! You're automatically logged in.",
+      userData: response.data.userData,
       jwtToken: response.data.jwtToken,
     })
   } catch (error) {
