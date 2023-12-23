@@ -30,9 +30,9 @@ const newAccountRequestHandler = async (req, res) => {
     ).handleEmailSubmission(req)
 
     if (!response.ok)
-      return res.status(response.error.code).send({ msg: response.error.msg })
+      return res.status(response.err.code).send({ reason: response.err.reason })
 
-    res.status(response.success.code).send({ msg: response.success.msg })
+    res.status(200).send({ msg: response.successMessage })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)
@@ -50,10 +50,10 @@ const emailVerificationHandler = async (req, res) => {
     ).handleTokenValidation(req)
 
     if (!response.ok) {
-      return res.status(response.error.code).send({ msg: response.error.msg })
+      return res.status(response.err.code).send({ reason: response.err.reason })
     }
 
-    res.status(response.success.code).send({ msg: response.success.msg })
+    res.status(200).send({ msg: response.successMessage })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)
@@ -70,7 +70,9 @@ const userRegistrationHandler = async (req, res) => {
     const response = await userRegistrationService({ email, ...req.body })
 
     if (!response.ok) {
-      return res.sendStatus(500)
+      return res
+        .status(response.error.code)
+        .send({ reason: response.error.reason })
     }
 
     req.session.destroy()

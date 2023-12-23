@@ -1,11 +1,5 @@
 import nodemailer from "nodemailer"
 
-/* sendMail({
-      to: email,
-      subject: "i9lyfe - Password reset successful",
-      html: `<p>${email}, your password has been changed successfully!</p>`,
-    }) */
-
 /**
  * @param {Object} mailInfo
  * @param {string} mailInfo.to

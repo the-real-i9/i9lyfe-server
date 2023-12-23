@@ -1,6 +1,11 @@
 import bcrypt from "bcrypt"
-import { createNewUser, getUserByEmail } from "../models/userModel.js"
+import {
+  changeUserPassword,
+  createNewUser,
+  getUserByEmail,
+} from "../models/userModel.js"
 import { generateJwtToken } from "../utils/helpers.js"
+import sendMail from "./mailingService.js"
 
 /** @param {string} password */
 export const hashPassword = async (password) => {
@@ -33,17 +38,20 @@ export const userRegistrationService = async (userDataInput) => {
       email: userData.email,
     })
 
-    return { ok: true, err: null, data: { userData, jwtToken } }
+    return {
+      ok: true,
+      error: null,
+      data: { userData, jwtToken },
+    }
   } catch (error) {
     console.log(error)
     return {
       ok: false,
-      err: { code: 500, reason: "Internal Server Error" },
+      error: { code: 500, reason: "Internal Server Error" },
       data: null,
     }
   }
 }
-
 
 /**
  * @param {string} passwordInput Password supplied by user
@@ -99,6 +107,36 @@ export const userSigninService = async (email, passwordInput) => {
     return {
       ok: false,
       err: { code: 500, reason: "Internal Server Error" },
+      data: null,
+    }
+  }
+}
+
+export const passwordResetService = async (userEmail, newPassword) => {
+  try {
+    const passwordHash = await hashPassword(newPassword)
+
+    await changeUserPassword(userEmail, passwordHash)
+
+    sendMail({
+      to: userEmail,
+      subject: "i9lyfe - Password reset successful",
+      html: `<p>${userEmail}, your password has been changed successfully!</p>`,
+    })
+
+    return {
+      ok: true,
+      err: null,
+      data: null,
+    }
+  } catch (error) {
+    console.log(error)
+    return {
+      ok: false,
+      err: {
+        code: 500,
+        reason: "Internal server error",
+      },
       data: null,
     }
   }

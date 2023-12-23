@@ -1,4 +1,4 @@
-import { userSigninService } from '../../services/authServices.js'
+import { userSigninService } from "../../services/authServices.js"
 
 /**
  * @param {import('express').Request} req
@@ -14,8 +14,12 @@ export const signinController = async (req, res) => {
       return res.status(response.err.code).send({ reason: response.err.reason })
     }
 
-    res.status(200).send({ userData: response.data.userData, jwtToken: response.data.jwtToken })
-
+    res
+      .status(200)
+      .send({
+        userData: response.data.userData,
+        jwtToken: response.data.jwtToken,
+      })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)

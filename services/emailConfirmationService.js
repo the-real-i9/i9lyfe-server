@@ -33,11 +33,11 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
       if (await userExists(email))
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "A user with this email already exists.",
+            reason: "A user with this email already exists.",
           },
-          success: null,
+          successMessage: null,
         }
 
       const [code, codeExpires] = generateCodeWithExpiration()
@@ -57,21 +57,18 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
 
       return {
         ok: true,
-        error: null,
-        success: {
-          code: 200,
-          msg: `Enter the 6-digit code sent to ${email} to verify your email`,
-        },
+        err: null,
+        successMessage: `Enter the 6-digit code sent to ${email} to verify your email`,
       }
     } catch (error) {
       console.log(error)
       return {
         ok: false,
-        error: {
+        err: {
           code: 500,
-          msg: "Internal server error",
+          reason: "Internal server error",
         },
-        success: null,
+        successMessage: null,
       }
     }
   }
@@ -86,22 +83,23 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
       if (!tokensMatch(verificationCode, userInputCode)) {
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "Incorrect verification code! Check or Re-submit your email.",
+            reason:
+              "Incorrect verification code! Check or Re-submit your email.",
           },
-          success: null,
+          successMessage: null,
         }
       }
 
       if (!tokenLives(verificationCodeExpires)) {
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "Verification code expired! Re-submit your email.",
+            reason: "Verification code expired! Re-submit your email.",
           },
-          success: null,
+          successMessage: null,
         }
       }
 
@@ -120,21 +118,18 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
 
       return {
         ok: true,
-        error: null,
-        success: {
-          code: 200,
-          msg: `Your email ${email} has been verified!`,
-        },
+        err: null,
+        successMessage: `Your email ${email} has been verified!`,
       }
     } catch (error) {
       console.log(error)
       return {
         ok: false,
-        error: {
+        err: {
           code: 500,
-          msg: "Internal server error",
+          reason: "Internal server error",
         },
-        success: null,
+        successMessage: null,
       }
     }
   }
@@ -149,11 +144,11 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
       if (!(await userExists(email)))
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "No user with this email exists.",
+            reason: "No user with this email exists.",
           },
-          success: null,
+          successMessage: null,
         }
 
       const [token, tokenExpires] = generateCodeWithExpiration()
@@ -174,20 +169,17 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
       return {
         ok: true,
         error: null,
-        success: {
-          code: 200,
-          msg: `Enter the 6-digit number token sent to ${email} to reset your password`,
-        },
+        successMessage: `Enter the 6-digit number token sent to ${email} to reset your password`,
       }
     } catch (error) {
       console.log(error)
       return {
         ok: false,
-        error: {
+        err: {
           code: 500,
-          msg: "Internal server error",
+          reason: "Internal server error",
         },
-        success: null,
+        successMessage: null,
       }
     }
   }
@@ -202,22 +194,23 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
       if (!tokensMatch(passwordResetToken, userInputToken)) {
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "Incorrect password reset token! Check or Re-submit your email.",
+            reason:
+              "Incorrect password reset token! Check or Re-submit your email.",
           },
-          success: null,
+          successMessage: null,
         }
       }
 
       if (!tokenLives(passwordResetTokenExpires)) {
         return {
           ok: false,
-          error: {
+          err: {
             code: 422,
-            msg: "Password reset token expired! Re-submit your email.",
+            reason: "Password reset token expired! Re-submit your email.",
           },
-          success: null,
+          successMessage: null,
         }
       }
 
@@ -230,21 +223,18 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
 
       return {
         ok: true,
-        error: null,
-        success: {
-          code: 200,
-          msg: `Your email ${email} has been verified!`,
-        },
+        err: null,
+        successMessage: `Your email ${email} has been verified!`,
       }
     } catch (error) {
       console.log(error)
       return {
         ok: false,
-        error: {
+        err: {
           code: 500,
-          msg: "Internal server error",
+          reason: "Internal server error",
         },
-        success: null,
+        successMessage: null,
       }
     }
   }

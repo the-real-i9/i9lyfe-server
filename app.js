@@ -20,11 +20,11 @@ app.use(
 )
 
 app.use(
-  "/auth/password_reset",
+  "/auth/forgot_password",
   expressSessionMiddleware(
     "ongoing_password_reset",
     process.env.PASSWORD_RESET_SESSION_COOKIE_SECRET,
-    "/auth/password_reset"
+    "/auth/forgot_password"
   )
 )
 

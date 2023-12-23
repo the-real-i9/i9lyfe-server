@@ -3,7 +3,7 @@ import { dbQuery } from "./db.js"
 
 /**
  * @param {Object} fields
- * @param {string} fields.email
+ * @param {string} fields.userMail
  * @param {string} fields.username
  * @param {string} fields.password
  * @param {string} fields.name
@@ -14,11 +14,11 @@ export const createNewUser = async (fields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
-      text: `INSERT INTO "User"(email, username, password, name, birthday, bio) 
+      text: `INSERT INTO "User"(userMail, username, password, name, birthday, bio) 
       VALUES($1, $2, $3, $4, $5, $6) 
-      RETURNING id, email, username, name, profile_pic_url`,
+      RETURNING id, userMail, username, name, profile_pic_url`,
       values: [
-        fields.email,
+        fields.userMail,
         fields.username,
         fields.password,
         fields.name,
@@ -36,20 +36,18 @@ export const createNewUser = async (fields) => {
   }
 }
 
-// const getUserById = (id) => {}
-
 /**
- * @param {string} email
+ * @param {string} userMail
  * @param {string} selectFields
  */
-export const getUserByEmail = async (email, selectFields) => {
+export const getUserByEmail = async (userMail, selectFields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
       text: `SELECT ${commaSeparateString(
         selectFields
-      )} FROM "User" WHERE email = $1`,
-      values: [email],
+      )} FROM "User" WHERE userMail = $1`,
+      values: [userMail],
     }
 
     const result = await dbQuery(query)
@@ -61,11 +59,26 @@ export const getUserByEmail = async (email, selectFields) => {
   }
 }
 
-/** @param {string} email */
-export const userExists = async (email) => {
+/** @param {string} userMail */
+export const userExists = async (userMail) => {
   try {
-    const result = await getUserByEmail(email, "1")
+    const result = await getUserByEmail(userMail, "1")
     return result.rowCount > 0 ? true : false
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+export const changeUserPassword = async (userMail, newPassword) => {
+  try {
+    /** @type {import("pg").QueryConfig} */
+    const query = {
+      text: 'UPDATE "User" SET password = $2 WEHRE email = $1',
+      values: [userMail, newPassword]
+    }
+  
+    await dbQuery(query)
   } catch (error) {
     console.log(error)
     throw error

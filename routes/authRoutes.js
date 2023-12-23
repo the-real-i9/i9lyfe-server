@@ -11,6 +11,6 @@ router.post("/signup", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
 
-router.post("/password_reset", passwordResetController)
+router.post("/forgot_password", passwordResetController)
 
 export default router
