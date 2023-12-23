@@ -10,25 +10,12 @@ import { getDBPool } from "../models/db.js"
 export const signupProgressValidation = (req, res, next) => {
   const { stage } = req.query
 
-  if (["token_validation", "user_registration"].includes(stage))
-    confirmOngoingRegistration(req, res)
+  if (["email_verification", "user_registration"].includes(stage))
+    confirmOngoingRegistration(res, req.session.email_verification_data)
 
-  if (stage === "token_validation") rejectConfirmedEmail(req, res)
+  if (stage === "email_verification") rejectConfirmedEmail(res, req.session.email_verification_data.verified)
 
-  if (stage === "user_registration") rejectUnconfirmedEmail(req, res)
-
-  next()
-}
-
-export const passwordResetProgressValidation = (req, res, next) => {
-  const { stage } = req.query
-
-  if (["token_validation", "password_reset"].includes(stage))
-    confirmOngoingRegistration(req, res)
-
-  if (stage === "token_validation") rejectConfirmedEmail(req, res)
-
-  if (stage === "password_reset") rejectUnconfirmedEmail(req, res)
+  if (stage === "user_registration") rejectUnconfirmedEmail(res, req.session.email_verification_data.verified)
 
   next()
 }
@@ -38,19 +25,35 @@ export const passwordResetProgressValidation = (req, res, next) => {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-const confirmOngoingRegistration = (req, res) => {
-  if (!req.session.email_confirmation_data) {
+export const passwordResetProgressValidation = (req, res, next) => {
+  const { stage } = req.query
+
+  if (["email_confirmation", "password_reset"].includes(stage))
+    confirmOngoingRegistration(res, req.session.password_reset_email_confirmation_data)
+
+  if (stage === "email_confirmation") rejectConfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
+
+  if (stage === "password_reset") rejectUnconfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
+
+  next()
+}
+
+/**
+ * @param {import('express').Response} res
+ * @param {Object} sessionData
+ */
+const confirmOngoingRegistration = (res, sessionData) => {
+  if (!sessionData) {
     return res.status(403).send({ errorMessage: "No ongoing registration!" })
   }
 }
 
 /**
- * @param {import('express').Request} req
  * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
+ * @param {boolean} emailValidationStatus
  */
-const rejectConfirmedEmail = (req, res) => {
-  if (req.session.email_confirmation_data.confirmed) {
+const rejectConfirmedEmail = (res, emailValidationStatus) => {
+  if (emailValidationStatus) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has already being verified!" })
@@ -58,17 +61,19 @@ const rejectConfirmedEmail = (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
  * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
+ * @param {boolean} emailValidationStatus
  */
-const rejectUnconfirmedEmail = (req, res) => {
-  if (!req.session.email_confirmation_data.confirmed) {
+const rejectUnconfirmedEmail = (res, emailValidationStatus) => {
+  if (!emailValidationStatus) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has not been verified!" })
   }
 }
+
+
+const PGStore = pgSession(expressSession)
 
 /**
  * @param {string} storeTableName
@@ -76,9 +81,6 @@ const rejectUnconfirmedEmail = (req, res) => {
  * @param {string} cookiePath
  * @returns
  */
-
-const PGStore = pgSession(expressSession)
-
 export const expressSessionMiddleware = (
   storeTableName,
   sessionSecret,

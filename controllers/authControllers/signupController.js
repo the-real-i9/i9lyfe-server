@@ -12,8 +12,8 @@ export const signupController = async (req, res) => {
   const { stage } = req.query
 
   const stageHandlers = {
-    email_submission: (req, res) => newAccountRequestHandler(req, res),
-    token_validation: (req, res) => emailVerificationHandler(req, res),
+    new_account_request: (req, res) => newAccountRequestHandler(req, res),
+    email_verification: (req, res) => emailVerificationHandler(req, res),
     user_registration: (req, res) => userRegistrationHandler(req, res),
   }
   stageHandlers[stage](req, res)

@@ -6,15 +6,15 @@ export const passwordResetController = async (req, res) => {
   const { stage } = req.query
 
   const stageHandlers = {
-    email_submission: (req, res) => passwordResetRequestHandler(req, res),
-    token_validation: (req, res) => emailVerificationHandler(req, res),
-    user_registration: (req, res) => userRegistrationHandler(req, res),
+    password_reset_request: (req, res) => passwordResetRequestHandler(req, res),
+    email_confirmation: (req, res) => passwordResetEmailConfirmationHandler(req, res),
+    password_reset: (req, res) => passwordResetHandler(req, res),
   }
   stageHandlers[stage](req, res)
 }
 
-const passwordResetRequest = async () => {}
+const passwordResetRequestHandler = async () => {}
 
-const passwordResetEmailConfirmation = async () => {}
+const passwordResetEmailConfirmationHandler = async () => {}
 
-const resetPassword = async () => {}
+const passwordResetHandler = async () => {}

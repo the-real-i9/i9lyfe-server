@@ -1,10 +1,14 @@
 /* eslint-disable no-unused-vars */
 import { userExists } from "../models/userModel.js"
-import { generateCodeWithExpiration, tokenLives, tokensMatch } from "../utils/helpers.js"
+import {
+  generateCodeWithExpiration,
+  tokenLives,
+  tokensMatch,
+} from "../utils/helpers.js"
 import sendMail from "./mailingService.js"
 
 /**
- * Stragegy pattern 
+ * Stragegy pattern
  * @interface
  * @abstract
  */
@@ -136,7 +140,6 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
   }
 }
 
-
 export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStrategy {
   /** @param {import('express').Request} req */
   async handleEmailSubmission(req) {
@@ -265,5 +268,3 @@ export class EmailConfirmationService {
     return await this.emailConfirmationStrategy.handleTokenValidation(req)
   }
 }
-
-

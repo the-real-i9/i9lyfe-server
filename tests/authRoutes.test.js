@@ -6,12 +6,12 @@ import app from "../app.js"
 
 dotenv.config()
 
-describe("POST /auth/signup?stage=email_submission", () => {
+describe("POST /auth/signup?stage=new_account_request", () => {
   it("it should request new account or fail, if user with email already exists", async () => {
     const testEmail = "oluwarinolasa@gmail.com"
 
     const res = await request(app)
-      .post("/auth/signup?stage=email_submission")
+      .post("/auth/signup?stage=new_account_request")
       .send({
         email: testEmail,
       })
