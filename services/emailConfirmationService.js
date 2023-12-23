@@ -1,18 +1,21 @@
-import { userExists } from "../models/userModel"
-import { generateCodeWithExpiration } from "../utils/helpers"
-import sendMail from "./mailingService"
+/* eslint-disable no-unused-vars */
+import { userExists } from "../models/userModel.js"
+import { generateCodeWithExpiration, tokenLives, tokensMatch } from "../utils/helpers.js"
+import sendMail from "./mailingService.js"
 
 /**
- * Stragegy pattern + Template Method pattern
+ * Stragegy pattern 
  * @interface
  * @abstract
  */
 class EmailConfirmationStrategy {
-  async handleEmailSubmission() {
+  /** @param {import('express').Request} req */
+  async handleEmailSubmission(req) {
     throw new Error("handleEmailSubmission must be implemented")
   }
 
-  async handleTokenValidation() {
+  /** @param {import('express').Request} req */
+  async handleTokenValidation(req) {
     throw new Error("handleTokenValidation must be implemented")
   }
 }
@@ -244,12 +247,23 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
   }
 }
 
+export class EmailConfirmationService {
+  /** @param {SignupEmailConfirmationStrategy | PasswordResetEmailConfirmationStrategy} emailConfirmationStrategy  */
+  // dependency injection
+  constructor(emailConfirmationStrategy) {
+    /** @type SignupEmailConfirmationStrategy | PasswordResetEmailConfirmationStrategy */
+    this.emailConfirmationStrategy = emailConfirmationStrategy
+  }
 
-/**
- * @param {number} compareToken
- * @param {number} inputToken
- */
-const tokensMatch = (compareToken, inputToken) => compareToken === inputToken
+  /** @param {import('express').Request} req */
+  async handleEmailSubmission(req) {
+    return await this.emailConfirmationStrategy.handleEmailSubmission(req)
+  }
 
-/** @param {Date} tokenExpiration */
-const tokenLives = (tokenExpiration) => Date.now() < new Date(tokenExpiration)
+  /** @param {import('express').Request} req */
+  async handleTokenValidation(req) {
+    return await this.emailConfirmationStrategy.handleTokenValidation(req)
+  }
+}
+
+

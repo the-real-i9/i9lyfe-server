@@ -16,3 +16,12 @@ export const generateCodeWithExpiration = () => {
 export const generateJwtToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" })
 }
+
+/**
+ * @param {number} compareToken
+ * @param {number} inputToken
+ */
+export const tokensMatch = (compareToken, inputToken) => compareToken === inputToken
+
+/** @param {Date} tokenExpiration */
+export const tokenLives = (tokenExpiration) => Date.now() < new Date(tokenExpiration)

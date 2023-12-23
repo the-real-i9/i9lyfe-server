@@ -1,5 +1,8 @@
 import { userRegistrationService } from "../../services/authServices.js"
-import { SignupEmailConfirmationStrategy } from "../../services/emailConfirmationService.js"
+import {
+  EmailConfirmationService,
+  SignupEmailConfirmationStrategy,
+} from "../../services/emailConfirmationService.js"
 
 /**
  * @param {import('express').Request} req
@@ -9,10 +12,8 @@ export const signupController = async (req, res) => {
   const { stage } = req.query
 
   const stageHandlers = {
-    email_submission: (req, res) =>
-      newAccountRequestHandler(req, res, new SignupEmailConfirmationStrategy()), // dependency injection
-    token_validation: (req, res) =>
-      emailVerificationHandler(req, res, new SignupEmailConfirmationStrategy()),
+    email_submission: (req, res) => newAccountRequestHandler(req, res),
+    token_validation: (req, res) => emailVerificationHandler(req, res),
     user_registration: (req, res) => userRegistrationHandler(req, res),
   }
   stageHandlers[stage](req, res)
@@ -21,15 +22,12 @@ export const signupController = async (req, res) => {
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
- * @param {SignupEmailConfirmationStrategy} emailConfirmationStrategy
  */
-const newAccountRequestHandler = async (
-  req,
-  res,
-  emailConfirmationStrategy
-) => {
+const newAccountRequestHandler = async (req, res) => {
   try {
-    const response = await emailConfirmationStrategy.handleEmailSubmission(req)
+    const response = await new EmailConfirmationService(
+      new SignupEmailConfirmationStrategy()
+    ).handleEmailSubmission(req)
 
     if (!response.ok)
       return res.status(response.error.code).send({ msg: response.error.msg })
@@ -44,15 +42,12 @@ const newAccountRequestHandler = async (
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
- * @param {SignupEmailConfirmationStrategy} emailConfirmationStrategy
  */
-const emailVerificationHandler = async (
-  req,
-  res,
-  emailConfirmationStrategy
-) => {
+const emailVerificationHandler = async (req, res) => {
   try {
-    const response = await emailConfirmationStrategy.handleTokenValidation(req)
+    const response = await new EmailConfirmationService(
+      new SignupEmailConfirmationStrategy()
+    ).handleTokenValidation(req)
 
     if (!response.ok) {
       return res.status(response.error.code).send({ msg: response.error.msg })
