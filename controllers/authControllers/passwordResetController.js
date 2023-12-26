@@ -1,8 +1,8 @@
-import { passwordResetService } from "../../services/authServices"
+import { passwordResetService } from "../../services/authServices.js"
 import {
   EmailConfirmationService,
   PasswordResetEmailConfirmationStrategy,
-} from "../../services/emailConfirmationService"
+} from "../../services/emailConfirmationService.js"
 
 /**
  * @param {import('express').Request} req
