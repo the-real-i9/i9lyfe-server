@@ -1,12 +1,16 @@
 import express from "express"
 import dotenv from "dotenv"
+import cors from "cors"
 
 import authRoutes from "./routes/authRoutes.js"
+import appRoutes from "./routes/appRoutes.js"
 import { expressSessionMiddleware } from "./middlewares/authMiddlewares.js"
 
 dotenv.config()
 
 const app = express()
+
+app.use(cors())
 
 app.use(express.json())
 
@@ -29,5 +33,6 @@ app.use(
 )
 
 app.use("/auth", authRoutes)
+app.use(appRoutes)
 
 export default app
