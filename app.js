@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 import cors from "cors"
 
 import authRoutes from "./routes/authRoutes.js"
-import appRoutes from "./routes/appRoutes.js"
+import post_managementRoutes from "./routes/post_managementRoutes.js"
 import { expressSessionMiddleware } from "./middlewares/authMiddlewares.js"
 
 dotenv.config()
@@ -33,6 +33,6 @@ app.use(
 )
 
 app.use("/auth", authRoutes)
-app.use(appRoutes)
+app.use(post_managementRoutes)
 
 export default app

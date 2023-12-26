@@ -1,4 +1,4 @@
-import { createNewPost } from "../models/postModel"
+import { createNewPost } from "../models/postModel.js"
 
 
 

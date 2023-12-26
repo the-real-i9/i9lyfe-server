@@ -9,7 +9,7 @@ test("create new post", async () => {
     user_id: 3,
     media_urls: ["https://localhost:5000/img/img_1.jpg"],
     type: "photo",
-    description: "This is a text with #ayo you #yemisi"
+    description: "This is a text with #ayo you #yemisi and @kenny with @samuel"
   })
 
   expect(res.rowCount).toBe(1)

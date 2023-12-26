@@ -1,4 +1,4 @@
-import { postCreationService } from '../services/post_managementServices'
+import { postCreationService } from '../services/post_managementServices.js'
 
 /**
  * @param {import('express').Request} req

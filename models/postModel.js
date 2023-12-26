@@ -1,5 +1,5 @@
-import { extractHashtags, extractMentions } from "../utils/helpers"
-import { getDBClient } from "./db"
+import { extractHashtags, extractMentions } from "../utils/helpers.js"
+import { getDBClient } from "./db.js"
 
 /**
  * @param {object} post
@@ -54,7 +54,6 @@ export const createNewPost = async (post) => {
     console.log(error)
     throw error
   } finally {
-    console.log("releasing")
     dbClient.release()
   }
 }
