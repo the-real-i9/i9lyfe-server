@@ -3,7 +3,7 @@ import { dbQuery } from "./db.js"
 
 /**
  * @param {Object} fields
- * @param {string} fields.userMail
+ * @param {string} fields.email
  * @param {string} fields.username
  * @param {string} fields.password
  * @param {string} fields.name
@@ -14,11 +14,11 @@ export const createNewUser = async (fields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
-      text: `INSERT INTO "User"(userMail, username, password, name, birthday, bio) 
+      text: `INSERT INTO "User"(email, username, password, name, birthday, bio) 
       VALUES($1, $2, $3, $4, $5, $6) 
-      RETURNING id, userMail, username, name, profile_pic_url`,
+      RETURNING id, email, username, name, profile_pic_url`,
       values: [
-        fields.userMail,
+        fields.email,
         fields.username,
         fields.password,
         fields.name,
@@ -37,17 +37,17 @@ export const createNewUser = async (fields) => {
 }
 
 /**
- * @param {string} userMail
+ * @param {string} email
  * @param {string} selectFields
  */
-export const getUserByEmail = async (userMail, selectFields) => {
+export const getUserByEmail = async (email, selectFields) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
       text: `SELECT ${commaSeparateString(
         selectFields
-      )} FROM "User" WHERE userMail = $1`,
-      values: [userMail],
+      )} FROM "User" WHERE email = $1`,
+      values: [email],
     }
 
     const result = await dbQuery(query)
@@ -59,10 +59,10 @@ export const getUserByEmail = async (userMail, selectFields) => {
   }
 }
 
-/** @param {string} userMail */
-export const userExists = async (userMail) => {
+/** @param {string} email */
+export const userExists = async (email) => {
   try {
-    const result = await getUserByEmail(userMail, "1")
+    const result = await getUserByEmail(email, "1")
     return result.rowCount > 0 ? true : false
   } catch (error) {
     console.log(error)
@@ -70,12 +70,12 @@ export const userExists = async (userMail) => {
   }
 }
 
-export const changeUserPassword = async (userMail, newPassword) => {
+export const changeUserPassword = async (email, newPassword) => {
   try {
     /** @type {import("pg").QueryConfig} */
     const query = {
       text: 'UPDATE "User" SET password = $2 WEHRE email = $1',
-      values: [userMail, newPassword]
+      values: [email, newPassword]
     }
   
     await dbQuery(query)
