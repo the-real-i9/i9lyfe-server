@@ -25,3 +25,13 @@ export const tokensMatch = (compareToken, inputToken) => compareToken === inputT
 
 /** @param {Date} tokenExpiration */
 export const tokenLives = (tokenExpiration) => Date.now() < new Date(tokenExpiration)
+
+/** @param {string} text */
+export const extractMentions = (text) => {
+  return text.match(/(?<=@)\w+/g)
+}
+
+/** @param {string} text */
+export const extractHashtags = (text) => {
+  return text.match(/(?<=#)\w+/g)
+}
