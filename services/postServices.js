@@ -1,5 +1,4 @@
-import { createNewPost } from "../models/postModel.js"
-import { createReaction } from "../utils/post_comment_dbTasks.js"
+import { createNewPost, createReaction } from "../models/post_commentModel.js"
 
 /**
  * @param {object} post
@@ -22,13 +21,15 @@ export const postCreationService = async (post) => {
 
 export const postReactionService = async ({
   user_id,
+  post_owner_user_id,
   post_id,
   reaction_code_point,
 }) => {
   await createReaction({
     user_id,
-    reaction_receiver: "post",
-    reaction_receiver_id: post_id,
+    post_owner_user_id,
+    reacted_to: "post",
+    reacted_to_id: post_id,
     reaction_code_point,
   })
 
