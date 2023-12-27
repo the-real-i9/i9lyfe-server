@@ -22,7 +22,6 @@ export const hashPassword = async (password) => {
  * @param {string} userDataInput.bio
  */
 export const userRegistrationService = async (userDataInput) => {
-  try {
     const passwordHash = await hashPassword(userDataInput.password)
 
     const result = await createNewUser({
@@ -43,14 +42,6 @@ export const userRegistrationService = async (userDataInput) => {
       error: null,
       data: { userData, jwtToken },
     }
-  } catch (error) {
-    console.log(error)
-    return {
-      ok: false,
-      error: { code: 500, reason: "Internal Server Error" },
-      data: null,
-    }
-  }
 }
 
 /**
@@ -67,53 +58,43 @@ const passwordMatch = async (passwordInput, passwordHash) => {
  * @param {string} passwordInput
  */
 export const userSigninService = async (email, passwordInput) => {
-  try {
-    const result = await getUserByEmail(
-      email,
-      "id email username password name profile_pic_url"
-    )
+  const result = await getUserByEmail(
+    email,
+    "id email username password name profile_pic_url"
+  )
 
-    if (result.rowCount === 0) {
-      return {
-        ok: false,
-        err: { code: 422, reason: "Incorrect email or password" },
-        data: null,
-      }
-    }
-
-    const { password: passwordHash, ...userData } = result.rows[0]
-    if (!(await passwordMatch(passwordInput, passwordHash))) {
-      return {
-        ok: false,
-        err: { code: 422, reason: "Incorrect email or password" },
-        data: null,
-      }
-    }
-
-    const jwtToken = generateJwtToken({
-      user_id: userData.id,
-      email: userData.email,
-    })
-    return {
-      ok: true,
-      err: null,
-      data: {
-        userData, // observe that password has been excluded above
-        jwtToken,
-      },
-    }
-  } catch (error) {
-    console.log(error)
+  if (result.rowCount === 0) {
     return {
       ok: false,
-      err: { code: 500, reason: "Internal Server Error" },
+      err: { code: 422, reason: "Incorrect email or password" },
       data: null,
     }
+  }
+
+  const { password: passwordHash, ...userData } = result.rows[0]
+  if (!(await passwordMatch(passwordInput, passwordHash))) {
+    return {
+      ok: false,
+      err: { code: 422, reason: "Incorrect email or password" },
+      data: null,
+    }
+  }
+
+  const jwtToken = generateJwtToken({
+    user_id: userData.id,
+    email: userData.email,
+  })
+  return {
+    ok: true,
+    err: null,
+    data: {
+      userData, // observe that password has been excluded above
+      jwtToken,
+    },
   }
 }
 
 export const passwordResetService = async (userEmail, newPassword) => {
-  try {
     const passwordHash = await hashPassword(newPassword)
 
     await changeUserPassword(userEmail, passwordHash)
@@ -129,15 +110,4 @@ export const passwordResetService = async (userEmail, newPassword) => {
       err: null,
       data: null,
     }
-  } catch (error) {
-    console.log(error)
-    return {
-      ok: false,
-      err: {
-        code: 500,
-        reason: "Internal server error",
-      },
-      data: null,
-    }
-  }
 }
