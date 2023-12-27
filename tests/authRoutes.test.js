@@ -24,7 +24,10 @@ describe("POST /auth/signup?stage=new_account_request", () => {
 describe("POST /auth/signin", () => {
   it("it should pass on correct credentials or fail otherwise", async () => {
     // const [testEmail, testPassword] = ["samuel123@gmail.com", "sammyken"] // incorrect credentials
-    const [testEmail, testPassword] = ["oluwarinolasam@gmail.com", "incfhunmytor"] // incorrect password credential
+    const [testEmail, testPassword] = [
+      "oluwarinolasam@gmail.com",
+      "incfhunmytor",
+    ] // incorrect password credential
     // const [testEmail, testPassword] = ["oluwarinolasam@gmail.com", "fhunmytor"] // correct credentials
 
     const res = await request(app).post("/auth/signin").send({

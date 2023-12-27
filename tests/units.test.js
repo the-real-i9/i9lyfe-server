@@ -1,12 +1,6 @@
-import dotenv from "dotenv"
 import { test, expect } from "@jest/globals"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
-import {
-  multipleInsertPlaceholders,
-  multipleInsertReplacers,
-} from "../models/postModel.js"
-
-dotenv.config()
+import { multipleRowsParameters } from "../utils/subDBtasks.js"
 
 test("extract mentions", () => {
   const text = "This is a text with @kenny you @samuel"
@@ -24,18 +18,9 @@ test("extract hashtags", () => {
   expect(res).toContain("yemisi")
 })
 
-test("make three placeholders for each item to INSERT, from an array of items", () => {
-  const res = multipleInsertPlaceholders(["a", "b", "c"])
+test("create multiple rows parameters", () => {
+  const res = (rowsCount, fieldsCountPerRow) => multipleRowsParameters(rowsCount, fieldsCountPerRow)
 
-  expect(res).toBe("($1, $2), ($3, $4), ($5, $6)")
+  expect(res(3, 2)).toBe("($1, $2), ($3, $4), ($5, $6)")
+  expect(res(3, 3)).toBe("($1, $2, $3), ($4, $5, $6), ($7, $8, $9)")
 })
-
-test("make three replacers for each item INSERT, from an array of items", () => {
-  const res = multipleInsertReplacers("3", ["kenny", "samuel", "dennis"])
-
-  expect(res.toString()).toBe(
-    ["3", "kenny", "3", "samuel", "3", "dennis"].toString()
-  )
-})
-
-

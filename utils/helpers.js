@@ -35,3 +35,7 @@ export const extractMentions = (text) => {
 export const extractHashtags = (text) => {
   return text.match(/(?<=#)\w+/g)
 }
+
+export const capitalize = (word) => {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
