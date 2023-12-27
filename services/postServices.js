@@ -1,6 +1,5 @@
 import { createNewPost } from "../models/postModel.js"
-
-
+import { createReaction } from "../utils/post_comment_dbTasks.js"
 
 /**
  * @param {object} post
@@ -10,22 +9,32 @@ import { createNewPost } from "../models/postModel.js"
  * @param {string} post.description
  */
 export const postCreationService = async (post) => {
-  try {
-    const result = await createNewPost(post)
+  const result = await createNewPost(post)
 
-    const postData = result.rows[0]
+  const postData = result.rows[0]
 
-    return {
-      ok: true,
-      err: null,
-      data: postData,
-    }
-  } catch (error) {
-    console.log(error)
-    return {
-      ok: false,
-      err: { code: 500, reason: "Internal server error" },
-      data: null,
-    }
+  return {
+    ok: true,
+    err: null,
+    data: postData,
+  }
+}
+
+export const postReactionService = async ({
+  user_id,
+  post_id,
+  reaction_code_point,
+}) => {
+  await createReaction({
+    user_id,
+    reaction_receiver: "post",
+    reaction_receiver_id: post_id,
+    reaction_code_point,
+  })
+
+  return {
+    ok: true,
+    err: null,
+    data: null,
   }
 }
