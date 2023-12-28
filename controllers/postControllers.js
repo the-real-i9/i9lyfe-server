@@ -1,7 +1,5 @@
-import {
-  postCreationService,
-  postReactionService,
-} from "../services/postServices.js"
+import { Post, PostCommentService } from "../services/PostCommentService.js"
+import { PostService } from "../services/appServices.js"
 
 /**
  * @param {import('express').Request} req
@@ -11,15 +9,12 @@ export const postCreationController = async (req, res) => {
   try {
     const { user_id, media_urls, type, description } = req.body
 
-    const response = await postCreationService({
+    const response = await new PostService().create({
       user_id,
       media_urls,
       type,
       description,
     })
-    if (!response.ok) {
-      return res.status(response.err.code).send({ reason: response.err.reason })
-    }
 
     // asychronously notify mentioned users with the notificationService (WebSockets)
 
@@ -36,11 +31,10 @@ export const postCreationController = async (req, res) => {
  */
 export const postReactionController = async (req, res) => {
   try {
-    const { reaction_by, post_reacted_to, post_owner, reaction_code_point } = req.body
-    await postReactionService({
-      user_id: reaction_by,
-      post_owner_user_id: post_owner,
-      post_id: post_reacted_to,
+    const { reactor_id, post_id, owner_user_id, reaction_code_point } = req.body
+
+    await new PostCommentService(new Post(owner_user_id, post_id)).addReaction({
+      reactor_id,
       reaction_code_point,
     })
 
