@@ -1,5 +1,4 @@
 import { capitalize } from "../utils/helpers.js"
-import { getDBClient } from "./db.js"
 
 /**
  * @param {object} post
@@ -54,7 +53,7 @@ export const createMentions = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Mention" (${post_or_comment}_id, user_id) 
+    text: `INSERT INTO "PostCommentMention" (${post_or_comment}_id, user_id) 
     VALUES ${multipleRowsParameters(mentioned_user_ids.length, 2)}`,
     values: mentioned_user_ids
       .map((mentioned_user_id) => [post_or_comment_id, mentioned_user_id])
@@ -66,30 +65,25 @@ export const createMentions = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.post_or_comment_id
- * @param {number[]} param0.mentioned_user_ids
+ * @param {number} param0.sender_user_id
+ * @param {number[]} param0.receiver_user_ids
  * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_user_id
+ * @param {number} param0.post_or_comment_id
  * @param {import("pg").PoolClient} dbClient
  */
 export const createMentionsNotifications = async (
-  {
-    post_or_comment,
-    post_or_comment_id,
-    mentioned_user_ids,
-    post_or_comment_user_id,
-  },
+  { sender_user_id, receiver_user_ids, post_or_comment, post_or_comment_id },
   dbClient
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostComment_Notification" (type, sender_id, receiver_id, notification_through_${post_or_comment}_id) 
-    VALUES ${multipleRowsParameters(mentioned_user_ids.length, 4)}`,
-    values: mentioned_user_ids
-      .map((mentioned_user_id) => [
+    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
+    VALUES ${multipleRowsParameters(receiver_user_ids.length, 4)}`,
+    values: receiver_user_ids
+      .map((receiver_user_id) => [
         "mention",
-        post_or_comment_user_id,
-        mentioned_user_id,
+        sender_user_id,
+        receiver_user_id,
         post_or_comment_id,
       ])
       .flat(),
@@ -110,7 +104,7 @@ export const createHashtags = async (
   dbClient
 ) => {
   const query = {
-    text: `INSERT INTO "Hashtag" (${post_or_comment}_id, hashtag_name) 
+    text: `INSERT INTO "PostCommentHashtag" (${post_or_comment}_id, hashtag_name) 
     VALUES ${multipleRowsParameters(hashtag_names.length, 2)}`,
     values: hashtag_names
       .map((hashtag_name) => [post_or_comment_id, hashtag_name])
@@ -146,14 +140,14 @@ const multipleRowsParameters = (rowsCount, fieldsCountPerRow) =>
  * @param {import("pg").PoolClient} dbClient
  */
 export const createReaction = async (
-  { reactor_id, post_or_comment, post_or_comment_id, reaction_code_point },
+  { sender_user_id, post_or_comment, post_or_comment_id, reaction_code_point },
   dbClient
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Reaction" (reactor_id, ${post_or_comment}_id, reaction_code_point) 
+    text: `INSERT INTO "PostCommentReaction" (sender_user_id, ${post_or_comment}_id, reaction_code_point) 
       VALUES ($1, $2, $3) RETURNING id`,
-    values: [reactor_id, post_or_comment_id, reaction_code_point],
+    values: [sender_user_id, post_or_comment_id, reaction_code_point],
   }
 
   const result = await dbClient.query(query)
@@ -163,16 +157,19 @@ export const createReaction = async (
 
 /**
  * @param {object} param0
- * @param {"post" | "comment"} param0.post_or_comment
+ * @param {"Post" | "Comment"} param0.post_or_comment_table
  * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
  * @param {import("pg").PoolClient} dbClient
  */
 export const incrementReactionsCount = async (
-  { post_or_comment, post_or_comment_id },
+  { 
+    post_or_comment_table, 
+    post_or_comment_id,
+  },
   dbClient
 ) => {
   const query = {
-    text: `UPDATE "${capitalize(post_or_comment)}" 
+    text: `UPDATE "${post_or_comment_table}" 
     SET reactions_count = reactions_count + 1 
     WHERE id = $1`,
     values: [post_or_comment_id],
@@ -183,26 +180,128 @@ export const incrementReactionsCount = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.sender_id
- * @param {number} param0.receiver_id
+ * @param {number} param0.sender_user_id
+ * @param {number} param0.receiver_user_id
  * @param {"post" | "comment"} param0.post_or_comment
  * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
+ * @param {number} param0.post_or_comment_user_id
  * @param {number} param0.reaction_id
+ * @param {import("pg").PoolClient} dbClient
  */
 export const createReactionNotification = async (
-  { sender_id, receiver_id, post_or_comment, post_or_comment_id, reaction_id },
+  {
+    sender_user_id,
+    receiver_user_id,
+    post_or_comment,
+    post_or_comment_id,
+    reaction_id,
+  },
   dbClient
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostComment_Notification" (type, sender_id, receiver_id, notification_through_${post_or_comment}_id, object_created_id),
+    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id),
     VALUES ($1, $2, $3, $4, $5)`,
     values: [
       "reaction",
-      sender_id,
-      receiver_id,
+      sender_user_id,
+      receiver_user_id,
       post_or_comment_id,
       reaction_id,
+    ],
+  }
+
+  await dbClient.query(query)
+}
+
+/**
+ *
+ * @param {object} param0
+ * @param {number} param0.commenter_user_id
+ * @param {string} param0.comment_text
+ * @param {string} param0.attachment_url
+ * @param {"post" | "comment"} param0.post_or_comment
+ * @param {number} param0.post_or_comment_id
+ * @param {import("pg").PoolClient} dbClient
+ */
+export const createComment = async (
+  {
+    commenter_user_id,
+    comment_text,
+    attachment_url,
+    post_or_comment,
+    post_or_comment_id,
+  },
+  dbClient
+) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `INSERT IN Comment (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
+    VALUES ($1, $2, $3, $4) RETURNING id`,
+    values: [
+      commenter_user_id,
+      comment_text,
+      attachment_url,
+      post_or_comment_id,
+    ],
+  }
+
+  const result = await dbClient.query(query)
+  return result
+}
+
+/**
+ * @param {object} param0
+ * @param {"Post" | "Comment"} param0.post_or_comment_table
+ * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
+ * @param {import("pg").PoolClient} dbClient
+ */
+export const incrementCommentsCount = async (
+  { 
+    post_or_comment_table, 
+    post_or_comment_id, 
+  },
+  dbClient
+) => {
+  const query = {
+    text: `UPDATE "${post_or_comment_table}" 
+    SET comments_count = comments_count + 1 
+    WHERE id = $1`,
+    values: [post_or_comment_id],
+  }
+
+  await dbClient.query(query)
+}
+
+/**
+ * @param {object} param0
+ * @param {number} param0.sender_user_id
+ * @param {number} param0.receiver_user_id
+ * @param {"post" | "comment"} param0.post_or_comment
+ * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
+ * @param {number} param0.new_comment_id
+ * @param {import("pg").PoolClient} dbClient
+ */
+export const createCommentNotification = async (
+  {
+    sender_user_id,
+    receiver_user_id,
+    post_or_comment,
+    post_or_comment_id,
+    new_comment_id,
+  },
+  dbClient
+) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id),
+    VALUES ($1, $2, $3, $4, $5)`,
+    values: [
+      "comment",
+      sender_user_id,
+      receiver_user_id,
+      post_or_comment_id,
+      new_comment_id,
     ],
   }
 

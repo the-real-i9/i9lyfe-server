@@ -31,10 +31,10 @@ export const postCreationController = async (req, res) => {
  */
 export const postReactionController = async (req, res) => {
   try {
-    const { reactor_id, post_id, owner_user_id, reaction_code_point } = req.body
+    const { reactor_user_id, post_id, owner_user_id, reaction_code_point } = req.body
 
     await new PostCommentService(new Post(owner_user_id, post_id)).addReaction({
-      reactor_id,
+      reactor_user_id,
       reaction_code_point,
     })
 

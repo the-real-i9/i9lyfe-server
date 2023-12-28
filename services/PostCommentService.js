@@ -1,11 +1,14 @@
 import { getDBClient } from "../models/db.js"
 import {
+  createComment,
+  createCommentNotification,
   createHashtags,
   createMentions,
   createMentionsNotifications,
   createNewPost,
   createReaction,
   createReactionNotification,
+  incrementCommentsCount,
   incrementReactionsCount,
   mapUsernamesToUserIds,
 } from "../models/PostCommentModel.js"
@@ -121,22 +124,22 @@ export class PostCommentService {
         {
           post_or_comment: this.postOrComment.which(),
           post_or_comment_id: this.postOrComment.id,
-          mentioned_user_ids: await mapUsernamesToUserIds(mentions),
-          post_or_comment_user_id: this.postOrComment.user_id,
+          receiver_user_ids: await mapUsernamesToUserIds(mentions),
+          sender_user_id: this.postOrComment.user_id,
         },
         dbClient
       )
     }
   }
 
-  async addReaction({ reactor_id, reaction_code_point }) {
+  async addReaction({ reactor_user_id, reaction_code_point }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       const result = await createReaction(
         {
-          reactor_id,
+          reactor_user_id,
           post_or_comment: this.postOrComment.which(),
           post_or_comment_id: this.postOrComment.id,
           reaction_code_point,
@@ -148,7 +151,7 @@ export class PostCommentService {
 
       await this.#incrementReactionsCount(dbClient)
       await this.#createReactionNotification(
-        { reactor_id, reaction_id },
+        { reactor_user_id, reaction_id },
         dbClient
       )
 
@@ -165,7 +168,7 @@ export class PostCommentService {
   async #incrementReactionsCount(dbClient) {
     await incrementReactionsCount(
       {
-        post_or_comment: this.postOrComment.which(),
+        post_or_comment_table: this.postOrComment.getTableName(),
         post_or_comment_id: this.postOrComment.id,
       },
       dbClient
@@ -174,16 +177,19 @@ export class PostCommentService {
 
   /**
    * @param {object} param0
-   * @param {number} param0.reactor_id
+   * @param {number} param0.reactor_user_id
    * @param {number} param0.reaction_id
    * @param {import("pg").PoolClient} dbClient
    */
-  async #createReactionNotification({ reactor_id, reaction_id }, dbClient) {
+  async #createReactionNotification(
+    { reactor_user_id, reaction_id },
+    dbClient
+  ) {
     await createReactionNotification(
       {
-        sender_id: reactor_id,
+        sender_user_id: reactor_user_id,
+        receiver_user_id: this.postOrComment.user_id,
         post_or_comment: this.postOrComment.which(),
-        receiver_id: this.postOrComment.user_id,
         post_or_comment_id: this.postOrComment.id,
         reaction_id,
       },
@@ -191,5 +197,50 @@ export class PostCommentService {
     )
   }
 
-  addComment({ commenter_id, post_id, attachment_url, comment_text }) {}
+  async addComment({ commenter_user_id, comment_text, attachment_url }) {
+    const dbClient = await getDBClient()
+    try {
+      await dbClient.query("BEGIN")
+
+      const result = await createComment({
+        commenter_user_id,
+        comment_text,
+        attachment_url,
+        post_or_comment: this.postOrComment.which(),
+        post_or_comment_id: this.postOrComment.id,
+      }, dbClient)
+
+      const { id: new_comment_id } = result.rows[0]
+
+      await this.#incrementCommentsCount(dbClient)
+      await this.#createCommentNotification(
+        { commenter_user_id, new_comment_id },
+        dbClient
+      )
+      
+      dbClient.query("COMMIT")
+    } catch (error) {
+      dbClient.query("ROLLBACK")
+      throw error
+    } finally {
+      dbClient.release()
+    }
+  }
+
+  async #incrementCommentsCount(dbClient) {
+    await incrementCommentsCount({
+      post_or_comment_table: this.postOrComment.getTableName(),
+      post_or_comment_id: this.postOrComment.id,
+    }, dbClient)
+  }
+
+  async #createCommentNotification({ commenter_user_id, new_comment_id }) {
+    await createCommentNotification({
+      sender_user_id: commenter_user_id,
+      receiver_user_id: this.postOrComment.user_id,
+      post_or_comment: this.postOrComment.which(),
+      post_or_comment_id: this.postOrComment.id,
+      new_comment_id,
+    })
+  }
 }
