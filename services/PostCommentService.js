@@ -5,7 +5,6 @@ import {
   createHashtags,
   createMentions,
   createMentionsNotifications,
-  createNewPost,
   createReaction,
   createReactionNotification,
   incrementCommentsCount,
