@@ -2,7 +2,7 @@ import { userRegistrationService } from "../../services/authServices.js"
 import {
   EmailConfirmationService,
   SignupEmailConfirmationStrategy,
-} from "../../services/emailConfirmationService.js"
+} from "../../services/EmailConfirmationService.js"
 
 /**
  * @param {import('express').Request} req

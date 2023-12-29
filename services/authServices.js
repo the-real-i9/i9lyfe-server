@@ -3,9 +3,9 @@ import {
   changeUserPassword,
   createNewUser,
   getUserByEmail,
-} from "../models/userModel.js"
+} from "../models/UserModel.js"
 import { generateJwtToken } from "../utils/helpers.js"
-import sendMail from "./mailingService.js"
+import sendMail from "./MailingService.js"
 
 /** @param {string} password */
 export const hashPassword = async (password) => {
@@ -22,26 +22,26 @@ export const hashPassword = async (password) => {
  * @param {string} userDataInput.bio
  */
 export const userRegistrationService = async (userDataInput) => {
-    const passwordHash = await hashPassword(userDataInput.password)
+  const passwordHash = await hashPassword(userDataInput.password)
 
-    const result = await createNewUser({
-      ...userDataInput,
-      password: passwordHash,
-      birthday: new Date(userDataInput.birthday),
-    })
+  const result = await createNewUser({
+    ...userDataInput,
+    password: passwordHash,
+    birthday: new Date(userDataInput.birthday),
+  })
 
-    const userData = result.rows[0]
+  const userData = result.rows[0]
 
-    const jwtToken = generateJwtToken({
-      user_id: userData.id,
-      email: userData.email,
-    })
+  const jwtToken = generateJwtToken({
+    user_id: userData.id,
+    email: userData.email,
+  })
 
-    return {
-      ok: true,
-      error: null,
-      data: { userData, jwtToken },
-    }
+  return {
+    ok: true,
+    error: null,
+    data: { userData, jwtToken },
+  }
 }
 
 /**
@@ -95,19 +95,19 @@ export const userSigninService = async (email, passwordInput) => {
 }
 
 export const passwordResetService = async (userEmail, newPassword) => {
-    const passwordHash = await hashPassword(newPassword)
+  const passwordHash = await hashPassword(newPassword)
 
-    await changeUserPassword(userEmail, passwordHash)
+  await changeUserPassword(userEmail, passwordHash)
 
-    sendMail({
-      to: userEmail,
-      subject: "i9lyfe - Password reset successful",
-      html: `<p>${userEmail}, your password has been changed successfully!</p>`,
-    })
+  sendMail({
+    to: userEmail,
+    subject: "i9lyfe - Password reset successful",
+    html: `<p>${userEmail}, your password has been changed successfully!</p>`,
+  })
 
-    return {
-      ok: true,
-      err: null,
-      data: null,
-    }
+  return {
+    ok: true,
+    err: null,
+    data: null,
+  }
 }

@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
-import { userExists } from "../models/userModel.js"
+import { userExists } from "../models/UserModel.js"
 import {
   generateCodeWithExpiration,
   tokenLives,
   tokensMatch,
 } from "../utils/helpers.js"
-import sendMail from "./mailingService.js"
+import sendMail from "./MailingService.js"
 
 /**
  * Stragegy pattern
