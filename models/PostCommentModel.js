@@ -237,7 +237,7 @@ export const createComment = async (
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT IN Comment (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
-    VALUES ($1, $2, $3, $4) RETURNING id`,
+    VALUES ($1, $2, $3, $4) RETURNING id, commenter_user_id, comment_text, attachment_url, reactions_count, comments_count AS replies_count,`,
     values: [
       commenter_user_id,
       comment_text,

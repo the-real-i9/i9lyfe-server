@@ -76,20 +76,22 @@ export class PostCommentService {
     this.postOrComment = postOrComment
   }
   /**
-   * @param {string} description
+   * @param {string} post_or_comment_text Post description or Comment text
    * @param {import("pg").PoolClient} dbClient
    */
-  async handleMentionsAndHashtags(description, dbClient) {
-    await this.#handleHashtags(description, dbClient)
-    await this.#handleMentions(description, dbClient)
+  async handleMentionsAndHashtags(post_or_comment_text, dbClient) {
+    await Promise.all([
+      this.#handleHashtags(post_or_comment_text, dbClient),
+      this.#handleMentions(post_or_comment_text, dbClient),
+    ])
   }
 
   /**
-   * @param {string} description
+   * @param {string} post_or_comment_text
    * @param {import("pg").PoolClient} dbClient
    */
-  async #handleHashtags(description, dbClient) {
-    const hashtags = extractHashtags(description)
+  async #handleHashtags(post_or_comment_text, dbClient) {
+    const hashtags = extractHashtags(post_or_comment_text)
     if (hashtags) {
       await createHashtags(
         {
@@ -103,11 +105,11 @@ export class PostCommentService {
   }
 
   /**
-   * @param {string} description
+   * @param {string} post_or_comment_text
    * @param {import("pg").PoolClient} dbClient
    */
-  async #handleMentions(description, dbClient) {
-    const mentions = extractMentions(description)
+  async #handleMentions(post_or_comment_text, dbClient) {
+    const mentions = extractMentions(post_or_comment_text)
 
     if (mentions) {
       await createMentions(
@@ -148,11 +150,13 @@ export class PostCommentService {
 
       const { id: reaction_id } = result.rows[0]
 
-      await this.#incrementReactionsCount(dbClient)
-      await this.#createReactionNotification(
-        { reactor_user_id, reaction_id },
-        dbClient
-      )
+      await Promise.all([
+        this.#incrementReactionsCount(dbClient),
+        this.#createReactionNotification(
+          { reactor_user_id, reaction_id },
+          dbClient
+        ),
+      ])
 
       dbClient.query("COMMIT")
     } catch (error) {
@@ -201,23 +205,37 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const result = await createComment({
-        commenter_user_id,
-        comment_text,
-        attachment_url,
-        post_or_comment: this.postOrComment.which(),
-        post_or_comment_id: this.postOrComment.id,
-      }, dbClient)
-
-      const { id: new_comment_id } = result.rows[0]
-
-      await this.#incrementCommentsCount(dbClient)
-      await this.#createCommentNotification(
-        { commenter_user_id, new_comment_id },
+      const result = await createComment(
+        {
+          commenter_user_id,
+          comment_text,
+          attachment_url,
+          post_or_comment: this.postOrComment.which(),
+          post_or_comment_id: this.postOrComment.id,
+        },
         dbClient
       )
-      
+
+      const commentData = result.rows[0]
+
+      const { id: new_comment_id } = commentData
+
+      await Promise.all([
+        this.handleMentionsAndHashtags(comment_text, dbClient),
+        this.#incrementCommentsCount(dbClient),
+        this.#createCommentNotification(
+          { commenter_user_id, new_comment_id },
+          dbClient
+        ),
+      ])
+
       dbClient.query("COMMIT")
+
+      return {
+        ok: true,
+        err: null,
+        data: commentData,
+      }
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -227,10 +245,13 @@ export class PostCommentService {
   }
 
   async #incrementCommentsCount(dbClient) {
-    await incrementCommentsCount({
-      post_or_comment_table: this.postOrComment.getTableName(),
-      post_or_comment_id: this.postOrComment.id,
-    }, dbClient)
+    await incrementCommentsCount(
+      {
+        post_or_comment_table: this.postOrComment.getTableName(),
+        post_or_comment_id: this.postOrComment.id,
+      },
+      dbClient
+    )
   }
 
   async #createCommentNotification({ commenter_user_id, new_comment_id }) {

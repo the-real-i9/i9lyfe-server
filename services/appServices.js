@@ -39,4 +39,13 @@ export class PostService {
       dbClient.release()
     }
   }
+
+  /* A repost is a hasOne relationship: Repost hasOne Post */
+  async repost({ reposter_user_id, post_id }) {
+    try {
+      
+    } catch (error) {
+      
+    }
+  }
 }
