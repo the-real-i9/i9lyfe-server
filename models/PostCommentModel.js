@@ -30,12 +30,13 @@ export const createNewPost = async (
  */
 export const mapUsernamesToUserIds = async (usernames, dbClient) => {
   return await Promise.all(
-    usernames.map(async (username, i) => {
+    usernames.map(async (username) => {
+      console.log(username)
       const query = {
         text: 'SELECT id FROM "User" WHERE username = $1',
         values: [username],
       }
-      return (await dbClient.query(query)).rows[i].id
+      return (await dbClient.query(query)).rows[0].id
     })
   )
 }
@@ -236,8 +237,8 @@ export const createComment = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT IN Comment (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
-    VALUES ($1, $2, $3, $4) RETURNING id, commenter_user_id, comment_text, attachment_url, reactions_count, comments_count AS replies_count,`,
+    text: `INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
+    VALUES ($1, $2, $3, $4) RETURNING id, commenter_user_id, comment_text, attachment_url, reactions_count, comments_count AS replies_count`,
     values: [
       commenter_user_id,
       comment_text,
@@ -294,7 +295,7 @@ export const createCommentNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id),
+    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id)
     VALUES ($1, $2, $3, $4, $5)`,
     values: [
       "comment",

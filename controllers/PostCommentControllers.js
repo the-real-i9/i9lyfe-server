@@ -79,7 +79,7 @@ export const commentOnPostController = async (req, res) => {
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
 
-    res.send(200).send({ commentData: response.data })
+    res.status(200).send({ commentData: response.data })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)
@@ -145,7 +145,7 @@ export const replyToCommentController = async (req, res) => {
 
     // asynchronously send a reply notification with the NotificationService via WebSockets
 
-    res.send(200).send({ replyData: response.data })
+    res.status(200).send({ replyData: response.data })
   } catch (error) {
     console.log(error)
     res.sendStatus(500)

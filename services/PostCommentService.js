@@ -118,7 +118,7 @@ export class PostCommentService {
         {
           post_or_comment: this.postOrComment.which(),
           post_or_comment_id: this.postOrComment.id,
-          mentioned_user_ids: await mapUsernamesToUserIds(mentions),
+          mentioned_user_ids: await mapUsernamesToUserIds(mentions, dbClient),
         },
         dbClient
       )
@@ -127,7 +127,7 @@ export class PostCommentService {
         {
           post_or_comment: this.postOrComment.which(),
           post_or_comment_id: this.postOrComment.id,
-          receiver_user_ids: await mapUsernamesToUserIds(mentions),
+          receiver_user_ids: await mapUsernamesToUserIds(mentions, dbClient),
           sender_user_id: this.postOrComment.user_id,
         },
         dbClient
@@ -262,13 +262,13 @@ export class PostCommentService {
     )
   }
 
-  async #createCommentNotification({ commenter_user_id, new_comment_id }) {
+  async #createCommentNotification({ commenter_user_id, new_comment_id }, dbClient) {
     await createCommentNotification({
       sender_user_id: commenter_user_id,
       receiver_user_id: this.postOrComment.user_id,
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       new_comment_id,
-    })
+    }, dbClient)
   }
 }
