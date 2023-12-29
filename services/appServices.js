@@ -1,5 +1,6 @@
-import { getDBClient } from "../models/db"
-import { Post, PostCommentService } from "./PostCommentService"
+import { createNewPost } from "../models/PostCommentModel.js"
+import { getDBClient } from "../models/db.js"
+import { Post, PostCommentService } from "./PostCommentService.js"
 
 export class PostService {
   /**

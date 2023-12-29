@@ -140,14 +140,14 @@ const multipleRowsParameters = (rowsCount, fieldsCountPerRow) =>
  * @param {import("pg").PoolClient} dbClient
  */
 export const createReaction = async (
-  { sender_user_id, post_or_comment, post_or_comment_id, reaction_code_point },
+  { reactor_user_id, post_or_comment, post_or_comment_id, reaction_code_point },
   dbClient
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentReaction" (sender_user_id, ${post_or_comment}_id, reaction_code_point) 
+    text: `INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
       VALUES ($1, $2, $3) RETURNING id`,
-    values: [sender_user_id, post_or_comment_id, reaction_code_point],
+    values: [reactor_user_id, post_or_comment_id, reaction_code_point],
   }
 
   const result = await dbClient.query(query)
@@ -200,7 +200,7 @@ export const createReactionNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id),
+    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id)
     VALUES ($1, $2, $3, $4, $5)`,
     values: [
       "reaction",

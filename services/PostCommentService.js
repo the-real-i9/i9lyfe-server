@@ -11,7 +11,7 @@ import {
   incrementReactionsCount,
   mapUsernamesToUserIds,
 } from "../models/PostCommentModel.js"
-import { extractHashtags } from "../utils/helpers.js"
+import { extractHashtags, extractMentions } from "../utils/helpers.js"
 
 class PostORComment {
   constructor(user_id, id) {
@@ -37,6 +37,7 @@ export class Post extends PostORComment {
    * @param {number} id
    */
   constructor(user_id, id) {
+    super()
     this.user_id = user_id
     this.id = id
   }
@@ -56,6 +57,7 @@ export class Comment extends PostORComment {
    * @param {number} id
    */
   constructor(user_id, id) {
+    super()
     this.user_id = user_id
     this.id = id
   }
@@ -159,6 +161,12 @@ export class PostCommentService {
       ])
 
       dbClient.query("COMMIT")
+
+      return {
+        ok: true,
+        err: null,
+        data: null,
+      }
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error

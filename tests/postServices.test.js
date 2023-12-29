@@ -19,7 +19,7 @@ test("react to post", async () => {
   const res = await postReactionService({
     user_id: 3,
     post_id: 31,
-    reaction_code_point: "😴".codePointAt()
+    reaction_code_point: "👨‍👩‍👧".codePointAt()
   })
 
   expect(res.ok).toBe(true)
