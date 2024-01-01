@@ -1,5 +1,3 @@
-import { capitalize } from "../utils/helpers.js"
-
 /**
  * @param {object} post
  * @param {number} post.user_id
@@ -14,7 +12,7 @@ export const createNewPost = async (
   const query = {
     text: `INSERT INTO "Post" (user_id, media_urls, type, description) 
       VALUES ($1, $2, $3, $4) 
-      RETURNING id, media_urls, type, description, reactions_count, comments_count, reposts_count`,
+      RETURNING id, media_urls, type, description, reactions_count, comments_count, reposts_count user_id`,
     values: [user_id, media_urls, type, description],
   }
 
