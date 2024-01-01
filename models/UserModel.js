@@ -105,11 +105,13 @@ export const updateUserProfile = async (user_id, updatedUserInfoKVPairs) => {
   const query = {
     text: `UPDATE "User" SET ${keys
       .map((key, i) => `${key} = $${i + 1}`)
-      .join(", ")} WHERE id = $${keys.length + 1}`,
+      .join(", ")} WHERE id = $${
+      keys.length + 1
+    } RETURNING id, email, username, name, profile_pic_url`,
     values: [...values, user_id],
   }
 
-  await dbQuery(query)
+  return await dbQuery(query)
 }
 
 export const uploadProfilePicture = async (user_id, profile_pic_url) => {

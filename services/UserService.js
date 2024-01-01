@@ -30,12 +30,14 @@ export class UserService {
   }
 
   async updateProfile(updatedUserInfoKVPairs) {
-    await updateUserProfile(this.user_id, updatedUserInfoKVPairs)
+    const result = await updateUserProfile(this.user_id, updatedUserInfoKVPairs)
+
+    const updatedUserData = result.rows[0]
 
     return {
       ok: true,
       err: null,
-      data: null,
+      data: updatedUserData,
     }
   }
 
