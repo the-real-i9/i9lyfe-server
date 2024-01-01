@@ -24,7 +24,7 @@ export const createPostController = async (req, res) => {
 
     res.status(200).send({ postData: response.data })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -53,7 +53,7 @@ export const reactToPostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -81,7 +81,7 @@ export const commentOnPostController = async (req, res) => {
 
     res.status(200).send({ commentData: response.data })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -110,7 +110,7 @@ export const reactToCommentController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -147,7 +147,7 @@ export const replyToCommentController = async (req, res) => {
 
     res.status(200).send({ replyData: response.data })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

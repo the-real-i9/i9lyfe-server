@@ -36,7 +36,7 @@ const passwordResetRequestHandler = async (req, res) => {
 
     res.status(200).send({ msg: response.successMessage })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -57,7 +57,7 @@ const passwordResetEmailConfirmationHandler = async (req, res) => {
 
     res.status(200).send({ msg: response.successMessage })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -78,7 +78,7 @@ const passwordResetHandler = async (req, res) => {
 
     res.status(200).send({ msg: "Your password has been changed successfully" })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

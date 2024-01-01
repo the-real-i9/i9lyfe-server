@@ -34,7 +34,7 @@ const newAccountRequestHandler = async (req, res) => {
 
     res.status(200).send({ msg: response.successMessage })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -55,7 +55,7 @@ const emailVerificationHandler = async (req, res) => {
 
     res.status(200).send({ msg: response.successMessage })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -83,7 +83,7 @@ const userRegistrationHandler = async (req, res) => {
       jwtToken: response.data.jwtToken,
     })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
