@@ -10,8 +10,11 @@ import { PostService } from "../services/appServices.js"
  * @param {import('express').Response} res
  */
 export const createPostController = async (req, res) => {
+  // Note: You have to accept binary data(s) in the request body, upload them to a CDN, and receive their corresponding URLS in order
   try {
-    const { user_id, media_urls, type, description } = req.body
+    const { media_urls, type, description } = req.body
+
+    const { user_id } = req.auth
 
     const response = await new PostService().create({
       user_id,
@@ -36,11 +39,14 @@ export const createPostController = async (req, res) => {
 export const reactToPostController = async (req, res) => {
   try {
     const {
-      reactor_user_id,
       post_id,
       post_owner_user_id,
-      reaction_code_point,
+      reaction,
     } = req.body
+    // Should I accept the code point directly?
+    const reaction_code_point = reaction.codePointAt()
+
+    const { user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
       new Post(post_owner_user_id, post_id)
@@ -67,11 +73,12 @@ export const commentOnPostController = async (req, res) => {
     const {
       post_id,
       post_owner_user_id,
-      commenter_user_id,
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
       attachment_url,
     } = req.body
+
+    const { user_id: commenter_user_id } = req.auth
 
     const response = await new PostCommentService(
       new Post(post_owner_user_id, post_id)
@@ -93,11 +100,12 @@ export const commentOnPostController = async (req, res) => {
 export const reactToCommentController = async (req, res) => {
   try {
     const {
-      reactor_user_id,
       comment_id,
       comment_owner_user_id,
       reaction_code_point,
     } = req.body
+
+    const { user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
       new Comment(comment_owner_user_id, comment_id)
@@ -124,16 +132,18 @@ export const replyToCommentController = async (req, res) => {
     const {
       comment_id,
       comment_owner_user_id,
-      replier_user_id,
       reply_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
       attachment_url,
     } = req.body
 
+    const { user_id: replier_user_id } = req.auth
+
     // Observe that, a reply is a comment on a comment,
     // or, technically put, Comments are nested data structures
     // All Replies are Comments and behave like Comments
     // But, not all Comments are Replies, as Comments belong to Posts and Replies do not.
+
 
     const response = await new PostCommentService(
       new Comment(comment_owner_user_id, comment_id)
