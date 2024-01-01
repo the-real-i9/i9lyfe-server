@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 
 import {
   followUserController,
+  unfollowUserController,
   updateUserProfileController,
   uploadProfilePictureController,
 } from "../controllers/UserControllers.js"
@@ -27,6 +28,8 @@ router.use(
 )
 
 router.post("/follow_user", followUserController)
+
+router.post("/unfollow_user", unfollowUserController)
 
 router.put("/update_user_profile", updateUserProfileController)
 
