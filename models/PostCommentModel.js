@@ -1,3 +1,5 @@
+import { dbQuery } from "./db.js"
+
 /**
  * @param {object} post
  * @param {number} post.user_id
@@ -161,10 +163,7 @@ export const createReaction = async (
  * @param {import("pg").PoolClient} dbClient
  */
 export const incrementReactionsCount = async (
-  { 
-    post_or_comment_table, 
-    post_or_comment_id,
-  },
+  { post_or_comment_table, post_or_comment_id },
   dbClient
 ) => {
   const query = {
@@ -256,10 +255,7 @@ export const createComment = async (
  * @param {import("pg").PoolClient} dbClient
  */
 export const incrementCommentsCount = async (
-  { 
-    post_or_comment_table, 
-    post_or_comment_id, 
-  },
+  { post_or_comment_table, post_or_comment_id },
   dbClient
 ) => {
   const query = {
@@ -306,3 +302,104 @@ export const createCommentNotification = async (
 
   await dbClient.query(query)
 }
+
+/* ************* */
+
+// GET a post
+/** 
+ * @param {object} param0
+ * @param {number} param0.post_id 
+ * @param {number} param0.client_user_id
+*/
+export const getPost = async ({post_id, client_user_id}) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "user".id AS owner_user_id,
+      "user".username AS owner_username,
+      "user".profile_pic_url AS owner_profile_pic_url,
+      "post".id AS post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count, 
+      reposts_count,
+      reaction_code_point AS client_reaction,
+      CASE
+        WHEN "repost".id IS NULL THEN false
+        ELSE true
+      END AS client_reposted
+    FROM "Post" "post"
+    INNER JOIN "User" "user" ON "user".id = "post".user_id
+    LEFT JOIN "PostCommentReaction" "reaction"
+      ON "reaction".post_id = "post".id
+      AND "reaction".reactor_user_id = $2
+    LEFT JOIN "Repost" "repost"
+      ON "repost".post_id = "post".id
+      AND "repost".reposter_user_id = $2
+    WHERE "post".id = $1`,
+    values: [post_id, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows[0]
+}
+
+// GET all comments on a post
+export const getAllPostComments = async ({post_id, client_user_id}) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "user".id AS owner_user_id,
+      "user".username AS owner_username,
+      "user".profile_pic_url AS owner_profile_pic_url,
+      "comment".id AS comment_id,
+      comment_text,
+      attachment_url,
+      reactions_count,
+      comments_count AS replies_count, 
+      reaction_code_point AS client_reaction
+    FROM "Comment" "comment"
+    INNER JOIN "User" "user" ON "user".id = "comment".commenter_user_id
+    LEFT JOIN "PostCommentReaction" "reaction"
+      ON "reaction".comment_id = "comment".id
+      AND "reaction".reactor_user_id = $2
+    WHERE "comment".post_id = $1`,
+    values: [post_id, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}
+
+// GET a single comment on a post
+export const getComment = async (post_id, comment_id) => {}
+
+// GET all reactions to a post: returning all users that reacted to the post
+export const getAllPostReactors = async (post_id) => {}
+
+// GET a single reaction to a post: limiting returned users to the ones with that reaction
+export const getPostReactorsForReaction = ({
+  post_id,
+  reaction_code_point,
+}) => {}
+
+// GET all replies to a comment/reply
+// the :comment_id either selects a comment or reply, since all replies are comments
+export const getAllCommentReplies = (post_id, comment_id) => {}
+
+// GET a single reply to a comment/reply
+// the :comment_id either selects a comment or reply, since all replies are comments
+// the :reply_id is a single reply to the comment/reply with the that id
+export const getCommentReply = ({ post_id, comment_id, reply_id }) => {}
+
+// GET all reactions to a comment/reply: returning all users that reacted to the comment
+// the :comment_id either selects a comment or reply, since all replies are comments
+export const getAllCommentReactors = (post_id, comment_id) => {}
+
+// GET a specific reaction to a comment/reply: limiting returned users to the ones with that reaction
+// the :comment_id either selects a comment or reply, since all replies are comments
+export const getCommentReactorsForReaction = async ({
+  post_id,
+  comment_id,
+  reaction_code_point,
+}) => {}
