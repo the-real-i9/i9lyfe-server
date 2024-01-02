@@ -123,3 +123,29 @@ export const uploadProfilePicture = async (user_id, profile_pic_url) => {
 
   await dbQuery(query)
 }
+
+/* ************* */
+
+// GET user profile data
+export const getUserProfile = async (username) => {}
+
+// GET user followers
+export const getUserFollowers = async (username) => {}
+
+// GET user followings
+export const getUserFollowings = async (username) => {}
+
+// GET user posts
+export const getUserPosts = async (username) => {}
+
+// GET posts user has been mentioned in
+export const getMyMentions = async (user_id) => {}
+
+// GET posts reacted by user
+export const getMyReactedPosts = async (user_id) => {}
+
+// GET posts saved by this user
+export const getMySavedPosts = async (user_id) => {}
+
+// GET user notifications
+export const getMyNotifications = async (user_id) => {}
