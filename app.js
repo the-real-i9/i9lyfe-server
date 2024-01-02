@@ -2,9 +2,9 @@ import express from "express"
 import dotenv from "dotenv"
 import cors from "cors"
 
-import authRoutes from "./routes/authRoutes.js"
-import PostCommentRoutes from "./routes/PostCommentRoutes.js"
-import UserRoutes from "./routes/UserRoutes.js"
+import AuthRoutes from "./routes/private/AuthRoutes.js"
+import PostCommentRoutes from "./routes/private/PostCommentRoutes.js"
+import UserRoutes from "./routes/private/UserPrivateRoutes.js"
 
 dotenv.config()
 
@@ -14,7 +14,7 @@ app.use(cors())
 
 app.use(express.json())
 
-app.use("/auth", authRoutes)
+app.use("/auth", AuthRoutes)
 app.use(PostCommentRoutes)
 app.use(UserRoutes)
 

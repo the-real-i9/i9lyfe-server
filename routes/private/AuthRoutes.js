@@ -4,10 +4,10 @@ import dotenv from "dotenv"
 import {
   expressSessionMiddleware,
   signupProgressValidation,
-} from "../middlewares/authMiddlewares.js"
-import { signupController } from "../controllers/authControllers/signupController.js"
-import { signinController } from "../controllers/authControllers/signinController.js"
-import { passwordResetController } from "../controllers/authControllers/passwordResetController.js"
+} from "../../middlewares/authMiddlewares.js"
+import { signupController } from "../../controllers/authControllers/signupController.js"
+import { signinController } from "../../controllers/authControllers/signinController.js"
+import { passwordResetController } from "../../controllers/authControllers/passwordResetController.js"
 
 dotenv.config()
 
