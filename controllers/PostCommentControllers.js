@@ -38,18 +38,14 @@ export const createPostController = async (req, res) => {
  */
 export const reactToPostController = async (req, res) => {
   try {
-    const {
-      post_id,
-      post_owner_user_id,
-      reaction,
-    } = req.body
+    const { post_id, post_owner_user_id, reaction } = req.body
     // Should I accept the code point directly?
     const reaction_code_point = reaction.codePointAt()
 
     const { user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
-      new Post(post_owner_user_id, post_id)
+      new Post(post_id, post_owner_user_id)
     ).addReaction({
       reactor_user_id,
       reaction_code_point,
@@ -75,18 +71,18 @@ export const commentOnPostController = async (req, res) => {
       post_owner_user_id,
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url,
+      attachment_url = null,
     } = req.body
 
     const { user_id: commenter_user_id } = req.auth
 
     const response = await new PostCommentService(
-      new Post(post_owner_user_id, post_id)
+      new Post(post_id, post_owner_user_id)
     ).addComment({ commenter_user_id, comment_text, attachment_url })
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
 
-    res.status(200).send({ commentData: response.data })
+    res.status(201).send({ commentData: response.data })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -99,16 +95,14 @@ export const commentOnPostController = async (req, res) => {
  */
 export const reactToCommentController = async (req, res) => {
   try {
-    const {
-      comment_id,
-      comment_owner_user_id,
-      reaction_code_point,
-    } = req.body
+    const { comment_id, comment_owner_user_id, reaction } = req.body
+    // Should I accept the code point directly?
+    const reaction_code_point = reaction.codePointAt()
 
     const { user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
-      new Comment(comment_owner_user_id, comment_id)
+      new Comment(comment_id, comment_owner_user_id)
     ).addReaction({
       reactor_user_id,
       reaction_code_point,
@@ -134,7 +128,7 @@ export const replyToCommentController = async (req, res) => {
       comment_owner_user_id,
       reply_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url,
+      attachment_url = null,
     } = req.body
 
     const { user_id: replier_user_id } = req.auth
@@ -144,9 +138,8 @@ export const replyToCommentController = async (req, res) => {
     // All Replies are Comments and behave like Comments
     // But, not all Comments are Replies, as Comments belong to Posts and Replies do not.
 
-
     const response = await new PostCommentService(
-      new Comment(comment_owner_user_id, comment_id)
+      new Comment(comment_id, comment_owner_user_id)
     ).addComment({
       commenter_user_id: replier_user_id,
       comment_text: reply_text,
@@ -155,7 +148,7 @@ export const replyToCommentController = async (req, res) => {
 
     // asynchronously send a reply notification with the NotificationService via WebSockets
 
-    res.status(200).send({ replyData: response.data })
+    res.status(201).send({ replyData: response.data })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -166,7 +159,194 @@ export const replyToCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const repostPostController = async (req, res) => {
+/* export const repostPostController = async (req, res) => {
   try {
   } catch (error) {}
+} */
+
+/* The GETs */
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getSinglePostController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+
+    const { user_id: client_user_id } = req.auth
+
+    const post = await new PostService().get({ post_id, client_user_id })
+
+    res.status(200).send({ post })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllPostCommentsController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+
+    const { user_id: client_user_id } = req.auth
+
+    const postComments = await new PostCommentService(
+      new Post(post_id)
+    ).getAllCommentsORReplies(client_user_id)
+
+    res.status(200).send({ postComments })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getSinglePostCommentController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+
+    const { user_id: client_user_id } = req.auth
+
+    const postComment = await new PostCommentService(
+      new Post()
+    ).getSingleCommentORReply({
+      comment_or_reply_id: comment_id,
+      client_user_id,
+    })
+
+    res.status(200).send({ postComment })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllPostReactorsController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+
+    const postReactors = await new PostCommentService(
+      new Post(post_id)
+    ).getAllReactors()
+
+    res.status(200).send({ postReactors })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllPostReactorsWithReactionController = async (req, res) => {
+  try {
+    const { post_id, reaction_code_point } = req.params
+
+    const postReactorsWithReaction = await new PostCommentService(
+      new Post(post_id)
+    ).getAllReactorsWithReaction(reaction_code_point)
+
+    res.status(200).send({ postReactorsWithReaction })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllCommentRepliesController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+
+    const { user_id: client_user_id } = req.auth
+
+    const commentReplies = await new PostCommentService(
+      new Comment(comment_id)
+    ).getAllCommentsORReplies(client_user_id)
+
+    res.status(200).send({ commentReplies })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getSingleCommentReplyController = async (req, res) => {
+  try {
+    const { reply_id } = req.params
+
+    const { user_id: client_user_id } = req.auth
+
+    const commentReply = await new PostCommentService(
+      new Comment()
+    ).getSingleCommentORReply({
+      comment_or_reply_id: reply_id,
+      client_user_id,
+    })
+
+    res.status(200).send({ commentReply })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllCommentReactorsController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+
+    const commentReactors = await new PostCommentService(
+      new Comment(comment_id)
+    ).getAllReactors()
+
+    res.status(200).send({ commentReactors })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getAllCommentReactorsWithReactionController = async (req, res) => {
+  try {
+    const { comment_id, reaction_code_point } = req.params
+
+    const commentReactorsWithReaction = await new PostCommentService(
+      new Comment(comment_id)
+    ).getAllReactorsWithReaction(reaction_code_point)
+
+    res.status(200).send({ commentReactorsWithReaction })
+  } catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+  }
 }

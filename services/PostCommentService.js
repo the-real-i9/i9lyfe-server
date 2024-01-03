@@ -7,18 +7,20 @@ import {
   createMentionsNotifications,
   createReaction,
   createReactionNotification,
-  incrementCommentsCount,
-  incrementReactionsCount,
+  getAllPostCommentsORCommentReplies,
+  getAllPostORCommentReactors,
+  getAllPostORCommentReactorsWithReaction,
+  getSinglePostCommentORCommentReply,
   mapUsernamesToUserIds,
 } from "../models/PostCommentModel.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 
 class PostORComment {
-  constructor(user_id, id) {
-    /** @type {number} */
-    this.user_id = user_id
+  constructor(id, user_id) {
     /** @type {number} */
     this.id = id
+    /** @type {number} */
+    this.user_id = user_id
   }
   /** @returns {"post" | "comment"} */
   which() {
@@ -36,10 +38,10 @@ export class Post extends PostORComment {
    * @param {number} user_id
    * @param {number} id
    */
-  constructor(user_id, id) {
+  constructor(id, user_id) {
     super()
-    this.user_id = user_id
     this.id = id
+    this.user_id = user_id
   }
 
   which() {
@@ -56,10 +58,10 @@ export class Comment extends PostORComment {
    * @param {number} user_id
    * @param {number} id
    */
-  constructor(user_id, id) {
+  constructor(id, user_id) {
     super()
-    this.user_id = user_id
     this.id = id
+    this.user_id = user_id
   }
 
   which() {
@@ -152,38 +154,19 @@ export class PostCommentService {
 
       const { id: reaction_id } = result.rows[0]
 
-      await Promise.all([
-        this.#incrementReactionsCount(dbClient),
-        this.#createReactionNotification(
-          { reactor_user_id, reaction_id },
-          dbClient
-        ),
-      ])
+      await this.#createReactionNotification(
+        { reactor_user_id, reaction_id },
+        dbClient
+      )
 
       dbClient.query("COMMIT")
 
-      return {
-        ok: true,
-        err: null,
-        data: null,
-      }
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
     } finally {
       dbClient.release()
     }
-  }
-
-  /** @param {import("pg").PoolClient} dbClient  */
-  async #incrementReactionsCount(dbClient) {
-    await incrementReactionsCount(
-      {
-        post_or_comment_table: this.postOrComment.getTableName(),
-        post_or_comment_id: this.postOrComment.id,
-      },
-      dbClient
-    )
   }
 
   /**
@@ -230,7 +213,6 @@ export class PostCommentService {
 
       await Promise.all([
         this.handleMentionsAndHashtags(comment_text, dbClient),
-        this.#incrementCommentsCount(dbClient),
         this.#createCommentNotification(
           { commenter_user_id, new_comment_id },
           dbClient
@@ -252,23 +234,58 @@ export class PostCommentService {
     }
   }
 
-  async #incrementCommentsCount(dbClient) {
-    await incrementCommentsCount(
+  async #createCommentNotification(
+    { commenter_user_id, new_comment_id },
+    dbClient
+  ) {
+    await createCommentNotification(
       {
-        post_or_comment_table: this.postOrComment.getTableName(),
+        sender_user_id: commenter_user_id,
+        receiver_user_id: this.postOrComment.user_id,
+        post_or_comment: this.postOrComment.which(),
         post_or_comment_id: this.postOrComment.id,
+        new_comment_id,
       },
       dbClient
     )
   }
 
-  async #createCommentNotification({ commenter_user_id, new_comment_id }, dbClient) {
-    await createCommentNotification({
-      sender_user_id: commenter_user_id,
-      receiver_user_id: this.postOrComment.user_id,
+  async getAllCommentsORReplies(client_user_id) {
+    const result = await getAllPostCommentsORCommentReplies({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
-      new_comment_id,
-    }, dbClient)
+      client_user_id,
+    })
+
+    return result
+  }
+
+  async getSingleCommentORReply({ comment_or_reply_id, client_user_id}) {
+    const result = await getSinglePostCommentORCommentReply({
+      post_or_comment: this.postOrComment.which(),
+      comment_or_reply_id,
+      client_user_id,
+    })
+
+    return result
+  }
+
+  async getAllReactors() {
+    const result = await getAllPostORCommentReactors({
+      post_or_comment: this.postOrComment.which(),
+      post_or_comment_id: this.postOrComment.id,
+    })
+
+    return result
+  }
+
+  async getAllReactorsWithReaction(reaction_code_point) {
+    const result = await getAllPostORCommentReactorsWithReaction({
+      post_or_comment: this.postOrComment.which(),
+      post_or_comment_id: this.postOrComment.id,
+      reaction_code_point,
+    })
+
+    return result
   }
 }

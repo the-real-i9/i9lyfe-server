@@ -1,4 +1,4 @@
-import { createNewPost } from "../models/PostCommentModel.js"
+import { createNewPost, getPost } from "../models/PostCommentModel.js"
 import { getDBClient } from "../models/db.js"
 import { Post, PostCommentService } from "./PostCommentService.js"
 
@@ -48,5 +48,11 @@ export class PostService {
     } catch (error) {
       
     }
+  }
+
+  async get({ post_id, client_user_id }) {
+    const result = await getPost({ post_id, client_user_id })
+
+    return result
   }
 }
