@@ -127,13 +127,89 @@ export const uploadProfilePicture = async (user_id, profile_pic_url) => {
 /* ************* */
 
 // GET user profile data
-export const getUserProfile = async (username) => {}
+/** @param {string} username */
+export const getUserProfile = async (username, client_user_id) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "user".id AS user_id, 
+      name, 
+      username, 
+      bio, 
+      profile_pic_url, 
+      COUNT("followee".id) AS followers_count, 
+      COUNT("follower".id) AS following_count,
+      CASE
+        WHEN "client_follows".id IS NULL THEN false
+        ELSE true
+      END client_follows
+    FROM "User" "user"
+    LEFT JOIN "Follow" "followee" ON "followee".followee_user_id = "user".id
+    LEFT JOIN "Follow" "follower" ON "follower".follower_user_id = "user".id
+    LEFT JOIN "Follow" "client_follows" 
+      ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $2
+    WHERE "user".username = $1
+    GROUP BY "user".id,
+      name,
+      username,
+      bio,
+      profile_pic_url,
+      "client_follows".id`,
+    values: [username, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows[0]
+}
 
 // GET user followers
-export const getUserFollowers = async (username) => {}
+export const getUserFollowers = async (username, client_user_id) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "follower_user".id AS user_id, 
+      "follower_user".username, 
+      "follower_user".bio, 
+      "follower_user".profile_pic_url,
+      CASE
+        WHEN "client_follows".id IS NULL THEN false
+        ELSE true
+      END client_follows
+    FROM "Follow" "follow"
+    LEFT JOIN "User" "follower_user" ON "follower_user".id = "follow".follower_user_id
+    LEFT JOIN "User" "followee_user" ON "followee_user".id = "follow".followee_user_id
+    LEFT JOIN "Follow" "client_follows" 
+      ON "client_follows".followee_user_id = "followee_user".id AND "client_follows".follower_user_id = $2
+    WHERE "followee_user".username = $1`,
+    values: [username, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}
 
 // GET user followings
-export const getUserFollowings = async (username) => {}
+export const getUserFollowing = async (username, client_user_id) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "followee_user".id AS user_id, 
+      "followee_user".username, 
+      "followee_user".bio, 
+      "followee_user".profile_pic_url,
+      CASE
+        WHEN "client_follows".id IS NULL THEN false
+        ELSE true
+      END client_follows
+    FROM "Follow" "follow"
+    LEFT JOIN "User" "follower_user" ON "follower_user".id = "follow".follower_user_id
+    LEFT JOIN "User" "followee_user" ON "followee_user".id = "follow".followee_user_id
+    LEFT JOIN "Follow" "client_follows" 
+      ON "client_follows".followee_user_id = "followee_user".id AND "client_follows".follower_user_id = $2
+    WHERE "follower_user".username = $1`,
+    values: [username, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}
 
 // GET user posts
 export const getUserPosts = async (username) => {}
