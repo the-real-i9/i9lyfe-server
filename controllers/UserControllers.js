@@ -143,7 +143,10 @@ export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userPosts = await new UserService().getPosts(username)
+    const userPosts = await new UserService().getPosts({
+      username,
+      client_user_id: req.auth?.user_id,
+    })
 
     res.status(200).send({ userPosts })
   } catch (error) {
