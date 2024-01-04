@@ -20,7 +20,12 @@ export class PostService {
         dbClient
       )
 
-      const postData = result.rows[0]
+      const postData = {
+        ...result.rows[0],
+        reactions_count: 0,
+        comments_count: 0,
+        reposts_count: 0,
+      }
 
       await new PostCommentService(
         new Post(user_id, postData.id)
@@ -44,10 +49,7 @@ export class PostService {
   /* A repost is a hasOne relationship: Repost hasOne Post */
   async repost({ reposter_user_id, post_id }) {
     try {
-      
-    } catch (error) {
-      
-    }
+    } catch (error) {}
   }
 
   async get({ post_id, client_user_id }) {

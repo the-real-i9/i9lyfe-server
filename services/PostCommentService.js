@@ -160,7 +160,6 @@ export class PostCommentService {
       )
 
       dbClient.query("COMMIT")
-
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -207,7 +206,11 @@ export class PostCommentService {
         dbClient
       )
 
-      const commentData = result.rows[0]
+      const commentData = {
+        ...result.rows[0],
+        reactions_count: 0,
+        replies_count: 0,
+      }
 
       const { id: new_comment_id } = commentData
 
@@ -260,7 +263,7 @@ export class PostCommentService {
     return result
   }
 
-  async getSingleCommentORReply({ comment_or_reply_id, client_user_id}) {
+  async getSingleCommentORReply({ comment_or_reply_id, client_user_id }) {
     const result = await getSinglePostCommentORCommentReply({
       post_or_comment: this.postOrComment.which(),
       comment_or_reply_id,
