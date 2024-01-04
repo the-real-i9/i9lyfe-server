@@ -14,7 +14,7 @@ export const createNewPost = async (
   const query = {
     text: `INSERT INTO "Post" (user_id, media_urls, type, description) 
       VALUES ($1, $2, $3, $4) 
-      RETURNING id, media_urls, type, description, reactions_count, comments_count, reposts_count user_id`,
+      RETURNING id, user_id, media_urls, type, description`,
     values: [user_id, media_urls, type, description],
   }
 
