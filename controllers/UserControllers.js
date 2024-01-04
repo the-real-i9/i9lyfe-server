@@ -153,3 +153,55 @@ export const getUserPostsController = async (req, res) => {
     res.sendStatus(500)
   }
 }
+
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const getUserMentionsController = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const getUserReactedPostsController = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const getUserSavedPostsController = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+export const getUserNotificationsController = async (req, res) => {
+  try {
+    
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}

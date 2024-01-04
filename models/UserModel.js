@@ -258,13 +258,13 @@ export const getUserPosts = async (username, client_user_id) => {
 }
 
 // GET posts user has been mentioned in
-export const getMyMentions = async (user_id) => {}
+export const getMentions = async (user_id) => {}
 
 // GET posts reacted by user
-export const getMyReactedPosts = async (user_id) => {}
+export const getReactedPosts = async (user_id) => {}
 
 // GET posts saved by this user
-export const getMySavedPosts = async (user_id) => {}
+export const getSavedPosts = async (user_id) => {}
 
 // GET user notifications
-export const getMyNotifications = async (user_id) => {}
+export const getNotifications = async (user_id) => {}

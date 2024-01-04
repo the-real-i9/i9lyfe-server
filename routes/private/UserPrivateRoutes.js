@@ -39,7 +39,7 @@ router.put("/upload_profile_picture", uploadProfilePictureController)
 router.get("/mentions")
 
 // GET posts reacted to by user
-router.get("/reactions")
+router.get("/reacted_posts")
 
 // GET posts saved by this user
 router.get("/saved_posts")
