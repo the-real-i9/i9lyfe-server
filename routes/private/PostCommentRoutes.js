@@ -67,11 +67,11 @@ router.get(
 )
 
 // GET all reactions to a post: returning all users that reacted to the post
-router.get("/posts/:post_id/reactions", getAllPostReactorsController)
+router.get("/posts/:post_id/reactors", getAllPostReactorsController)
 
 // GET a single reaction to a post: limiting returned users to the ones with that reaction
 router.get(
-  "/posts/:post_id/reactions/:reaction_code_point",
+  "/posts/:post_id/reactors/:reaction_code_point",
   getAllPostReactorsWithReactionController
 )
 
@@ -89,12 +89,12 @@ router.get(
 
 // GET all reactions to a comment/reply: returning all users that reacted to the comment
 // the :comment_id either selects a comment or reply, since all replies are comments
-router.get("/comments/:comment_id/reactions", getAllCommentReactorsController)
+router.get("/comments/:comment_id/reactors", getAllCommentReactorsController)
 
 // GET a specific reaction to a comment/reply: limiting returned users to the ones with that reaction
 // the :comment_id either selects a comment or reply, since all replies are comments
 router.get(
-  "/comments/:comment_id/reactions/:reaction_code_point",
+  "/comments/:comment_id/reactors/:reaction_code_point",
   getAllCommentReactorsWithReactionController
 )
 

@@ -159,10 +159,10 @@ export const replyToCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-/* export const repostPostController = async (req, res) => {
+export const repostPostController = async (/* req, res */) => {
   try {
   } catch (error) {}
-} */
+}
 
 /* The GETs */
 
