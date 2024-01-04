@@ -1,5 +1,8 @@
 import {
   followUser,
+  getUserFollowers,
+  getUserFollowing,
+  getUserProfile,
   unfollowUser,
   updateUserProfile,
 } from "../models/UserModel.js"
@@ -11,22 +14,10 @@ export class UserService {
 
   async follow(to_follow_user_id) {
     await followUser(this.user_id, to_follow_user_id)
-
-    return {
-      ok: true,
-      err: null,
-      data: null,
-    }
   }
 
   async unfollow(followee_user_id) {
     await unfollowUser(this.user_id, followee_user_id)
-
-    return {
-      ok: true,
-      err: null,
-      data: null,
-    }
   }
 
   async updateProfile(updatedUserInfoKVPairs) {
@@ -34,14 +25,27 @@ export class UserService {
 
     const updatedUserData = result.rows[0]
 
-    return {
-      ok: true,
-      err: null,
-      data: updatedUserData,
-    }
+    return updatedUserData
   }
 
   async uploadProfilePicture() {
     // upload binary to CDN and get back file URL
+  }
+
+  /* GETs */
+  async getProfile({username, client_user_id}) {
+    return await getUserProfile(username, client_user_id)
+  }
+
+  async getFollowers({username, client_user_id}) {
+    return await getUserFollowers(username, client_user_id)
+  }
+
+  async getFollowing({username, client_user_id}) {
+    return await getUserFollowing(username, client_user_id)
+  }
+
+  async getPosts(username) {
+
   }
 }
