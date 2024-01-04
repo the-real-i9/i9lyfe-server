@@ -388,19 +388,25 @@ export const getSinglePostCommentORCommentReply = async ({ post_or_comment, comm
 }
 
 // GET all reactions to a post: returning all users that reacted to the post
-export const getAllPostORCommentReactors = async ({post_or_comment, post_or_comment_id}) => {
+export const getAllPostORCommentReactors = async ({post_or_comment, post_or_comment_id, client_user_id}) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
     SELECT "user".id, 
       "user".profile_pic_url, 
       "user".username, 
-      "user".name 
+      "user".name,
+      CASE
+        WHEN "client_follows".id IS NULL THEN false
+        ELSE true
+      END client_follows
     FROM "User" "user" 
     INNER JOIN "PostCommentReaction" "reaction" 
       ON "reaction".reactor_user_id = "user".id 
-      AND "reaction".${post_or_comment}_id = $1`,
-    values: [post_or_comment_id],
+      AND "reaction".${post_or_comment}_id = $1
+    LEFT JOIN "Follow" "client_follows" 
+      ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $2`,
+    values: [post_or_comment_id, client_user_id],
   }
 
   return (await dbQuery(query)).rows
@@ -411,6 +417,7 @@ export const getAllPostORCommentReactorsWithReaction = async ({
   post_or_comment,
   post_or_comment_id,
   reaction_code_point,
+  client_user_id,
 }) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
@@ -418,13 +425,19 @@ export const getAllPostORCommentReactorsWithReaction = async ({
     SELECT "user".id, 
       "user".profile_pic_url, 
       "user".username, 
-      "user".name 
+      "user".name,
+      CASE
+        WHEN "client_follows".id IS NULL THEN false
+        ELSE true
+      END client_follows
     FROM "User" "user" 
     INNER JOIN "PostCommentReaction" "reaction" 
       ON "reaction".reactor_user_id = "user".id 
       AND "reaction".${post_or_comment}_id = $1
+    LEFT JOIN "Follow" "client_follows" 
+      ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $3
     WHERE "reaction".reaction_code_point = $2`,
-    values: [post_or_comment_id, reaction_code_point],
+    values: [post_or_comment_id, reaction_code_point, client_user_id],
   }
 
   return (await dbQuery(query)).rows

@@ -273,20 +273,22 @@ export class PostCommentService {
     return result
   }
 
-  async getAllReactors() {
+  async getAllReactors(client_user_id) {
     const result = await getAllPostORCommentReactors({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
+      client_user_id,
     })
 
     return result
   }
 
-  async getAllReactorsWithReaction(reaction_code_point) {
+  async getAllReactorsWithReaction(reaction_code_point, client_user_id) {
     const result = await getAllPostORCommentReactorsWithReaction({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       reaction_code_point,
+      client_user_id,
     })
 
     return result

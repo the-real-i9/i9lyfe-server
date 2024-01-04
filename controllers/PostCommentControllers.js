@@ -238,9 +238,11 @@ export const getAllPostReactorsController = async (req, res) => {
   try {
     const { post_id } = req.params
 
+    const { user_id: client_user_id } = req.auth
+
     const postReactors = await new PostCommentService(
       new Post(post_id)
-    ).getAllReactors()
+    ).getAllReactors(client_user_id)
 
     res.status(200).send({ postReactors })
   } catch (error) {
@@ -257,9 +259,11 @@ export const getAllPostReactorsWithReactionController = async (req, res) => {
   try {
     const { post_id, reaction_code_point } = req.params
 
+    const { user_id: client_user_id } = req.auth
+
     const postReactorsWithReaction = await new PostCommentService(
       new Post(post_id)
-    ).getAllReactorsWithReaction(reaction_code_point)
+    ).getAllReactorsWithReaction(reaction_code_point, client_user_id)
 
     res.status(200).send({ postReactorsWithReaction })
   } catch (error) {
@@ -321,9 +325,11 @@ export const getAllCommentReactorsController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
+    const { user_id: client_user_id } = req.auth
+
     const commentReactors = await new PostCommentService(
       new Comment(comment_id)
-    ).getAllReactors()
+    ).getAllReactors(client_user_id)
 
     res.status(200).send({ commentReactors })
   } catch (error) {
@@ -340,9 +346,11 @@ export const getAllCommentReactorsWithReactionController = async (req, res) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
+    const { user_id: client_user_id } = req.auth
+
     const commentReactorsWithReaction = await new PostCommentService(
       new Comment(comment_id)
-    ).getAllReactorsWithReaction(reaction_code_point)
+    ).getAllReactorsWithReaction(reaction_code_point, client_user_id)
 
     res.status(200).send({ commentReactorsWithReaction })
   } catch (error) {
