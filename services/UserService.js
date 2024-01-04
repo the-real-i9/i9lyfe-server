@@ -2,6 +2,7 @@ import {
   followUser,
   getUserFollowers,
   getUserFollowing,
+  getUserPosts,
   getUserProfile,
   unfollowUser,
   updateUserProfile,
@@ -45,7 +46,7 @@ export class UserService {
     return await getUserFollowing(username, client_user_id)
   }
 
-  async getPosts(username) {
-
+  async getPosts({username, client_user_id}) {
+    return await getUserPosts(username, client_user_id)
   }
 }
