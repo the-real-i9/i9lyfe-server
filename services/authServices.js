@@ -33,8 +33,8 @@ export const userRegistrationService = async (userDataInput) => {
   const userData = result.rows[0]
 
   const jwtToken = generateJwtToken({
-    user_id: userData.id,
-    email: userData.email,
+    client_user_id: userData.id,
+    client_username: userData.username,
   })
 
   return {
@@ -81,8 +81,8 @@ export const userSigninService = async (email, passwordInput) => {
   }
 
   const jwtToken = generateJwtToken({
-    user_id: userData.id,
-    email: userData.email,
+    client_user_id: userData.id,
+    client_username: userData.username,
   })
   return {
     ok: true,
