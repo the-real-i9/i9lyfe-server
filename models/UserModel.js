@@ -212,7 +212,50 @@ export const getUserFollowing = async (username, client_user_id) => {
 }
 
 // GET user posts
-export const getUserPosts = async (username) => {}
+/** @param {string} username */
+export const getUserPosts = async (username, client_user_id) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `
+    SELECT "user".id AS owner_user_id,
+      "user".username AS owner_username,
+      "user".profile_pic_url AS owner_profile_pic_url,
+      "post".id AS post_id,
+      type,
+      media_urls,
+      description,
+      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
+      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
+      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
+      "client_reaction".reaction_code_point AS client_reaction,
+      CASE
+        WHEN "client_repost".id IS NULL THEN false
+        ELSE true
+      END AS client_reposted
+    FROM "Post" "post"
+    INNER JOIN "User" "user" ON "user".id = "post".user_id
+    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
+    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
+    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
+    LEFT JOIN "PostCommentReaction" "client_reaction" 
+      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $2
+    LEFT JOIN "Repost" "client_repost" 
+      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $2
+    WHERE "user".username = $1
+    GROUP BY owner_user_id, 
+      owner_username, 
+      owner_profile_pic_url, 
+      "post".id, 
+      type, 
+      media_urls, 
+      description, 
+      client_reaction, 
+      client_reposted`,
+    values: [username, client_user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}
 
 // GET posts user has been mentioned in
 export const getMyMentions = async (user_id) => {}
