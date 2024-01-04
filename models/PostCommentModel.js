@@ -2,20 +2,20 @@ import { dbQuery } from "./db.js"
 
 /**
  * @param {object} post
- * @param {number} post.user_id
+ * @param {number} post.client_user_id
  * @param {string[]} post.media_urls
  * @param {string} post.type
  * @param {string} post.description
  */
 export const createNewPost = async (
-  { user_id, media_urls, type, description },
+  { client_user_id, media_urls, type, description },
   dbClient
 ) => {
   const query = {
     text: `INSERT INTO "Post" (user_id, media_urls, type, description) 
       VALUES ($1, $2, $3, $4) 
       RETURNING id, user_id, media_urls, type, description`,
-    values: [user_id, media_urls, type, description],
+    values: [client_user_id, media_urls, type, description],
   }
 
   const result = await dbClient.query(query)

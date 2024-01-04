@@ -5,18 +5,18 @@ import { Post, PostCommentService } from "./PostCommentService.js"
 export class PostService {
   /**
    * @param {object} post
-   * @param {number} post.user_id
+   * @param {number} post.client_user_id
    * @param {string[]} post.media_urls
    * @param {string} post.type
    * @param {string} post.description
    */
-  async create({ user_id, media_urls, type, description }) {
+  async create({ client_user_id, media_urls, type, description }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       const result = await createNewPost(
-        { user_id, media_urls, type, description },
+        { client_user_id, media_urls, type, description },
         dbClient
       )
 
@@ -28,7 +28,7 @@ export class PostService {
       }
 
       await new PostCommentService(
-        new Post(user_id, postData.id)
+        new Post(postData.id, client_user_id)
       ).handleMentionsAndHashtags(description, dbClient)
 
       dbClient.query("COMMIT")

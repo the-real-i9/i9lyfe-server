@@ -66,38 +66,38 @@ export const changeUserPassword = async (email, newPassword) => {
 }
 
 /**
- * @param {number} user_id
+ * @param {number} client_user_id
  * @param {number} to_follow_user_id
  */
-export const followUser = async (user_id, to_follow_user_id) => {
+export const followUser = async (client_user_id, to_follow_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2)`,
-    values: [user_id, to_follow_user_id],
+    values: [client_user_id, to_follow_user_id],
   }
 
   await dbQuery(query)
 }
 
 /**
- * @param {number} follower_user_id
+ * @param {number} client_user_id
  * @param {number} followee_user_id
  */
-export const unfollowUser = async (follower_user_id, followee_user_id) => {
+export const unfollowUser = async (client_user_id, followee_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `DELETE FROM "Follow" WHERE follower_user_id = $1 AND followee_user_id = $2`,
-    values: [follower_user_id, followee_user_id],
+    values: [client_user_id, followee_user_id],
   }
 
   await dbQuery(query)
 }
 
 /**
- * @param {number} user_id
+ * @param {number} client_user_id
  * @param {object} updatedUserInfoKVPairs
  */
-export const updateUserProfile = async (user_id, updatedUserInfoKVPairs) => {
+export const updateUserProfile = async (client_user_id, updatedUserInfoKVPairs) => {
   const keys = Object.keys(updatedUserInfoKVPairs)
   const values = Object.values(updatedUserInfoKVPairs)
 
@@ -108,17 +108,17 @@ export const updateUserProfile = async (user_id, updatedUserInfoKVPairs) => {
       .join(", ")} WHERE id = $${
       keys.length + 1
     } RETURNING id, email, username, name, profile_pic_url`,
-    values: [...values, user_id],
+    values: [...values, client_user_id],
   }
 
   return await dbQuery(query)
 }
 
-export const uploadProfilePicture = async (user_id, profile_pic_url) => {
+export const uploadProfilePicture = async (client_user_id, profile_pic_url) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `UPDATE "User" SET profile_pic_url = $1 WHERE id = $2`,
-    values: [profile_pic_url, user_id],
+    values: [profile_pic_url, client_user_id],
   }
 
   await dbQuery(query)
@@ -258,13 +258,13 @@ export const getUserPosts = async (username, client_user_id) => {
 }
 
 // GET posts user has been mentioned in
-export const getMentions = async (user_id) => {}
+export const getMentions = async (client_user_id) => {}
 
 // GET posts reacted by user
-export const getReactedPosts = async (user_id) => {}
+export const getReactedPosts = async (client_user_id) => {}
 
 // GET posts saved by this user
-export const getSavedPosts = async (user_id) => {}
+export const getSavedPosts = async (client_user_id) => {}
 
 // GET user notifications
-export const getNotifications = async (user_id) => {}
+export const getNotifications = async (client_user_id) => {}

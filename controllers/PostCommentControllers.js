@@ -14,10 +14,10 @@ export const createPostController = async (req, res) => {
   try {
     const { media_urls, type, description } = req.body
 
-    const { user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const response = await new PostService().create({
-      user_id,
+      client_user_id,
       media_urls,
       type,
       description,
@@ -42,7 +42,7 @@ export const reactToPostController = async (req, res) => {
     // Should I accept the code point directly?
     const reaction_code_point = reaction.codePointAt()
 
-    const { user_id: reactor_user_id } = req.auth
+    const { client_user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
       new Post(post_id, post_owner_user_id)
@@ -74,7 +74,7 @@ export const commentOnPostController = async (req, res) => {
       attachment_url = null,
     } = req.body
 
-    const { user_id: commenter_user_id } = req.auth
+    const { client_user_id: commenter_user_id } = req.auth
 
     const response = await new PostCommentService(
       new Post(post_id, post_owner_user_id)
@@ -99,7 +99,7 @@ export const reactToCommentController = async (req, res) => {
     // Should I accept the code point directly?
     const reaction_code_point = reaction.codePointAt()
 
-    const { user_id: reactor_user_id } = req.auth
+    const { client_user_id: reactor_user_id } = req.auth
 
     await new PostCommentService(
       new Comment(comment_id, comment_owner_user_id)
@@ -131,7 +131,7 @@ export const replyToCommentController = async (req, res) => {
       attachment_url = null,
     } = req.body
 
-    const { user_id: replier_user_id } = req.auth
+    const { client_user_id: replier_user_id } = req.auth
 
     // Observe that, a reply is a comment on a comment,
     // or, technically put, Comments are nested data structures
@@ -174,7 +174,7 @@ export const getSinglePostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const post = await new PostService().get({ post_id, client_user_id })
 
@@ -193,7 +193,7 @@ export const getAllPostCommentsController = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const postComments = await new PostCommentService(
       new Post(post_id)
@@ -214,7 +214,7 @@ export const getSinglePostCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const postComment = await new PostCommentService(
       new Post()
@@ -238,7 +238,7 @@ export const getAllPostReactorsController = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const postReactors = await new PostCommentService(
       new Post(post_id)
@@ -259,7 +259,7 @@ export const getAllPostReactorsWithReactionController = async (req, res) => {
   try {
     const { post_id, reaction_code_point } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const postReactorsWithReaction = await new PostCommentService(
       new Post(post_id)
@@ -280,7 +280,7 @@ export const getAllCommentRepliesController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const commentReplies = await new PostCommentService(
       new Comment(comment_id)
@@ -301,7 +301,7 @@ export const getSingleCommentReplyController = async (req, res) => {
   try {
     const { reply_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const commentReply = await new PostCommentService(
       new Comment()
@@ -325,7 +325,7 @@ export const getAllCommentReactorsController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const commentReactors = await new PostCommentService(
       new Comment(comment_id)
@@ -346,7 +346,7 @@ export const getAllCommentReactorsWithReactionController = async (req, res) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
-    const { user_id: client_user_id } = req.auth
+    const { client_user_id } = req.auth
 
     const commentReactorsWithReaction = await new PostCommentService(
       new Comment(comment_id)
