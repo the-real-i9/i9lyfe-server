@@ -1,5 +1,9 @@
 import {
   followUser,
+  getMentions,
+  getNotifications,
+  getReactedPosts,
+  getSavedPosts,
   getUserFollowers,
   getUserFollowing,
   getUserPosts,
@@ -9,20 +13,16 @@ import {
 } from "../models/UserModel.js"
 
 export class UserService {
-  constructor(user_id) {
-    this.user_id = user_id
+  constructor(client_user_id) {
+    this.client_user_id = client_user_id
   }
 
   async follow(to_follow_user_id) {
-    await followUser(this.user_id, to_follow_user_id)
-  }
-
-  async unfollow(followee_user_id) {
-    await unfollowUser(this.user_id, followee_user_id)
+    await followUser(this.client_user_id, to_follow_user_id)
   }
 
   async updateProfile(updatedUserInfoKVPairs) {
-    const result = await updateUserProfile(this.user_id, updatedUserInfoKVPairs)
+    const result = await updateUserProfile(this.client_user_id, updatedUserInfoKVPairs)
 
     const updatedUserData = result.rows[0]
 
@@ -34,19 +34,40 @@ export class UserService {
   }
 
   /* GETs */
-  async getProfile({username, client_user_id}) {
-    return await getUserProfile(username, client_user_id)
+  async getProfile(username) {
+    return await getUserProfile(username, this.client_user_id)
   }
 
-  async getFollowers({username, client_user_id}) {
-    return await getUserFollowers(username, client_user_id)
+  async getFollowers(username) {
+    return await getUserFollowers(username, this.client_user_id)
   }
 
-  async getFollowing({username, client_user_id}) {
-    return await getUserFollowing(username, client_user_id)
+  async getFollowing(username) {
+    return await getUserFollowing(username, this.client_user_id)
   }
 
-  async getPosts({username, client_user_id}) {
-    return await getUserPosts(username, client_user_id)
+  async getPosts(username) {
+    return await getUserPosts(username, this.client_user_id)
+  }
+
+  async getMentions() {
+    return await getMentions(this.client_user_id)
+  }
+
+  async getReactedPosts() {
+    return await getReactedPosts(this.client_user_id)
+  }
+
+  async getSavedPosts() {
+    return await getSavedPosts(this.client_user_id)
+  }
+
+  async getNotifications() {
+    return await getNotifications(this.client_user_id)
+  }
+
+  /* DELETEs */
+  async unfollow(followee_user_id) {
+    await unfollowUser(this.client_user_id, followee_user_id)
   }
 }
