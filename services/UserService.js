@@ -1,9 +1,9 @@
 import {
   followUser,
   getMentionedPosts,
-  getNotifications,
   getReactedPosts,
   getSavedPosts,
+  getUnreadNotifications,
   getUserFollowers,
   getUserFollowing,
   getUserPosts,
@@ -63,7 +63,7 @@ export class UserService {
   }
 
   async getNotifications() {
-    return await getNotifications(this.client_user_id)
+    return await getUnreadNotifications(this.client_user_id)
   }
 
   /* DELETEs */
