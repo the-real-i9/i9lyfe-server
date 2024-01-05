@@ -137,7 +137,7 @@ export class PostCommentService {
     }
   }
 
-  async addReaction({ reactor_user_id, reaction_code_point }) {
+  async addReaction(reactor_user_id, reaction_code_point) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -263,7 +263,7 @@ export class PostCommentService {
     return result
   }
 
-  async getSingleCommentORReply({ comment_or_reply_id, client_user_id }) {
+  async getSingleCommentORReply(comment_or_reply_id, client_user_id) {
     const result = await getSinglePostCommentORCommentReply({
       post_or_comment: this.postOrComment.which(),
       comment_or_reply_id,

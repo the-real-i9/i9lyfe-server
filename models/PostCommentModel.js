@@ -31,7 +31,6 @@ export const createNewPost = async (
 export const mapUsernamesToUserIds = async (usernames, dbClient) => {
   return await Promise.all(
     usernames.map(async (username) => {
-      console.log(username)
       const query = {
         text: 'SELECT id FROM "User" WHERE username = $1',
         values: [username],
@@ -275,7 +274,7 @@ export const createCommentNotification = async (
  * @param {number} param0.post_id
  * @param {number} param0.client_user_id
  */
-export const getPost = async ({ post_id, client_user_id }) => {
+export const getPost = async (post_id, client_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `

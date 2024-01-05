@@ -47,13 +47,13 @@ export class PostService {
   }
 
   /* A repost is a hasOne relationship: Repost hasOne Post */
-  async repost({ reposter_user_id, post_id }) {
+  async repost(reposter_user_id, post_id) {
     try {
     } catch (error) {}
   }
 
-  async get({ post_id, client_user_id }) {
-    const result = await getPost({ post_id, client_user_id })
+  async get(post_id, client_user_id) {
+    const result = await getPost(post_id, client_user_id)
 
     return result
   }

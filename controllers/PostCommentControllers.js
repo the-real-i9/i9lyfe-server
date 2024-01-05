@@ -176,11 +176,11 @@ export const getSinglePostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const post = await new PostService().get({ post_id, client_user_id })
+    const post = await new PostService().get(post_id, client_user_id)
 
     res.status(200).send({ post })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -201,7 +201,7 @@ export const getAllPostCommentsController = async (req, res) => {
 
     res.status(200).send({ postComments })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -218,14 +218,11 @@ export const getSinglePostCommentController = async (req, res) => {
 
     const postComment = await new PostCommentService(
       new Post()
-    ).getSingleCommentORReply({
-      comment_or_reply_id: comment_id,
-      client_user_id,
-    })
+    ).getSingleCommentORReply(comment_id, client_user_id,)
 
     res.status(200).send({ postComment })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -246,7 +243,7 @@ export const getAllPostReactorsController = async (req, res) => {
 
     res.status(200).send({ postReactors })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -267,7 +264,7 @@ export const getAllPostReactorsWithReactionController = async (req, res) => {
 
     res.status(200).send({ postReactorsWithReaction })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -288,7 +285,7 @@ export const getAllCommentRepliesController = async (req, res) => {
 
     res.status(200).send({ commentReplies })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -305,14 +302,11 @@ export const getSingleCommentReplyController = async (req, res) => {
 
     const commentReply = await new PostCommentService(
       new Comment()
-    ).getSingleCommentORReply({
-      comment_or_reply_id: reply_id,
-      client_user_id,
-    })
+    ).getSingleCommentORReply(reply_id, client_user_id)
 
     res.status(200).send({ commentReply })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -333,7 +327,7 @@ export const getAllCommentReactorsController = async (req, res) => {
 
     res.status(200).send({ commentReactors })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -354,7 +348,7 @@ export const getAllCommentReactorsWithReactionController = async (req, res) => {
 
     res.status(200).send({ commentReactorsWithReaction })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
