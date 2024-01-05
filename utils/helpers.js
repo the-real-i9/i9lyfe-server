@@ -21,21 +21,25 @@ export const generateJwtToken = (payload) => {
  * @param {number} compareToken
  * @param {number} inputToken
  */
-export const tokensMatch = (compareToken, inputToken) => compareToken === inputToken
+export const tokensMatch = (compareToken, inputToken) =>
+  compareToken === inputToken
 
 /** @param {Date} tokenExpiration */
-export const tokenLives = (tokenExpiration) => Date.now() < new Date(tokenExpiration)
+export const tokenLives = (tokenExpiration) =>
+  Date.now() < new Date(tokenExpiration)
 
 /** @param {string} text */
 export const extractMentions = (text) => {
-  return text.match(/(?<=@)\w+/g)
+  const matches = text.match(/(?<=@)\w+/g)
+  return matches && [...new Set(matches)]
 }
 
 /** @param {string} text */
 export const extractHashtags = (text) => {
-  return text.match(/(?<=#)\w+/g)
+  const matches = text.match(/(?<=#)\w+/g)
+  return matches && [...new Set(matches)]
 }
 
 export const capitalize = (word) => {
-  return word.charAt(0).toUpperCase() + word.slice(1);
+  return word.charAt(0).toUpperCase() + word.slice(1)
 }
