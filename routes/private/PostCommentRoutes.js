@@ -18,6 +18,7 @@ import {
   reactToPostController,
   replyToCommentController,
   repostPostController,
+  savePostController,
 } from "../../controllers/PostCommentControllers.js"
 
 dotenv.config()
@@ -49,6 +50,8 @@ router.post("/react_to_comment", reactToCommentController)
 router.post("/reply_to_comment", replyToCommentController)
 
 router.post("/repost_post", repostPostController)
+
+router.post("/save_post", savePostController)
 
 /* All gets */
 
