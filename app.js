@@ -16,9 +16,10 @@ app.use(cors())
 app.use(express.json())
 
 app.use("/api/auth", AuthRoutes)
-app.use("/api", UserPublicRoutes)
 
 app.use("/api", PostCommentRoutes)
 app.use("/api", UserPrivateRoutes)
+
+app.use("/api", UserPublicRoutes)
 
 export default app
