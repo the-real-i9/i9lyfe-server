@@ -16,8 +16,7 @@ export const createPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const response = await new PostService().create({
-      client_user_id,
+    const response = await new PostService(client_user_id).create({
       media_urls,
       type,
       description,
@@ -164,6 +163,25 @@ export const repostPostController = async (/* req, res */) => {
   } catch (error) {}
 }
 
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const savePostController = async (req, res) => {
+  try {
+    const { post_id } = req.body
+
+    const { client_user_id } = req.auth
+
+    await new PostService(client_user_id, post_id).save()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
 /* The GETs */
 
 /**
@@ -176,7 +194,7 @@ export const getSinglePostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const post = await new PostService().get(post_id, client_user_id)
+    const post = await new PostService(client_user_id, post_id).get()
 
     res.status(200).send({ post })
   } catch (error) {
@@ -218,7 +236,7 @@ export const getSinglePostCommentController = async (req, res) => {
 
     const postComment = await new PostCommentService(
       new Post()
-    ).getSingleCommentORReply(comment_id, client_user_id,)
+    ).getSingleCommentORReply(comment_id, client_user_id)
 
     res.status(200).send({ postComment })
   } catch (error) {
