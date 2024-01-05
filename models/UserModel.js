@@ -426,4 +426,20 @@ export const getSavedPosts = async (client_user_id) => {
 }
 
 // GET user notifications
-export const getNotifications = async (/* client_user_id */) => {}
+export const getUnreadNotifications = async (/* client_user_id */) => {
+  
+}
+
+export const getUnreadNotificationsCount = async (client_user_id) => {
+  const query = {
+    text: `
+    SELECT COUNT(id) AS count 
+    FROM "PostCommentNotification" 
+    WHERE receiver_user_id = $1 AND is_read = false
+    `,
+    values: [client_user_id]
+  }
+
+  return (await dbQuery(query)).rows[0].count
+}
+
