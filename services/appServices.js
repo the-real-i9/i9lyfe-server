@@ -1,8 +1,12 @@
-import { createNewPost, getPost } from "../models/PostCommentModel.js"
+import { createNewPost, getPost, savePost } from "../models/PostCommentModel.js"
 import { getDBClient } from "../models/db.js"
 import { Post, PostCommentService } from "./PostCommentService.js"
 
 export class PostService {
+  constructor(client_user_id, post_id) {
+    this.client_user_id = client_user_id
+    this.post_id = post_id
+  }
   /**
    * @param {object} post
    * @param {number} post.client_user_id
@@ -10,13 +14,13 @@ export class PostService {
    * @param {string} post.type
    * @param {string} post.description
    */
-  async create({ client_user_id, media_urls, type, description }) {
+  async create({ media_urls, type, description }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       const result = await createNewPost(
-        { client_user_id, media_urls, type, description },
+        { client_user_id: this.client_user_id, media_urls, type, description },
         dbClient
       )
 
@@ -28,7 +32,7 @@ export class PostService {
       }
 
       await new PostCommentService(
-        new Post(postData.id, client_user_id)
+        new Post(postData.id, this.client_user_id)
       ).handleMentionsAndHashtags(description, dbClient)
 
       dbClient.query("COMMIT")
@@ -47,14 +51,18 @@ export class PostService {
   }
 
   /* A repost is a hasOne relationship: Repost hasOne Post */
-  async repost(reposter_user_id, post_id) {
+  async repost(/* reposter_user_id, post_id */) {
     try {
     } catch (error) {}
   }
 
-  async get(post_id, client_user_id) {
-    const result = await getPost(post_id, client_user_id)
+  async get() {
+    const result = await getPost(this.post_id, this.client_user_id)
 
     return result
+  }
+
+  async save() {
+    await savePost(this.post_id, this.client_user_id)
   }
 }
