@@ -1,6 +1,6 @@
 import {
   followUser,
-  getMentions,
+  getMentionedPosts,
   getNotifications,
   getReactedPosts,
   getSavedPosts,
@@ -50,8 +50,8 @@ export class UserService {
     return await getUserPosts(username, this.client_user_id)
   }
 
-  async getMentions() {
-    return await getMentions(this.client_user_id)
+  async getMentionedPosts() {
+    return await getMentionedPosts(this.client_user_id)
   }
 
   async getReactedPosts() {

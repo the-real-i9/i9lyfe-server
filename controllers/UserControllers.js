@@ -87,7 +87,7 @@ export const getUserProfileController = async (req, res) => {
 
     res.status(200).send({ profileData })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -146,8 +146,13 @@ export const getUserPostsController = async (req, res) => {
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-export const getUserMentionsController = async (req, res) => {
+export const getUserMentionedPostsController = async (req, res) => {
   try {
+    const { client_user_id } = req.auth
+
+    const mentionedPosts = await new UserService(client_user_id).getMentionedPosts()
+
+    res.status(200).send({ mentionedPosts })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -160,6 +165,11 @@ export const getUserMentionsController = async (req, res) => {
  */
 export const getUserReactedPostsController = async (req, res) => {
   try {
+    const { client_user_id } = req.auth
+
+    const reactedPosts = await new UserService(client_user_id).getReactedPosts()
+
+    res.status(200).send({ reactedPosts })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -172,6 +182,11 @@ export const getUserReactedPostsController = async (req, res) => {
  */
 export const getUserSavedPostsController = async (req, res) => {
   try {
+    const { client_user_id } = req.auth
+
+    const savedPosts = await new UserService(client_user_id).getSavedPosts()
+
+    res.status(200).send({ savedPosts })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

@@ -4,6 +4,10 @@ import { expressjwt } from "express-jwt"
 
 import {
   followUserController,
+  getUserMentionedPostsController,
+  getUserNotificationsController,
+  getUserReactedPostsController,
+  getUserSavedPostsController,
   unfollowUserController,
   updateUserProfileController,
   uploadProfilePictureController,
@@ -36,15 +40,15 @@ router.put("/update_user_profile", updateUserProfileController)
 router.put("/upload_profile_picture", uploadProfilePictureController)
 
 // GET posts user has been mentioned in
-router.get("/mentions")
+router.get("/mentioned_posts", getUserMentionedPostsController)
 
 // GET posts reacted to by user
-router.get("/reacted_posts")
+router.get("/reacted_posts", getUserReactedPostsController)
 
 // GET posts saved by this user
-router.get("/saved_posts")
+router.get("/saved_posts", getUserSavedPostsController)
 
 // GET user notifications
-router.get("/notifications")
+router.get("/notifications", getUserNotificationsController)
 
 export default router
