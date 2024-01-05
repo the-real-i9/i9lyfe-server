@@ -12,15 +12,28 @@ export const createNewPost = async (
   dbClient
 ) => {
   const query = {
-    text: `INSERT INTO "Post" (user_id, media_urls, type, description) 
-      VALUES ($1, $2, $3, $4) 
-      RETURNING id, user_id, media_urls, type, description`,
+    text: `
+    INSERT INTO "Post" (user_id, media_urls, type, description) 
+    VALUES ($1, $2, $3, $4) 
+    RETURNING id, user_id, media_urls, type, description`,
     values: [client_user_id, media_urls, type, description],
   }
 
   const result = await dbClient.query(query)
 
   return result
+}
+
+export const savePost = async (post_id, client_user_id) => {
+  const query = {
+    text: `
+    INSERT INTO "SavedPost" (saver_user_id, post_id) 
+    VALUES ($1, $2)
+    `,
+    values: [client_user_id, post_id]
+  }
+
+  await dbQuery(query)
 }
 
 /**
@@ -288,20 +301,28 @@ export const getPost = async (post_id, client_user_id) => {
       COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
       COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
       COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
+      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
       "client_reaction".reaction_code_point AS client_reaction,
       CASE
         WHEN "client_repost".id IS NULL THEN false
         ELSE true
-      END AS client_reposted
+      END AS client_reposted,
+      CASE
+        WHEN "client_saved_post".id IS NULL THEN false
+        ELSE true
+      END AS client_saved
     FROM "Post" "post"
     INNER JOIN "User" "user" ON "user".id = "post".user_id
     LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
     LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
     LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
+    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
     LEFT JOIN "PostCommentReaction" "client_reaction" 
       ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $2
     LEFT JOIN "Repost" "client_repost" 
       ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $2
+    LEFT JOIN "SavedPost" "client_saved_post" 
+      ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $2
     WHERE "post".id = $1
     GROUP BY owner_user_id, 
       owner_username, 
@@ -311,7 +332,8 @@ export const getPost = async (post_id, client_user_id) => {
       media_urls, 
       description, 
       client_reaction, 
-      client_reposted`,
+      client_reposted,
+      client_saved`,
     values: [post_id, client_user_id],
   }
 
