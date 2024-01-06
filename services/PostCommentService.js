@@ -7,10 +7,10 @@ import {
   createMentionsNotifications,
   createReaction,
   createReactionNotification,
-  getAllPostCommentsORCommentReplies,
-  getAllPostORCommentReactors,
-  getAllPostORCommentReactorsWithReaction,
-  getSinglePostCommentORCommentReply,
+  getAllCommentsOnPost_OR_RepliesToComment,
+  getAllReactorsToPost_OR_Comment,
+  getAllReactorsWithReactionToPost_OR_Comment,
+  getCommentORReply,
   mapUsernamesToUserIds,
 } from "../models/PostCommentModel.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
@@ -254,7 +254,7 @@ export class PostCommentService {
   }
 
   async getAllCommentsORReplies(client_user_id) {
-    const result = await getAllPostCommentsORCommentReplies({
+    const result = await getAllCommentsOnPost_OR_RepliesToComment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       client_user_id,
@@ -263,8 +263,8 @@ export class PostCommentService {
     return result
   }
 
-  async getSingleCommentORReply(comment_or_reply_id, client_user_id) {
-    const result = await getSinglePostCommentORCommentReply({
+  async getCommentORReply(comment_or_reply_id, client_user_id) {
+    const result = await getCommentORReply({
       post_or_comment: this.postOrComment.which(),
       comment_or_reply_id,
       client_user_id,
@@ -274,7 +274,7 @@ export class PostCommentService {
   }
 
   async getAllReactors(client_user_id) {
-    const result = await getAllPostORCommentReactors({
+    const result = await getAllReactorsToPost_OR_Comment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       client_user_id,
@@ -284,7 +284,7 @@ export class PostCommentService {
   }
 
   async getAllReactorsWithReaction(reaction_code_point, client_user_id) {
-    const result = await getAllPostORCommentReactorsWithReaction({
+    const result = await getAllReactorsWithReactionToPost_OR_Comment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       reaction_code_point,

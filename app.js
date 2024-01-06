@@ -3,8 +3,8 @@ import dotenv from "dotenv"
 // import cors from "cors"
 
 import AuthRoutes from "./routes/public/AuthRoutes.js"
-import PostCommentRoutes from "./routes/private/PostCommentRoutes.js"
-import UserPrivateRoutes from "./routes/private/UserPrivateRoutes.js"
+import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
+import UserPrivateRoutes from "./routes/protected/UserPrivateRoutes.js"
 import UserPublicRoutes from "./routes/public/UserPublicRoutes.js"
 
 dotenv.config()

@@ -341,7 +341,7 @@ export const getPost = async (post_id, client_user_id) => {
 }
 
 // GET all comments on a post
-export const getAllPostCommentsORCommentReplies = async ({ post_or_comment, post_or_comment_id, client_user_id }) => {
+export const getAllCommentsOnPost_OR_RepliesToComment = async ({ post_or_comment, post_or_comment_id, client_user_id }) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -375,7 +375,7 @@ export const getAllPostCommentsORCommentReplies = async ({ post_or_comment, post
 }
 
 // GET a single comment on a post
-export const getSinglePostCommentORCommentReply = async ({ post_or_comment, comment_or_reply_id, client_user_id }) => {
+export const getCommentORReply = async ({ post_or_comment, comment_or_reply_id, client_user_id }) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -409,7 +409,7 @@ export const getSinglePostCommentORCommentReply = async ({ post_or_comment, comm
 }
 
 // GET all reactions to a post: returning all users that reacted to the post
-export const getAllPostORCommentReactors = async ({post_or_comment, post_or_comment_id, client_user_id}) => {
+export const getAllReactorsToPost_OR_Comment = async ({post_or_comment, post_or_comment_id, client_user_id}) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -434,7 +434,7 @@ export const getAllPostORCommentReactors = async ({post_or_comment, post_or_comm
 }
 
 // GET a single reaction to a post: limiting returned users to the ones with that reaction
-export const getAllPostORCommentReactorsWithReaction = async ({
+export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   post_or_comment,
   post_or_comment_id,
   reaction_code_point,

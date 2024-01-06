@@ -9,7 +9,7 @@ import { PostService } from "../services/appServices.js"
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const createPostController = async (req, res) => {
+export const createNewPostController = async (req, res) => {
   // Note: You have to accept binary data(s) in the request body, upload them to a CDN, and receive their corresponding URLS in order
   try {
     const { media_urls, type, description } = req.body
@@ -35,7 +35,7 @@ export const createPostController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const reactToPostController = async (req, res) => {
+export const createPostReactionController = async (req, res) => {
   try {
     const { post_id, post_owner_user_id, reaction } = req.body
     // Should I accept the code point directly?
@@ -63,7 +63,7 @@ export const reactToPostController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const commentOnPostController = async (req, res) => {
+export const createPostCommentController = async (req, res) => {
   try {
     const {
       post_id,
@@ -92,7 +92,7 @@ export const commentOnPostController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const reactToCommentController = async (req, res) => {
+export const createCommentReactionController = async (req, res) => {
   try {
     const { comment_id, comment_owner_user_id, reaction } = req.body
     // Should I accept the code point directly?
@@ -120,7 +120,7 @@ export const reactToCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const replyToCommentController = async (req, res) => {
+export const createCommentReplyController = async (req, res) => {
   try {
     const {
       comment_id,
@@ -158,7 +158,7 @@ export const replyToCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const repostPostController = async (/* req, res */) => {
+export const createRepostController = async (/* req, res */) => {
   try {
   } catch (error) {}
 }
@@ -167,7 +167,7 @@ export const repostPostController = async (/* req, res */) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const savePostController = async (req, res) => {
+export const createPostSaveController = async (req, res) => {
   try {
     const { post_id } = req.body
 
@@ -188,7 +188,7 @@ export const savePostController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getSinglePostController = async (req, res) => {
+export const getPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -207,7 +207,7 @@ export const getSinglePostController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllPostCommentsController = async (req, res) => {
+export const getAllCommentsOnPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -228,7 +228,7 @@ export const getAllPostCommentsController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getSinglePostCommentController = async (req, res) => {
+export const getCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -236,7 +236,7 @@ export const getSinglePostCommentController = async (req, res) => {
 
     const postComment = await new PostCommentService(
       new Post()
-    ).getSingleCommentORReply(comment_id, client_user_id)
+    ).getCommentORReply(comment_id, client_user_id)
 
     res.status(200).send({ postComment })
   } catch (error) {
@@ -249,7 +249,7 @@ export const getSinglePostCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllPostReactorsController = async (req, res) => {
+export const getAllReactorsToPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -270,7 +270,7 @@ export const getAllPostReactorsController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllPostReactorsWithReactionController = async (req, res) => {
+export const getAllReactorsWithReactionToPostController = async (req, res) => {
   try {
     const { post_id, reaction_code_point } = req.params
 
@@ -291,7 +291,7 @@ export const getAllPostReactorsWithReactionController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllCommentRepliesController = async (req, res) => {
+export const getAllRepliesToCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -312,7 +312,7 @@ export const getAllCommentRepliesController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getSingleCommentReplyController = async (req, res) => {
+export const getReplyController = async (req, res) => {
   try {
     const { reply_id } = req.params
 
@@ -320,7 +320,7 @@ export const getSingleCommentReplyController = async (req, res) => {
 
     const commentReply = await new PostCommentService(
       new Comment()
-    ).getSingleCommentORReply(reply_id, client_user_id)
+    ).getCommentORReply(reply_id, client_user_id)
 
     res.status(200).send({ commentReply })
   } catch (error) {
@@ -333,7 +333,7 @@ export const getSingleCommentReplyController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllCommentReactorsController = async (req, res) => {
+export const getAllReactorsToCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -354,7 +354,7 @@ export const getAllCommentReactorsController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllCommentReactorsWithReactionController = async (req, res) => {
+export const getAllReactorsWithReactionToCommentController = async (req, res) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
