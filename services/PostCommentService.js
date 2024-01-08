@@ -7,11 +7,13 @@ import {
   createMentionsNotifications,
   createReaction,
   createReactionNotification,
+  deleteCommentOnPost_OR_ReplyToComment,
   getAllCommentsOnPost_OR_RepliesToComment,
   getAllReactorsToPost_OR_Comment,
   getAllReactorsWithReactionToPost_OR_Comment,
-  getCommentORReply,
+  getCommentOnPost_OR_ReplyToComment,
   mapUsernamesToUserIds,
+  removeReactionToPost_OR_Comment,
 } from "../models/PostCommentModel.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 
@@ -264,7 +266,7 @@ export class PostCommentService {
   }
 
   async getCommentORReply(comment_or_reply_id, client_user_id) {
-    const result = await getCommentORReply({
+    const result = await getCommentOnPost_OR_ReplyToComment({
       post_or_comment: this.postOrComment.which(),
       comment_or_reply_id,
       client_user_id,
@@ -292,5 +294,20 @@ export class PostCommentService {
     })
 
     return result
+  }
+
+  async removeReaction() {
+    await removeReactionToPost_OR_Comment({
+      post_or_comment: this.postOrComment.which(),
+      post_or_comment_id: this.postOrComment.id,
+      reactor_user_id: this.postOrComment.user_id
+    })
+  }
+
+  async deleteCommentORReply() {
+    await deleteCommentOnPost_OR_ReplyToComment({
+      comment_or_reply_id: this.postOrComment.id,
+      commenter_or_replier_user_id: this.postOrComment.user_id,
+    })
   }
 }

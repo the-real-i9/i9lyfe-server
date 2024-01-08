@@ -1,4 +1,12 @@
-import { createNewPost, getPost, savePost } from "../models/PostCommentModel.js"
+import {
+  createNewPost,
+  createRepost,
+  deletePost,
+  deleteRepost,
+  getPost,
+  savePost,
+  unsavePost,
+} from "../models/PostCommentModel.js"
 import { getDBClient } from "../models/db.js"
 import { Post, PostCommentService } from "./PostCommentService.js"
 
@@ -52,8 +60,7 @@ export class PostService {
 
   /* A repost is a hasOne relationship: Repost hasOne Post */
   async repost(/* reposter_user_id, post_id */) {
-    try {
-    } catch (error) {}
+    await createRepost(this.post_id, this.client_user_id)
   }
 
   async get() {
@@ -64,5 +71,17 @@ export class PostService {
 
   async save() {
     await savePost(this.post_id, this.client_user_id)
+  }
+
+  async delete() {
+    await deletePost(this.post_id, this.client_user_id)
+  }
+
+  async unsave() {
+    await unsavePost(this.post_id, this.client_user_id)
+  }
+
+  async deleteRepost() {
+    await deleteRepost(this.post_id, this.client_user_id)
   }
 }

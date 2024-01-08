@@ -167,7 +167,7 @@ export const createRepostController = async (/* req, res */) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const createPostSaveController = async (req, res) => {
+export const postSaveController = async (req, res) => {
   try {
     const { post_id } = req.body
 
@@ -354,7 +354,10 @@ export const getAllReactorsToCommentController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const getAllReactorsWithReactionToCommentController = async (req, res) => {
+export const getAllReactorsWithReactionToCommentController = async (
+  req,
+  res
+) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
@@ -365,6 +368,140 @@ export const getAllReactorsWithReactionToCommentController = async (req, res) =>
     ).getAllReactorsWithReaction(reaction_code_point, client_user_id)
 
     res.status(200).send({ commentReactorsWithReaction })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/* DELETEs */
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const deletePostController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostService(client_user_id, post_id).delete()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const removePostReactionController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostCommentService(
+      new Post(post_id, client_user_id)
+    ).removeReaction()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const deletePostCommentController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostCommentService(
+      new Comment(comment_id, client_user_id)
+    ).deleteCommentORReply()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const removeCommentReactionController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostCommentService(
+      new Comment(comment_id, client_user_id)
+    ).removeReaction()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const deleteCommentReplyController = async (req, res) => {
+  try {
+    const { comment_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostCommentService(new Comment(comment_id, client_user_id)).deleteCommentORReply()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const deleteRepostController = async (req, res) => {
+  try {
+    const { reposted_post_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostService(client_user_id, reposted_post_id).deleteRepost()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const postUnsaveController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostService(client_user_id, post_id).unsave()
+
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

@@ -24,13 +24,24 @@ export const createNewPost = async (
   return result
 }
 
+export const createRepost = async (reposted_post_id, reposter_user_id) => {
+  const query = {
+    text: `
+    INSERT INTO "Repost" (post_id, reposter_user_id) 
+    VALUES ($1, $2)`,
+    values: [reposted_post_id, reposter_user_id],
+  }
+
+  await dbQuery(query)
+}
+
 export const savePost = async (post_id, client_user_id) => {
   const query = {
     text: `
     INSERT INTO "SavedPost" (saver_user_id, post_id) 
     VALUES ($1, $2)
     `,
-    values: [client_user_id, post_id]
+    values: [client_user_id, post_id],
   }
 
   await dbQuery(query)
@@ -281,7 +292,6 @@ export const createCommentNotification = async (
 
 /* ************* */
 
-// GET a post
 /**
  * @param {object} param0
  * @param {number} param0.post_id
@@ -340,8 +350,11 @@ export const getPost = async (post_id, client_user_id) => {
   return (await dbQuery(query)).rows[0]
 }
 
-// GET all comments on a post
-export const getAllCommentsOnPost_OR_RepliesToComment = async ({ post_or_comment, post_or_comment_id, client_user_id }) => {
+export const getAllCommentsOnPost_OR_RepliesToComment = async ({
+  post_or_comment,
+  post_or_comment_id,
+  client_user_id,
+}) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -349,7 +362,9 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({ post_or_comment
       "user".username AS owner_username,
       "user".profile_pic_url AS owner_profile_pic_url,
       "comment".id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-      "comment".comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+      "comment".comment_text AS ${
+        post_or_comment === "post" ? "comment" : "reply"
+      }_text,
       "comment".attachment_url AS attachment_url,
       COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
       COUNT(DISTINCT "reply".id)::INTEGER AS replies_count, 
@@ -374,8 +389,11 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({ post_or_comment
   return (await dbQuery(query)).rows
 }
 
-// GET a single comment on a post
-export const getCommentORReply = async ({ post_or_comment, comment_or_reply_id, client_user_id }) => {
+export const getCommentOnPost_OR_ReplyToComment = async ({
+  post_or_comment,
+  comment_or_reply_id,
+  client_user_id,
+}) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -383,7 +401,9 @@ export const getCommentORReply = async ({ post_or_comment, comment_or_reply_id, 
     "user".username AS owner_username,
     "user".profile_pic_url AS owner_profile_pic_url,
     "comment".id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-    "comment".comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+    "comment".comment_text AS ${
+      post_or_comment === "post" ? "comment" : "reply"
+    }_text,
     "comment".attachment_url AS attachment_url,
     COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
     COUNT(DISTINCT "reply".id)::INTEGER AS replies_count, 
@@ -408,8 +428,11 @@ export const getCommentORReply = async ({ post_or_comment, comment_or_reply_id, 
   return (await dbQuery(query)).rows[0]
 }
 
-// GET all reactions to a post: returning all users that reacted to the post
-export const getAllReactorsToPost_OR_Comment = async ({post_or_comment, post_or_comment_id, client_user_id}) => {
+export const getAllReactorsToPost_OR_Comment = async ({
+  post_or_comment,
+  post_or_comment_id,
+  client_user_id,
+}) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
@@ -433,7 +456,7 @@ export const getAllReactorsToPost_OR_Comment = async ({post_or_comment, post_or_
   return (await dbQuery(query)).rows
 }
 
-// GET a single reaction to a post: limiting returned users to the ones with that reaction
+
 export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   post_or_comment,
   post_or_comment_id,
@@ -462,4 +485,67 @@ export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   }
 
   return (await dbQuery(query)).rows
+}
+
+/** DELETs */
+export const deletePost = async (post_id, user_id) => {
+  const query = {
+    text: `DELETE FROM "Post" WHERE id = $1 AND user_id = $2`,
+    values: [post_id, user_id],
+  }
+
+  await dbQuery(query)
+}
+
+/** 
+ * @param {object} param0
+ * @param {"post" | "comment"} post_or_comment
+ * @param {number} post_or_comment_id
+ * @param {number} reactor_user_id
+ */
+export const removeReactionToPost_OR_Comment = async ({
+  post_or_comment,
+  post_or_comment_id,
+  reactor_user_id,
+}) => {
+  const query = {
+    text: `DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2`,
+    values: [post_or_comment_id, reactor_user_id],
+  }
+
+  await dbQuery(query)
+}
+
+/**
+ * @param {number} comment_or_reply_id 
+ * @param {number} commenter_or_replier_user_id 
+ */
+export const deleteCommentOnPost_OR_ReplyToComment = async (
+  comment_or_reply_id,
+  commenter_or_replier_user_id
+) => {
+  const query = {
+    text: `DELETE FROM "Comment" WHERE id = $1 AND commenter_user_id = $2`,
+    values: [comment_or_reply_id, commenter_or_replier_user_id],
+  }
+
+  await dbQuery(query)
+}
+
+export const deleteRepost = async (reposted_post_id, reposter_user_id) => {
+  const query = {
+    text: `DELETE FROM "Repost" WHERE post_id = $1 AND reposter_user_id = $2`,
+    values: [reposted_post_id, reposter_user_id],
+  }
+
+  await dbQuery(query)
+}
+
+export const unsavePost = async (post_id, saver_user_id) => {
+  const query = {
+    text: `DELETE  FROM "SavedPost" WHERE post_id = $1 AND saver_user_id = $2`,
+    values: [post_id, saver_user_id],
+  }
+
+  await dbQuery(query)
 }
