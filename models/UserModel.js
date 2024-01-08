@@ -71,7 +71,10 @@ export const changeUserPassword = async (email, newPassword) => {
  * @param {number} param0.to_follow_user_id
  * @param {import("pg").PoolClient} dbClient
  */
-export const followUser = async ({client_user_id, to_follow_user_id}, dbClient) => {
+export const followUser = async (
+  { client_user_id, to_follow_user_id },
+  dbClient
+) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2) RETURNING id`,
@@ -83,9 +86,12 @@ export const followUser = async ({client_user_id, to_follow_user_id}, dbClient) 
 
 /**
  * @param {object} param0
- * @param {import("pg").PoolClient} dbClient 
+ * @param {import("pg").PoolClient} dbClient
  */
-export const createFollowNotification = async({ client_user_id, followee_user_id, new_follow_id }, dbClient) => {
+export const createFollowNotification = async (
+  { client_user_id, followee_user_id, new_follow_id },
+  dbClient
+) => {
   const query = {
     text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, follow_created_id) 
     VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -129,7 +135,10 @@ export const unfollowUser = async (client_user_id, followee_user_id) => {
  * @param {number} client_user_id
  * @param {object} updatedUserInfoKVPairs
  */
-export const updateUserProfile = async (client_user_id, updatedUserInfoKVPairs) => {
+export const updateUserProfile = async (
+  client_user_id,
+  updatedUserInfoKVPairs
+) => {
   const keys = Object.keys(updatedUserInfoKVPairs)
   const values = Object.values(updatedUserInfoKVPairs)
 
@@ -458,8 +467,24 @@ export const getSavedPosts = async (client_user_id) => {
 }
 
 // GET user notifications
-export const getUnreadNotifications = async (/* client_user_id */) => {
-  
+/**
+ *
+ * @param {number} client_user_id
+ * @param {Date} from
+ */
+export const getUnreadNotifications = async (client_user_id, from_date) => {
+  const query = {
+    text: `
+    SELECT * 
+    FROM "Notification" 
+    WHERE receiver_user_id = $1 AND created_at >= $2`,
+    values: [client_user_id, from_date],
+  }
+
+  return (await dbQuery(query)).rows.map((notifObj) =>
+    // exclude null value keys
+    Object.fromEntries(Object.entries(notifObj).filter(([, v]) => v !== null))
+  )
 }
 
 export const getUnreadNotificationsCount = async (client_user_id) => {
@@ -469,9 +494,8 @@ export const getUnreadNotificationsCount = async (client_user_id) => {
     FROM "Notification" 
     WHERE receiver_user_id = $1 AND is_read = false
     `,
-    values: [client_user_id]
+    values: [client_user_id],
   }
 
   return (await dbQuery(query)).rows[0].count
 }
-

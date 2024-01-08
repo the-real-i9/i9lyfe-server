@@ -83,7 +83,9 @@ export const getUserProfileController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const profileData = await new UserService(req.auth?.client_user_id).getProfile(username)
+    const profileData = await new UserService(
+      req.auth?.client_user_id
+    ).getProfile(username)
 
     res.status(200).send({ profileData })
   } catch (error) {
@@ -100,7 +102,9 @@ export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowers = await new UserService(req.auth?.client_user_id).getFollowers(username)
+    const userFollowers = await new UserService(
+      req.auth?.client_user_id
+    ).getFollowers(username)
 
     res.status(200).send({ userFollowers })
   } catch (error) {
@@ -117,7 +121,9 @@ export const getUserFollowingController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowing = await new UserService(req.auth?.client_user_id).getFollowing(username)
+    const userFollowing = await new UserService(
+      req.auth?.client_user_id
+    ).getFollowing(username)
 
     res.status(200).send({ userFollowing })
   } catch (error) {
@@ -134,7 +140,9 @@ export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userPosts = await new UserService(req.auth?.client_user_id).getPosts(username)
+    const userPosts = await new UserService(req.auth?.client_user_id).getPosts(
+      username
+    )
 
     res.status(200).send({ userPosts })
   } catch (error) {
@@ -150,7 +158,9 @@ export const getUserMentionedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const mentionedPosts = await new UserService(client_user_id).getMentionedPosts()
+    const mentionedPosts = await new UserService(
+      client_user_id
+    ).getMentionedPosts()
 
     res.status(200).send({ mentionedPosts })
   } catch (error) {
@@ -199,6 +209,15 @@ export const getUserSavedPostsController = async (req, res) => {
  */
 export const getUserNotificationsController = async (req, res) => {
   try {
+    const { from_date } = req.query
+
+    const { client_user_id } = req.auth
+
+    const notifications = await new UserService(
+      client_user_id
+    ).getNotifications(from_date)
+
+    res.status(200).send({ notifications })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

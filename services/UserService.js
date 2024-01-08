@@ -98,8 +98,9 @@ export class UserService {
     return await getSavedPosts(this.client_user_id)
   }
 
-  async getNotifications() {
-    return await getUnreadNotifications(this.client_user_id)
+  /** @param {Date} from_date  */
+  async getNotifications(from_date) {
+    return await getUnreadNotifications(this.client_user_id, from_date)
   }
 
   /* DELETEs */
