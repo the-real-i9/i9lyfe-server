@@ -33,7 +33,7 @@ router.use(
 
 router.post("/follow_user", followUserController)
 
-router.post("/unfollow_user", unfollowUserController)
+router.delete("/unfollow_user/:followee_user_id", unfollowUserController)
 
 router.put("/update_user_profile", updateUserProfileController)
 

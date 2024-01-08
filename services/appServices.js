@@ -41,15 +41,17 @@ export class PostService {
 
       await new PostCommentService(
         new Post(postData.id, this.client_user_id)
-      ).handleMentionsAndHashtags(description, dbClient)
+      ).handleMentionsAndHashtags(
+        {
+          content_text: description,
+          content_owner_user_id: this.client_user_id,
+        },
+        dbClient
+      )
 
       dbClient.query("COMMIT")
 
-      return {
-        ok: true,
-        err: null,
-        data: postData,
-      }
+      return postData
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error

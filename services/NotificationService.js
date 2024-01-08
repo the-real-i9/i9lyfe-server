@@ -1,8 +1,8 @@
 import { getUnreadNotificationsCount } from "../models/UserModel.js"
 
 export class NotificationService {
-  constructor(client_user_id) {
-    this.client_user_id = client_user_id
+  constructor(receiver_user_id) {
+    this.receiver_user_id = receiver_user_id
   }
 
   static io = null
@@ -23,14 +23,23 @@ export class NotificationService {
 
   notifyNewNotification() {
     NotificationService.sockClients
-      .get(this.client_user_id)
-      .emit("new_notification", "just do {new_notifications_count}++")
+      .get(this.receiver_user_id)
+      ?.emit("new_notification")
+  }
+
+  pushNotification(notificationData) {
+    NotificationService.sockClients
+      .get(this.receiver_user_id)
+      ?.emit("push_notification", notificationData)
+    
+    this.notifyNewNotification()
   }
 
   async notifyUnreadNotifications() {
-    const count = await getUnreadNotificationsCount(this.client_user_id)
+    const count = await getUnreadNotificationsCount(this.receiver_user_id)
+    if (!Number(count)) return
     NotificationService.sockClients
-      .get(this.client_user_id)
+      .get(this.receiver_user_id)
       .emit(
         "unread_notifications",
         count,

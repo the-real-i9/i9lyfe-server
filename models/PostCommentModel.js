@@ -24,12 +24,12 @@ export const createNewPost = async (
   return result
 }
 
-export const createRepost = async (reposted_post_id, reposter_user_id) => {
+export const createRepost = async (original_post_id, reposter_user_id) => {
   const query = {
     text: `
     INSERT INTO "Repost" (post_id, reposter_user_id) 
     VALUES ($1, $2)`,
-    values: [reposted_post_id, reposter_user_id],
+    values: [original_post_id, reposter_user_id],
   }
 
   await dbQuery(query)
@@ -101,8 +101,8 @@ export const createMentionsNotifications = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
-    VALUES ${multipleRowsParameters(receiver_user_ids.length, 4)}`,
+    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
+    VALUES ${multipleRowsParameters(receiver_user_ids.length, 4)} RETURNING id`,
     values: receiver_user_ids
       .map((receiver_user_id) => [
         "mention",
@@ -113,7 +113,24 @@ export const createMentionsNotifications = async (
       .flat(),
   }
 
-  await dbClient.query(query)
+  const notificationIds = (await dbClient.query(query)).rows.map((r) => r.id)
+
+  const getCreatedNotifsQuery = {
+    text: `
+    SELECT "sender".id AS sender_user_id,
+      "notification".receiver_user_id,
+      "sender".username AS sender_username,
+      "sender".profile_pic_url AS sender_profile_pic_url,
+      "notification".type,
+      "notification".${post_or_comment}_id
+    FROM "Notification" "notification"
+    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
+    WHERE "notification".id = ANY($1)
+    `,
+    values: [[...notificationIds]],
+  }
+
+  return (await dbClient.query(getCreatedNotifsQuery)).rows
 }
 
 /**
@@ -140,16 +157,16 @@ export const createHashtags = async (
 
 /**
  * @param {number} rowsCount
- * @param {number} fieldsCountPerRow
+ * @param {number} columnsCount
  */
-const multipleRowsParameters = (rowsCount, fieldsCountPerRow) =>
+const multipleRowsParameters = (rowsCount, columnsCount) =>
   Array(rowsCount)
     .fill()
     .map(
       (r, ri) =>
-        `(${Array(fieldsCountPerRow)
+        `(${Array(columnsCount)
           .fill()
-          .map((f, fi) => `$${ri * fieldsCountPerRow + (fi + 1)}`)
+          .map((f, fi) => `$${ri * columnsCount + (fi + 1)}`)
           .join(", ")})`
     )
     .join(", ")
@@ -201,8 +218,8 @@ export const createReactionNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id)
-    VALUES ($1, $2, $3, $4, $5)`,
+    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, reaction_created_id)
+    VALUES ($1, $2, $3, $4, $5) RETURNING id`,
     values: [
       "reaction",
       sender_user_id,
@@ -212,7 +229,24 @@ export const createReactionNotification = async (
     ],
   }
 
-  await dbClient.query(query)
+  const notifId = (await dbClient.query(query)).rows[0].id
+
+  const getCreatedNotifQuery = {
+    text: `
+    SELECT "sender".id AS sender_user_id,
+      "notification".receiver_user_id,
+      "sender".username AS sender_username,
+      "sender".profile_pic_url AS sender_profile_pic_url,
+      "notification".type,
+      "notification".${post_or_comment}_id
+    FROM "Notification" "notification"
+    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
+    WHERE "notification".id = $1
+    `,
+    values: [notifId],
+  }
+
+  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
 }
 
 /**
@@ -239,9 +273,9 @@ export const createComment = async (
   const query = {
     text: `INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
     VALUES ($1, $2, $3, $4) RETURNING id, commenter_user_id${
-      post_or_comment === "comment" ? " AS replier_user_id" : null
+      post_or_comment === "comment" ? " AS replier_user_id" : ""
     }, comment_text${
-      post_or_comment === "comment" ? " AS reply_text" : null
+      post_or_comment === "comment" ? " AS reply_text" : ""
     }, attachment_url`,
     values: [
       commenter_user_id,
@@ -276,8 +310,8 @@ export const createCommentNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentNotification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, type_created_id)
-    VALUES ($1, $2, $3, $4, $5)`,
+    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, comment_created_id)
+    VALUES ($1, $2, $3, $4, $5) RETURNING id`,
     values: [
       "comment",
       sender_user_id,
@@ -287,7 +321,24 @@ export const createCommentNotification = async (
     ],
   }
 
-  await dbClient.query(query)
+  const notifId = (await dbClient.query(query)).rows[0].id
+
+  const getCreatedNotifQuery = {
+    text: `
+    SELECT "sender".id AS sender_user_id,
+      "notification".receiver_user_id,
+      "sender".username AS sender_username,
+      "sender".profile_pic_url AS sender_profile_pic_url,
+      "notification".type,
+      "notification".${post_or_comment}_id
+    FROM "Notification" "notification"
+    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
+    WHERE "notification".id = $1
+    `,
+    values: [notifId],
+  }
+
+  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
 }
 
 /* ************* */
@@ -456,7 +507,6 @@ export const getAllReactorsToPost_OR_Comment = async ({
   return (await dbQuery(query)).rows
 }
 
-
 export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   post_or_comment,
   post_or_comment_id,
@@ -497,7 +547,7 @@ export const deletePost = async (post_id, user_id) => {
   await dbQuery(query)
 }
 
-/** 
+/**
  * @param {object} param0
  * @param {"post" | "comment"} post_or_comment
  * @param {number} post_or_comment_id
@@ -509,7 +559,8 @@ export const removeReactionToPost_OR_Comment = async ({
   reactor_user_id,
 }) => {
   const query = {
-    text: `DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2`,
+    text: `
+    DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2`,
     values: [post_or_comment_id, reactor_user_id],
   }
 
@@ -517,8 +568,8 @@ export const removeReactionToPost_OR_Comment = async ({
 }
 
 /**
- * @param {number} comment_or_reply_id 
- * @param {number} commenter_or_replier_user_id 
+ * @param {number} comment_or_reply_id
+ * @param {number} commenter_or_replier_user_id
  */
 export const deleteCommentOnPost_OR_ReplyToComment = async (
   comment_or_reply_id,
