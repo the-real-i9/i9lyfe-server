@@ -16,7 +16,7 @@ export const createNewPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const response = await new PostService(client_user_id).create({
+    const postData = await new PostService(client_user_id).create({
       media_urls,
       type,
       description,
@@ -24,7 +24,7 @@ export const createNewPostController = async (req, res) => {
 
     // asychronously notify mentioned users with the notificationService (WebSockets)
 
-    res.status(200).send({ postData: response.data })
+    res.status(200).send({ postData })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -45,10 +45,7 @@ export const createPostReactionController = async (req, res) => {
 
     await new PostCommentService(
       new Post(post_id, post_owner_user_id)
-    ).addReaction({
-      reactor_user_id,
-      reaction_code_point,
-    })
+    ).addReaction(reactor_user_id, reaction_code_point)
 
     // asynchronously send a reaction notification with the NotificationService via WebSockets
 
@@ -75,13 +72,13 @@ export const createPostCommentController = async (req, res) => {
 
     const { client_user_id: commenter_user_id } = req.auth
 
-    const response = await new PostCommentService(
+    const commentData = await new PostCommentService(
       new Post(post_id, post_owner_user_id)
     ).addComment({ commenter_user_id, comment_text, attachment_url })
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
 
-    res.status(201).send({ commentData: response.data })
+    res.status(201).send({ commentData })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -102,10 +99,7 @@ export const createCommentReactionController = async (req, res) => {
 
     await new PostCommentService(
       new Comment(comment_id, comment_owner_user_id)
-    ).addReaction({
-      reactor_user_id,
-      reaction_code_point,
-    })
+    ).addReaction(reactor_user_id, reaction_code_point)
 
     // asynchronously send a reaction notification with the NotificationService via WebSockets
 
@@ -137,17 +131,17 @@ export const createCommentReplyController = async (req, res) => {
     // All Replies are Comments and behave like Comments
     // But, not all Comments are Replies, as Comments belong to Posts and Replies do not.
 
-    const response = await new PostCommentService(
+    const replyData = await new PostCommentService(
       new Comment(comment_id, comment_owner_user_id)
-    ).addComment({
-      commenter_user_id: replier_user_id,
-      comment_text: reply_text,
+    ).addReply({
+      replier_user_id,
+      reply_text,
       attachment_url,
     })
 
     // asynchronously send a reply notification with the NotificationService via WebSockets
 
-    res.status(201).send({ replyData: response.data })
+    res.status(201).send({ replyData })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -158,9 +152,18 @@ export const createCommentReplyController = async (req, res) => {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export const createRepostController = async (/* req, res */) => {
+export const createRepostController = async (req, res) => {
   try {
-  } catch (error) {}
+    const { post_id } = req.body
+    const { client_user_id } = req.auth
+
+    await new PostService(client_user_id, post_id).repost()
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
 }
 
 /**
@@ -463,7 +466,9 @@ export const deleteCommentReplyController = async (req, res) => {
     const { comment_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostCommentService(new Comment(comment_id, client_user_id)).deleteCommentORReply()
+    await new PostCommentService(
+      new Comment(comment_id, client_user_id)
+    ).deleteCommentORReply()
 
     res.sendStatus(200)
   } catch (error) {
