@@ -66,17 +66,49 @@ export const changeUserPassword = async (email, newPassword) => {
 }
 
 /**
- * @param {number} client_user_id
- * @param {number} to_follow_user_id
+ * @param {object} param0
+ * @param {number} param0.client_user_id
+ * @param {number} param0.to_follow_user_id
+ * @param {import("pg").PoolClient} dbClient
  */
-export const followUser = async (client_user_id, to_follow_user_id) => {
+export const followUser = async ({client_user_id, to_follow_user_id}, dbClient) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2)`,
+    text: `INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2) RETURNING id`,
     values: [client_user_id, to_follow_user_id],
   }
 
-  await dbQuery(query)
+  return (await dbClient.query(query)).rows[0].id
+}
+
+/**
+ * @param {object} param0
+ * @param {import("pg").PoolClient} dbClient 
+ */
+export const createFollowNotification = async({ client_user_id, followee_user_id, new_follow_id }, dbClient) => {
+  const query = {
+    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, follow_created_id) 
+    VALUES ($1, $2, $3, $4) RETURNING id`,
+    values: ["follow", client_user_id, followee_user_id, new_follow_id],
+  }
+
+  const notifId = (await dbClient.query(query)).rows[0].id
+
+  const getCreatedNotifQuery = {
+    text: `
+    SELECT "sender".id AS sender_user_id,
+      "notification".receiver_user_id,
+      "sender".username AS sender_username,
+      "sender".profile_pic_url AS sender_profile_pic_url,
+      "notification".type
+    FROM "Notification" "notification"
+    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
+    WHERE "notification".id = $1
+    `,
+    values: [notifId],
+  }
+
+  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
 }
 
 /**
@@ -434,7 +466,7 @@ export const getUnreadNotificationsCount = async (client_user_id) => {
   const query = {
     text: `
     SELECT COUNT(id) AS count 
-    FROM "PostCommentNotification" 
+    FROM "Notification" 
     WHERE receiver_user_id = $1 AND is_read = false
     `,
     values: [client_user_id]
