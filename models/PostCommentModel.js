@@ -1,3 +1,4 @@
+import { generateMultiRowInsertValuesParameters } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /**
@@ -78,7 +79,7 @@ export const createMentions = async (
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT INTO "PostCommentMention" (${post_or_comment}_id, user_id) 
-    VALUES ${multipleRowsParameters(mentioned_user_ids.length, 2)}`,
+    VALUES ${generateMultiRowInsertValuesParameters(mentioned_user_ids.length, 2)}`,
     values: mentioned_user_ids
       .map((mentioned_user_id) => [post_or_comment_id, mentioned_user_id])
       .flat(),
@@ -102,7 +103,7 @@ export const createMentionsNotifications = async (
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
-    VALUES ${multipleRowsParameters(receiver_user_ids.length, 4)} RETURNING id`,
+    VALUES ${generateMultiRowInsertValuesParameters(receiver_user_ids.length, 4)} RETURNING id`,
     values: receiver_user_ids
       .map((receiver_user_id) => [
         "mention",
@@ -146,7 +147,7 @@ export const createHashtags = async (
 ) => {
   const query = {
     text: `INSERT INTO "PostCommentHashtag" (${post_or_comment}_id, hashtag_name) 
-    VALUES ${multipleRowsParameters(hashtag_names.length, 2)}`,
+    VALUES ${generateMultiRowInsertValuesParameters(hashtag_names.length, 2)}`,
     values: hashtag_names
       .map((hashtag_name) => [post_or_comment_id, hashtag_name])
       .flat(),
@@ -154,22 +155,6 @@ export const createHashtags = async (
 
   await dbClient.query(query)
 }
-
-/**
- * @param {number} rowsCount
- * @param {number} columnsCount
- */
-const multipleRowsParameters = (rowsCount, columnsCount) =>
-  Array(rowsCount)
-    .fill()
-    .map(
-      (r, ri) =>
-        `(${Array(columnsCount)
-          .fill()
-          .map((f, fi) => `$${ri * columnsCount + (fi + 1)}`)
-          .join(", ")})`
-    )
-    .join(", ")
 
 /**
  * @param {object} param0

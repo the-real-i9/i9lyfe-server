@@ -1,6 +1,10 @@
 import { test, expect } from "@jest/globals"
-import { extractHashtags, extractMentions } from "../utils/helpers.js"
-import { updateUserProfile } from "../models/UserModel.js"
+import {
+  extractHashtags,
+  extractMentions,
+  generateMultiColumnUpdateSetParameters,
+  generateMultiRowInsertValuesParameters,
+} from "../utils/helpers.js"
 
 test("extract mentions", () => {
   const text = "This is a text with @kenny you @samuel"
@@ -18,19 +22,17 @@ test("extract hashtags", () => {
   expect(res).toContain("yemisi")
 })
 
-test("create multiple rows parameters", () => {
-  const res = (rowsCount, fieldsCountPerRow) => multipleRowsParameters(rowsCount, fieldsCountPerRow)
+test("generate multiple rows INSERT INTO [table] ... VALUES [parameters]", () => {
+  const res = (rowsCount, columnsCount) =>
+    generateMultiRowInsertValuesParameters(rowsCount, columnsCount)
 
   expect(res(3, 2)).toBe("($1, $2), ($3, $4), ($5, $6)")
   expect(res(3, 3)).toBe("($1, $2, $3), ($4, $5, $6), ($7, $8, $9)")
 })
 
-test("generate user profile update string", async () => {
-  const res = await updateUserProfile(3, { name: "Kenny", username: "Bimbo" })
+test("generate multiple columns update UPDATE [table] SET [parameters] string", async () => {
+  const res = generateMultiColumnUpdateSetParameters(["name", "username"])
 
   console.log(res)
-  expect(res.text).toBe('UPDATE "User" SET name = $1, username = $2 WHERE id = $3')
-  expect(res.values[0]).toBe("Kenny")
-  expect(res.values[1]).toBe("Bimbo")
-  expect(res.values[2]).toBe(3)
+  expect(res).toBe("name = $1, username = $2")
 })

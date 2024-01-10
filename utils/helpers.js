@@ -40,6 +40,24 @@ export const extractHashtags = (text) => {
   return matches && [...new Set(matches)]
 }
 
-export const capitalize = (word) => {
-  return word.charAt(0).toUpperCase() + word.slice(1)
-}
+/**
+ * @param {number} rowsCount
+ * @param {number} columnsCount
+ */
+export const generateMultiRowInsertValuesParameters = (
+  rowsCount,
+  columnsCount
+) =>
+  Array(rowsCount)
+    .fill()
+    .map(
+      (r, ri) =>
+        `(${Array(columnsCount)
+          .fill()
+          .map((f, fi) => `$${ri * columnsCount + (fi + 1)}`)
+          .join(", ")})`
+    )
+    .join(", ")
+
+export const generateMultiColumnUpdateSetParameters = (keys) =>
+  keys.map((key, i) => `${key} = $${i + 1}`).join(", ")

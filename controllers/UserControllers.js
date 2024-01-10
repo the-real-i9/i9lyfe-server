@@ -45,12 +45,12 @@ export const unfollowUserController = async (req, res) => {
  */
 export const updateUserProfileController = async (req, res) => {
   try {
-    const updatedUserInfoKVPairs = req.body
+    const updateKVPairs = req.body
 
     const { client_user_id } = req.auth
 
     const updatedUserData = await new UserService(client_user_id).updateProfile(
-      updatedUserInfoKVPairs
+      updateKVPairs
     )
 
     res.status(200).send({ updatedUserData })

@@ -54,10 +54,10 @@ export class UserService {
     new NotificationService(receiver_user_id).pushNotification(restData)
   }
 
-  async updateProfile(updatedUserInfoKVPairs) {
+  async updateProfile(updateKVPairs) {
     const result = await updateUserProfile(
       this.client_user_id,
-      updatedUserInfoKVPairs
+      updateKVPairs
     )
 
     const updatedUserData = result.rows[0]
