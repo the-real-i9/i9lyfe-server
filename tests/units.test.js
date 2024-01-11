@@ -2,6 +2,7 @@ import { test, expect } from "@jest/globals"
 import {
   extractHashtags,
   extractMentions,
+  generateJsonbMultiKeysSetParameters,
   generateMultiColumnUpdateSetParameters,
   generateMultiRowInsertValuesParameters,
 } from "../utils/helpers.js"
@@ -35,4 +36,13 @@ test("generate multiple columns update UPDATE [table] SET [parameters] string", 
 
   console.log(res)
   expect(res).toBe("name = $1, username = $2")
+})
+
+
+test("", async () => {
+  const res = (paramNumFrom) => generateJsonbMultiKeysSetParameters("info", ['apple', 'banana', 'cherry'], paramNumFrom)
+
+  console.log(res(5))
+  expect(res(1)).toBe(`info, '{apple}', '"$1"', '{banana}', '"$2"', '{cherry}', '"$3"'`)
+  expect(res(5)).toBe(`info, '{apple}', '"$5"', '{banana}', '"$6"', '{cherry}', '"$7"'`)
 })
