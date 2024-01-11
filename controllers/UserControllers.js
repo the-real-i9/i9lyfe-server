@@ -1,8 +1,14 @@
 import { UserService } from "../services/UserService.js"
 
+
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @typedef {import("express").Request} ExpressRequest
+ * @typedef {import("express").Response} ExpressResponse
+ */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const followUserController = async (req, res) => {
   try {
@@ -21,8 +27,8 @@ export const followUserController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const unfollowUserController = async (req, res) => {
   try {
@@ -40,8 +46,8 @@ export const unfollowUserController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const updateUserProfileController = async (req, res) => {
   try {
@@ -50,7 +56,7 @@ export const updateUserProfileController = async (req, res) => {
     const { client_user_id } = req.auth
 
     const updatedUserData = await new UserService(client_user_id).updateProfile(
-      updateKVPairs
+      new Map(Object.entries(updateKVPairs))
     )
 
     res.status(200).send({ updatedUserData })
@@ -61,8 +67,8 @@ export const updateUserProfileController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const uploadProfilePictureController = async (req, res) => {
   try {
@@ -76,8 +82,8 @@ export const uploadProfilePictureController = async (req, res) => {
 /* GETs */
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserProfileController = async (req, res) => {
   try {
@@ -95,8 +101,8 @@ export const getUserProfileController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserFollowersController = async (req, res) => {
   try {
@@ -114,8 +120,8 @@ export const getUserFollowersController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserFollowingController = async (req, res) => {
   try {
@@ -133,8 +139,8 @@ export const getUserFollowingController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserPostsController = async (req, res) => {
   try {
@@ -151,8 +157,8 @@ export const getUserPostsController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserMentionedPostsController = async (req, res) => {
   try {
@@ -170,8 +176,8 @@ export const getUserMentionedPostsController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserReactedPostsController = async (req, res) => {
   try {
@@ -187,8 +193,8 @@ export const getUserReactedPostsController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserSavedPostsController = async (req, res) => {
   try {
@@ -204,8 +210,8 @@ export const getUserSavedPostsController = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getUserNotificationsController = async (req, res) => {
   try {

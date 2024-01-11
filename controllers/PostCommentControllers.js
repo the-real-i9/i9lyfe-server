@@ -6,8 +6,13 @@ import {
 import { PostService } from "../services/appServices.js"
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @typedef {import("express").Request} ExpressRequest
+ * @typedef {import("express").Response} ExpressResponse
+ */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createNewPostController = async (req, res) => {
   // Note: You have to accept binary data(s) in the request body, upload them to a CDN, and receive their corresponding URLS in order
@@ -32,8 +37,8 @@ export const createNewPostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createPostReactionController = async (req, res) => {
   try {
@@ -57,8 +62,8 @@ export const createPostReactionController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createPostCommentController = async (req, res) => {
   try {
@@ -86,8 +91,8 @@ export const createPostCommentController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createCommentReactionController = async (req, res) => {
   try {
@@ -111,8 +116,8 @@ export const createCommentReactionController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createCommentReplyController = async (req, res) => {
   try {
@@ -149,8 +154,8 @@ export const createCommentReplyController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const createRepostController = async (req, res) => {
   try {
@@ -167,8 +172,8 @@ export const createRepostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const postSaveController = async (req, res) => {
   try {
@@ -188,8 +193,8 @@ export const postSaveController = async (req, res) => {
 /* The GETs */
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getPostController = async (req, res) => {
   try {
@@ -207,8 +212,8 @@ export const getPostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllCommentsOnPostController = async (req, res) => {
   try {
@@ -228,8 +233,8 @@ export const getAllCommentsOnPostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getCommentController = async (req, res) => {
   try {
@@ -249,8 +254,8 @@ export const getCommentController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllReactorsToPostController = async (req, res) => {
   try {
@@ -270,8 +275,8 @@ export const getAllReactorsToPostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllReactorsWithReactionToPostController = async (req, res) => {
   try {
@@ -291,8 +296,8 @@ export const getAllReactorsWithReactionToPostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllRepliesToCommentController = async (req, res) => {
   try {
@@ -312,8 +317,8 @@ export const getAllRepliesToCommentController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getReplyController = async (req, res) => {
   try {
@@ -333,8 +338,8 @@ export const getReplyController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllReactorsToCommentController = async (req, res) => {
   try {
@@ -354,8 +359,8 @@ export const getAllReactorsToCommentController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const getAllReactorsWithReactionToCommentController = async (
   req,
@@ -380,8 +385,8 @@ export const getAllReactorsWithReactionToCommentController = async (
 /* DELETEs */
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const deletePostController = async (req, res) => {
   try {
@@ -398,8 +403,8 @@ export const deletePostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const removePostReactionController = async (req, res) => {
   try {
@@ -418,8 +423,8 @@ export const removePostReactionController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const deletePostCommentController = async (req, res) => {
   try {
@@ -438,8 +443,8 @@ export const deletePostCommentController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const removeCommentReactionController = async (req, res) => {
   try {
@@ -458,8 +463,8 @@ export const removeCommentReactionController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const deleteCommentReplyController = async (req, res) => {
   try {
@@ -478,8 +483,8 @@ export const deleteCommentReplyController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const deleteRepostController = async (req, res) => {
   try {
@@ -496,8 +501,8 @@ export const deleteRepostController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const postUnsaveController = async (req, res) => {
   try {

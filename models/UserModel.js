@@ -1,4 +1,7 @@
-import { commaSeparateString, generateMultiColumnUpdateSetParameters } from "../utils/helpers.js"
+import {
+  commaSeparateString,
+  generateMultiColumnUpdateSetParameters,
+} from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /**
@@ -135,19 +138,20 @@ export const unfollowUser = async (client_user_id, followee_user_id) => {
  * @param {number} client_user_id
  * @param {Map<string, any>} updateKVPairs
  */
-export const updateUserProfile = async (
-  client_user_id,
-  updateKVPairs
-) => {
-  const keys = [...updateKVPairs.keys()]
-  const values = [...updateKVPairs.values()]
+export const updateUserProfile = async (client_user_id, updateKVPairs) => {
+  const [updateSetCols, updateSetValues] = [
+    [...updateKVPairs.keys()],
+    [...updateKVPairs.values()],
+  ]
 
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `UPDATE "User" SET ${generateMultiColumnUpdateSetParameters(keys)} WHERE id = $${
-      keys.length + 1
+    text: `UPDATE "User" SET ${generateMultiColumnUpdateSetParameters(
+      updateSetCols
+    )} WHERE id = $${
+      updateSetValues.length + 1
     } RETURNING id, email, username, name, profile_pic_url`,
-    values: [...values, client_user_id],
+    values: [...updateSetValues, client_user_id],
   }
 
   return await dbQuery(query)

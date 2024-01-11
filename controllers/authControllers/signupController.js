@@ -5,8 +5,13 @@ import {
 } from "../../services/EmailConfirmationService.js"
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @typedef {import("express").Request} ExpressRequest
+ * @typedef {import("express").Response} ExpressResponse
+ */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const signupController = async (req, res) => {
   const { stage } = req.query
@@ -20,8 +25,8 @@ export const signupController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 const newAccountRequestHandler = async (req, res) => {
   try {
@@ -40,8 +45,8 @@ const newAccountRequestHandler = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 const emailVerificationHandler = async (req, res) => {
   try {
@@ -61,8 +66,8 @@ const emailVerificationHandler = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 const userRegistrationHandler = async (req, res) => {
   try {

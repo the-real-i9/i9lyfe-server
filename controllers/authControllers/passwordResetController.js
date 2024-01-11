@@ -5,8 +5,13 @@ import {
 } from "../../services/EmailConfirmationService.js"
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @typedef {import("express").Request} ExpressRequest
+ * @typedef {import("express").Response} ExpressResponse
+ */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const passwordResetController = async (req, res) => {
   const { stage } = req.query
@@ -21,8 +26,8 @@ export const passwordResetController = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 
 const passwordResetRequestHandler = async (req, res) => {
@@ -42,8 +47,8 @@ const passwordResetRequestHandler = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 const passwordResetEmailConfirmationHandler = async (req, res) => {
   try {
@@ -63,8 +68,8 @@ const passwordResetEmailConfirmationHandler = async (req, res) => {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 const passwordResetHandler = async (req, res) => {
   try {

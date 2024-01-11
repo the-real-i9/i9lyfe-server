@@ -1,8 +1,13 @@
 import { userSigninService } from "../../services/authServices.js"
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * @typedef {import("express").Request} ExpressRequest
+ * @typedef {import("express").Response} ExpressResponse
+ */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
  */
 export const signinController = async (req, res) => {
   try {
