@@ -74,7 +74,7 @@ export const generateJsonbMultiKeysSetParameters = (
   paramNumFrom
 ) => {
   // goal: [columnName] = jsonb_set([columnName], '{key}', '"$[paramNumFrom]"', '{key2}', '"$[paramNumFrom + 1]"')
-  return `${columnName}, ${jsonbKeys
-    .map((key, i) => `'{${key}}', '"$${paramNumFrom + i}"'`)
+  return `${columnName} = ${jsonbKeys
+    .map((key, i) => `jsonb_set(${columnName}, '{${key}}', '"$${paramNumFrom + i}"')`)
     .join(", ")}`
 }
