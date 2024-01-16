@@ -85,9 +85,16 @@ export const generateJsonbMultiKeysSetParameters = (
 /** @param {object[] | object} obj */
 const removeNullFields = (obj) => {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) =>
-        v !== null
-    )
+    Object.entries(obj).reduce((acc, [k, v]) => {
+      if (v !== null)
+        acc.push([
+          k,
+          Object.prototype.toString.call(v) === "[object Object]"
+            ? removeNullFields(v)
+            : v,
+        ])
+      return acc;
+    }, [])
   )
 }
 
