@@ -75,6 +75,23 @@ export const generateJsonbMultiKeysSetParameters = (
 ) => {
   // goal: [columnName] = jsonb_set([columnName], '{key}', '"$[paramNumFrom]"', '{key2}', '"$[paramNumFrom + 1]"')
   return `${columnName} = ${jsonbKeys
-    .map((key, i) => `jsonb_set(${columnName}, '{${key}}', '"$${paramNumFrom + i}"')`)
+    .map(
+      (key, i) =>
+        `jsonb_set(${columnName}, '{${key}}', '"$${paramNumFrom + i}"')`
+    )
     .join(", ")}`
+}
+
+/** @param {object[] | object} obj */
+const removeNullFields = (obj) => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) =>
+        v !== null
+    )
+  )
+}
+
+export const stripNulls = (object) => {
+  if (Array.isArray(object)) return object.map(removeNullFields)
+  else removeNullFields(object)
 }
