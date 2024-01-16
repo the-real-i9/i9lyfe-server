@@ -149,15 +149,21 @@ export const getAllUserConversations = async (client_user_id) => {
       "other_user".connection_status AS partner_connection_status,
       "other_user".last_active AS partner_last_active,
       "client_user_conv".unread_messages_count,
-      "last_message".msg_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}' AS last_message,
-      "last_activity".activity_info AS last_activity
+      (SELECT 
+        CASE 
+          WHEN history_type = 'message' THEN json_build_object('item_type', 'message', 'item_content', message_content)
+          ELSE json_build_object('item_type', 'activity', 'item_content', activity_info)
+        END
+      FROM "ConversationHistory"
+      WHERE conversation_id = "conv".id
+      ORDER BY created_at DESC
+      FETCH FIRST ROW ONLY
+      ) AS last_history_item
     FROM "Conversation" "conv"
     LEFT JOIN "UserConversation" "client_user_conv" ON "client_user_conv".conversation_id = "conv".id AND "client_user_conv".user_id = $1
     LEFT JOIN "UserConversation" "other_user_conv" ON "other_user_conv".conversation_id = "client_user_conv".conversation_id AND "other_user_conv".user_id != $1
     LEFT JOIN "User" "other_user" ON "other_user".id = "other_user_conv".user_id AND "conv".info ->> 'type' = 'direct'
-    LEFT JOIN "Message" "last_message" ON "last_message".id = "conv".last_message_id
-    LEFT JOIN "GroupConversationActivityLog" "last_activity" ON "last_activity".id = "conv".last_activity_id
-    WHERE ("last_message".msg_content IS NOT NULL OR "conv".info ->> 'type' = 'group') AND "client_user_conv".deleted = false
+    WHERE "client_user_conv".deleted = false -- AND last_conversation_history IS NOT NULL
     ORDER BY "conv".updated_at DESC
     `,
     values: [client_user_id],
@@ -167,48 +173,11 @@ export const getAllUserConversations = async (client_user_id) => {
 }
 
 /** @param {number} conversation_id */
-export const getAllConversationMessages = async (conversation_id) => {
+export const getConversationHistory = async (conversation_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "msg".id AS msg_id,
-      json_build_object(
-        'profile_pic_url', "sender_user".profile_pic_url,
-        'username', "sender_user".username
-      ) AS sender, 
-      "msg".msg_content AS msg_content, 
-      "msg".delivery_status AS delivery_status, 
-      "msg".created_at AS created_at,
-      CASE 
-        WHEN "reply_to".id IS NOT NULL THEN 
-          json_strip_nulls(json_build_object(
-            'id', "reply_to".id,
-            'type', "reply_to".msg_content ->> 'type',
-            'text_content', "reply_to".msg_content ->> 'text_content',
-            'image_caption', "reply_to".msg_content ->> 'image_caption',
-            'video_caption', "reply_to".msg_content ->> 'video_caption',
-            'voice_duration', "reply_to".msg_content ->> 'voice_duration',
-            'file_type', "reply_to".msg_content ->> 'file_type',
-            'file_name', "reply_to".msg_content ->> 'file_name',
-            'link_description', "reply_to".msg_content ->> 'link_description'
-          ))
-        ELSE null
-      END AS replied_message,
-      (SELECT 
-        json_object_agg(
-          "target_reaction".reaction_code_point, 
-          (SELECT COUNT(id) 
-          FROM "MessageReaction"
-          WHERE message_id = "msg".id AND reaction_code_point = "target_reaction".reaction_code_point)
-        )
-      FROM "MessageReaction" "target_reaction"
-      WHERE message_id = "msg".id
-      ) AS reactions
-    FROM "Message" "msg"
-    LEFT JOIN "User" "sender_user" ON "sender_user".id = "msg".sender_id
-    LEFT JOIN "Message" "reply_to" ON "reply_to".id = "msg".reply_to_id
-    WHERE "msg".conversation_id = $1
-    ORDER BY "msg".created_at
+    SELECT * FROM "ConversationHistory" WHERE conversation_id = $1
     `,
     values: [conversation_id],
   }
