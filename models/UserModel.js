@@ -1,6 +1,7 @@
 import {
   commaSeparateString,
   generateMultiColumnUpdateSetParameters,
+  stripNulls,
 } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
@@ -483,10 +484,7 @@ export const getUnreadNotifications = async (client_user_id, from_date) => {
     values: [client_user_id, from_date],
   }
 
-  return (await dbQuery(query)).rows.map((notifObj) =>
-    // exclude null value keys
-    Object.fromEntries(Object.entries(notifObj).filter(([, v]) => v !== null))
-  )
+  return stripNulls((await dbQuery(query)).rows)
 }
 
 export const getUnreadNotificationsCount = async (client_user_id) => {

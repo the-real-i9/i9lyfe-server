@@ -21,10 +21,10 @@
 
 ## Chats & Messaging Entities
 ### Conversation
-Contains groups and individual conversations
+Contains groups and direct conversations
 
 ### User conversations
-All the conversations involved in by a user, be it group or individual
+All the conversations involved in by a user, be it group or direct
 
 When you want to list the conversatons for a particular user
 
