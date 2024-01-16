@@ -7,14 +7,17 @@ import {
   generateJsonbMultiKeysSetParameters,
   generateMultiColumnUpdateSetParameters,
   generateMultiRowInsertValuesParameters,
-} from "../utils/helpers"
+  stripNulls,
+} from "../utils/helpers.js"
+import { dbQuery } from "./db.js"
 
 /**
  * @param {object} info
- * @param {"individual" | "group"} info.type
+ * @param {"direct" | "group"} info.type
  * @param {string} [info.title] Group title, if `type` is "group"
  * @param {string} [info.description] Group description, if `type` is "group"
  * @param {string} [info.cover_image_url] Group cover image, if `type` is "group"
+ * @param {number} [info.created_by] The User that created the group, if `type` is "group"
  * @param {PgPoolClient} dbClient
  */
 export const createConversation = async (info, dbClient) => {
@@ -75,12 +78,12 @@ export const updateConversation = async (
 
 /**
  * @param {object} param0
- * @param {number[]} param0.participants_user_ids
+ * @param {number[]} param0.participantsUserIds
  * @param {number} param0.conversation_id
  * @param {PgPoolClient} dbClient
  */
 export const createUserConversation = async (
-  { participants_user_ids, conversation_id },
+  { participantsUserIds, conversation_id },
   dbClient
 ) => {
   /** @type {PgQueryConfig} */
@@ -88,17 +91,18 @@ export const createUserConversation = async (
     text: `
     INSERT INTO "UserConversation" (user_id, conversation_id) 
     VALUES ${generateMultiRowInsertValuesParameters(
-      participants_user_ids.length,
+      participantsUserIds.length,
       2
     )}`,
-    values: participants_user_ids
+    values: participantsUserIds
       .map((user_id) => [user_id, conversation_id])
       .flat(),
   }
 
   await dbClient.query(query)
 
-  // In the group creation service, add to the GroupConversationActivityLog that these users were added
+  // After this, if conversation type is "group", create group membership is automatically "trigger"ed for each inserted "UserConversation"
+  // Afterwards, we programmatically log the activity
 }
 
 /**
@@ -129,14 +133,10 @@ export const updateUserConversation = async (
   await dbClient.query(query)
 }
 
-export const deleteUserConversation = async ({ user_id }) => {}
-
 /**
- * @param {object} param0
- * @param {number} param0.client_user_id
  * @param {PgPoolClient} dbClient
  */
-export const getAllUserConversations = async (client_user_id, dbClient) => {
+export const getAllUserConversations = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -144,81 +144,114 @@ export const getAllUserConversations = async (client_user_id, dbClient) => {
       "conv".info ->> 'type' AS conversation_type,
       "conv".info ->> 'title' AS group_title,
       "conv".info ->> 'cover_pic_url' AS group_cover_image,
-      "other_user".name AS recipient_name,
-      "other_user".profile_pic_url AS recipient_profile_pic,
-      "other_user".connection_status AS recipient_connection_status,
-      "other_user".last_active AS recipient_last_active,
+      "other_user".name AS partner_name,
+      "other_user".profile_pic_url AS partner_profile_pic,
+      "other_user".connection_status AS partner_connection_status,
+      "other_user".last_active AS partner_last_active,
       "client_user_conv".unread_messages_count,
-      "last_message".msg_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}' AS last_message
+      "last_message".msg_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}' AS last_message,
       "last_activity".activity_info AS last_activity
     FROM "Conversation" "conv"
-    INNER JOIN "UserConversation" "user_conv" ON "user_conv".id = "conv".id
-    -- INNER JOIN "User" "user" ON "user".id = "user_conv".user_id
-    LEFT JOIN "User" "other_user" ON "user_conv".user_id != $1
-    LEFT JOIN "UserConversation" "client_user_conv" ON "user_conv".user_id = $1
+    LEFT JOIN "UserConversation" "client_user_conv" ON "client_user_conv".conversation_id = "conv".id AND "client_user_conv".user_id = $1
+    LEFT JOIN "UserConversation" "other_user_conv" ON "other_user_conv".conversation_id = "client_user_conv".conversation_id AND "other_user_conv".user_id != $1
+    LEFT JOIN "User" "other_user" ON "other_user".id = "other_user_conv".user_id AND "conv".info ->> 'type' = 'direct'
     LEFT JOIN "Message" "last_message" ON "last_message".id = "conv".last_message_id
     LEFT JOIN "GroupConversationActivityLog" "last_activity" ON "last_activity".id = "conv".last_activity_id
-    WHERE "last_message".msg_content IS NOT NULL OR "conv".info ->> 'type' = 'group'
+    WHERE ("last_message".msg_content IS NOT NULL OR "conv".info ->> 'type' = 'group') AND "client_user_conv".deleted = false
     ORDER BY "conv".updated_at DESC
     `,
     values: [client_user_id],
   }
 
-  await dbClient.query(query)
+  return stripNulls((await dbQuery(query)).rows)
 }
 
-export const getAllConversationMessages = ({ conversation_id }) => {}
-
-export const getUserConversationInfo = async ({ conversation_id }) => {}
-
-/**
- * @param {object} param0
- * @param {number} param0.user_id
- * @param {number} param0.group_conversation_id
- * @param {"admin" | "member"} param0.role
- * @param {PgPoolClient} dbClient
- */
-export const createGroupMembership = async (
-  { user_id, group_conversation_id, role },
-  dbClient
-) => {
+/** @param {number} conversation_id */
+export const getAllConversationMessages = async (conversation_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    INSERT INTO "GroupMembership" (user_id, group_conversation_id, role) 
-    VALUES ($1, $2, $3)`,
-    values: [user_id, group_conversation_id, role],
+    SELECT "msg".id AS msg_id,
+      json_build_object(
+        'profile_pic_url', "sender_user".profile_pic_url,
+        'username', "sender_user".username
+      ) AS sender, 
+      "msg".msg_content AS msg_content, 
+      "msg".delivery_status AS delivery_status, 
+      "msg".created_at AS created_at,
+      CASE 
+        WHEN "reply_to".id IS NOT NULL THEN 
+          json_strip_nulls(json_build_object(
+            'id', "reply_to".id,
+            'type', "reply_to".msg_content ->> 'type',
+            'text_content', "reply_to".msg_content ->> 'text_content',
+            'image_caption', "reply_to".msg_content ->> 'image_caption',
+            'video_caption', "reply_to".msg_content ->> 'video_caption',
+            'voice_duration', "reply_to".msg_content ->> 'voice_duration',
+            'file_type', "reply_to".msg_content ->> 'file_type',
+            'file_name', "reply_to".msg_content ->> 'file_name',
+            'link_description', "reply_to".msg_content ->> 'link_description'
+          ))
+        ELSE null
+      END AS replied_message,
+      (SELECT 
+        json_object_agg(
+          "target_reaction".reaction_code_point, 
+          (SELECT COUNT(id) 
+          FROM "MessageReaction"
+          WHERE message_id = "msg".id AND reaction_code_point = "target_reaction".reaction_code_point)
+        )
+      FROM "MessageReaction" "target_reaction"
+      WHERE message_id = "msg".id
+      ) AS reactions
+    FROM "Message" "msg"
+    LEFT JOIN "User" "sender_user" ON "sender_user".id = "msg".sender_id
+    LEFT JOIN "Message" "reply_to" ON "reply_to".id = "msg".reply_to_id
+    WHERE "msg".conversation_id = $1
+    ORDER BY "msg".created_at
+    `,
+    values: [conversation_id],
   }
 
-  await dbClient.query(query)
+  return stripNulls((await dbQuery(query)).rows)
 }
 
 /**
  * @param {object} param0
- * @param {number} param0.user_id
+ * @param {number[]} param0.participantsUserIds
  * @param {number} param0.group_conversation_id
+ * @param {PgPoolClient} dbClient
+ */
+/* This is automatically done by triggers after users are added to a group conversation in createUserConversation */
+// const createGroupMembership = async () => {}
+
+/**
+ * @param {object} param0
+ * @param {number} param0.admin_user_id
+ * @param {number} param0.member_user_id
+ * @param {number} param0.group_conversation_id
+ * @param {"admin" | "member"} param0.role
  * @param {Map<string, any>} param0.updateKVPairs
  * @param {PgPoolClient} dbClient
  */
 export const updateGroupMembership = async (
-  { user_id, group_conversation_id, updateKVPairs },
+  { admin_user_id, member_user_id, group_conversation_id, role },
   dbClient
 ) => {
-  const [updateSetCols, updateSetValues] = [
-    [...updateKVPairs.keys()],
-    [...updateKVPairs.values()],
-  ]
-
+  if (admin_user_id === member_user_id)
+    throw new Error("You cannot alter you group membership.")
   const query = {
-    text: `UPDATE "GroupMembership" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} WHERE group_conversation_id = $${
-      updateSetValues.length + 1
-    } AND user_id = $${updateSetValues.length + 2}`,
-    values: [...updateSetValues, group_conversation_id, user_id],
+    text: `
+    UPDATE "GroupMembership" 
+    SET role = $1 
+    WHERE group_conversation_id = $2 AND user_id = $3 
+    AND (SELECT role 
+        FROM "GroupMembership" 
+        WHERE user_id = $4) = 'admin'`,
+    values: [role, group_conversation_id, member_user_id, admin_user_id],
   }
 
-  await dbClient.query(query)
+  return (await dbClient.query(query)).rowCount
 }
 
 /**
@@ -227,40 +260,40 @@ export const updateGroupMembership = async (
  * @param {number} param0.conversation_id
  * @param {object} param0.msg_content
  * @param {"text" | "image" | "video" | "voice" | "file" | "location" | "link"} param0.msg_content.type
- * @param {string} [param0.msg_content.text_content] Text content
- * If type is Image
- * @param {string} [param0.msg_content.image_data_url] Image URL
- * @param {string} [param0.msg_content.image_caption] Image caption.
- * If type is voice
- * @param {string} [param0.msg_content.voice_data_url] Voice data URL
- * @param {string} [param0.msg_content.voice_duration] Voice data duration
- * If type is video
- * @param {string} [param0.msg_content.video_data_url] Video URL
- * @param {string} [param0.msg_content.video_caption] Video caption.
- * If type is file
- * @param {"auido/*" | "document/*" | "compressed/*"} param0.msg_content.file_type A valid MIME file type
- * @param {string} param0.msg_content.file_url File URL
- * @param {string} param0.msg_content.file_name File name
- * If type is location
- * @param {GeolocationCoordinates} param0.msg_content.location_coordinate A valid geolocation coordinate
- * If type is link
- * @param {string} param0.msg_content.link_url Link URL
- * @param {string} param0.msg_content.link_description Link description
- * @param {PgPoolClient} dbClient
+ * @param {string} [param0.msg_content.text_content] Text content. If type is text
+ *
+ * @param {string} [param0.msg_content.image_data_url] Image URL. If type is image
+ * @param {string} [param0.msg_content.image_caption] Image caption. If type is image
+ *
+ * @param {string} [param0.msg_content.voice_data_url] Voice data URL. If type is voice
+ * @param {string} [param0.msg_content.voice_duration] Voice data duration. If type is voice
+ *
+ * @param {string} [param0.msg_content.video_data_url] Video URL. If type is video
+ * @param {string} [param0.msg_content.video_caption] Video caption. If type is video
+ *
+ * @param {"auido/*" | "document/*" | "compressed/*"} param0.msg_content.file_type A valid MIME file type. If type is file
+ * @param {string} param0.msg_content.file_url File URL. If type is file
+ * @param {string} param0.msg_content.file_name File name. If type is file
+ *
+ * @param {GeolocationCoordinates} param0.msg_content.location_coordinate A valid geolocation coordinate. If type is location
+ *
+ * @param {string} param0.msg_content.link_url Link URL. If type is link
+ * @param {string} param0.msg_content.link_description Link description. If type is file
  */
-export const createMessage = async (
-  { sender_id, conversation_id, msg_content },
-  dbClient
-) => {
+export const createMessage = async ({
+  sender_id,
+  conversation_id,
+  msg_content,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
     INSERT INTO "Message" (sender_id, conversation_id, msg_content) 
-    VALUES ($1, $2, $3, $4)`,
+    VALUES ($1, $2, $3)`,
     values: [sender_id, conversation_id, msg_content],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -270,62 +303,62 @@ export const createMessage = async (
  * @param {Map<string, any>} param0.updateKVPairs
  * @param {PgPoolClient} dbClient
  */
-export const updateMessage = async (
-  { message_id, updateKVPairs },
-  dbClient
-) => {
-  /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
-   * @type {Map<string, any> | undefined}
-   */
-  const msg_content = updateKVPairs.get("msg_content")
+export const updateMessage = async ({ message_id, updateKVPairs }) =>
+  /* dbClient */
+  {
+    /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
+     * @type {Map<string, any> | undefined}
+     */
+    const msg_content = updateKVPairs.get("msg_content")
 
-  /* Delete the values from the original Map to complete the extraction */
-  msg_content || updateKVPairs.delete("msg_content")
+    /* Delete the values from the original Map to complete the extraction */
+    msg_content || updateKVPairs.delete("msg_content")
 
-  /* 
+    /* 
   The remnants are the non-jsonb-type table columns.
   We separate table columns/keys from values as we they'd be handled separately
    */
-  const [updateSetCols, updateSetValues] = [
-    [...updateKVPairs.keys()],
-    [...updateKVPairs.values()],
-  ]
+    const [updateSetCols, updateSetValues] = [
+      [...updateKVPairs.keys()],
+      [...updateKVPairs.values()],
+    ]
 
-  /* We seperate `msg_content` jsonb keys from values */
-  const [msg_content_jsonbKeys, msg_content_jsonbValues] = msg_content
-    ? [[...msg_content.keys()], [...msg_content.values()]]
-    : [[], []]
+    /* We seperate `msg_content` jsonb keys from values */
+    const [msg_content_jsonbKeys, msg_content_jsonbValues] = msg_content
+      ? [[...msg_content.keys()], [...msg_content.values()]]
+      : [[], []]
 
-  /**
-   * Now we take the non-jsonb-type table columns and
-   * generate multiple `SET` parameters from them as the number of table columns are arbitrary (unknown)
-   *
-   * We did something similar for `msg_content` jsonb keys, but for `jsonb_set` in this case
-   *
-   * Observe that, as we dynamically add parameters/placeholders for each object's keys' values, we spread/align/match (...) the values in the `values` parameter of the `QueryConfig`, and we jump `{sumOfValuesLengthFromPreviousObjects} + 1` so we can spread/align/match `(...)` the values of the next object just after the values of the previous one.
-   *
-   * And finally, for the `WHERE` clause, we do a final `+ 1` jump as its parameter is the final. If there were multiple parameters for the `WHERE` clause, we'll jump depending on their position from away from the previously added dynamic parameters.
-   * @type {PgQueryConfig}
-   */
-  const query = {
-    text: `UPDATE "Message" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} ${
-      msg_content_jsonbKeys.length
-        ? generateJsonbMultiKeysSetParameters(
-            "msg_content",
-            msg_content_jsonbKeys,
-            updateSetValues.length + 1
-          )
-        : ""
-    } WHERE message_id = $${
-      updateSetValues.length + msg_content_jsonbValues.length + 1
-    }`,
-    values: [...updateSetValues, ...msg_content_jsonbValues, message_id],
+    /**
+     * Now we take the non-jsonb-type table columns and
+     * generate multiple `SET` parameters from them as the number of table columns are arbitrary (unknown)
+     *
+     * We did something similar for `msg_content` jsonb keys, but for `jsonb_set` in this case
+     *
+     * Observe that, as we dynamically add parameters/placeholders for each object's keys' values, we spread/align/match (...) the values in the `values` parameter of the `QueryConfig`, and we jump `{sumOfValuesLengthFromPreviousObjects} + 1` so we can spread/align/match `(...)` the values of the next object just after the values of the previous one.
+     *
+     * And finally, for the `WHERE` clause, we do a final `+ 1` jump as its parameter is the final. If there were multiple parameters for the `WHERE` clause, we'll jump depending on their position from away from the previously added dynamic parameters.
+     * @type {PgQueryConfig}
+     */
+    const query = {
+      text: `UPDATE "Message" SET ${generateMultiColumnUpdateSetParameters(
+        updateSetCols
+      )} ${
+        msg_content_jsonbKeys.length
+          ? generateJsonbMultiKeysSetParameters(
+              "msg_content",
+              msg_content_jsonbKeys,
+              updateSetValues.length + 1
+            )
+          : ""
+      } WHERE id = $${
+        updateSetValues.length + msg_content_jsonbValues.length + 1
+      }`,
+      values: [...updateSetValues, ...msg_content_jsonbValues, message_id],
+    }
+
+    // await dbClient.query(query)
+    await dbQuery(query)
   }
-
-  await dbClient.query(query)
-}
 
 /**
  * @param {object} param0
@@ -334,10 +367,11 @@ export const updateMessage = async (
  * @param {number} param0.reaction_code_point
  * @param {PgPoolClient} dbClient
  */
-export const createMessageReaction = async (
-  { message_id, reactor_user_id, reaction_code_point },
-  dbClient
-) => {
+export const createMessageReaction = async ({
+  message_id,
+  reactor_user_id,
+  reaction_code_point,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -346,7 +380,7 @@ export const createMessageReaction = async (
     values: [message_id, reactor_user_id, reaction_code_point],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -478,22 +512,22 @@ export const createMessageDeletionLog = async (
 }
 
 /**
- * @param {*} param0
+ * @param {object} param0
  * @param {number} param0.conversation_id
- * @param {number} param0.subject_user_id
- * @param {string} param0.activity_message
+ * @param {object} param0.activity_info
+ * @param {string} param0.activity_info.type
  * @param {PgPoolClient} dbClient
  */
 export const createGroupConversationActivityLog = async (
-  { conversation_id, activity_info },
+  { group_conversation_id, activity_info },
   dbClient
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    INSERT INTO "GroupConversationActivityLog" (conversation_id, activity_info) 
+    INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info) 
     VALUES ($1, $2)`,
-    values: [conversation_id, activity_info],
+    values: [group_conversation_id, activity_info],
   }
 
   await dbClient.query(query)
@@ -519,3 +553,6 @@ export const getUsersForChat = async (searchTerm, dbClient) => {
 
   await dbClient.query(query)
 }
+
+/* TRIGGERS */
+// These are functions automatically triggered after a change is made to the database
