@@ -152,7 +152,7 @@ export const getAllUserConversations = async (client_user_id) => {
       "client_user_conv".unread_messages_count,
       (SELECT 
         CASE 
-          WHEN history_type = 'message' THEN json_build_object('item_type', 'message', 'item_content', message_content)
+          WHEN history_type = 'message' THEN json_build_object('item_type', 'message', 'item_content', message_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}')
           ELSE json_build_object('item_type', 'activity', 'item_content', activity_info)
         END
       FROM "ConversationHistory"
@@ -187,14 +187,22 @@ export const getAllUserConversations = async (client_user_id) => {
  * LIMIT 20)
  * ORDER BY created_at ASC
  * @param {number} conversation_id
+ * @param {number} limit
+ * @param {number} offset
  */
-export const getConversationHistory = async (conversation_id) => {
+export const getConversationHistory = async ({conversation_id, limit, offset}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT * FROM "ConversationHistory" WHERE conversation_id = $1
+    SELECT * 
+    FROM (SELECT * 
+      FROM "ConversationHistory" 
+      WHERE conversation_id = $1 
+      ORDER BY created_at DESC 
+      LIMIT $2 OFFSET $3)
+    ORDER BY created_at ASC
     `,
-    values: [conversation_id],
+    values: [conversation_id, limit, offset],
   }
 
   return stripNulls((await dbQuery(query)).rows)
@@ -243,8 +251,10 @@ export const updateGroupMembership = async (
  * @param {number} param0.sender_id
  * @param {number} param0.conversation_id
  * @param {object} param0.msg_content
- * @param {"text" | "image" | "video" | "voice" | "file" | "location" | "link"} param0.msg_content.type
+ * @param {"text" | "emoji" | "image" | "video" | "voice" | "file" | "location" | "link"} param0.msg_content.type
  * @param {string} [param0.msg_content.text_content] Text content. If type is text
+ *
+ * @param {string} [param0.msg_content.emoji_code_point] Emoji code. If type is emoji
  *
  * @param {string} [param0.msg_content.image_data_url] Image URL. If type is image
  * @param {string} [param0.msg_content.image_caption] Image caption. If type is image
@@ -481,15 +491,15 @@ export const createReportedMessage = async (
  * @param {PgPoolClient} dbClient
  */
 export const createMessageDeletionLog = async (
-  { user_id, message_id, deleted_for },
+  { deleted_by_user_id, message_id, deleted_for },
   dbClient
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-  INSERT INTO "MessageDeletionLog" (user_id, message_id, deleted_for) 
+  INSERT INTO "MessageDeletionLog" (deleted_by_user_id, message_id, deleted_for) 
   VALUES ($1, $2, $3)`,
-    values: [user_id, message_id, deleted_for],
+    values: [deleted_by_user_id, message_id, deleted_for],
   }
 
   await dbClient.query(query)
