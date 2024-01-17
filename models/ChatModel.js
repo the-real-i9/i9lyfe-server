@@ -485,7 +485,7 @@ export const createReportedMessage = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.user_id
+ * @param {number} param0.deleted_by_user_id
  * @param {number} param0.message_id
  * @param {"me" | "everyone"} param0.deleted_for
  * @param {PgPoolClient} dbClient
