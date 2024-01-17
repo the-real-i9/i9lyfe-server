@@ -208,14 +208,25 @@ export const getConversationHistory = async ({conversation_id, limit, offset}) =
   return stripNulls((await dbQuery(query)).rows)
 }
 
+
 /**
- * @param {object} param0
- * @param {number[]} param0.participantsUserIds
- * @param {number} param0.group_conversation_id
- * @param {PgPoolClient} dbClient
+ * @param {object} param0 
+ * @param {number} param0.member_user_id 
+ * @param {number} param0.group_conversation_id 
+ * @param {PgPoolClient} dbClient 
+ * @returns {Promise<boolean>}
  */
-/* This is automatically done by triggers after users are added to a group conversation in createUserConversation */
-// const createGroupMembership = async () => {}
+export const isGroupAdmin = async ({member_user_id, group_conversation_id}, dbClient) => {
+  const query = {
+    text: `
+    SELECT EXISTS(SELECT 1 FROM "GroupMembership" WHERE user_id = $1 AND group_conversation_id = $2 AND role = 'admin') AS is_admin
+    `,
+    values: [member_user_id, group_conversation_id]
+  }
+
+  return (await dbClient.query(query)).rows[0].isAdmin
+}
+
 
 /**
  * @param {object} param0
@@ -227,23 +238,18 @@ export const getConversationHistory = async ({conversation_id, limit, offset}) =
  * @param {PgPoolClient} dbClient
  */
 export const updateGroupMembership = async (
-  { admin_user_id, member_user_id, group_conversation_id, role },
+  { member_user_id, group_conversation_id, role },
   dbClient
 ) => {
-  if (admin_user_id === member_user_id)
-    throw new Error("You cannot alter you group membership.")
   const query = {
     text: `
     UPDATE "GroupMembership" 
     SET role = $1 
-    WHERE group_conversation_id = $2 AND user_id = $3 
-    AND (SELECT role 
-        FROM "GroupMembership" 
-        WHERE user_id = $4) = 'admin'`,
-    values: [role, group_conversation_id, member_user_id, admin_user_id],
+    WHERE group_conversation_id = $2 AND user_id = $3`,
+    values: [role, group_conversation_id, member_user_id],
   }
 
-  return (await dbClient.query(query)).rowCount
+  await dbClient.query(query)
 }
 
 /**
@@ -538,6 +544,7 @@ export const getUsersForChat = async (searchTerm, dbClient) => {
       "user".username, 
       "user".name, 
       "user".profile_pic_url, 
+      "user".connection_status
       "user_conv".conversation_id
     FROM "User" "user"
     LEFT JOIN "UserConversation" "user_conv" ON "user_conv".user_id = "user".id
