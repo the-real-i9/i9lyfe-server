@@ -6,8 +6,8 @@ import {
   createMessage,
   createMessageReaction,
   createUserConversation,
-  getAllConversationMessages,
   getAllUserConversations,
+  getConversationHistory,
   updateGroupMembership,
   updateMessage,
 } from "../models/ChatModel.js"
@@ -78,7 +78,7 @@ test.skip("creating group conversation", async () => {
   }
 })
 
-test.skip("get all user conversations", async () => {
+test("get all user conversations", async () => {
 
   const userConvos = await getAllUserConversations(5)
 
@@ -211,9 +211,9 @@ test.skip("remove admin from admin", async () => {
   }
 })
 
-test("get all conversation messages", async () => {
+test.skip("get conversation history", async () => {
   try {
-    const res = await getAllConversationMessages(9)
+    const res = await getConversationHistory(10)
 
     console.log(res)
   } catch (error) {

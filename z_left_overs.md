@@ -12,10 +12,10 @@
     <th>Listeners</th>
   </tr>
   <tr>
-    <td>New Conversation</td>
+    <td>New Group Conversation</td>
     <td>
       <ul style=" padding-left: 20px;">
-        <li>Coversations list page</li>
+        <li><u>Conversations list page:</u> To display a new Group conversation.</li>
       </ul>
     </td>
   </tr>
@@ -24,6 +24,7 @@
     <td>
       <ul style=" padding-left: 20px;">
         <li><u>Client App's Push-NS</u> To notify the user of a new message</li>
+        <li><u>Conversations list page:</u> To display a new DM conversation <em>provided this message is a first.</em></li>
         <li><u>Conversation snippet:</u> To increment the unread messages count <code>AND</code> change the last message</li>
         <li><u>Conversation history page:</u> To add new message to the chat history.</li>
       </ul>
