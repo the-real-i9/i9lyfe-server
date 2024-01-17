@@ -507,7 +507,7 @@ export const createMessageDeletionLog = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.conversation_id
+ * @param {number} param0.group_conversation_id
  * @param {object} param0.activity_info
  * @param {string} param0.activity_info.type
  * @param {PgPoolClient} dbClient
