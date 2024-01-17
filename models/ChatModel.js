@@ -112,10 +112,11 @@ export const createUserConversation = async (
  * @param {Map<string, any>} param0.updateKVPairs
  * @param {PgPoolClient} dbClient
  */
-export const updateUserConversation = async (
-  { user_id, conversation_id, updateKVPairs },
-  dbClient
-) => {
+export const updateUserConversation = async ({
+  user_id,
+  conversation_id,
+  updateKVPairs,
+}) => {
   const [updateSetCols, updateSetValues] = [
     [...updateKVPairs.keys()],
     [...updateKVPairs.values()],
@@ -130,11 +131,11 @@ export const updateUserConversation = async (
     values: [...updateSetValues, user_id, conversation_id],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
- * @param {PgPoolClient} dbClient
+ * @param {number} client_user_id
  */
 export const getAllUserConversations = async (client_user_id) => {
   /** @type {PgQueryConfig} */
@@ -157,7 +158,7 @@ export const getAllUserConversations = async (client_user_id) => {
       FROM "ConversationHistory"
       WHERE conversation_id = "conv".id
       ORDER BY created_at DESC
-      FETCH FIRST ROW ONLY
+      LIMIT 1
       ) AS last_history_item
     FROM "Conversation" "conv"
     LEFT JOIN "UserConversation" "client_user_conv" ON "client_user_conv".conversation_id = "conv".id AND "client_user_conv".user_id = $1
@@ -172,7 +173,21 @@ export const getAllUserConversations = async (client_user_id) => {
   return stripNulls((await dbQuery(query)).rows)
 }
 
-/** @param {number} conversation_id */
+/**
+ * To retrieve history in chunks, from (-ve)N offset to the newest history (0)
+ * First fetch N rows from DESC row set
+ * Finaly, reorder the row set to ASC
+ *
+ * This is how you can display conversation history in a chat history page
+ * @example
+ * SELECT * FROM
+ * (SELECT * FROM "ConversationHistory"
+ * WHERE conversation_id = $1
+ * ORDER BY created_at DESC
+ * LIMIT 20)
+ * ORDER BY created_at ASC
+ * @param {number} conversation_id
+ */
 export const getConversationHistory = async (conversation_id) => {
   /** @type {PgQueryConfig} */
   const query = {
