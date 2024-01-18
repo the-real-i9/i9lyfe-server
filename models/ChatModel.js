@@ -145,6 +145,7 @@ export const getAllUserConversations = async (client_user_id) => {
       "conv".info ->> 'type' AS conversation_type,
       "conv".info ->> 'title' AS group_title,
       "conv".info ->> 'cover_pic_url' AS group_cover_image,
+      "conv".updated_at,
       "other_user".name AS partner_name,
       "other_user".profile_pic_url AS partner_profile_pic,
       "other_user".connection_status AS partner_connection_status,
@@ -164,7 +165,7 @@ export const getAllUserConversations = async (client_user_id) => {
     LEFT JOIN "UserConversation" "client_user_conv" ON "client_user_conv".conversation_id = "conv".id AND "client_user_conv".user_id = $1
     LEFT JOIN "UserConversation" "other_user_conv" ON "other_user_conv".conversation_id = "client_user_conv".conversation_id AND "other_user_conv".user_id != $1
     LEFT JOIN "User" "other_user" ON "other_user".id = "other_user_conv".user_id AND "conv".info ->> 'type' = 'direct'
-    WHERE "client_user_conv".deleted = false -- AND last_conversation_history IS NOT NULL
+    WHERE "client_user_conv".deleted = false AND last_history_item IS NOT NULL
     ORDER BY "conv".updated_at DESC
     `,
     values: [client_user_id],
@@ -211,17 +212,19 @@ export const getConversationHistory = async ({conversation_id, limit, offset}) =
 
 /**
  * @param {object} param0 
- * @param {number} param0.member_user_id 
+ * @param {number} param0.participant_user_id 
  * @param {number} param0.group_conversation_id 
  * @param {PgPoolClient} dbClient 
  * @returns {Promise<boolean>}
  */
-export const isGroupAdmin = async ({member_user_id, group_conversation_id}, dbClient) => {
+export const isGroupAdmin = async ({participant_user_id, group_conversation_id}, dbClient) => {
   const query = {
     text: `
-    SELECT EXISTS(SELECT 1 FROM "GroupMembership" WHERE user_id = $1 AND group_conversation_id = $2 AND role = 'admin') AS is_admin
+    SELECT EXISTS(SELECT 1 
+      FROM "GroupMembership" 
+      WHERE user_id = $1 AND group_conversation_id = $2 AND role = 'admin') AS is_admin
     `,
-    values: [member_user_id, group_conversation_id]
+    values: [participant_user_id, group_conversation_id]
   }
 
   return (await dbClient.query(query)).rows[0].isAdmin
@@ -230,15 +233,13 @@ export const isGroupAdmin = async ({member_user_id, group_conversation_id}, dbCl
 
 /**
  * @param {object} param0
- * @param {number} param0.admin_user_id
- * @param {number} param0.member_user_id
+ * @param {number} param0.participant_user_id
  * @param {number} param0.group_conversation_id
  * @param {"admin" | "member"} param0.role
- * @param {Map<string, any>} param0.updateKVPairs
  * @param {PgPoolClient} dbClient
  */
 export const updateGroupMembership = async (
-  { member_user_id, group_conversation_id, role },
+  { participant_user_id, group_conversation_id, role },
   dbClient
 ) => {
   const query = {
@@ -246,7 +247,7 @@ export const updateGroupMembership = async (
     UPDATE "GroupMembership" 
     SET role = $1 
     WHERE group_conversation_id = $2 AND user_id = $3`,
-    values: [role, group_conversation_id, member_user_id],
+    values: [role, group_conversation_id, participant_user_id],
   }
 
   await dbClient.query(query)

@@ -32,38 +32,5 @@ export class DMChat {
       dbClient.release()
     }
   }
-
-  async sendMessage(conversation_id, sender_id, msg_content) {
-    await ChatModel.createMessage({ sender_id, conversation_id, msg_content })
-
-    // Implement realtime todos where appropriate
-  }
-
-  async getConversationHistory({ conversation_id, limit, offset }) {
-    return await ChatModel.getConversationHistory({
-      conversation_id,
-      limit,
-      offset,
-    })
-  }
-
-  async reactToMessage({ reactor_user_id, message_id, reaction_code_point }) {
-    await ChatModel.createMessageReaction({
-      reactor_user_id,
-      message_id,
-      reaction_code_point,
-    })
-
-    // Implement realtime todos where appropriate
-  }
-
-  async deleteMessage({ message_id, deleted_by_user_id, deleted_for }) {
-    await ChatModel.createMessageDeletionLog({
-      message_id,
-      deleted_by_user_id,
-      deleted_for,
-    })
-
-    // Implement realtime todos where appropriate
-  }
+  
 }
