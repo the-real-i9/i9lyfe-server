@@ -45,7 +45,7 @@ export const updateConversation = async (
 ) => {
   /** @type {Map<string, any> | undefined} */
   const info = updateKVPairs.get("info")
-  info || updateKVPairs.delete("info")
+  info && updateKVPairs.delete("info")
 
   const [updateSetCols, updateSetValues] = [
     [...updateKVPairs.keys()],
@@ -191,7 +191,11 @@ export const getAllUserConversations = async (client_user_id) => {
  * @param {number} limit
  * @param {number} offset
  */
-export const getConversationHistory = async ({conversation_id, limit, offset}) => {
+export const getConversationHistory = async ({
+  conversation_id,
+  limit,
+  offset,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -209,27 +213,28 @@ export const getConversationHistory = async ({conversation_id, limit, offset}) =
   return stripNulls((await dbQuery(query)).rows)
 }
 
-
 /**
- * @param {object} param0 
- * @param {number} param0.participant_user_id 
- * @param {number} param0.group_conversation_id 
- * @param {PgPoolClient} dbClient 
+ * @param {object} param0
+ * @param {number} param0.participant_user_id
+ * @param {number} param0.group_conversation_id
+ * @param {PgPoolClient} dbClient
  * @returns {Promise<boolean>}
  */
-export const isGroupAdmin = async ({participant_user_id, group_conversation_id}, dbClient) => {
+export const isGroupAdmin = async (
+  { participant_user_id, group_conversation_id },
+  dbClient
+) => {
   const query = {
     text: `
     SELECT EXISTS(SELECT 1 
       FROM "GroupMembership" 
       WHERE user_id = $1 AND group_conversation_id = $2 AND role = 'admin') AS is_admin
     `,
-    values: [participant_user_id, group_conversation_id]
+    values: [participant_user_id, group_conversation_id],
   }
 
   return (await dbClient.query(query)).rows[0].isAdmin
 }
-
 
 /**
  * @param {object} param0
@@ -304,62 +309,59 @@ export const createMessage = async ({
  * @param {Map<string, any>} param0.updateKVPairs
  * @param {PgPoolClient} dbClient
  */
-export const updateMessage = async ({ message_id, updateKVPairs }) =>
-  /* dbClient */
-  {
-    /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
-     * @type {Map<string, any> | undefined}
-     */
-    const msg_content = updateKVPairs.get("msg_content")
+export const updateMessage = async ({ message_id, updateKVPairs }) => {
+  /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
+   * @type {Map<string, any> | undefined}
+   */
+  const msg_content = updateKVPairs.get("msg_content")
 
-    /* Delete the values from the original Map to complete the extraction */
-    msg_content || updateKVPairs.delete("msg_content")
+  /* Delete the values from the original Map to complete the extraction */
+  msg_content && updateKVPairs.delete("msg_content")
 
-    /* 
+  /* 
   The remnants are the non-jsonb-type table columns.
   We separate table columns/keys from values as we they'd be handled separately
    */
-    const [updateSetCols, updateSetValues] = [
-      [...updateKVPairs.keys()],
-      [...updateKVPairs.values()],
-    ]
+  const [updateSetCols, updateSetValues] = [
+    [...updateKVPairs.keys()],
+    [...updateKVPairs.values()],
+  ]
 
-    /* We seperate `msg_content` jsonb keys from values */
-    const [msg_content_jsonbKeys, msg_content_jsonbValues] = msg_content
-      ? [[...msg_content.keys()], [...msg_content.values()]]
-      : [[], []]
+  /* We seperate `msg_content` jsonb keys from values */
+  const [msg_content_jsonbKeys, msg_content_jsonbValues] = msg_content
+    ? [[...msg_content.keys()], [...msg_content.values()]]
+    : [[], []]
 
-    /**
-     * Now we take the non-jsonb-type table columns and
-     * generate multiple `SET` parameters from them as the number of table columns are arbitrary (unknown)
-     *
-     * We did something similar for `msg_content` jsonb keys, but for `jsonb_set` in this case
-     *
-     * Observe that, as we dynamically add parameters/placeholders for each object's keys' values, we spread/align/match (...) the values in the `values` parameter of the `QueryConfig`, and we jump `{sumOfValuesLengthFromPreviousObjects} + 1` so we can spread/align/match `(...)` the values of the next object just after the values of the previous one.
-     *
-     * And finally, for the `WHERE` clause, we do a final `+ 1` jump as its parameter is the final. If there were multiple parameters for the `WHERE` clause, we'll jump depending on their position from away from the previously added dynamic parameters.
-     * @type {PgQueryConfig}
-     */
-    const query = {
-      text: `UPDATE "Message" SET ${generateMultiColumnUpdateSetParameters(
-        updateSetCols
-      )} ${
-        msg_content_jsonbKeys.length
-          ? generateJsonbMultiKeysSetParameters(
-              "msg_content",
-              msg_content_jsonbKeys,
-              updateSetValues.length + 1
-            )
-          : ""
-      } WHERE id = $${
-        updateSetValues.length + msg_content_jsonbValues.length + 1
-      }`,
-      values: [...updateSetValues, ...msg_content_jsonbValues, message_id],
-    }
-
-    // await dbClient.query(query)
-    await dbQuery(query)
+  /**
+   * Now we take the non-jsonb-type table columns and
+   * generate multiple `SET` parameters from them as the number of table columns are arbitrary (unknown)
+   *
+   * We did something similar for `msg_content` jsonb keys, but for `jsonb_set` in this case
+   *
+   * Observe that, as we dynamically add parameters/placeholders for each object's keys' values, we spread/align/match (...) the values in the `values` parameter of the `QueryConfig`, and we jump `{sumOfValuesLengthFromPreviousObjects} + 1` so we can spread/align/match `(...)` the values of the next object just after the values of the previous one.
+   *
+   * And finally, for the `WHERE` clause, we do a final `+ 1` jump as its parameter is the final. If there were multiple parameters for the `WHERE` clause, we'll jump depending on their position from away from the previously added dynamic parameters.
+   * @type {PgQueryConfig}
+   */
+  const query = {
+    text: `UPDATE "Message" SET ${generateMultiColumnUpdateSetParameters(
+      updateSetCols
+    )} ${
+      msg_content_jsonbKeys.length
+        ? generateJsonbMultiKeysSetParameters(
+            "msg_content",
+            msg_content_jsonbKeys,
+            updateSetValues.length + 1
+          )
+        : ""
+    } WHERE id = $${
+      updateSetValues.length + msg_content_jsonbValues.length + 1
+    }`,
+    values: [...updateSetValues, ...msg_content_jsonbValues, message_id],
   }
+
+  await dbQuery(query)
+}
 
 /**
  * @param {object} param0
@@ -558,7 +560,7 @@ export const getUsersForChat = async (searchTerm, dbClient) => {
 
 /* Helpers */
 /**
- * @param {number} user_id 
+ * @param {number} user_id
  * @returns {Promise<number[]>}
  */
 export const getAllUserConversationIds = async (user_id) => {

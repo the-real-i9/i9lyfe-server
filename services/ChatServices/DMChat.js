@@ -3,7 +3,7 @@ import { getDBClient } from "../../models/db.js"
 
 export class DMChat {
   /**
-   * 
+   *
    * @param {number[]} participantsUserIds The two individual ids
    * @returns The data needed to display the DM chat page for the client
    */
@@ -13,7 +13,7 @@ export class DMChat {
       await dbClient.query("BEGIN")
 
       const conversation_id = await ChatModel.createConversation(
-        { type: "direct", created_by: client_username},
+        { type: "direct", created_by: client_username },
         dbClient
       )
 
@@ -32,5 +32,4 @@ export class DMChat {
       dbClient.release()
     }
   }
-  
 }

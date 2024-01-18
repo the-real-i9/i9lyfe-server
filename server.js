@@ -26,5 +26,5 @@ io.on("connection", (socket) => {
 })
 
 server.listen(5000, 'localhost', () => {
-  console.log(`Server running at http://localhost:${process.env.PORT || 5000}`)
+  console.log(`Server running at http://localhost:${process.env.PORT ?? 5000}`)
 })

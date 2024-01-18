@@ -146,7 +146,7 @@ test.skip("make group member, admin", async () => {
     const updated = await updateGroupMembership(
       {
         admin_user_id: 4,
-        member_user_id: 5,
+        participant_user_id: 5,
         group_conversation_id: 10,
         role: "admin",
       },
@@ -183,7 +183,7 @@ test.skip("remove admin from admin", async () => {
     const updated = await updateGroupMembership(
       {
         admin_user_id: 5,
-        member_user_id: 4,
+        participant_user_id: 4,
         group_conversation_id: 10,
         role: "member",
       },

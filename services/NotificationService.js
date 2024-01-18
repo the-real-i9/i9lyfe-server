@@ -13,9 +13,9 @@ export class NotificationService {
    * @param {import("socket.io").Server} io
    * @param {import("socket.io").Socket} socket
    */
-  static initWebSocket(io, socket) {
+  static initRTC(io, socket) {
     const { client_user_id } = socket.jwt_payload
-    NotificationService.io = io
+    NotificationService.io ??= io
     NotificationService.sockClients.set(client_user_id, socket)
 
     new NotificationService(client_user_id).notifyUnreadNotifications()
