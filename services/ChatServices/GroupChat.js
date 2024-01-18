@@ -287,7 +287,7 @@ export class GroupChat {
         {
           group_conversation_id,
           activity_info: {
-            type: "member_made_admin",
+            type: "participant_made_admin",
             made_by: client_user.username,
             new_admin: participant.username,
           },
@@ -306,9 +306,111 @@ export class GroupChat {
     }
   }
 
-  async dropAdmin() {}
+  async dropFromAdmin({
+    client_user,
+    admin_participant,
+    group_conversation_id,
+  }) {
+    const dbClient = await getDBClient()
+    try {
+      await dbClient.query("BEGIN")
+
+      if (
+        !(await ChatModel.isGroupAdmin(
+          {
+            participant_user_id: client_user.user_id,
+            group_conversation_id,
+          },
+          dbClient
+        ))
+      ) {
+        throw new Error("You must be a group admin to drop admin to member!")
+      }
+
+      await ChatModel.updateGroupMembership({
+        participant_user_id: admin_participant.user_id,
+        group_conversation_id,
+        role: "member",
+      })
+
+      await ChatModel.createGroupConversationActivityLog(
+        {
+          group_conversation_id,
+          activity_info: {
+            type: "admin_dropped_from_admins",
+            dropped_by: client_user.username,
+            ex_admin: admin_participant.username,
+          },
+        },
+        dbClient
+      )
+
+      dbClient.query("COMMIT")
+
+      // Implement realtime todos where appropriate
+    } catch (error) {
+      dbClient.query("ROLLBACK")
+      throw error
+    } finally {
+      dbClient.release()
+    }
+  }
+
+  /**
+   * @param {object} param0 
+   * @param {object} param0.client_user 
+   * @param {number} param0.client_user.user_id 
+   * @param {string} param0.client_user.username 
+   * @param {Object<string, string>} param0.newInfoKVPair 
+   */
+  async changeGroupInfo({ client_user, group_conversation_id, newInfoKVPair }) {
+    const dbClient = await getDBClient()
+    try {
+      await dbClient.query("BEGIN")
+
+      const [[infoKey, newValue]] = Object.entries(newInfoKVPair)
+
+      if (
+        !(await ChatModel.isGroupAdmin(
+          {
+            participant_user_id: client_user.user_id,
+            group_conversation_id,
+          },
+          dbClient
+        ))
+      ) {
+        throw new Error(
+          `You must be a group admin to change group's ${infoKey}!`
+        )
+      }
+
+      await ChatModel.updateConversation({
+        conversation_id: group_conversation_id,
+        updateKVPairs: new Map().set("info", new Map().set(infoKey, newValue)),
+      })
+
+      await ChatModel.createGroupConversationActivityLog(
+        {
+          group_conversation_id,
+          activity_info: {
+            type: `group_${infoKey}_changed`,
+            changed_by: client_user.username,
+            [`new_group_${infoKey}`]: newValue,
+          },
+        },
+        dbClient
+      )
+
+      dbClient.query("COMMIT")
+
+      // Implement realtime todos where appropriate
+    } catch (error) {
+      dbClient.query("ROLLBACK")
+      throw error
+    } finally {
+      dbClient.release()
+    }
+  }
 
   changeGroupPhoto() {}
-
-  changeGroupDescription() {}
 }

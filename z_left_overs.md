@@ -50,3 +50,6 @@
     </td>
   </tr>
 </table>
+
+### Hint
+- For every conversation (direct or group), create a room socket, and join particpants to it ($2$ or $N > 1$ respectively). Every event that happens in a conversation is triggered on the target room socket and sent to all its participants.
