@@ -7,6 +7,7 @@ const server = createServer(app)
 
 import { Server } from 'socket.io'
 import { NotificationService } from './services/NotificationService.js'
+import { ChatRealtimeService } from './services/ChatServices/ChatRealtimeService.js'
 
 export const io = new Server(server)
 
@@ -20,7 +21,8 @@ io.use((socket, next) => {
 })
 
 io.on("connection", (socket) => {
-  NotificationService.initWebSocket(io, socket)
+  NotificationService.initRTC(io, socket)
+  ChatRealtimeService.initRTC(io, socket)
 })
 
 server.listen(5000, 'localhost', () => {

@@ -556,5 +556,24 @@ export const getUsersForChat = async (searchTerm, dbClient) => {
   await dbClient.query(query)
 }
 
+/* Helpers */
+/**
+ * @param {number} user_id 
+ * @returns {Promise<number[]>}
+ */
+export const getAllUserConversationIds = async (user_id) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    SELECT conversation_id 
+    FROM "UserConversation"
+    WHERE user_id = $1 AND deleted = false
+    `,
+    values: [user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}
+
 /* TRIGGERS */
 // These are functions automatically triggered after a change is made to the database
