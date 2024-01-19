@@ -1,4 +1,5 @@
 import * as ChatModel from "../../models/ChatModel.js"
+import { ChatRealtimeService } from "./ChatRealtimeService.js"
 
 export class ChatService {
   async getMyConversations(client_user_id) {
@@ -13,12 +14,6 @@ export class ChatService {
     })
   }
 
-  async sendMessage({ sender_id, conversation_id, msg_content }) {
-    await ChatModel.createMessage({ sender_id, conversation_id, msg_content })
-
-    // Implement realtime todos where appropriate
-  }
-
   async getConversationHistory({ conversation_id, limit, offset }) {
     return await ChatModel.getConversationHistory({
       conversation_id,
@@ -27,23 +22,105 @@ export class ChatService {
     })
   }
 
-  async reactToMessage({ reactor_user_id, message_id, reaction_code_point }) {
+  /**
+   * @param {object} param0 
+   * @param {Object} param0.sender 
+   * @param {number} param0.sender.user_id 
+   * @param {string} param0.sender.username 
+   */
+  async sendMessage({ sender, conversation_id, msg_content }) {
+    await ChatModel.createMessage({ sender_user_id: sender.user_id, conversation_id, msg_content })
+
+    /* Realtime actions */
+    // send message to other participants
+    new ChatRealtimeService().sendNewMessage(conversation_id, {
+      sender,
+      conversation_id,
+      msg_content,
+    })
+  }
+
+  async acknowledgeMessageDelivered({ user_id, conversation_id, message_id }) {
+    const isDelivered = await ChatModel.acknowledgeMessageDelivered(
+      user_id,
+      message_id
+    )
+
+    if (isDelivered) {
+      /* Realtime actions */
+      // change message delivery_status to delivered for other participants
+      new ChatRealtimeService().sendMessageDelivered(conversation_id, {
+        conversation_id,
+        message_id,
+      })
+    }
+  }
+
+  async acknowledgeMessageRead({ user_id, conversation_id, message_id }) {
+    const isRead = await ChatModel.acknowledgeMessageRead(user_id, message_id)
+
+    if (isRead) {
+      /* Realtime actions */
+      // change message delivery_status to read for other participants
+      new ChatRealtimeService().sendMessageRead(conversation_id, {
+        conversation_id,
+        message_id,
+      })
+    }
+  }
+
+  /**
+   * @param {object} param0 
+   * @param {Object} param0.reactor 
+   * @param {number} param0.reactor.user_id 
+   * @param {string} param0.reactor.username 
+   */
+  async reactToMessage({
+    reactor,
+    conversation_id,
+    message_id,
+    reaction_code_point,
+  }) {
     await ChatModel.createMessageReaction({
-      reactor_user_id,
+      reactor_user_id: reactor.user_id,
       message_id,
       reaction_code_point,
     })
 
-    // Implement realtime todos where appropriate
+    /* Realtime actions */
+    // update message reaction for other participants
+    new ChatRealtimeService().sendMessageReaction(conversation_id, {
+      reactor: reactor.username,
+      message_id,
+      reaction_code_point,
+    })
   }
 
-  async deleteMessage({ message_id, deleted_by_user_id, deleted_for }) {
+  /**
+   * @param {object} param0 
+   * @param {Object} param0.deleter 
+   * @param {number} param0.deleter.user_id 
+   * @param {string} param0.deleter.username 
+   */
+  async deleteMessage({
+    deleter,
+    conversation_id,
+    message_id,
+    deleted_for,
+  }) {
     await ChatModel.createMessageDeletionLog({
+      deleter_user_id: deleter.user_id,
       message_id,
-      deleted_by_user_id,
       deleted_for,
     })
 
-    // Implement realtime todos where appropriate
+    if (deleted_for === "everyone") {
+      /* Realtime actions */
+      // delete message for other participants
+      new ChatRealtimeService().sendMessageDeleted(conversation_id, {
+        deleter_username: deleter.username,
+        message_id,
+      })
+    }
   }
 }

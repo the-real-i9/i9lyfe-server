@@ -20,9 +20,33 @@ export class ChatRealtimeService {
     socket.join(clientConversationRooms)
   }
 
-  sendMessage(conversation_id, msgData) {
+  sendNewMessage(conversation_id, msgData) {
     ChatRealtimeService.io
       .to(`convo-room-${conversation_id}`)
       .emit("new message", msgData)
+  }
+
+  sendMessageDelivered(conversation_id, infoData) {
+    ChatRealtimeService.io
+    .to(`convo-room-${conversation_id}`)
+    .emit("message delivered", infoData)
+  }
+
+  sendMessageRead(conversation_id, infoData) {
+    ChatRealtimeService.io
+    .to(`convo-room-${conversation_id}`)
+    .emit("message read", infoData)
+  }
+
+  sendMessageReaction(conversation_id, reactionData) {
+    ChatRealtimeService.io
+    .to(`convo-room-${conversation_id}`)
+    .emit("message reaction", reactionData)
+  }
+
+  sendMessageDeleted(conversation_id, deletionData) {
+    ChatRealtimeService.io
+    .to(`convo-room-${conversation_id}`)
+    .emit("message deleted", deletionData)
   }
 }
