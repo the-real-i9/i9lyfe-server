@@ -4,21 +4,29 @@ import { getDBClient } from "../../models/db.js"
 export class DMChat {
   /**
    *
-   * @param {number[]} participantsUserIds The two individual ids
+   * @param {object} client_user
+   * @param {number} client_user.user_id
+   * @param {string} client_user.username
+   * @param {object} partner_user
+   * @param {number} partner_user.user_id
+   * @param {string} partner_user.username
    * @returns The data needed to display the DM chat page for the client
    */
-  async createDM(client_username, participantsUserIds) {
+  async createDM(client_user, partner_user) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       const conversation_id = await ChatModel.createConversation(
-        { type: "direct", created_by: client_username },
+        { type: "direct", created_by: client_user.username },
         dbClient
       )
 
       await ChatModel.createUserConversation(
-        { participantsUserIds, conversation_id },
+        {
+          participantsUserIds: [client_user.user_id, partner_user.user_id],
+          conversation_id,
+        },
         dbClient
       )
 

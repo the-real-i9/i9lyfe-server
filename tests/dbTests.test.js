@@ -90,7 +90,7 @@ test("get all user conversations", async () => {
 test.skip("send new direct message", async () => {
   try {
     await createMessage({
-      sender_id: 4,
+      sender_user_id: 4,
       conversation_id: 9,
       msg_content: { type: "text", text_content: "Yeah! I'm good too!" },
     })
@@ -104,7 +104,7 @@ test.skip("send new direct message", async () => {
 test.skip("send new group message", async () => {
   try {
     await createMessage({
-      sender_id: 5,
+      sender_user_id: 5,
       conversation_id: 10,
       msg_content: { type: "text", text_content: "Hey! What's up guys? I'm new here!" },
     })
