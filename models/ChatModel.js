@@ -260,7 +260,7 @@ export const updateGroupMembership = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.sender_id
+ * @param {number} param0.sender_user_id
  * @param {number} param0.conversation_id
  * @param {object} param0.msg_content
  * @param {"text" | "emoji" | "image" | "video" | "voice" | "file" | "location" | "link"} param0.msg_content.type
@@ -287,16 +287,16 @@ export const updateGroupMembership = async (
  * @param {string} param0.msg_content.link_description Link description. If type is file
  */
 export const createMessage = async ({
-  sender_id,
+  sender_user_id,
   conversation_id,
   msg_content,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    INSERT INTO "Message" (sender_id, conversation_id, msg_content) 
+    INSERT INTO "Message" (sender_user_id, conversation_id, msg_content) 
     VALUES ($1, $2, $3)`,
-    values: [sender_id, conversation_id, msg_content],
+    values: [sender_user_id, conversation_id, msg_content],
   }
 
   await dbQuery(query)
@@ -304,12 +304,10 @@ export const createMessage = async ({
 
 /**
  * The algorithm in this function explains how all `UPDATE` algorithms were implemented dynamically in this app (save a few ones). The documentation was added here as this seems to be the most complex implementation.
- * @param {object} param0
- * @param {number} param0.message_id
- * @param {Map<string, any>} param0.updateKVPairs
- * @param {PgPoolClient} dbClient
+ * @param {number} message_id
+ * @param {Map<string, any>} updateKVPairs
  */
-export const updateMessage = async ({ message_id, updateKVPairs }) => {
+export const updateMessage = async (message_id, updateKVPairs) => {
   /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
    * @type {Map<string, any> | undefined}
    */
@@ -361,6 +359,44 @@ export const updateMessage = async ({ message_id, updateKVPairs }) => {
   }
 
   await dbQuery(query)
+}
+
+/**
+ * @param {number} message_id 
+ * @param {number} user_id 
+ * @returns {Promise<boolean>} Has message delivered to all conversation participants?
+ */
+export const acknowledgeMessageDelivered = async (user_id, message_id) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    UPDATE "Message" 
+    SET delivered_to = delivered_to || $1 
+    WHERE id = $2
+    RETURNING (delivery_status = 'delivered') AS is_delivered`,
+    values: [user_id, message_id],
+  }
+
+  return (await dbQuery(query)).rows[0].is_delivered
+}
+
+/**
+ * @param {number} message_id 
+ * @param {number} user_id 
+ * @returns {Promise<boolean>} Has message been read by all conversation participants?
+ */
+export const acknowledgeMessageRead = async (user_id, message_id) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    UPDATE "Message" 
+    SET read_by = read_by || $1 
+    WHERE id = $2
+    RETURNING (delivery_status = 'read') AS is_read`,
+    values: [user_id, message_id],
+  }
+
+  return (await dbQuery(query)).rows[0].is_read
 }
 
 /**
@@ -494,21 +530,21 @@ export const createReportedMessage = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.deleted_by_user_id
+ * @param {number} param0.deleter_user_id
  * @param {number} param0.message_id
  * @param {"me" | "everyone"} param0.deleted_for
  * @param {PgPoolClient} dbClient
  */
 export const createMessageDeletionLog = async (
-  { deleted_by_user_id, message_id, deleted_for },
+  { deleter_user_id, message_id, deleted_for },
   dbClient
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-  INSERT INTO "MessageDeletionLog" (deleted_by_user_id, message_id, deleted_for) 
+  INSERT INTO "MessageDeletionLog" (deleter_user_id, message_id, deleted_for) 
   VALUES ($1, $2, $3)`,
-    values: [deleted_by_user_id, message_id, deleted_for],
+    values: [deleter_user_id, message_id, deleted_for],
   }
 
   await dbClient.query(query)
