@@ -69,8 +69,8 @@ export class GroupChat {
 
       // Implement realtime todos where appropriate
       // here we have to create a socket room for this conversation and add these participants to it
-      // next we send the group creation and additon of participants to all participants
-      ChatRealtimeService.createGroupConversation(
+      // next we send the group creation and additon of participants to all participants (this is done automatically by the function below)
+      await ChatRealtimeService.createGroupConversation(
         participants.map(({ user_id }) => user_id),
         group_conversation_id
       )
@@ -124,7 +124,16 @@ export class GroupChat {
 
       dbClient.query("COMMIT")
 
-      // Implement realtime todos where appropriate
+      /* Realtime action */
+      // send activity log to participants
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "participants_added",
+          added_by: client.username,
+          added_participants: participants.map(({ username }) => username),
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -180,7 +189,16 @@ export class GroupChat {
 
       dbClient.query("COMMIT")
 
-      // Implement realtime todos where appropriate
+      /* Realtime action */
+      // send activity log to participants
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "participant_removed",
+          removed_by: client.username,
+          removed_participant: participant.username,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -221,7 +239,15 @@ export class GroupChat {
 
       dbClient.query("COMMIT")
 
-      // Implement realtime todos where appropriate
+      /* Realtime action */
+      // send activity log to participants
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "group_joined",
+          who_joined: participant.username,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -263,7 +289,15 @@ export class GroupChat {
 
       dbClient.query("COMMIT")
 
-      // Implement realtime todos where appropriate
+      /* Realtime action */
+      // send activity log to participants
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "group_left",
+          who_left: participant.username,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -325,6 +359,14 @@ export class GroupChat {
       dbClient.query("COMMIT")
 
       // Implement realtime todos where appropriate
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "participant_made_admin",
+          made_by: client.username,
+          new_admin: participant.username,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -374,6 +416,14 @@ export class GroupChat {
       dbClient.query("COMMIT")
 
       // Implement realtime todos where appropriate
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: "admin_dropped_from_admins",
+          dropped_by: client.username,
+          ex_admin: admin_participant.username,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error
@@ -436,6 +486,14 @@ export class GroupChat {
       dbClient.query("COMMIT")
 
       // Implement realtime todos where appropriate
+      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+        group_conversation_id,
+        activity_info: {
+          type: `group_${infoKey}_changed`,
+          changed_by: client.username,
+          [`new_group_${infoKey}`]: newValue,
+        },
+      })
     } catch (error) {
       dbClient.query("ROLLBACK")
       throw error

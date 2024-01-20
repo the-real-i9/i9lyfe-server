@@ -33,7 +33,7 @@ export class DMChat {
 
       dbClient.query("COMMIT")
 
-      ChatRealtimeService.createDMConversation({
+      await ChatRealtimeService.createDMConversation({
         client_user_id: client.user_id,
         partner_user_id: partner.user_id,
         conversation_id,

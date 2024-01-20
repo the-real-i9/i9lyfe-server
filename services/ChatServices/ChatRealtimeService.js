@@ -24,12 +24,12 @@ export class ChatRealtimeService {
     socket.join(clientConversationRooms)
   }
 
-  static createDMConversation({
+  static async createDMConversation({
     client_user_id,
     partner_user_id,
     conversation_id,
   }) {
-    Promise.all([
+    await Promise.all([
       ChatRealtimeService.sockClients
         ?.get(client_user_id)
         .join(`convo-room-${conversation_id}`),
@@ -39,12 +39,12 @@ export class ChatRealtimeService {
     ])
   }
 
-  static createGroupConversation(
+  static async createGroupConversation(
     participantsUserIds,
     group_conversation_id
   ) {
     for (const p_user_id of participantsUserIds) {
-      ChatRealtimeService.sockClients
+      await ChatRealtimeService.sockClients
         ?.get(p_user_id)
         .join(`convo-room-${group_conversation_id}`)
     }
@@ -80,5 +80,11 @@ export class ChatRealtimeService {
     ChatRealtimeService.io
       .to(`convo-room-${conversation_id}`)
       .emit("message deleted", deletionData)
+  }
+
+  sendGroupActivityLog(group_conversation_id, activityLogData) {
+    ChatRealtimeService.io
+      .to(`convo-room-${group_conversation_id}`)
+      .emit("new activity log", activityLogData)
   }
 }
