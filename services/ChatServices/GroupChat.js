@@ -1,7 +1,16 @@
 import { getDBClient } from "../../models/db.js"
 import * as ChatModel from "../../models/ChatModel.js"
+import { ChatRealtimeService } from "./ChatRealtimeService.js"
 
 export class GroupChat {
+  /**
+   * @param {object} param0
+   * @param {string} param0.client_username
+   * @param {object[]} param0.participants
+   * @param {number} param0.participants.user_id
+   * @param {string} param0.participants.username
+   * @param {number} param0.group_conversation_id
+   */
   async #addParticipantsToGroup(
     { client_username, participants, group_conversation_id },
     dbClient
@@ -28,31 +37,43 @@ export class GroupChat {
   }
 
   /**
-   * @param {object[]} participants
+   * @param {Object[]} participants
    * @param {number} participants.user_id
    * @param {string} participants.username
    * @returns The data needed to display the group chat page history
    */
-  async createGroup(client_username, participants) {
+  async createGroup({
+    participants,
+    created_by,
+    title,
+    description,
+    cover_image_url,
+  }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       const group_conversation_id = await ChatModel.createConversation(
-        { type: "group", created_by: client_username },
+        { type: "group", created_by, title, description, cover_image_url },
         dbClient
       )
 
       // add participants to group
       // group membership will be crated by a TRIGGER, starting with the first user as "admin"
       await this.#addParticipantsToGroup(
-        { client_username, participants, group_conversation_id },
+        { client_username: created_by, participants, group_conversation_id },
         dbClient
       )
 
       dbClient.query("COMMIT")
 
       // Implement realtime todos where appropriate
+      // here we have to create a socket room for this conversation and add these participants to it
+      // next we send the group creation and additon of participants to all participants
+      ChatRealtimeService.createGroupConversation(
+        participants.map(({ user_id }) => user_id),
+        group_conversation_id
+      )
 
       return group_conversation_id // more
     } catch (error) {
@@ -65,15 +86,15 @@ export class GroupChat {
 
   /**
    * @param {object} param0
-   * @param {object} param0.client_user
-   * @param {number} param0.client_user.user_id
-   * @param {string} param0.client_user.username
+   * @param {object} param0.client
+   * @param {number} param0.client.user_id
+   * @param {string} param0.client.username
    * @param {object[]} param0.participants
    * @param {number} param0.participants.user_id
    * @param {string} param0.participants.username
    * @param {number} param0.group_conversation_id
    */
-  async addParticipants({ client_user, participants, group_conversation_id }) {
+  async addParticipants({ client, participants, group_conversation_id }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -81,7 +102,7 @@ export class GroupChat {
       if (
         !(await ChatModel.isGroupAdmin(
           {
-            participant_user_id: client_user.user_id,
+            participant_user_id: client.user_id,
             group_conversation_id,
           },
           dbClient
@@ -94,7 +115,7 @@ export class GroupChat {
       // group membership will be crated by a TRIGGER, starting with the first user as "admin"
       await this.#addParticipantsToGroup(
         {
-          client_username: client_user.username,
+          client_username: client.username,
           participants,
           group_conversation_id,
         },
@@ -114,15 +135,15 @@ export class GroupChat {
 
   /**
    * @param {object} param0
-   * @param {object} param0.client_user
-   * @param {number} param0.client_user.user_id
-   * @param {string} param0.client_user.username
+   * @param {object} param0.client
+   * @param {number} param0.client.user_id
+   * @param {string} param0.client.username
    * @param {object} param0.participant
    * @param {number} param0.participant.user_id
    * @param {string} param0.participant.username
    * @param {number} param0.group_conversation_id
    */
-  async removeParticipant({ client_user, participant, group_conversation_id }) {
+  async removeParticipant({ client, participant, group_conversation_id }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -130,7 +151,7 @@ export class GroupChat {
       if (
         !(await ChatModel.isGroupAdmin(
           {
-            participant_user_id: client_user.user_id,
+            participant_user_id: client.user_id,
             group_conversation_id,
           },
           dbClient
@@ -150,7 +171,7 @@ export class GroupChat {
           group_conversation_id,
           activity_info: {
             type: "participant_removed",
-            removed_by: client_user.username,
+            removed_by: client.username,
             removed_participant: participant.username,
           },
         },
@@ -220,11 +241,14 @@ export class GroupChat {
     try {
       await dbClient.query("BEGIN")
 
-      await ChatModel.updateUserConversation({
-        user_id: participant.user_id,
-        conversation_id: group_conversation_id,
-        updateKVPairs: new Map().set("deleted", true),
-      })
+      await ChatModel.updateUserConversation(
+        {
+          user_id: participant.user_id,
+          conversation_id: group_conversation_id,
+          updateKVPairs: new Map().set("deleted", true),
+        },
+        dbClient
+      )
 
       await ChatModel.createGroupConversationActivityLog(
         {
@@ -250,15 +274,15 @@ export class GroupChat {
 
   /**
    * @param {object} param0
-   * @param {object} param0.client_user
-   * @param {number} param0.client_user.user_id
-   * @param {string} param0.client_user.username
+   * @param {object} param0.client
+   * @param {number} param0.client.user_id
+   * @param {string} param0.client.username
    * @param {object} param0.participant
    * @param {number} param0.participant.user_id
    * @param {string} param0.participant.username
    * @param {number} param0.group_conversation_id
    */
-  async makeAdmin({ client_user, participant, group_conversation_id }) {
+  async makeAdmin({ client, participant, group_conversation_id }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -266,7 +290,7 @@ export class GroupChat {
       if (
         !(await ChatModel.isGroupAdmin(
           {
-            participant_user_id: client_user.user_id,
+            participant_user_id: client.user_id,
             group_conversation_id,
           },
           dbClient
@@ -277,18 +301,21 @@ export class GroupChat {
         )
       }
 
-      await ChatModel.updateGroupMembership({
-        participant_user_id: participant.user_id,
-        group_conversation_id,
-        role: "admin",
-      })
+      await ChatModel.updateGroupMembership(
+        {
+          participant_user_id: participant.user_id,
+          group_conversation_id,
+          role: "admin",
+        },
+        dbClient
+      )
 
       await ChatModel.createGroupConversationActivityLog(
         {
           group_conversation_id,
           activity_info: {
             type: "participant_made_admin",
-            made_by: client_user.username,
+            made_by: client.username,
             new_admin: participant.username,
           },
         },
@@ -306,11 +333,7 @@ export class GroupChat {
     }
   }
 
-  async dropFromAdmin({
-    client_user,
-    admin_participant,
-    group_conversation_id,
-  }) {
+  async dropFromAdmin({ client, admin_participant, group_conversation_id }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -318,7 +341,7 @@ export class GroupChat {
       if (
         !(await ChatModel.isGroupAdmin(
           {
-            participant_user_id: client_user.user_id,
+            participant_user_id: client.user_id,
             group_conversation_id,
           },
           dbClient
@@ -327,18 +350,21 @@ export class GroupChat {
         throw new Error("You must be a group admin to drop admin to member!")
       }
 
-      await ChatModel.updateGroupMembership({
-        participant_user_id: admin_participant.user_id,
-        group_conversation_id,
-        role: "member",
-      })
+      await ChatModel.updateGroupMembership(
+        {
+          participant_user_id: admin_participant.user_id,
+          group_conversation_id,
+          role: "member",
+        },
+        dbClient
+      )
 
       await ChatModel.createGroupConversationActivityLog(
         {
           group_conversation_id,
           activity_info: {
             type: "admin_dropped_from_admins",
-            dropped_by: client_user.username,
+            dropped_by: client.username,
             ex_admin: admin_participant.username,
           },
         },
@@ -357,13 +383,13 @@ export class GroupChat {
   }
 
   /**
-   * @param {object} param0 
-   * @param {object} param0.client_user 
-   * @param {number} param0.client_user.user_id 
-   * @param {string} param0.client_user.username 
-   * @param {Object<string, string>} param0.newInfoKVPair 
+   * @param {object} param0
+   * @param {object} param0.client
+   * @param {number} param0.client.user_id
+   * @param {string} param0.client.username
+   * @param {Object<string, string>} param0.newInfoKVPair
    */
-  async changeGroupInfo({ client_user, group_conversation_id, newInfoKVPair }) {
+  async changeGroupInfo({ client, group_conversation_id, newInfoKVPair }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
@@ -373,7 +399,7 @@ export class GroupChat {
       if (
         !(await ChatModel.isGroupAdmin(
           {
-            participant_user_id: client_user.user_id,
+            participant_user_id: client.user_id,
             group_conversation_id,
           },
           dbClient
@@ -384,17 +410,23 @@ export class GroupChat {
         )
       }
 
-      await ChatModel.updateConversation({
-        conversation_id: group_conversation_id,
-        updateKVPairs: new Map().set("info", new Map().set(infoKey, newValue)),
-      })
+      await ChatModel.updateConversation(
+        {
+          conversation_id: group_conversation_id,
+          updateKVPairs: new Map().set(
+            "info",
+            new Map().set(infoKey, newValue)
+          ),
+        },
+        dbClient
+      )
 
       await ChatModel.createGroupConversationActivityLog(
         {
           group_conversation_id,
           activity_info: {
             type: `group_${infoKey}_changed`,
-            changed_by: client_user.username,
+            changed_by: client.username,
             [`new_group_${infoKey}`]: newValue,
           },
         },
