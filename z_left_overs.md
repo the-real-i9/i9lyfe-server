@@ -1,9 +1,18 @@
 ## Pending Implementations
-- Chatting & Messaging | Conversations & Messages | Real-time communication
-- Explore & Search
-- Uploading User generated content to CDN
+- Group activity realtime
+- Post and Comment triggers
+- Chat routes and controllers - 20th
+- Home feed posts fetch & pagination - 22nd
+- Comments list pagination - 22nd
+- Post and Comments realtime - 22nd
+  - New post, new comment
+  - Post and Comment data counts
+- Explore & Search - 23rd
+- Uploading User generated content to Cloud Storage and getting back URL to store in DB - 23rd
   - Profile pictures, Post images & videos
-- Real time post data counts
+- Frontend preparation - 23rd
+
+
 
 ### Realtime Chat Events & Listeners
 <table>

@@ -33,6 +33,7 @@ export class ChatService {
 
     /* Realtime actions */
     // send message to other participants
+    // send full data for the sake of new conversations
     new ChatRealtimeService().sendNewMessage(conversation_id, {
       sender,
       conversation_id,
