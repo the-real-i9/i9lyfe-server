@@ -27,7 +27,6 @@ export const createNewPost = async (
   }
 
   return (await dbClient.query(query)).rows[0]
-
 }
 
 export const createRepost = async (original_post_id, reposter_user_id) => {
@@ -74,61 +73,57 @@ export const mapUsernamesToUserIds = async (usernames, dbClient) => {
  * @param {object} param0
  * @param {number} param0.post_or_comment_id
  * @param {number[]} param0.mentioned_user_ids
+ * @param {number} param0.content_owner_user_id
  * @param {"post" | "comment"} param0.post_or_comment
  * @param {PgPoolClient} dbClient
  */
 export const createMentions = async (
-  { post_or_comment, post_or_comment_id, mentioned_user_ids },
-  dbClient
-) => {
-  /** @type {import("pg").QueryConfig} */
-  const query = {
-    text: `INSERT INTO "PostCommentMention" (${post_or_comment}_id, user_id) 
-    VALUES ${generateMultiRowInsertValuesParameters(mentioned_user_ids.length, 2)}`,
-    values: mentioned_user_ids
-      .map((mentioned_user_id) => [post_or_comment_id, mentioned_user_id])
-      .flat(),
-  }
-
-  await dbClient.query(query)
-}
-
-/**
- * @param {object} param0
- * @param {number} param0.sender_user_id
- * @param {number[]} param0.receiver_user_ids
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id
- * @param {PgPoolClient} dbClient
- */
-export const createMentionsNotifications = async (
-  { sender_user_id, receiver_user_ids, post_or_comment, post_or_comment_id },
+  {
+    post_or_comment,
+    post_or_comment_id,
+    mentioned_user_ids,
+    content_owner_user_id,
+  },
   dbClient
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH cte_notification AS (
+    WITH pc_mention AS (
+      INSERT INTO "PostCommentMention" (${post_or_comment}_id, user_id) 
+      VALUES ${generateMultiRowInsertValuesParameters({
+        rowsCount: mentioned_user_ids.length,
+        columnsCount: 2,
+      })}
+    ), mention_notification AS (
       INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
-      VALUES ${generateMultiRowInsertValuesParameters(receiver_user_ids.length, 4)} 
+      VALUES ${generateMultiRowInsertValuesParameters({
+        rowsCount: mentioned_user_ids.length,
+        columnsCount: 4,
+        paramNumFrom: mentioned_user_ids.length * 2 + 1,
+      })} 
       RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
     )
     SELECT sender.id AS sender_user_id,
-      notification.receiver_user_id,
+      mention_notification.receiver_user_id,
       sender.username AS sender_username,
       sender.profile_pic_url AS sender_profile_pic_url,
-      notification.type,
-      notification.${post_or_comment}_id
-    FROM cte_notification notification
-    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
-    values: receiver_user_ids
-      .map((receiver_user_id) => [
+      mention_notification.type,
+      mention_notification.${post_or_comment}_id
+    FROM mention_notification
+    INNER JOIN "User" sender ON sender.id = mention_notification.sender_user_id`,
+    values: [
+      ...mentioned_user_ids.map((mentioned_user_id) => [
+        post_or_comment_id,
+        mentioned_user_id,
+      ]),
+      ...mentioned_user_ids.map((receiver_user_id) => [
         "mention",
-        sender_user_id,
+        content_owner_user_id,
         receiver_user_id,
         post_or_comment_id,
-      ])
-      .flat(),
+      ]),
+    ].flat(),
   }
 
   return (await dbClient.query(query)).rows
@@ -147,7 +142,10 @@ export const createHashtags = async (
 ) => {
   const query = {
     text: `INSERT INTO "PostCommentHashtag" (${post_or_comment}_id, hashtag_name) 
-    VALUES ${generateMultiRowInsertValuesParameters(hashtag_names.length, 2)}`,
+    VALUES ${generateMultiRowInsertValuesParameters({
+      rowsCount: hashtag_names.length,
+      columnsCount: 2,
+    })}`,
     values: hashtag_names
       .map((hashtag_name) => [post_or_comment_id, hashtag_name])
       .flat(),
@@ -158,88 +156,66 @@ export const createHashtags = async (
 
 /**
  * @param {object} param0
- * @param {number} param0.user_id
- * @param {number} param0.post_or_comment_user_id
+ * @param {number} param0.reactor_user_id
+ * @param {number} param0.content_owner_user_id
  * @param {"post" | "comment"} param0.post_or_comment Post `id` or Comment `id`
  * @param {number} param0.post_or_comment_id
  * @param {number} param0.reaction_code_point
- * @param {PgPoolClient} dbClient
  */
-export const createReaction = async (
-  { reactor_user_id, post_or_comment, post_or_comment_id, reaction_code_point },
-  dbClient
-) => {
+export const createReaction = async ({
+  reactor_user_id,
+  content_owner_user_id,
+  post_or_comment,
+  post_or_comment_id,
+  reaction_code_point,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: `INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
-      VALUES ($1, $2, $3) RETURNING id`,
-    values: [reactor_user_id, post_or_comment_id, reaction_code_point],
-  }
-
-  return (await dbClient.query(query)).rows[0].id
-}
-
-/**
- * @param {object} param0
- * @param {number} param0.sender_user_id
- * @param {number} param0.receiver_user_id
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
- * @param {number} param0.post_or_comment_user_id
- * @param {number} param0.reaction_id
- * @param {import("pg").PoolClient} dbClient
- */
-export const createReactionNotification = async (
-  {
-    sender_user_id,
-    receiver_user_id,
-    post_or_comment,
-    post_or_comment_id,
-    reaction_id,
-  },
-  dbClient
-) => {
-  /** @type {import("pg").QueryConfig} */
-  const query = {
     text: `
-    WITH cte_notification AS (
-      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, reaction_created_id)
-      VALUES ($1, $2, $3, $4, $5) 
+    WITH pc_reaction AS (
+      INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
+      VALUES ($1, $2, $3) 
+      RETURNING id AS new_reaction_id
+    ), reaction_notification AS (
+      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id, reaction_created_id)
+      VALUES ($1, $2, $4, $5, (SELECT new_reaction_id FROM pc_reaction)) 
       RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
     )
     SELECT sender.id AS sender_user_id,
-      notification.receiver_user_id,
+      reaction_notification.receiver_user_id,
       sender.username AS sender_username,
       sender.profile_pic_url AS sender_profile_pic_url,
-      notification.type,
-      notification.${post_or_comment}_id
-    FROM cte_notification notification
-    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
+      reaction_notification.type,
+      reaction_notification.${post_or_comment}_id
+    FROM reaction_notification
+    INNER JOIN "User" sender ON sender.id = reaction_notification.sender_user_id`,
     values: [
-      "reaction",
-      sender_user_id,
-      receiver_user_id,
+      reactor_user_id,
       post_or_comment_id,
-      reaction_id,
+      reaction_code_point,
+      "reaction",
+      content_owner_user_id,
     ],
   }
 
-  return (await dbClient.query(query)).rows[0]
+  return (await dbQuery(query)).rows[0]
 }
 
 /**
  *
  * @param {object} param0
  * @param {number} param0.commenter_user_id
+ * @param {number} param0.content_owner_user_id
  * @param {string} param0.comment_text
  * @param {string} param0.attachment_url
  * @param {"post" | "comment"} param0.post_or_comment
  * @param {number} param0.post_or_comment_id
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  */
 export const createComment = async (
   {
     commenter_user_id,
+    content_owner_user_id,
     comment_text,
     attachment_url,
     post_or_comment,
@@ -247,72 +223,55 @@ export const createComment = async (
   },
   dbClient
 ) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
-    text: `INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
-    VALUES ($1, $2, $3, $4) 
-    RETURNING id, commenter_user_id${
-      post_or_comment === "comment" ? " AS replier_user_id" : ""
-    }, comment_text${
+    text: `
+    WITH comment_cte AS (
+      INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
+      VALUES ($1, $2, $3, $4) 
+      RETURNING id AS new_comment_id, commenter_user_id${
+        post_or_comment === "comment" ? " AS replier_user_id" : ""
+      }, comment_text${
       post_or_comment === "comment" ? " AS reply_text" : ""
-    }, attachment_url`,
+    }, attachment_url
+    ), comment_notification AS (
+      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id, comment_created_id)
+      VALUES ($1, $4, $5, $6, (SELECT new_comment_id FROM comment_cte)) 
+      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+    )
+    SELECT json_build_object(
+      'commentData', (SELECT json_build_object(
+          'id', new_comment_id,
+          ${
+            post_or_comment === "comment"
+              ? `'replier_user_id', replier_user_id, 'reply_text', reply_text,`
+              : `'commenter_user_id', commenter_user_id, 'comment_text', comment_text,`
+          }
+          'attachment_url', attachment_url)
+        FROM comment_cte),
+      'notifData', (SELECT json_build_object(
+          'sender_user_id', sender.id,
+          'receiver_user_id', comment_notification.receiver_user_id,
+          'sender_username', sender.username,
+          'sender_profile_pic_url', sender.profile_pic_url,
+          'type', comment_notification.type,
+          '${post_or_comment}_id', comment_notification.${post_or_comment}_id)
+        FROM comment_notification
+        INNER JOIN "User" sender ON sender.id = comment_notification.sender_user_id)
+    ) AS data`,
     values: [
       commenter_user_id,
       comment_text,
       attachment_url,
       post_or_comment_id,
-    ],
-  }
-
-  return (await dbClient.query(query)).rows[0]
-}
-
-/**
- * @param {object} param0
- * @param {number} param0.sender_user_id
- * @param {number} param0.receiver_user_id
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id Post `id` or Comment `id`
- * @param {number} param0.new_comment_id
- * @param {import("pg").PoolClient} dbClient
- */
-export const createCommentNotification = async (
-  {
-    sender_user_id,
-    receiver_user_id,
-    post_or_comment,
-    post_or_comment_id,
-    new_comment_id,
-  },
-  dbClient
-) => {
-  /** @type {import("pg").QueryConfig} */
-  const query = {
-    text: `
-    WITH cte_notification AS (
-      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, comment_created_id)
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
-    )
-    SELECT sender.id AS sender_user_id,
-      notification.receiver_user_id,
-      sender.username AS sender_username,
-      sender.profile_pic_url AS sender_profile_pic_url,
-      notification.type,
-      notification.${post_or_comment}_id
-    FROM cte_notification notification
-    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
-    values: [
       "comment",
-      sender_user_id,
-      receiver_user_id,
-      post_or_comment_id,
-      new_comment_id,
+      content_owner_user_id,
     ],
   }
 
-  return (await dbClient.query(query)).rows[0]
+  return (await dbClient.query(query)).rows[0].data
 }
+
 
 /* ************* */
 
@@ -322,91 +281,75 @@ export const createCommentNotification = async (
  * @param {number} param0.client_user_id
  */
 export const getPost = async (post_id, client_user_id) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "post".id AS post_id,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_user_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
       type,
       media_urls,
       description,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
-      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
-      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
-      "client_reaction".reaction_code_point AS client_reaction,
-      CASE
-        WHEN "client_repost".id IS NULL THEN false
-        ELSE true
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $2 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $2 THEN true
+        ELSE false
       END AS client_reposted,
-      CASE
-        WHEN "client_saved_post".id IS NULL THEN false
-        ELSE true
+      CASE 
+        WHEN saver_user_id = $2 THEN true
+        ELSE false
       END AS client_saved
-    FROM "Post" "post"
-    INNER JOIN "User" "user" ON "user".id = "post".user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
-    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
-    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
-    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
-    LEFT JOIN "PostCommentReaction" "client_reaction" 
-      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $2
-    LEFT JOIN "Repost" "client_repost" 
-      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $2
-    LEFT JOIN "SavedPost" "client_saved_post" 
-      ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $2
-    WHERE "post".id = $1
-    GROUP BY owner_user_id, 
-      owner_username, 
-      owner_profile_pic_url, 
-      "post".id, 
-      type, 
-      media_urls, 
-      description, 
-      client_reaction, 
-      client_reposted,
-      client_saved`,
+    FROM "AllPostsView"
+    WHERE post_id = $1
+    `,
     values: [post_id, client_user_id],
   }
 
   return (await dbQuery(query)).rows[0]
 }
 
+/**
+ * @param {object} param0 
+ * @param {"post" | "comment"} param0.post_or_comment 
+ * @param {number} param0.post_or_comment_id 
+ * @param {number} param0.client_user_id
+ * @returns 
+ */
 export const getAllCommentsOnPost_OR_RepliesToComment = async ({
   post_or_comment,
   post_or_comment_id,
   client_user_id,
 }) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "comment".id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-      "comment".comment_text AS ${
-        post_or_comment === "post" ? "comment" : "reply"
-      }_text,
-      "comment".attachment_url AS attachment_url,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "reply".id)::INTEGER AS replies_count, 
-      "client_reaction".reaction_code_point AS client_reaction
-    FROM "Comment" "comment"
-    INNER JOIN "User" "user" ON "user".id = "comment".commenter_user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".comment_id = "comment".id
-    LEFT JOIN "Comment" "reply" ON "reply".comment_id = "comment".id
-    LEFT JOIN "PostCommentReaction" "client_reaction"
-      ON "client_reaction".comment_id = "comment".id AND "client_reaction".reactor_user_id = $2
-    WHERE "comment".${post_or_comment}_id = $1
-    GROUP BY owner_user_id,
-      owner_username,
-      owner_profile_pic_url,
-      "comment".id,
-      "comment".comment_text,
-      "comment".attachment_url,
-      client_reaction`,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      main_comment_id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
+      comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+      attachment_url,
+      reactions_count,
+      replies_count,
+      CASE 
+        WHEN reactor_user_id = $2 THEN reaction_code_point 
+        ELSE NULL
+      END AS client_reaction
+    FROM "CommentsOnPost_RepliesToCommentView"
+    WHERE owner_${post_or_comment}_id = $1 
+    `,
     values: [post_or_comment_id, client_user_id],
   }
 
@@ -418,34 +361,26 @@ export const getCommentOnPost_OR_ReplyToComment = async ({
   comment_or_reply_id,
   client_user_id,
 }) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
-  SELECT "user".id AS owner_user_id,
-    "user".username AS owner_username,
-    "user".profile_pic_url AS owner_profile_pic_url,
-    "comment".id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-    "comment".comment_text AS ${
-      post_or_comment === "post" ? "comment" : "reply"
-    }_text,
-    "comment".attachment_url AS attachment_url,
-    COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-    COUNT(DISTINCT "reply".id)::INTEGER AS replies_count, 
-    "client_reaction".reaction_code_point AS client_reaction
-  FROM "Comment" "comment"
-  INNER JOIN "User" "user" ON "user".id = "comment".commenter_user_id
-  LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".comment_id = "comment".id
-  LEFT JOIN "Comment" "reply" ON "reply".comment_id = "comment".id
-  LEFT JOIN "PostCommentReaction" "client_reaction"
-    ON "client_reaction".comment_id = "comment".id AND "client_reaction".reactor_user_id = $2
-  WHERE "comment".id = $1
-  GROUP BY owner_user_id,
-    owner_username,
-    owner_profile_pic_url,
-    "comment".id,
-    "comment".comment_text,
-    "comment".attachment_url,
-    client_reaction`,
+    SELECT json_build_object(
+      'id', owner_user_id,
+      'username', owner_username,
+      'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      main_comment_id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
+      comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+      attachment_url,
+      reactions_count,
+      replies_count,
+      CASE 
+        WHEN reactor_user_id = $2 THEN reaction_code_point 
+        ELSE null
+      END AS client_reaction
+    FROM "CommentsOnPost_RepliesToCommentView"
+    WHERE main_comment_id = $1
+    `,
     values: [comment_or_reply_id, client_user_id],
   }
 
@@ -457,7 +392,7 @@ export const getAllReactorsToPost_OR_Comment = async ({
   post_or_comment_id,
   client_user_id,
 }) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
     SELECT "user".id, 
@@ -486,7 +421,7 @@ export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   reaction_code_point,
   client_user_id,
 }) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
     SELECT "user".id, 

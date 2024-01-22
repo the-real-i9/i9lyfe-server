@@ -12,21 +12,28 @@ import {
   updateMessage,
 } from "../models/ChatModel.js"
 import { getDBClient } from "../models/db.js"
+import {
+  createComment,
+  getAllCommentsOnPost_OR_RepliesToComment,
+} from "../models/PostCommentModel.js"
 
 dotenv.config()
 
-test.skip('creating direct conversation', async () => {
+test.skip("creating direct conversation", async () => {
   const dbClient = await getDBClient()
   try {
-    await dbClient.query('BEGIN')
-    const convId = await createConversation({ type: 'direct' }, dbClient)
+    await dbClient.query("BEGIN")
+    const convId = await createConversation({ type: "direct" }, dbClient)
 
-    await createUserConversation({ participantsUserIds: [4, 5], conversation_id: convId }, dbClient)
+    await createUserConversation(
+      { participantsUserIds: [4, 5], conversation_id: convId },
+      dbClient
+    )
 
-    await dbClient.query('COMMIT')
+    await dbClient.query("COMMIT")
     expect(convId).toBeTruthy()
   } catch (error) {
-    dbClient.query('ROLLBACK')
+    dbClient.query("ROLLBACK")
     console.error(error)
   } finally {
     dbClient.release()
@@ -78,8 +85,7 @@ test.skip("creating group conversation", async () => {
   }
 })
 
-test("get all user conversations", async () => {
-
+test.skip("get all user conversations", async () => {
   const userConvos = await getAllUserConversations(5)
 
   console.log(userConvos)
@@ -94,7 +100,6 @@ test.skip("send new direct message", async () => {
       conversation_id: 9,
       msg_content: { type: "text", text_content: "Yeah! I'm good too!" },
     })
-
   } catch (error) {
     expect(error).toBeUndefined()
     console.error(error)
@@ -106,9 +111,11 @@ test.skip("send new group message", async () => {
     await createMessage({
       sender_user_id: 5,
       conversation_id: 10,
-      msg_content: { type: "text", text_content: "Hey! What's up guys? I'm new here!" },
+      msg_content: {
+        type: "text",
+        text_content: "Hey! What's up guys? I'm new here!",
+      },
     })
-
   } catch (error) {
     expect(error).toBeUndefined()
     console.error(error)
@@ -119,7 +126,7 @@ test.skip("update message delivery status", async () => {
   try {
     await updateMessage({
       message_id: 4,
-      updateKVPairs: new Map().set("delivery_status", 'delivered'),
+      updateKVPairs: new Map().set("delivery_status", "delivered"),
     })
   } catch (error) {
     console.error(error)
@@ -153,14 +160,17 @@ test.skip("make group member, admin", async () => {
       dbClient
     )
     if (updated) {
-      await createGroupConversationActivityLog({
-        group_conversation_id: 10,
-        activity_info: {
-          type: "make_admin",
-          admin_username: "gen_i9",
-          new_admin_username: "mckenney",
+      await createGroupConversationActivityLog(
+        {
+          group_conversation_id: 10,
+          activity_info: {
+            type: "make_admin",
+            admin_username: "gen_i9",
+            new_admin_username: "mckenney",
+          },
         },
-      }, dbClient)
+        dbClient
+      )
     }
 
     dbClient.query("COMMIT")
@@ -191,14 +201,17 @@ test.skip("remove admin from admin", async () => {
     )
 
     if (updated) {
-      await createGroupConversationActivityLog({
-        group_conversation_id: 10,
-        activity_info: {
-          type: "remove_from_admin",
-          admin_username: "mckenney",
-          ex_admin_username: "gen_i9",
+      await createGroupConversationActivityLog(
+        {
+          group_conversation_id: 10,
+          activity_info: {
+            type: "remove_from_admin",
+            admin_username: "mckenney",
+            ex_admin_username: "gen_i9",
+          },
         },
-      }, dbClient)
+        dbClient
+      )
     }
 
     dbClient.query("COMMIT")
@@ -222,10 +235,52 @@ test.skip("get conversation history", async () => {
   }
 })
 
-
 test.skip("react to message", async () => {
   try {
-    await createMessageReaction({ message_id: 7, reactor_user_id: 5, reaction_code_point: "🥰".codePointAt() })
+    await createMessageReaction({
+      message_id: 7,
+      reactor_user_id: 5,
+      reaction_code_point: "🥰".codePointAt(),
+    })
+  } catch (error) {
+    console.log(error)
+    expect(error).toBeUndefined()
+  }
+})
+
+test.skip("create comment", async () => {
+  const dbClient = await getDBClient()
+  try {
+    await dbClient.query('BEGIN')
+    const data = await createComment({
+      commenter_user_id: 4,
+      content_owner_user_id: 5,
+      post_or_comment_id: 4,
+      post_or_comment: "post",
+      comment_text:
+        "This is a comment for testing Common Table Expressions",
+      attachment_url: null,
+    }, dbClient)
+    console.log(data)
+  
+  dbClient.query("COMMIT")
+} catch (error) {
+  dbClient.query("ROLLBACK")
+  console.error(error)
+  expect(error).toBeUndefined()
+} finally {
+  dbClient.release()
+}
+})
+
+test("comments/replies to post/comment", async () => {
+  try {
+    const data = await getAllCommentsOnPost_OR_RepliesToComment({
+      post_or_comment: "post",
+      post_or_comment_id: 4,
+      client_user_id: 4,
+    })
+    console.log(data)
   } catch (error) {
     console.log(error)
     expect(error).toBeUndefined()

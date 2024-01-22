@@ -1,12 +1,9 @@
 import { getDBClient } from "../models/db.js"
 import {
   createComment,
-  createCommentNotification,
   createHashtags,
   createMentions,
-  createMentionsNotifications,
   createReaction,
-  createReactionNotification,
   deleteCommentOnPost_OR_ReplyToComment,
   getAllCommentsOnPost_OR_RepliesToComment,
   getAllReactorsToPost_OR_Comment,
@@ -127,23 +124,14 @@ export class PostCommentService {
 
     if (mentions) {
       const mentioned_user_ids = await mapUsernamesToUserIds(mentions, dbClient)
-      await createMentions(
+      const mentionNotifications = await createMentions(
         {
           post_or_comment: this.postOrComment.which(),
           post_or_comment_id: this.postOrComment.id,
-          mentioned_user_ids,
-        },
-        dbClient
-      )
-
-      const mentionNotifications = await createMentionsNotifications(
-        {
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-          receiver_user_ids: mentioned_user_ids.filter(
+          mentioned_user_ids: mentioned_user_ids.filter(
             (id) => id !== content_owner_user_id
           ),
-          sender_user_id: content_owner_user_id,
+          content_owner_user_id,
         },
         dbClient
       )
@@ -160,55 +148,13 @@ export class PostCommentService {
   }
 
   async addReaction(reactor_user_id, reaction_code_point) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
-
-      const reaction_id = await createReaction(
-        {
-          reactor_user_id,
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-          reaction_code_point,
-        },
-        dbClient
-      )
-
-      await this.#createReactionNotification(
-        { reactor_user_id, reaction_id },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
-    }
-  }
-
-  /**
-   * @param {object} param0
-   * @param {number} param0.reactor_user_id
-   * @param {number} param0.reaction_id
-   * @param {import("pg").PoolClient} dbClient
-   */
-  async #createReactionNotification(
-    { reactor_user_id, reaction_id },
-    dbClient
-  ) {
-    if (reactor_user_id === this.postOrComment.user_id) return
-    const notifData = await createReactionNotification(
-      {
-        sender_user_id: reactor_user_id,
-        receiver_user_id: this.postOrComment.user_id,
-        post_or_comment: this.postOrComment.which(),
-        post_or_comment_id: this.postOrComment.id,
-        reaction_id,
-      },
-      dbClient
-    )
+    const notifData = await createReaction({
+      reactor_user_id,
+      post_or_comment: this.postOrComment.which(),
+      post_or_comment_id: this.postOrComment.id,
+      content_owner_user_id: this.postOrComment.user_id,
+      reaction_code_point,
+    })
 
     const { receiver_user_id, ...restData } = notifData
 
@@ -223,7 +169,7 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const commentData = {
+      const { commentData, notifData } = {
         ...(await createComment(
           {
             commenter_user_id,
@@ -231,6 +177,7 @@ export class PostCommentService {
             attachment_url,
             post_or_comment: this.postOrComment.which(),
             post_or_comment_id: this.postOrComment.id,
+            content_owner_user_id: this.postOrComment.user_id,
           },
           dbClient
         )),
@@ -238,23 +185,21 @@ export class PostCommentService {
         replies_count: 0,
       }
 
-      const { id: new_comment_id } = commentData
-
-      await Promise.all([
-        this.handleMentionsAndHashtags(
-          {
-            content_text: comment_text,
-            content_owner_user_id: commenter_user_id,
-          },
-          dbClient
-        ),
-        this.#createCommentNotification(
-          { commenter_user_id, new_comment_id },
-          dbClient
-        ),
-      ])
+      await this.handleMentionsAndHashtags(
+        {
+          content_text: comment_text,
+          content_owner_user_id: commenter_user_id,
+        },
+        dbClient
+      )
 
       dbClient.query("COMMIT")
+
+      const { receiver_user_id, ...restData } = notifData
+      new NotificationService(receiver_user_id).pushNotification({
+        ...restData,
+        on: this.postOrComment.which(),
+      })
 
       return commentData
     } catch (error) {
@@ -265,36 +210,13 @@ export class PostCommentService {
     }
   }
 
-  async #createCommentNotification(
-    { commenter_user_id, new_comment_id },
-    dbClient
-  ) {
-    if (commenter_user_id === this.postOrComment.user_id) return
-    const notifData = await createCommentNotification(
-      {
-        sender_user_id: commenter_user_id,
-        receiver_user_id: this.postOrComment.user_id,
-        post_or_comment: this.postOrComment.which(),
-        post_or_comment_id: this.postOrComment.id,
-        new_comment_id,
-      },
-      dbClient
-    )
-
-    const { receiver_user_id, ...restData } = notifData
-    new NotificationService(receiver_user_id).pushNotification({
-      ...restData,
-      on: this.postOrComment.which(),
-    })
-  }
-
   async addReply({ replier_user_id, reply_text, attachment_url }) {
     const dbClient = await getDBClient()
     try {
       await dbClient.query("BEGIN")
 
       // Note: A Reply is also a form of Coment. It's just a  comment that belongs to a Comment
-      const replyData = {
+      const { commentData: replyData, notifData } = {
         ...(await createComment(
           {
             commenter_user_id: replier_user_id,
@@ -302,6 +224,7 @@ export class PostCommentService {
             attachment_url,
             post_or_comment: this.postOrComment.which(),
             post_or_comment_id: this.postOrComment.id,
+            content_owner_user_id: this.postOrComment.user_id,
           },
           dbClient
         )),
@@ -309,23 +232,22 @@ export class PostCommentService {
         replies_count: 0,
       }
 
-      const { id: new_reply_id } = replyData
-
-      await Promise.all([
-        this.handleMentionsAndHashtags(
-          {
-            content_text: reply_text,
-            content_owner_user_id: replier_user_id,
-          },
-          dbClient
-        ),
-        this.#createReplyNotification(
-          { replier_user_id, new_reply_id },
-          dbClient
-        ),
-      ])
+      await this.handleMentionsAndHashtags(
+        {
+          content_text: reply_text,
+          content_owner_user_id: replier_user_id,
+        },
+        dbClient
+      )
 
       dbClient.query("COMMIT")
+
+      const { receiver_user_id, ...restData } = notifData
+      new NotificationService(receiver_user_id).pushNotification({
+        ...restData,
+        type: "reply",
+        to: this.postOrComment.which(),
+      })
 
       return replyData
     } catch (error) {
@@ -334,27 +256,6 @@ export class PostCommentService {
     } finally {
       dbClient.release()
     }
-  }
-
-  async #createReplyNotification({ replier_user_id, new_reply_id }, dbClient) {
-    if (replier_user_id === this.postOrComment.user_id) return
-    const notifData = await createCommentNotification(
-      {
-        sender_user_id: replier_user_id,
-        receiver_user_id: this.postOrComment.user_id,
-        post_or_comment: this.postOrComment.which(),
-        post_or_comment_id: this.postOrComment.id,
-        new_comment_id: new_reply_id,
-      },
-      dbClient
-    )
-
-    const { receiver_user_id, ...restData } = notifData
-    new NotificationService(receiver_user_id).pushNotification({
-      ...restData,
-      type: "reply",
-      to: this.postOrComment.which(),
-    })
   }
 
   async getAllCommentsORReplies(client_user_id) {
