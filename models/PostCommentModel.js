@@ -102,8 +102,20 @@ export const createMentionsNotifications = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
-    VALUES ${generateMultiRowInsertValuesParameters(receiver_user_ids.length, 4)} RETURNING id`,
+    text: `
+    WITH cte_notification AS (
+      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
+      VALUES ${generateMultiRowInsertValuesParameters(receiver_user_ids.length, 4)} 
+      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+    )
+    SELECT sender.id AS sender_user_id,
+      notification.receiver_user_id,
+      sender.username AS sender_username,
+      sender.profile_pic_url AS sender_profile_pic_url,
+      notification.type,
+      notification.${post_or_comment}_id
+    FROM cte_notification notification
+    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
     values: receiver_user_ids
       .map((receiver_user_id) => [
         "mention",
@@ -114,24 +126,7 @@ export const createMentionsNotifications = async (
       .flat(),
   }
 
-  const notificationIds = (await dbClient.query(query)).rows.map((r) => r.id)
-
-  const getCreatedNotifsQuery = {
-    text: `
-    SELECT "sender".id AS sender_user_id,
-      "notification".receiver_user_id,
-      "sender".username AS sender_username,
-      "sender".profile_pic_url AS sender_profile_pic_url,
-      "notification".type,
-      "notification".${post_or_comment}_id
-    FROM "Notification" "notification"
-    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
-    WHERE "notification".id = ANY($1)
-    `,
-    values: [[...notificationIds]],
-  }
-
-  return (await dbClient.query(getCreatedNotifsQuery)).rows
+  return (await dbClient.query(query)).rows
 }
 
 /**
@@ -203,8 +198,20 @@ export const createReactionNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, reaction_created_id)
-    VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    text: `
+    WITH cte_notification AS (
+      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, reaction_created_id)
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+    )
+    SELECT sender.id AS sender_user_id,
+      notification.receiver_user_id,
+      sender.username AS sender_username,
+      sender.profile_pic_url AS sender_profile_pic_url,
+      notification.type,
+      notification.${post_or_comment}_id
+    FROM cte_notification notification
+    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
     values: [
       "reaction",
       sender_user_id,
@@ -214,24 +221,7 @@ export const createReactionNotification = async (
     ],
   }
 
-  const notifId = (await dbClient.query(query)).rows[0].id
-
-  const getCreatedNotifQuery = {
-    text: `
-    SELECT "sender".id AS sender_user_id,
-      "notification".receiver_user_id,
-      "sender".username AS sender_username,
-      "sender".profile_pic_url AS sender_profile_pic_url,
-      "notification".type,
-      "notification".${post_or_comment}_id
-    FROM "Notification" "notification"
-    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
-    WHERE "notification".id = $1
-    `,
-    values: [notifId],
-  }
-
-  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
+  return (await dbClient.query(query)).rows[0]
 }
 
 /**
@@ -295,8 +285,20 @@ export const createCommentNotification = async (
 ) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, comment_created_id)
-    VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    text: `
+    WITH cte_notification AS (
+      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id, comment_created_id)
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+    )
+    SELECT sender.id AS sender_user_id,
+      notification.receiver_user_id,
+      sender.username AS sender_username,
+      sender.profile_pic_url AS sender_profile_pic_url,
+      notification.type,
+      notification.${post_or_comment}_id
+    FROM cte_notification notification
+    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
     values: [
       "comment",
       sender_user_id,
@@ -306,24 +308,7 @@ export const createCommentNotification = async (
     ],
   }
 
-  const notifId = (await dbClient.query(query)).rows[0].id
-
-  const getCreatedNotifQuery = {
-    text: `
-    SELECT "sender".id AS sender_user_id,
-      "notification".receiver_user_id,
-      "sender".username AS sender_username,
-      "sender".profile_pic_url AS sender_profile_pic_url,
-      "notification".type,
-      "notification".${post_or_comment}_id
-    FROM "Notification" "notification"
-    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
-    WHERE "notification".id = $1
-    `,
-    values: [notifId],
-  }
-
-  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
+  return (await dbClient.query(query)).rows[0]
 }
 
 /* ************* */

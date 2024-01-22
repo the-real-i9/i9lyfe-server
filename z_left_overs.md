@@ -1,7 +1,5 @@
 ## Pending Implementations
-- Group activity realtime
-- Post and Comment triggers
-- Chat routes and controllers - 20th
+- Chat routes and controllers - 21st
 - Home feed posts fetch & pagination - 22nd
 - Comments list pagination - 22nd
 - Post and Comments realtime - 22nd

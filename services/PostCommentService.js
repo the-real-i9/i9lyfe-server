@@ -94,10 +94,7 @@ export class PostCommentService {
   ) {
     await Promise.all([
       this.#handleHashtags(content_text, dbClient),
-      this.#handleMentions(
-        { content_text, content_owner_user_id },
-        dbClient
-      ),
+      this.#handleMentions({ content_text, content_owner_user_id }, dbClient),
     ])
   }
 
@@ -125,10 +122,7 @@ export class PostCommentService {
    * @param {number} param0.content_owner_user_id
    * @param {import("pg").PoolClient} dbClient
    */
-  async #handleMentions(
-    { content_text, content_owner_user_id },
-    dbClient
-  ) {
+  async #handleMentions({ content_text, content_owner_user_id }, dbClient) {
     const mentions = extractMentions(content_text)
 
     if (mentions) {
