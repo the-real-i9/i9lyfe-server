@@ -1,14 +1,14 @@
 ## Pending Implementations
-- Chat routes and controllers - 21st
-- Home feed posts fetch & pagination - 22nd
-- Comments list pagination - 22nd
-- Post and Comments realtime - 22nd
+- Chat Services CTE - 23rd
+- Chat routes and controllers - 23rd
+- Home feed posts fetch & pagination - 23rd
+- Post and Comments realtime - 24th
   - New post, new comment
   - Post and Comment data counts
-- Explore & Search - 23rd
-- Uploading User generated content to Cloud Storage and getting back URL to store in DB - 23rd
+- Explore & Search - 25th
+- Uploading User generated content to Cloud Storage and getting back URL to store in DB - 26th
   - Profile pictures, Post images & videos
-- Frontend preparation - 23rd
+- Frontend preparation - 27th
 
 
 

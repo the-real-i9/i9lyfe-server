@@ -272,7 +272,6 @@ export const createComment = async (
   return (await dbClient.query(query)).rows[0].data
 }
 
-
 /* ************* */
 
 /**
@@ -319,16 +318,20 @@ export const getPost = async (post_id, client_user_id) => {
 }
 
 /**
- * @param {object} param0 
- * @param {"post" | "comment"} param0.post_or_comment 
- * @param {number} param0.post_or_comment_id 
+ * @param {object} param0
+ * @param {"post" | "comment"} param0.post_or_comment
+ * @param {number} param0.post_or_comment_id
  * @param {number} param0.client_user_id
- * @returns 
+ * @param {number} param0.limit
+ * @param {number} param0.offset
+ * @returns
  */
 export const getAllCommentsOnPost_OR_RepliesToComment = async ({
   post_or_comment,
   post_or_comment_id,
   client_user_id,
+  limit,
+  offset,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
@@ -349,8 +352,10 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
       END AS client_reaction
     FROM "CommentsOnPost_RepliesToCommentView"
     WHERE owner_${post_or_comment}_id = $1 
+    ORDER BY created_at DESC
+    LIMIT $3 OFFSET $4
     `,
-    values: [post_or_comment_id, client_user_id],
+    values: [post_or_comment_id, client_user_id, limit, offset],
   }
 
   return (await dbQuery(query)).rows
@@ -391,11 +396,13 @@ export const getAllReactorsToPost_OR_Comment = async ({
   post_or_comment,
   post_or_comment_id,
   client_user_id,
+  limit,
+  offset,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "user".id, 
+    SELECT "user".id AS user_id, 
       "user".profile_pic_url, 
       "user".username, 
       "user".name,
@@ -403,13 +410,14 @@ export const getAllReactorsToPost_OR_Comment = async ({
         WHEN "client_follows".id IS NULL THEN false
         ELSE true
       END client_follows
-    FROM "User" "user" 
-    INNER JOIN "PostCommentReaction" "reaction" 
-      ON "reaction".reactor_user_id = "user".id 
-      AND "reaction".${post_or_comment}_id = $1
+    FROM "PostCommentReaction" "reaction" 
+    INNER JOIN "User" "user" ON "reaction".reactor_user_id = "user".id 
     LEFT JOIN "Follow" "client_follows" 
-      ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $2`,
-    values: [post_or_comment_id, client_user_id],
+      ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $2
+    WHERE "reaction".${post_or_comment}_id = $1
+    ORDER BY "reaction".created_at DESC
+    LIMIT $3 OFFSET $4`,
+    values: [post_or_comment_id, client_user_id, limit, offset],
   }
 
   return (await dbQuery(query)).rows
@@ -420,11 +428,13 @@ export const getAllReactorsWithReactionToPost_OR_Comment = async ({
   post_or_comment_id,
   reaction_code_point,
   client_user_id,
+  limit,
+  offset,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "user".id, 
+    SELECT "user".id AS user_id, 
       "user".profile_pic_url, 
       "user".username, 
       "user".name,
@@ -432,14 +442,20 @@ export const getAllReactorsWithReactionToPost_OR_Comment = async ({
         WHEN "client_follows".id IS NULL THEN false
         ELSE true
       END client_follows
-    FROM "User" "user" 
-    INNER JOIN "PostCommentReaction" "reaction" 
-      ON "reaction".reactor_user_id = "user".id 
-      AND "reaction".${post_or_comment}_id = $1
+    FROM "PostCommentReaction" "reaction" 
+    INNER JOIN "User" "user" ON "reaction".reactor_user_id = "user".id 
     LEFT JOIN "Follow" "client_follows" 
       ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $3
-    WHERE "reaction".reaction_code_point = $2`,
-    values: [post_or_comment_id, reaction_code_point, client_user_id],
+    WHERE "reaction".${post_or_comment}_id = $1 AND "reaction".reaction_code_point = $2
+    ORDER BY "reaction".created_at DESC
+    LIMIT $4 OFFSET $5`,
+    values: [
+      post_or_comment_id,
+      reaction_code_point,
+      client_user_id,
+      limit,
+      offset,
+    ],
   }
 
   return (await dbQuery(query)).rows

@@ -219,11 +219,13 @@ export const getAllCommentsOnPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
+    const { limit = 20, offset = 0 } = req.query
+
     const { client_user_id } = req.auth
 
     const postComments = await new PostCommentService(
       new Post(post_id)
-    ).getAllCommentsORReplies(client_user_id)
+    ).getAllCommentsORReplies({ client_user_id, limit, offset })
 
     res.status(200).send({ postComments })
   } catch (error) {
@@ -261,11 +263,13 @@ export const getAllReactorsToPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
+    const { limit, offset } = req.query
+
     const { client_user_id } = req.auth
 
     const postReactors = await new PostCommentService(
       new Post(post_id)
-    ).getAllReactors(client_user_id)
+    ).getAllReactors({ client_user_id, limit, offset })
 
     res.status(200).send({ postReactors })
   } catch (error) {
@@ -282,11 +286,18 @@ export const getAllReactorsWithReactionToPostController = async (req, res) => {
   try {
     const { post_id, reaction_code_point } = req.params
 
+    const { limit, offset } = req.query
+
     const { client_user_id } = req.auth
 
     const postReactorsWithReaction = await new PostCommentService(
       new Post(post_id)
-    ).getAllReactorsWithReaction(reaction_code_point, client_user_id)
+    ).getAllReactorsWithReaction({
+      reaction_code_point,
+      client_user_id,
+      limit,
+      offset,
+    })
 
     res.status(200).send({ postReactorsWithReaction })
   } catch (error) {
@@ -303,11 +314,13 @@ export const getAllRepliesToCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
+    const { limit = 20, offset = 0 } = req.query
+
     const { client_user_id } = req.auth
 
     const commentReplies = await new PostCommentService(
       new Comment(comment_id)
-    ).getAllCommentsORReplies(client_user_id)
+    ).getAllCommentsORReplies({ client_user_id, limit, offset })
 
     res.status(200).send({ commentReplies })
   } catch (error) {
@@ -345,11 +358,13 @@ export const getAllReactorsToCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
+    const { limit, offset } = req.query
+
     const { client_user_id } = req.auth
 
     const commentReactors = await new PostCommentService(
       new Comment(comment_id)
-    ).getAllReactors(client_user_id)
+    ).getAllReactors({ client_user_id, limit, offset })
 
     res.status(200).send({ commentReactors })
   } catch (error) {
@@ -369,11 +384,18 @@ export const getAllReactorsWithReactionToCommentController = async (
   try {
     const { comment_id, reaction_code_point } = req.params
 
+    const { limit, offset } = req.query
+
     const { client_user_id } = req.auth
 
     const commentReactorsWithReaction = await new PostCommentService(
       new Comment(comment_id)
-    ).getAllReactorsWithReaction(reaction_code_point, client_user_id)
+    ).getAllReactorsWithReaction({
+      reaction_code_point,
+      client_user_id,
+      limit,
+      offset,
+    })
 
     res.status(200).send({ commentReactorsWithReaction })
   } catch (error) {

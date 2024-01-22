@@ -258,45 +258,48 @@ export class PostCommentService {
     }
   }
 
-  async getAllCommentsORReplies(client_user_id) {
-    const result = await getAllCommentsOnPost_OR_RepliesToComment({
+  async getAllCommentsORReplies({ client_user_id, limit, offset }) {
+    return await getAllCommentsOnPost_OR_RepliesToComment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       client_user_id,
+      limit,
+      offset,
     })
-
-    return result
   }
 
   async getCommentORReply(comment_or_reply_id, client_user_id) {
-    const result = await getCommentOnPost_OR_ReplyToComment({
+    return await getCommentOnPost_OR_ReplyToComment({
       post_or_comment: this.postOrComment.which(),
       comment_or_reply_id,
       client_user_id,
     })
-
-    return result
   }
 
-  async getAllReactors(client_user_id) {
-    const result = await getAllReactorsToPost_OR_Comment({
+  async getAllReactors({ client_user_id, limit, offset }) {
+    return await getAllReactorsToPost_OR_Comment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       client_user_id,
+      limit,
+      offset,
     })
-
-    return result
   }
 
-  async getAllReactorsWithReaction(reaction_code_point, client_user_id) {
-    const result = await getAllReactorsWithReactionToPost_OR_Comment({
+  async getAllReactorsWithReaction({
+    reaction_code_point,
+    client_user_id,
+    limit,
+    offset,
+  }) {
+    return await getAllReactorsWithReactionToPost_OR_Comment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       reaction_code_point,
       client_user_id,
+      limit,
+      offset,
     })
-
-    return result
   }
 
   async removeReaction() {
