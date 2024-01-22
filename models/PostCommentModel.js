@@ -2,11 +2,17 @@ import { generateMultiRowInsertValuesParameters } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /**
+ * @typedef {import("pg").PoolClient} PgPoolClient
+ * @typedef {import("pg").QueryConfig} PgQueryConfig
+ */
+
+/**
  * @param {object} post
  * @param {number} post.client_user_id
  * @param {string[]} post.media_urls
  * @param {string} post.type
  * @param {string} post.description
+ * @param {PgPoolClient} dbClient
  */
 export const createNewPost = async (
   { client_user_id, media_urls, type, description },
@@ -20,9 +26,8 @@ export const createNewPost = async (
     values: [client_user_id, media_urls, type, description],
   }
 
-  const result = await dbClient.query(query)
+  return (await dbClient.query(query)).rows[0]
 
-  return result
 }
 
 export const createRepost = async (original_post_id, reposter_user_id) => {
@@ -50,7 +55,7 @@ export const savePost = async (post_id, client_user_id) => {
 
 /**
  * @param {string[]} usernames
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  * @returns {Promise<number[]>}
  */
 export const mapUsernamesToUserIds = async (usernames, dbClient) => {
@@ -70,7 +75,7 @@ export const mapUsernamesToUserIds = async (usernames, dbClient) => {
  * @param {number} param0.post_or_comment_id
  * @param {number[]} param0.mentioned_user_ids
  * @param {"post" | "comment"} param0.post_or_comment
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  */
 export const createMentions = async (
   { post_or_comment, post_or_comment_id, mentioned_user_ids },
@@ -94,13 +99,13 @@ export const createMentions = async (
  * @param {number[]} param0.receiver_user_ids
  * @param {"post" | "comment"} param0.post_or_comment
  * @param {number} param0.post_or_comment_id
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  */
 export const createMentionsNotifications = async (
   { sender_user_id, receiver_user_ids, post_or_comment, post_or_comment_id },
   dbClient
 ) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `
     WITH cte_notification AS (
@@ -134,7 +139,7 @@ export const createMentionsNotifications = async (
  * @param {"post" | "comment"} param0.post_or_comment
  * @param {number} param0.post_or_comment_id
  * @param {string[]} param0.hashtag_names
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  */
 export const createHashtags = async (
   { post_or_comment, post_or_comment_id, hashtag_names },
@@ -158,22 +163,20 @@ export const createHashtags = async (
  * @param {"post" | "comment"} param0.post_or_comment Post `id` or Comment `id`
  * @param {number} param0.post_or_comment_id
  * @param {number} param0.reaction_code_point
- * @param {import("pg").PoolClient} dbClient
+ * @param {PgPoolClient} dbClient
  */
 export const createReaction = async (
   { reactor_user_id, post_or_comment, post_or_comment_id, reaction_code_point },
   dbClient
 ) => {
-  /** @type {import("pg").QueryConfig} */
+  /** @type {PgQueryConfig} */
   const query = {
     text: `INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
       VALUES ($1, $2, $3) RETURNING id`,
     values: [reactor_user_id, post_or_comment_id, reaction_code_point],
   }
 
-  const result = await dbClient.query(query)
-
-  return result
+  return (await dbClient.query(query)).rows[0].id
 }
 
 /**
@@ -247,7 +250,8 @@ export const createComment = async (
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
-    VALUES ($1, $2, $3, $4) RETURNING id, commenter_user_id${
+    VALUES ($1, $2, $3, $4) 
+    RETURNING id, commenter_user_id${
       post_or_comment === "comment" ? " AS replier_user_id" : ""
     }, comment_text${
       post_or_comment === "comment" ? " AS reply_text" : ""
@@ -260,8 +264,7 @@ export const createComment = async (
     ],
   }
 
-  const result = await dbClient.query(query)
-  return result
+  return (await dbClient.query(query)).rows[0]
 }
 
 /**

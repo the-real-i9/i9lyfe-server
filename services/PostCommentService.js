@@ -164,7 +164,7 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const result = await createReaction(
+      const reaction_id = await createReaction(
         {
           reactor_user_id,
           post_or_comment: this.postOrComment.which(),
@@ -173,8 +173,6 @@ export class PostCommentService {
         },
         dbClient
       )
-
-      const { id: reaction_id } = result.rows[0]
 
       await this.#createReactionNotification(
         { reactor_user_id, reaction_id },
@@ -225,19 +223,17 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const result = await createComment(
-        {
-          commenter_user_id,
-          comment_text,
-          attachment_url,
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-        },
-        dbClient
-      )
-
       const commentData = {
-        ...result.rows[0],
+        ...(await createComment(
+          {
+            commenter_user_id,
+            comment_text,
+            attachment_url,
+            post_or_comment: this.postOrComment.which(),
+            post_or_comment_id: this.postOrComment.id,
+          },
+          dbClient
+        )),
         reactions_count: 0,
         replies_count: 0,
       }
@@ -298,19 +294,17 @@ export class PostCommentService {
       await dbClient.query("BEGIN")
 
       // Note: A Reply is also a form of Coment. It's just a  comment that belongs to a Comment
-      const result = await createComment(
-        {
-          commenter_user_id: replier_user_id,
-          comment_text: reply_text,
-          attachment_url,
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-        },
-        dbClient
-      )
-
       const replyData = {
-        ...result.rows[0],
+        ...(await createComment(
+          {
+            commenter_user_id: replier_user_id,
+            comment_text: reply_text,
+            attachment_url,
+            post_or_comment: this.postOrComment.which(),
+            post_or_comment_id: this.postOrComment.id,
+          },
+          dbClient
+        )),
         reactions_count: 0,
         replies_count: 0,
       }

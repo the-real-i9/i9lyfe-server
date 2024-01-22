@@ -27,13 +27,16 @@ export class PostService {
     try {
       await dbClient.query("BEGIN")
 
-      const result = await createNewPost(
-        { client_user_id: this.client_user_id, media_urls, type, description },
-        dbClient
-      )
-
       const postData = {
-        ...result.rows[0],
+        ...(await createNewPost(
+          {
+            client_user_id: this.client_user_id,
+            media_urls,
+            type,
+            description,
+          },
+          dbClient
+        )),
         reactions_count: 0,
         comments_count: 0,
         reposts_count: 0,
