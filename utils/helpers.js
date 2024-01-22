@@ -41,20 +41,23 @@ export const extractHashtags = (text) => {
 }
 
 /**
- * @param {number} rowsCount
- * @param {number} columnsCount
+ * @param {object} param0
+ * @param {number} param0.rowsCount
+ * @param {number} param0.columnsCount
+ * @param {number} param0.paramNumFrom
  */
-export const generateMultiRowInsertValuesParameters = (
+export const generateMultiRowInsertValuesParameters = ({
   rowsCount,
-  columnsCount
-) =>
+  columnsCount,
+  paramNumFrom = 1,
+}) =>
   Array(rowsCount)
     .fill()
     .map(
       (r, ri) =>
         `(${Array(columnsCount)
           .fill()
-          .map((f, fi) => `$${ri * columnsCount + (fi + 1)}`)
+          .map((f, fi) => `$${ri * columnsCount + (fi + paramNumFrom)}`)
           .join(", ")})`
     )
     .join(", ")
@@ -93,7 +96,7 @@ const removeNullFields = (obj) => {
             ? removeNullFields(v)
             : v,
         ])
-      return acc;
+      return acc
     }, [])
   )
 }

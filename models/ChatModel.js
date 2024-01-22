@@ -90,10 +90,10 @@ export const createUserConversation = async (
   const query = {
     text: `
     INSERT INTO "UserConversation" (user_id, conversation_id) 
-    VALUES ${generateMultiRowInsertValuesParameters(
-      participantsUserIds.length,
-      2
-    )}`,
+    VALUES ${generateMultiRowInsertValuesParameters({
+      rowsCount: participantsUserIds.length,
+      columnsCount: 2
+    })}`,
     values: participantsUserIds
       .map((user_id) => [user_id, conversation_id])
       .flat(),
@@ -156,7 +156,7 @@ export const getAllUserConversations = async (client_user_id) => {
           WHEN history_type = 'message' THEN json_build_object('item_type', 'message', 'item_content', message_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}')
           ELSE json_build_object('item_type', 'activity', 'item_content', activity_info)
         END
-      FROM "ConversationHistory"
+      FROM "ConversationHistoryView"
       WHERE conversation_id = "conv".id
       ORDER BY created_at DESC
       LIMIT 1
@@ -201,7 +201,7 @@ export const getConversationHistory = async ({
     text: `
     SELECT * 
     FROM (SELECT * 
-      FROM "ConversationHistory" 
+      FROM "ConversationHistoryView" 
       WHERE conversation_id = $1 
       ORDER BY created_at DESC 
       LIMIT $2 OFFSET $3)
