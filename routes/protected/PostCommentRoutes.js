@@ -2,31 +2,7 @@ import express from "express"
 import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
-import {
-  createPostCommentController,
-  createNewPostController,
-  getAllReactorsToCommentController,
-  getAllReactorsWithReactionToCommentController,
-  getAllRepliesToCommentController,
-  getAllCommentsOnPostController,
-  getAllReactorsToPostController,
-  getAllReactorsWithReactionToPostController,
-  getReplyController,
-  getCommentController,
-  getPostController,
-  createCommentReactionController,
-  createPostReactionController,
-  createCommentReplyController,
-  createRepostController,
-  postSaveController,
-  deletePostController,
-  removePostReactionController,
-  deletePostCommentController,
-  removeCommentReactionController,
-  deleteCommentReplyController,
-  deleteRepostController,
-  postUnsaveController,
-} from "../../controllers/PostCommentControllers.js"
+import * as PCC from "../../controllers/PostCommentControllers.js"
 
 dotenv.config()
 
@@ -46,53 +22,54 @@ router.use(
   }
 )
 /* ====== POST ====== */
-router.post("/new_post", createNewPostController)
-router.get("/posts/:post_id", getPostController)
-router.delete("/posts/:post_id", deletePostController)
+router.post("/new_post", PCC.createNewPostController)
+router.get("/home/feed", PCC.getHomeFeedController)
+router.get("/posts/:post_id", PCC.getPostController)
+router.delete("/posts/:post_id", PCC.deletePostController)
 
 /* ====== POST'S REACTION ====== */
 
-router.post("/post_reaction", createPostReactionController)
-router.get("/posts/:post_id/reactors", getAllReactorsToPostController)
+router.post("/post_reaction", PCC.createPostReactionController)
+router.get("/posts/:post_id/reactors", PCC.getAllReactorsToPostController)
 router.get(
   "/posts/:post_id/reactors/:reaction_code_point",
-  getAllReactorsWithReactionToPostController
+  PCC.getAllReactorsWithReactionToPostController
 )
-router.delete("/post_reactions/:post_id", removePostReactionController)
+router.delete("/post_reactions/:post_id", PCC.removePostReactionController)
 
 /* ====== POST'S COMMENT ====== */
 
-router.post("/post_comment", createPostCommentController)
-router.get("/posts/:post_id/comments", getAllCommentsOnPostController)
-router.get("/comments/:comment_id", getCommentController)
-router.delete("/post_comments/:comment_id", deletePostCommentController)
+router.post("/post_comment", PCC.createPostCommentController)
+router.get("/posts/:post_id/comments", PCC.getAllCommentsOnPostController)
+router.get("/comments/:comment_id", PCC.getCommentController)
+router.delete("/post_comments/:comment_id", PCC.deletePostCommentController)
 
 /* ====== COMMENT'S REACTION====== */
 
-router.post("/comment_reaction", createCommentReactionController)
-router.get("/comments/:comment_id/reactors", getAllReactorsToCommentController)
+router.post("/comment_reaction", PCC.createCommentReactionController)
+router.get("/comments/:comment_id/reactors", PCC.getAllReactorsToCommentController)
 router.get(
   "/comments/:comment_id/reactors/:reaction_code_point",
-  getAllReactorsWithReactionToCommentController
+  PCC.getAllReactorsWithReactionToCommentController
 )
-router.delete("/comment_reactions/:comment_id", removeCommentReactionController)
+router.delete("/comment_reactions/:comment_id", PCC.removeCommentReactionController)
 
 /* ====== COMMENT'S REPLY ====== */
 
-router.post("/comment_reply", createCommentReplyController)
-router.get("/comments/:comment_id/replies", getAllRepliesToCommentController)
-router.get("/replies/:reply_id", getReplyController)
-router.delete("/comment_replies/:reply_id", deleteCommentReplyController)
+router.post("/comment_reply", PCC.createCommentReplyController)
+router.get("/comments/:comment_id/replies", PCC.getAllRepliesToCommentController)
+router.get("/replies/:reply_id", PCC.getReplyController)
+router.delete("/comment_replies/:reply_id", PCC.deleteCommentReplyController)
 
 /* ====== REPOST ====== */
 
-router.post("/repost", createRepostController)
-router.delete("/reposts/:repost_id", deleteRepostController)
+router.post("/repost", PCC.createRepostController)
+router.delete("/reposts/:repost_id", PCC.deleteRepostController)
 
 /* ====== POST SAVE ====== */
 
-router.post("/post_save", postSaveController)
-router.delete("/post_saves/:post_id", postUnsaveController)
+router.post("/post_save", PCC.postSaveController)
+router.delete("/post_saves/:post_id", PCC.postUnsaveController)
 
 // GET insight data for a specific post
 

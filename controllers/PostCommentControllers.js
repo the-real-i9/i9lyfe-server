@@ -21,7 +21,8 @@ export const createNewPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postData = await new PostService(client_user_id).create({
+    const postData = await new PostService().createPost({
+      client_user_id,
       media_urls,
       type,
       description,
@@ -162,7 +163,7 @@ export const createRepostController = async (req, res) => {
     const { post_id } = req.body
     const { client_user_id } = req.auth
 
-    await new PostService(client_user_id, post_id).repost()
+    await new PostService().repostPost(client_user_id, post_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -181,7 +182,25 @@ export const postSaveController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await new PostService(client_user_id, post_id).save()
+    await new PostService().savePost(post_id, client_user_id)
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
+ */
+export const postUnsaveController = async (req, res) => {
+  try {
+    const { post_id } = req.params
+    const { client_user_id } = req.auth
+
+    await new PostService().unsavePost(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -196,13 +215,36 @@ export const postSaveController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
+export const getHomeFeedController = async (req, res) => {
+  try {
+    const { limit, offset } = req.query
+
+    const { client_user_id } = req.auth
+
+    const homeFeed = await new PostService().getFeedPosts({
+      client_user_id,
+      limit,
+      offset,
+    })
+
+    res.status(200).send({ homeFeed })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
+ */
 export const getPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
     const { client_user_id } = req.auth
 
-    const post = await new PostService(client_user_id, post_id).get()
+    const post = await new PostService().getPost(post_id, client_user_id)
 
     res.status(200).send({ post })
   } catch (error) {
@@ -415,7 +457,7 @@ export const deletePostController = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService(client_user_id, post_id).delete()
+    await new PostService().deletePost(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -513,7 +555,7 @@ export const deleteRepostController = async (req, res) => {
     const { reposted_post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService(client_user_id, reposted_post_id).deleteRepost()
+    await new PostService().deleteRepost(reposted_post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -522,20 +564,4 @@ export const deleteRepostController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
-export const postUnsaveController = async (req, res) => {
-  try {
-    const { post_id } = req.params
-    const { client_user_id } = req.auth
 
-    await new PostService(client_user_id, post_id).unsave()
-
-    res.sendStatus(200)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}

@@ -17,9 +17,9 @@ app.use(express.json())
 
 app.use("/api/auth", AuthRoutes)
 
-app.use("/api", PostCommentRoutes)
-app.use("/api", UserPrivateRoutes)
+app.use("/api/post_comment", PostCommentRoutes)
+app.use("/api/user_private", UserPrivateRoutes)
 
-app.use("/api", UserPublicRoutes)
+app.use("/api/user_public", UserPublicRoutes)
 
 export default app

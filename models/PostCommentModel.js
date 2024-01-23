@@ -280,7 +280,7 @@ export const getFeedPosts = async ({client_user_id, limit, offset}) => {
     text: `
     SELECT json_build_object(
         'id', owner_user_id,
-        'username', owner_user_username,
+        'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
       post_id,
@@ -292,19 +292,19 @@ export const getFeedPosts = async ({client_user_id, limit, offset}) => {
       reposts_count,
       saves_count,
       CASE 
-        WHEN reactor_user_id = $2 THEN reaction_code_point
+        WHEN reactor_user_id = $1 THEN reaction_code_point
         ELSE NULL
       END AS client_reaction,
       CASE 
-        WHEN reposter_user_id = $2 THEN true
+        WHEN reposter_user_id = $1 THEN true
         ELSE false
       END AS client_reposted,
       CASE 
-        WHEN saver_user_id = $2 THEN true
+        WHEN saver_user_id = $1 THEN true
         ELSE false
       END AS client_saved
     FROM "AllPostsView"
-    INNER JOIN "Follow" follow ON follow.followee_user_id = owner_user_id,
+    INNER JOIN "Follow" follow ON follow.followee_user_id = owner_user_id
     WHERE follow.follower_user_id = $1
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3`,
@@ -325,7 +325,7 @@ export const getPost = async (post_id, client_user_id) => {
     text: `
     SELECT json_build_object(
         'id', owner_user_id,
-        'username', owner_user_username,
+        'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
       post_id,
@@ -377,7 +377,7 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'id', fid,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
