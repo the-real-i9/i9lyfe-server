@@ -38,11 +38,19 @@ test("generate multiple columns update UPDATE [table] SET [parameters] string", 
   expect(res).toBe("name = $1, username = $2")
 })
 
-
 test("", async () => {
-  const res = (paramNumFrom) => generateJsonbMultiKeysSetParameters("info", ['apple', 'banana', 'cherry'], paramNumFrom)
+  const res = (paramNumFrom) =>
+    generateJsonbMultiKeysSetParameters({
+      columnName: "info",
+      jsonbKeys: ["apple", "banana", "cherry"],
+      paramNumFrom,
+    })
 
   console.log(res(5))
-  expect(res(1)).toBe(`info, '{apple}', '"$1"', '{banana}', '"$2"', '{cherry}', '"$3"'`)
-  expect(res(5)).toBe(`info, '{apple}', '"$5"', '{banana}', '"$6"', '{cherry}', '"$7"'`)
+  expect(res(1)).toBe(
+    `info, '{apple}', '"$1"', '{banana}', '"$2"', '{cherry}', '"$3"'`
+  )
+  expect(res(5)).toBe(
+    `info, '{apple}', '"$5"', '{banana}', '"$6"', '{cherry}', '"$7"'`
+  )
 })

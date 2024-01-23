@@ -67,15 +67,16 @@ export const generateMultiColumnUpdateSetParameters = (cols) =>
   cols.map((col, i) => `${col} = $${1 + i}`).join(", ")
 
 /**
- * @param {string} columnName The `jsonb` type column
- * @param {string[]} jsonbKeys
- * @param {number} paramNumFrom Starting parameter number. If `1` then we'll start from `$1` and increment futher
+ * @param {object} param0
+ * @param {string} param0.columnName The `jsonb` type column
+ * @param {string[]} param0.jsonbKeys
+ * @param {number} param0.paramNumFrom Starting parameter number. If `1` then we'll start from `$1` and increment futher
  */
-export const generateJsonbMultiKeysSetParameters = (
+export const generateJsonbMultiKeysSetParameters = ({
   columnName,
   jsonbKeys,
-  paramNumFrom
-) => {
+  paramNumFrom = 1
+}) => {
   // goal: [columnName] = jsonb_set([columnName], '{key}', '"$[paramNumFrom]"', '{key2}', '"$[paramNumFrom + 1]"')
   return `${columnName} = ${jsonbKeys
     .map(
