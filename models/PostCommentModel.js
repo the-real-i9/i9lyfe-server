@@ -274,6 +274,46 @@ export const createComment = async (
 
 /* ************* */
 
+export const getFeedPosts = async ({client_user_id, limit, offset}) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_user_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $2 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $2 THEN true
+        ELSE false
+      END AS client_reposted,
+      CASE 
+        WHEN saver_user_id = $2 THEN true
+        ELSE false
+      END AS client_saved
+    FROM "AllPostsView"
+    INNER JOIN "Follow" follow ON follow.followee_user_id = owner_user_id,
+    WHERE follow.follower_user_id = $1
+    ORDER BY created_at DESC
+    LIMIT $2 OFFSET $3`,
+    values: [client_user_id, limit, offset],
+  }
+
+  return (await dbQuery(query)).rows
+}
+
 /**
  * @param {object} param0
  * @param {number} param0.post_id
