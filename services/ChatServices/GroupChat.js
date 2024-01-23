@@ -5,83 +5,49 @@ import { ChatRealtimeService } from "./ChatRealtimeService.js"
 export class GroupChatService {
   /**
    * @param {object} param0
-   * @param {string} param0.client_username
    * @param {object[]} param0.participants
    * @param {number} param0.participants.user_id
    * @param {string} param0.participants.username
-   * @param {number} param0.group_conversation_id
-   */
-  async #addParticipantsToGroup(
-    { client_username, participants, group_conversation_id },
-    dbClient
-  ) {
-    await ChatModel.createUserConversation(
-      {
-        participantsUserIds: participants.map(({ user_id }) => user_id),
-        conversation_id: group_conversation_id,
-      },
-      dbClient
-    )
-
-    await ChatModel.createGroupConversationActivityLog(
-      {
-        group_conversation_id,
-        activity_info: {
-          type: "participants_added",
-          added_by: client_username,
-          added_participants: participants.map(({ username }) => username),
-        },
-      },
-      dbClient
-    )
-  }
-
-  /**
-   * @param {Object[]} participants
-   * @param {number} participants.user_id
-   * @param {string} participants.username
    * @returns The data needed to display the group chat page history
    */
   async createGroup({
     participants,
-    created_by,
+    client_username,
     title,
     description,
     cover_image_url,
   }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+    /* Nothing returned yet */
+    const groupConversationData = await ChatModel.createGroupConversation({
+      conversationInfo: {
+        type: "group",
+        created_by: client_username,
+        title,
+        description,
+        cover_image_url,
+      },
+      participantsUserIds: participants.map(({ user_id }) => user_id),
+      activity_info: {
+        type: "participants_added",
+        added_by: client_username,
+        added_participants: participants.map(({ username }) => username),
+      },
+    })
 
-      const group_conversation_id = await ChatModel.createConversation(
-        { type: "group", created_by, title, description, cover_image_url },
-        dbClient
-      )
+    const { group_conversation_id } = groupConversationData
 
-      // add participants to group
-      // group membership will be crated by a TRIGGER, starting with the first user as "admin"
-      await this.#addParticipantsToGroup(
-        { client_username: created_by, participants, group_conversation_id },
-        dbClient
-      )
+    // Implement realtime todos where appropriate
+    // here we have to create a socket room for this conversation and add these participants to it
+    await ChatRealtimeService.createGroupConversation(
+      participants.map(({ user_id }) => user_id),
+      group_conversation_id
+    )
 
-      dbClient.query("COMMIT")
-
-      // Implement realtime todos where appropriate
-      // here we have to create a socket room for this conversation and add these participants to it
-      // next we send the group creation and additon of participants to all participants (this is done automatically by the function below)
-      await ChatRealtimeService.createGroupConversation(
-        participants.map(({ user_id }) => user_id),
-        group_conversation_id
-      )
-
-      return group_conversation_id // more
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
-    }
+    // next we send the group creation and additon of participants to all participants
+    new ChatRealtimeService().sendNewGroupConversation(
+      group_conversation_id,
+      groupConversationData
+    )
   }
 
   /**
@@ -95,50 +61,26 @@ export class GroupChatService {
    * @param {number} param0.group_conversation_id
    */
   async addParticipants({ client, participants, group_conversation_id }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+    const activity_info = {
+      type: "participants_added",
+      added_by: client.username,
+      added_participants: participants.map(({ username }) => username),
+    }
 
-      if (
-        !(await ChatModel.isGroupAdmin(
-          {
-            participant_user_id: client.user_id,
-            group_conversation_id,
-          },
-          dbClient
-        ))
-      ) {
-        throw new Error("You must be a group admin to add participants!")
-      }
+    const participantsAdded = await ChatModel.addParticipantsToGroup({
+      client_user_id: client.user_id,
+      participantsUserIds: participants.map(({ user_id }) => user_id),
+      activity_info,
+    })
 
-      // add participants to group
-      // group membership will be crated by a TRIGGER, starting with the first user as "admin"
-      await this.#addParticipantsToGroup(
-        {
-          client_username: client.username,
-          participants,
-          group_conversation_id,
-        },
-        dbClient
-      )
 
-      dbClient.query("COMMIT")
-
-      /* Realtime action */
-      // send activity log to participants
+    /* Realtime action */
+    // send activity log to participants
+    if (participantsAdded) {
       new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
         group_conversation_id,
-        activity_info: {
-          type: "participants_added",
-          added_by: client.username,
-          added_participants: participants.map(({ username }) => username),
-        },
+        activity_info,
       })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
     }
   }
 
@@ -440,65 +382,26 @@ export class GroupChatService {
    * @param {Object<string, string>} param0.newInfoKVPair
    */
   async changeGroupInfo({ client, group_conversation_id, newInfoKVPair }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+    const [[infoKey, newInfoValue]] = Object.entries(newInfoKVPair)
 
-      const [[infoKey, newValue]] = Object.entries(newInfoKVPair)
+    const activity_info = {
+      type: `group_${infoKey}_changed`,
+      changed_by: client.username,
+      [`new_group_${infoKey}`]: newInfoValue,
+    }
 
-      if (
-        !(await ChatModel.isGroupAdmin(
-          {
-            participant_user_id: client.user_id,
-            group_conversation_id,
-          },
-          dbClient
-        ))
-      ) {
-        throw new Error(
-          `You must be a group admin to change group's ${infoKey}!`
-        )
-      }
+    const changed = await ChatModel.changeGroupInfo({
+      client_user_id: client.user_id,
+      group_conversation_id,
+      newInfoKVPair,
+      activity_info,
+    })
 
-      await ChatModel.updateConversation(
-        {
-          conversation_id: group_conversation_id,
-          updateKVPairs: new Map().set(
-            "info",
-            new Map().set(infoKey, newValue)
-          ),
-        },
-        dbClient
-      )
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: `group_${infoKey}_changed`,
-            changed_by: client.username,
-            [`new_group_${infoKey}`]: newValue,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      // Implement realtime todos where appropriate
+    if (changed) {
       new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
         group_conversation_id,
-        activity_info: {
-          type: `group_${infoKey}_changed`,
-          changed_by: client.username,
-          [`new_group_${infoKey}`]: newValue,
-        },
+        activity_info,
       })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
     }
   }
 

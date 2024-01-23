@@ -12,68 +12,129 @@ import {
 import { dbQuery } from "./db.js"
 
 /**
- * @param {object} info
- * @param {"direct" | "group"} info.type
- * @param {string} [info.title] Group title, if `type` is "group"
- * @param {string} [info.description] Group description, if `type` is "group"
- * @param {string} [info.cover_image_url] Group cover image, if `type` is "group"
- * @param {number} [info.created_by] The User that created the group, if `type` is "group"
- * @param {PgPoolClient} dbClient
+ * @param {object} client
+ * @param {number} client.user_id
+ * @param {string} client.username
+ * @param {number} partner_user_id
  */
-export const createConversation = async (info, dbClient) => {
+export const createDMConversation = async (client, partner_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
+  WITH dm_convo_cte AS (
     INSERT INTO "Conversation" (info) 
-    VALUES ($1) RETURNING id`,
-    values: [info],
+    VALUES ($1) 
+    RETURNING id AS dm_conversation_id
+  ), user_convo_cte AS (
+    INSERT INTO "UserConversation" (user_id, conversation_id) 
+    VALUES ($2, SELECT dm_conversation_id FROM dm_convo_cte), ($3, SELECT dm_conversation_id FROM dm_convo_cte)
+  )
+  SELECT dm_conversation_id FROM dm_convo_cte`,
+    values: [
+      { type: "direct", author: client.username },
+      client.user_id,
+      partner_user_id,
+    ],
   }
 
-  return (await dbClient.query(query)).rows[0].id
+  // return needed details
+  return (await dbQuery(query)).rows[0]
+}
+
+/**
+ * @param {object} param0
+ * @param {object} param0.conversationInfo
+ * @param {"group"} param0.conversationInfo.type
+ * @param {string} param0.conversationInfo.title Group title, if `type` is "group"
+ * @param {string} param0.conversationInfo.description Group description, if `type` is "group"
+ * @param {string} param0.conversationInfo.cover_image_url Group cover image, if `type` is "group"
+ * @param {string} param0.conversationInfo.created_by The User that created the group, if `type` is "group"
+ * @param {number[]} param0.participantsUserIds
+ * @param {object} param0.activity_info
+ */
+export const createGroupConversation = async ({
+  conversationInfo,
+  participantsUserIds,
+  activity_info
+}) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    WITH group_convo_cte AS (
+      INSERT INTO "Conversation" (info) 
+      VALUES ($1) 
+      RETURNING id AS group_conversation_id
+    ), user_convo_cte AS (
+      INSERT INTO "UserConversation" (user_id, conversation_id) 
+      VALUES ${generateMultiRowInsertValuesParameters({
+        rowsCount: participantsUserIds.length,
+        columnsCount: 1,
+        paramNumFrom: 3,
+        // here I just concatenated each user_id column paceholder with conversation_id column value
+      }).replace(
+        /\$\d/g,
+        (m) => `${m}, SELECT group_conversation_id FROM group_convo_cte`
+      )}
+    ), activity_log AS (
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES (SELECT group_conversation_id FROM group_convo_cte, $2)
+    )
+    SELECT `,
+    values: [
+      conversationInfo,
+      activity_info,
+      ...participantsUserIds.map((user_id) => user_id),
+    ],
+  }
+
+  // return needed details
+  await dbQuery(query)
 }
 
 // needs a trigger
+
 /**
  * @param {object} param0
- * @param {number} param0.conversation_id
- * @param {Map<string, any>} param0.updateKVPairs
- * @param {PgPoolClient} dbClient
+ * @param {number} param0.client_user_id
+ * @param {number} param0.group_conversation_id
+ * @param {Object<string, string>} param0.newInfoKVPair
  */
-export const updateConversation = async (
-  { conversation_id, updateKVPairs },
-  dbClient
-) => {
-  /** @type {Map<string, any> | undefined} */
-  const info = updateKVPairs.get("info")
-  info && updateKVPairs.delete("info")
-
-  const [updateSetCols, updateSetValues] = [
-    [...updateKVPairs.keys()],
-    [...updateKVPairs.values()],
-  ]
-
-  const [jsonbKeys, jsonbValues] = info
-    ? [[...info.keys()], [...info.values()]]
-    : [[], []]
+export const changeGroupInfo = async ({
+  client_user_id,
+  group_conversation_id,
+  newInfoKVPair,
+  activityLogInfo,
+}) => {
+  const [[infoKey, newInfoValue]] = Object.entries(newInfoKVPair)
 
   const query = {
-    text: `UPDATE "Conversation" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} ${
-      jsonbKeys.length
-        ? generateJsonbMultiKeysSetParameters(
-            "info",
-            jsonbKeys,
-            updateSetValues.length + 1
-          )
-        : ""
-    } WHERE conversation_id = $${
-      updateSetValues.length + jsonbValues.length + 1
-    }`,
-    values: [...updateSetValues, ...jsonbValues, conversation_id],
+    text: `
+    WITH client_is_group_admin AS (
+      SELECT EXISTS(SELECT role 
+        FROM "GroupMembership" 
+        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    ), convo_cte AS (
+      UPDATE "Conversation" SET ${generateJsonbMultiKeysSetParameters({
+        columName: "info",
+        jsonbKeys: [infoKey],
+        paramNumFrom: 4,
+      })} WHERE conversation_id = $1 AND (SELECT * FROM client_is_group_admin)
+    ), activity_log AS (
+      IF (SELECT * FROM client_is_group_admin) THEN
+        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+        VALUES ($1, $3)
+      END IF;
+    )
+    SLECT * FROM client_is_group_admin`,
+    values: [
+      group_conversation_id,
+      client_user_id,
+      activityLogInfo,
+      newInfoValue,
+    ],
   }
 
-  await dbClient.query(query)
+  return (await dbQuery(query)).rows[0]
 }
 
 /**
@@ -82,28 +143,51 @@ export const updateConversation = async (
  * @param {number} param0.conversation_id
  * @param {PgPoolClient} dbClient
  */
-export const createUserConversation = async (
-  { participantsUserIds, conversation_id },
-  dbClient
-) => {
+export const addParticipantsToGroup = async ({
+  client_user_id,
+  participantsUserIds,
+  group_conversation_id,
+  activity_info,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    INSERT INTO "UserConversation" (user_id, conversation_id) 
-    VALUES ${generateMultiRowInsertValuesParameters({
-      rowsCount: participantsUserIds.length,
-      columnsCount: 2
-    })}`,
-    values: participantsUserIds
-      .map((user_id) => [user_id, conversation_id])
-      .flat(),
+    WITH client_is_group_admin AS (
+      SELECT EXISTS(SELECT role 
+        FROM "GroupMembership" 
+        WHERE group_conversation_id = $1 AND user_id = $3 AND deleted = false AND role = 'admin')
+    ), user_convo_cte AS (
+      IF (SELECT * FROM client_is_group_admin) THEN
+        INSERT INTO "UserConversation" (user_id, conversation_id) 
+        VALUES ${generateMultiRowInsertValuesParameters({
+          rowsCount: participantsUserIds.length,
+          columnsCount: 1,
+          paramNumFrom: 4,
+          // here I just concatenated each user_id column paceholder with conversation_id column value
+        }).replace(/\$\d/g, (m) => `${m}, $1`)}
+      END IF
+    ), activity_log AS (
+      IF (SELECT * FROM client_is_group_admin) THEN
+        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+        VALUES ($1, $2)
+      END IF
+    )
+    SELECT * FROM client_is_group_admin`,
+    values: [
+      group_conversation_id,
+      activity_info,
+      client_user_id,
+      ...participantsUserIds.map((user_id) => user_id),
+    ],
   }
 
-  await dbClient.query(query)
+  return (await dbQuery(query)).rows[0]
 
   // After this, if conversation type is "group", create group membership is automatically "trigger"ed for each inserted "UserConversation"
   // Afterwards, we programmatically log the activity
 }
+
+export const joinGroup = async () => {}
 
 /**
  * @param {object} param0
@@ -294,7 +378,7 @@ export const createMessage = async ({
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH message_cte (
+    WITH message_cte AS (
       INSERT INTO "Message" (sender_user_id, conversation_id, msg_content) 
       VALUES ($1, $2, $3)
       RETURNING sender_user_id, conversation_id, msg_content
@@ -321,63 +405,11 @@ export const createMessage = async ({
  * @param {number} message_id
  * @param {Map<string, any>} updateKVPairs
  */
-export const updateMessage = async (message_id, updateKVPairs) => {
-  /** Extract `msg_content` values as it'd be handled separately as a `jsonb` type update
-   * @type {Map<string, any> | undefined}
-   */
-  const msg_content = updateKVPairs.get("msg_content")
-
-  /* Delete the values from the original Map to complete the extraction */
-  msg_content && updateKVPairs.delete("msg_content")
-
-  /* 
-  The remnants are the non-jsonb-type table columns.
-  We separate table columns/keys from values as we they'd be handled separately
-   */
-  const [updateSetCols, updateSetValues] = [
-    [...updateKVPairs.keys()],
-    [...updateKVPairs.values()],
-  ]
-
-  /* We seperate `msg_content` jsonb keys from values */
-  const [msg_content_jsonbKeys, msg_content_jsonbValues] = msg_content
-    ? [[...msg_content.keys()], [...msg_content.values()]]
-    : [[], []]
-
-  /**
-   * Now we take the non-jsonb-type table columns and
-   * generate multiple `SET` parameters from them as the number of table columns are arbitrary (unknown)
-   *
-   * We did something similar for `msg_content` jsonb keys, but for `jsonb_set` in this case
-   *
-   * Observe that, as we dynamically add parameters/placeholders for each object's keys' values, we spread/align/match (...) the values in the `values` parameter of the `QueryConfig`, and we jump `{sumOfValuesLengthFromPreviousObjects} + 1` so we can spread/align/match `(...)` the values of the next object just after the values of the previous one.
-   *
-   * And finally, for the `WHERE` clause, we do a final `+ 1` jump as its parameter is the final. If there were multiple parameters for the `WHERE` clause, we'll jump depending on their position from away from the previously added dynamic parameters.
-   * @type {PgQueryConfig}
-   */
-  const query = {
-    text: `UPDATE "Message" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} ${
-      msg_content_jsonbKeys.length
-        ? generateJsonbMultiKeysSetParameters(
-            "msg_content",
-            msg_content_jsonbKeys,
-            updateSetValues.length + 1
-          )
-        : ""
-    } WHERE id = $${
-      updateSetValues.length + msg_content_jsonbValues.length + 1
-    }`,
-    values: [...updateSetValues, ...msg_content_jsonbValues, message_id],
-  }
-
-  await dbQuery(query)
-}
+export const updateDeliveryStatus = () => {}
 
 /**
- * @param {number} message_id 
- * @param {number} user_id 
+ * @param {number} message_id
+ * @param {number} user_id
  * @returns {Promise<boolean>} Has message delivered to all conversation participants?
  */
 export const acknowledgeMessageDelivered = async (user_id, message_id) => {
@@ -395,8 +427,8 @@ export const acknowledgeMessageDelivered = async (user_id, message_id) => {
 }
 
 /**
- * @param {number} message_id 
- * @param {number} user_id 
+ * @param {number} message_id
+ * @param {number} user_id
  * @returns {Promise<boolean>} Has message been read by all conversation participants?
  */
 export const acknowledgeMessageRead = async (user_id, message_id) => {

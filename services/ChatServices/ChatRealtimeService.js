@@ -27,15 +27,15 @@ export class ChatRealtimeService {
   static async createDMConversation({
     client_user_id,
     partner_user_id,
-    conversation_id,
+    dm_conversation_id,
   }) {
     await Promise.all([
       ChatRealtimeService.sockClients
         ?.get(client_user_id)
-        .join(`convo-room-${conversation_id}`),
+        .join(`convo-room-${dm_conversation_id}`),
       ChatRealtimeService.sockClients
         ?.get(partner_user_id)
-        .join(`convo-room-${conversation_id}`),
+        .join(`convo-room-${dm_conversation_id}`),
     ])
   }
 
@@ -86,5 +86,11 @@ export class ChatRealtimeService {
     ChatRealtimeService.io
       .to(`convo-room-${group_conversation_id}`)
       .emit("new activity log", activityLogData)
+  }
+
+  sendNewGroupConversation(group_conversation_id, groupConversationData) {
+    ChatRealtimeService.io
+      .to(`convo-room-${group_conversation_id}`)
+      .emit("new group", groupConversationData)
   }
 }
