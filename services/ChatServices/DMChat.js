@@ -2,7 +2,7 @@ import * as ChatModel from "../../models/ChatModel.js"
 import { getDBClient } from "../../models/db.js"
 import { ChatRealtimeService } from "./ChatRealtimeService.js"
 
-export class DMChat {
+export class DMChatService {
   /**
    *
    * @param {object} client

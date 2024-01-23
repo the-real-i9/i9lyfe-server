@@ -294,12 +294,26 @@ export const createMessage = async ({
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    INSERT INTO "Message" (sender_user_id, conversation_id, msg_content) 
-    VALUES ($1, $2, $3)`,
+    WITH message_cte (
+      INSERT INTO "Message" (sender_user_id, conversation_id, msg_content) 
+      VALUES ($1, $2, $3)
+      RETURNING sender_user_id, conversation_id, msg_content
+    )
+    SELECT json_build_object(
+        'user_id', user.id,
+        'profile_pic_url', user.profile_pic_url,
+        'username', user.username,
+        'name', user.name,
+        'connection_status', user.connection_status
+      ) AS sender,
+      conversation_id,
+      msg_content
+    FROM message_cte
+    INNER JOIN "User" user ON user.id = sender_user_id`,
     values: [sender_user_id, conversation_id, msg_content],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0]
 }
 
 /**

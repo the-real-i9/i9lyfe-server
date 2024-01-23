@@ -23,22 +23,19 @@ export class ChatService {
   }
 
   /**
-   * @param {object} param0 
-   * @param {Object} param0.sender 
-   * @param {number} param0.sender.user_id 
-   * @param {string} param0.sender.username 
+   * @param {object} param0
+   * @param {Object} param0.sender
+   * @param {number} param0.sender.user_id
+   * @param {string} param0.sender.username
    */
   async sendMessage({ sender, conversation_id, msg_content }) {
-    await ChatModel.createMessage({ sender_user_id: sender.user_id, conversation_id, msg_content })
-
-    /* Realtime actions */
-    // send message to other participants
-    // send full data for the sake of new conversations
-    new ChatRealtimeService().sendNewMessage(conversation_id, {
-      sender,
+    const newMessageData = await ChatModel.createMessage({
+      sender_user_id: sender.user_id,
       conversation_id,
       msg_content,
     })
+
+    new ChatRealtimeService().sendNewMessage(conversation_id, newMessageData)
   }
 
   async acknowledgeMessageDelivered({ user_id, conversation_id, message_id }) {
@@ -71,10 +68,10 @@ export class ChatService {
   }
 
   /**
-   * @param {object} param0 
-   * @param {Object} param0.reactor 
-   * @param {number} param0.reactor.user_id 
-   * @param {string} param0.reactor.username 
+   * @param {object} param0
+   * @param {Object} param0.reactor
+   * @param {number} param0.reactor.user_id
+   * @param {string} param0.reactor.username
    */
   async reactToMessage({
     reactor,
@@ -91,24 +88,19 @@ export class ChatService {
     /* Realtime actions */
     // update message reaction for other participants
     new ChatRealtimeService().sendMessageReaction(conversation_id, {
-      reactor: reactor.username,
+      reactor_username: reactor.username,
       message_id,
       reaction_code_point,
     })
   }
 
   /**
-   * @param {object} param0 
-   * @param {Object} param0.deleter 
-   * @param {number} param0.deleter.user_id 
-   * @param {string} param0.deleter.username 
+   * @param {object} param0
+   * @param {Object} param0.deleter
+   * @param {number} param0.deleter.user_id
+   * @param {string} param0.deleter.username
    */
-  async deleteMessage({
-    deleter,
-    conversation_id,
-    message_id,
-    deleted_for,
-  }) {
+  async deleteMessage({ deleter, conversation_id, message_id, deleted_for }) {
     await ChatModel.createMessageDeletionLog({
       deleter_user_id: deleter.user_id,
       message_id,
