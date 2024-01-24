@@ -3,7 +3,7 @@
  * @typedef {import("express").Response} ExpressResponse
  */
 
-import { ChatService } from "../services/ChatServices/Chat"
+import { ChatService } from "../services/ChatServices/Chat.js"
 
 /**
  *

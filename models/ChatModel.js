@@ -1,5 +1,4 @@
 /**
- * @typedef {import("pg").PoolClient} PgPoolClient
  * @typedef {import("pg").QueryConfig} PgQueryConfig
  */
 
@@ -373,29 +372,6 @@ export const getConversationHistory = async ({
 
 /**
  * @param {object} param0
- * @param {number} param0.participant_user_id
- * @param {number} param0.group_conversation_id
- * @param {PgPoolClient} dbClient
- * @returns {Promise<boolean>}
- */
-export const isGroupAdmin = async (
-  { participant_user_id, group_conversation_id },
-  dbClient
-) => {
-  const query = {
-    text: `
-    SELECT EXISTS(SELECT 1 
-      FROM "GroupMembership" 
-      WHERE user_id = $1 AND group_conversation_id = $2 AND role = 'admin') AS is_admin
-    `,
-    values: [participant_user_id, group_conversation_id],
-  }
-
-  return (await dbClient.query(query)).rows[0].isAdmin
-}
-
-/**
- * @param {object} param0
  * @param {number} param0.sender_user_id
  * @param {number} param0.conversation_id
  * @param {object} param0.msg_content
@@ -502,7 +478,6 @@ export const acknowledgeMessageRead = async (user_id, message_id) => {
  * @param {number} param0.message_id
  * @param {number} param0.reactor_user_id
  * @param {number} param0.reaction_code_point
- * @param {PgPoolClient} dbClient
  */
 export const createMessageReaction = async ({
   message_id,
@@ -521,15 +496,10 @@ export const createMessageReaction = async ({
 }
 
 /**
- * @param {object} param0
- * @param {number} param0.message_id
- * @param {number} param0.reactor_user_id
- * @param {PgPoolClient} dbClient
+ * @param {number} message_id
+ * @param {number} reactor_user_id
  */
-export const deleteMessageReaction = async ({
-  message_id,
-  reactor_user_id,
-}) => {
+export const deleteMessageReaction = async (message_id, reactor_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -541,10 +511,8 @@ export const deleteMessageReaction = async ({
 }
 
 /**
- * @param {object} param0
- * @param {number} param0.user_id
- * @param {"online" | "offline"} param0.status
- * @param {PgPoolClient} dbClient
+ * @param {number} user_id
+ * @param {"online" | "offline"} connection_status
  */
 export const updateUserConnectionStatus = async (
   user_id,
@@ -565,15 +533,10 @@ export const updateUserConnectionStatus = async (
 }
 
 /**
- * @param {object} param0
- * @param {number} param0.blocking_user_id
- * @param {number} param0.blocked_user_id
- * @param {PgPoolClient} dbClient
+ * @param {number} blocking_user_id
+ * @param {number} blocked_user_id
  */
-export const createBlockedUser = async (
-  { blocking_user_id, blocked_user_id },
-  dbClient
-) => {
+export const createBlockedUser = async (blocking_user_id, blocked_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -582,25 +545,21 @@ export const createBlockedUser = async (
     values: [blocking_user_id, blocked_user_id],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
  * @param {object} param0
  * @param {number} param0.blocking_user_id
  * @param {number} param0.blocked_user_id
- * @param {PgPoolClient} dbClient
  */
-export const deleteBlockedUser = async (
-  { blocking_user_id, blocked_user_id },
-  dbClient
-) => {
+export const deleteBlockedUser = async (blocking_user_id, blocked_user_id) => {
   const query = {
     text: `DELETE FROM "BlockedUser" WHERE blocking_user_id = $1 AND blocked_user_id = $2`,
     values: [blocking_user_id, blocked_user_id],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -609,12 +568,13 @@ export const deleteBlockedUser = async (
  * @param {number} param0.reporter_user_id
  * @param {number} param0.reported_user_id
  * @param {string} param0.reason
- * @param {PgPoolClient} dbClient
  */
-export const createReportedMessage = async (
-  { message_id, reporter_user_id, reported_user_id, reason },
-  dbClient
-) => {
+export const createReportedMessage = async ({
+  message_id,
+  reporter_user_id,
+  reported_user_id,
+  reason,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -623,7 +583,7 @@ export const createReportedMessage = async (
     values: [message_id, reporter_user_id, reported_user_id, reason],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -631,7 +591,6 @@ export const createReportedMessage = async (
  * @param {number} param0.deleter_user_id
  * @param {number} param0.message_id
  * @param {"me" | "everyone"} param0.deleted_for
- * @param {PgPoolClient} dbClient
  */
 export const createMessageDeletionLog = async ({
   deleter_user_id,
