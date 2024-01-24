@@ -311,32 +311,20 @@ export const getAllUserConversations = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT "conv".id AS conversation_id,
-      "conv".info ->> 'type' AS conversation_type,
-      "conv".info ->> 'title' AS group_title,
-      "conv".info ->> 'cover_pic_url' AS group_cover_image,
-      "conv".updated_at,
-      "other_user".name AS partner_name,
-      "other_user".profile_pic_url AS partner_profile_pic,
-      "other_user".connection_status AS partner_connection_status,
-      "other_user".last_active AS partner_last_active,
-      "client_user_conv".unread_messages_count,
-      (SELECT 
-        CASE 
-          WHEN history_type = 'message' THEN json_build_object('item_type', 'message', 'item_content', message_content - '{image_data_url,voice_data_url,video_data_url,file_url,location_coordinate,link_url}')
-          ELSE json_build_object('item_type', 'activity', 'item_content', activity_info)
-        END
-      FROM "ConversationHistoryView"
-      WHERE conversation_id = "conv".id
-      ORDER BY created_at DESC
-      LIMIT 1
-      ) AS last_history_item
-    FROM "Conversation" "conv"
-    LEFT JOIN "UserConversation" "client_user_conv" ON "client_user_conv".conversation_id = "conv".id AND "client_user_conv".user_id = $1
-    LEFT JOIN "UserConversation" "other_user_conv" ON "other_user_conv".conversation_id = "client_user_conv".conversation_id AND "other_user_conv".user_id != $1
-    LEFT JOIN "User" "other_user" ON "other_user".id = "other_user_conv".user_id AND "conv".info ->> 'type' = 'direct'
-    WHERE "client_user_conv".deleted = false AND last_history_item IS NOT NULL
-    ORDER BY "conv".updated_at DESC
+    SELECT conversation_id,
+      conversation_type,
+      group_title,
+      group_cover_image,
+      updated_at,
+      partner_name,
+      partner_profile_pic,
+      partner_connection_status,
+      partner_last_active,
+      unread_messages_count,
+      last_history_item
+    FROM "UserConversationsListView"
+    WHERE client_user_id = $1 AND partner_user_id != $1 AND last_history_item IS NOT NULL
+    ORDER BY updated_at DESC
     `,
     values: [client_user_id],
   }
@@ -668,8 +656,7 @@ export const createReportedMessage = async (
  * @param {PgPoolClient} dbClient
  */
 export const createMessageDeletionLog = async (
-  { deleter_user_id, message_id, deleted_for },
-  dbClient
+  { deleter_user_id, message_id, deleted_for }
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
@@ -679,51 +666,33 @@ export const createMessageDeletionLog = async (
     values: [deleter_user_id, message_id, deleted_for],
   }
 
-  await dbClient.query(query)
-}
-
-/**
- * @param {object} param0
- * @param {number} param0.group_conversation_id
- * @param {object} param0.activity_info
- * @param {string} param0.activity_info.type
- * @param {PgPoolClient} dbClient
- */
-export const createGroupConversationActivityLog = async (
-  { group_conversation_id, activity_info },
-  dbClient
-) => {
-  /** @type {PgQueryConfig} */
-  const query = {
-    text: `
-    INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info) 
-    VALUES ($1, $2)`,
-    values: [group_conversation_id, activity_info],
-  }
-
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
  * @param {string} searchTerm
- * @param {PgPoolClient} dbClient
  */
-export const getUsersForChat = async (searchTerm, dbClient) => {
+export const getUsersForChat = async (client_user_id, searchTerm) => {
   const query = {
     text: `
     SELECT "user".id, 
       "user".username, 
       "user".name, 
       "user".profile_pic_url, 
-      "user".connection_status
-      "user_conv".conversation_id
+      "user".connection_status,
+      "conv".id AS conversation_id
     FROM "User" "user"
-    LEFT JOIN "UserConversation" "user_conv" ON "user_conv".user_id = "user".id
-    WHERE username LIKE '%$1%' OR name LIKE '%$1%'`,
-    values: [searchTerm],
+    LEFT JOIN "UserConversation" "other_user_conv" 
+      ON "other_user_conv".user_id = "user".id
+    LEFT JOIN "UserConversation" "client_user_conv" 
+      ON "client_user_conv".conversation_id = "other_user_conv".conversation_id AND "client_user_conv".user_id = $2
+	  LEFT JOIN "Conversation" "conv" 
+      ON "other_user_conv".conversation_id = "conv".id
+	  WHERE (username LIKE '%$1%' OR name LIKE '%$1%') AND "user".id != $2 AND "conv".info ->> 'type' != 'group'`,
+    values: [searchTerm, client_user_id],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /* Helpers */
