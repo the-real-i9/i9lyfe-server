@@ -5,6 +5,7 @@ import dotenv from "dotenv"
 import AuthRoutes from "./routes/public/AuthRoutes.js"
 import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
 import UserPrivateRoutes from "./routes/protected/UserPrivateRoutes.js"
+import ChatRoutes from "./routes/protected/ChatRoutes.js"
 import UserPublicRoutes from "./routes/public/UserPublicRoutes.js"
 
 dotenv.config()
@@ -18,8 +19,10 @@ app.use(express.json())
 app.use("/api/auth", AuthRoutes)
 
 app.use("/api/post_comment", PostCommentRoutes)
-app.use("/api/user_private", UserPrivateRoutes)
 
+app.use("/api/user_private", UserPrivateRoutes)
 app.use("/api/user_public", UserPublicRoutes)
+
+app.use("/api/chat", ChatRoutes)
 
 export default app
