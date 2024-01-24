@@ -11,11 +11,7 @@ export class ChatService {
   }
 
   async deleteConversation(client_user_id, conversation_id) {
-    await ChatModel.updateUserConversation({
-      user_id: client_user_id,
-      conversation_id,
-      updateKVPairs: new Map().set("deleted", true),
-    })
+    await ChatModel.deleteConversation(client_user_id, conversation_id)
   }
 
   async getConversationHistory({ conversation_id, limit, offset }) {

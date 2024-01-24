@@ -88,7 +88,17 @@ export const createGroupConversation = async ({
   await dbQuery(query)
 }
 
-// needs a trigger
+export const deleteConversation = async (client_user_id, conversation_id) => {
+  const query = {
+    text: `
+    UPDATE "UserConversation" 
+    SET deleted = true
+    WHERE user_id = $1 AND conversation_id = $2`,
+    values: [client_user_id, conversation_id]
+  }
+
+  await dbQuery(query)
+}
 
 /**
  * @param {object} param0
