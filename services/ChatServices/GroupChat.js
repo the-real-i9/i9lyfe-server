@@ -1,4 +1,3 @@
-import { getDBClient } from "../../models/db.js"
 import * as ChatModel from "../../models/ChatModel.js"
 import { ChatRealtimeService } from "./ChatRealtimeService.js"
 
@@ -73,7 +72,6 @@ export class GroupChatService {
       activity_info,
     })
 
-
     /* Realtime action */
     // send activity log to participants
     if (participantsAdded) {
@@ -95,57 +93,26 @@ export class GroupChatService {
    * @param {number} param0.group_conversation_id
    */
   async removeParticipant({ client, participant, group_conversation_id }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+    const activity_info = {
+      type: "participant_removed",
+      removed_by: client.username,
+      removed_participant: participant.username,
+    }
 
-      if (
-        !(await ChatModel.isGroupAdmin(
-          {
-            participant_user_id: client.user_id,
-            group_conversation_id,
-          },
-          dbClient
-        ))
-      ) {
-        throw new Error("You must be a group admin to remove participant!")
-      }
+    const removed = await ChatModel.removeParticipantFromGroup({
+      client_user_id: client.user_id,
+      participant_user_id: participant.user_id,
+      group_conversation_id,
+      activity_info,
+    })
 
-      await ChatModel.updateUserConversation({
-        user_id: participant.user_id,
-        conversation_id: group_conversation_id,
-        updateKVPairs: new Map().set("deleted", true),
-      })
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: "participant_removed",
-            removed_by: client.username,
-            removed_participant: participant.username,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      /* Realtime action */
-      // send activity log to participants
+    /* Realtime action */
+    // send activity log to participants
+    if (removed) {
       new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
         group_conversation_id,
-        activity_info: {
-          type: "participant_removed",
-          removed_by: client.username,
-          removed_participant: participant.username,
-        },
+        activity_info,
       })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
     }
   }
 
@@ -156,46 +123,26 @@ export class GroupChatService {
    * @param {number} group_conversation_id
    */
   async joinGroup(participant, group_conversation_id) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
-
-      await ChatModel.createUserConversation(
-        {
-          participantsUserIds: [participant.user_id],
-          conversation_id: group_conversation_id,
-        },
-        dbClient
-      )
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: "group_joined",
-            who_joined: participant.username,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      /* Realtime action */
-      // send activity log to participants
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info: {
-          type: "group_joined",
-          who_joined: participant.username,
-        },
-      })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
+    const activity_info = {
+      type: "group_joined",
+      who_joined: participant.username,
     }
+
+    await ChatModel.joinGroup({
+      participant_user_id: participant.user_id,
+      group_conversation_id,
+      activity_info,
+    })
+
+    /* Realtime action */
+    // send activity log to participants
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info: {
+        type: "group_joined",
+        who_joined: participant.username,
+      },
+    })
   }
 
   /**
@@ -205,47 +152,23 @@ export class GroupChatService {
    * @param {number} group_conversation_id
    */
   async leaveGroup(participant, group_conversation_id) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
-
-      await ChatModel.updateUserConversation(
-        {
-          user_id: participant.user_id,
-          conversation_id: group_conversation_id,
-          updateKVPairs: new Map().set("deleted", true),
-        },
-        dbClient
-      )
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: "group_left",
-            who_left: participant.username,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      /* Realtime action */
-      // send activity log to participants
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info: {
-          type: "group_left",
-          who_left: participant.username,
-        },
-      })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
+    const activity_info = {
+      type: "group_left",
+      who_left: participant.username,
     }
+
+    await ChatModel.leaveGroup({
+      participant_user_id: participant.user_id,
+      group_conversation_id,
+      activity_info,
+    })
+
+    /* Realtime action */
+    // send activity log to participants
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   /**
@@ -259,118 +182,48 @@ export class GroupChatService {
    * @param {number} param0.group_conversation_id
    */
   async makeAdmin({ client, participant, group_conversation_id }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+    const activity_info = {
+      type: "participant_made_admin",
+      made_by: client.username,
+      new_admin: participant.username,
+    }
 
-      if (
-        !(await ChatModel.isGroupAdmin(
-          {
-            participant_user_id: client.user_id,
-            group_conversation_id,
-          },
-          dbClient
-        ))
-      ) {
-        throw new Error(
-          "You must be a group admin to make participant an admin!"
-        )
-      }
-
-      await ChatModel.updateGroupMembership(
-        {
-          participant_user_id: participant.user_id,
-          group_conversation_id,
-          role: "admin",
-        },
-        dbClient
-      )
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: "participant_made_admin",
-            made_by: client.username,
-            new_admin: participant.username,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      // Implement realtime todos where appropriate
+    const done = await ChatModel.changeGroupParticipantRole({
+      client_user_id: client.user_id,
+      participant_user_id: participant.user_id,
+      group_conversation_id,
+      activity_info,
+      role: "admin",
+    })
+    // Implement realtime todos where appropriate
+    if (done) {
       new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
         group_conversation_id,
-        activity_info: {
-          type: "participant_made_admin",
-          made_by: client.username,
-          new_admin: participant.username,
-        },
+        activity_info,
       })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
     }
   }
 
-  async dropFromAdmin({ client, admin_participant, group_conversation_id }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
+  async removeFromAdmins({ client, admin_participant, group_conversation_id }) {
+    const activity_info = {
+      type: "admin_removed_from_admins",
+      dropped_by: client.username,
+      ex_admin: admin_participant.username,
+    }
 
-      if (
-        !(await ChatModel.isGroupAdmin(
-          {
-            participant_user_id: client.user_id,
-            group_conversation_id,
-          },
-          dbClient
-        ))
-      ) {
-        throw new Error("You must be a group admin to drop admin to member!")
-      }
-
-      await ChatModel.updateGroupMembership(
-        {
-          participant_user_id: admin_participant.user_id,
-          group_conversation_id,
-          role: "member",
-        },
-        dbClient
-      )
-
-      await ChatModel.createGroupConversationActivityLog(
-        {
-          group_conversation_id,
-          activity_info: {
-            type: "admin_dropped_from_admins",
-            dropped_by: client.username,
-            ex_admin: admin_participant.username,
-          },
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      // Implement realtime todos where appropriate
+    const done = await ChatModel.changeGroupParticipantRole({
+      client_user_id: client.user_id,
+      participant_user_id: admin_participant.user_id,
+      group_conversation_id,
+      activity_info,
+      role: "member",
+    })
+    // Implement realtime todos where appropriate
+    if (done) {
       new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
         group_conversation_id,
-        activity_info: {
-          type: "admin_dropped_from_admins",
-          dropped_by: client.username,
-          ex_admin: admin_participant.username,
-        },
+        activity_info,
       })
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
     }
   }
 

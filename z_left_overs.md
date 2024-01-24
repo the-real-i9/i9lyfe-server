@@ -1,4 +1,5 @@
 ## Pending Implementations
+- PC Mention CTE
 - Chat Services CTE - 23rd
 - Chat routes and controllers - 23rd
 - Post and Comments realtime - 24th

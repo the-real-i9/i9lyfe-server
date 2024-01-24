@@ -4,8 +4,6 @@
  */
 
 import {
-  generateJsonbMultiKeysSetParameters,
-  generateMultiColumnUpdateSetParameters,
   generateMultiRowInsertValuesParameters,
   stripNulls,
 } from "../utils/helpers.js"
@@ -38,7 +36,7 @@ export const createDMConversation = async (client, partner_user_id) => {
   }
 
   // return needed details
-  return (await dbQuery(query)).rows[0]
+  return (await dbQuery(query)).rows[0].dm_conversation_id
 }
 
 /**
@@ -55,7 +53,7 @@ export const createDMConversation = async (client, partner_user_id) => {
 export const createGroupConversation = async ({
   conversationInfo,
   participantsUserIds,
-  activity_info
+  activity_info,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
@@ -98,12 +96,13 @@ export const createGroupConversation = async ({
  * @param {number} param0.client_user_id
  * @param {number} param0.group_conversation_id
  * @param {Object<string, string>} param0.newInfoKVPair
+ * @returns {Promise<boolean>}
  */
 export const changeGroupInfo = async ({
   client_user_id,
   group_conversation_id,
   newInfoKVPair,
-  activityLogInfo,
+  activity_info,
 }) => {
   const [[infoKey, newInfoValue]] = Object.entries(newInfoKVPair)
 
@@ -114,34 +113,32 @@ export const changeGroupInfo = async ({
         FROM "GroupMembership" 
         WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
     ), convo_cte AS (
-      UPDATE "Conversation" SET ${generateJsonbMultiKeysSetParameters({
-        columName: "info",
-        jsonbKeys: [infoKey],
-        paramNumFrom: 4,
-      })} WHERE conversation_id = $1 AND (SELECT * FROM client_is_group_admin)
+      UPDATE "Conversation" SET info = jsonb_set(info, '{$4}', '$5')
+      WHERE conversation_id = $1 AND (SELECT * FROM client_is_group_admin)
     ), activity_log AS (
       IF (SELECT * FROM client_is_group_admin) THEN
         INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
         VALUES ($1, $3)
-      END IF;
+      END IF
     )
-    SLECT * FROM client_is_group_admin`,
+    SLECT exists AS changed FROM client_is_group_admin`,
     values: [
       group_conversation_id,
       client_user_id,
-      activityLogInfo,
+      activity_info,
+      infoKey,
       newInfoValue,
     ],
   }
 
-  return (await dbQuery(query)).rows[0]
+  return (await dbQuery(query)).rows[0].changed
 }
 
 /**
  * @param {object} param0
  * @param {number[]} param0.participantsUserIds
  * @param {number} param0.conversation_id
- * @param {PgPoolClient} dbClient
+ * @returns {Promise<boolean>}
  */
 export const addParticipantsToGroup = async ({
   client_user_id,
@@ -172,7 +169,7 @@ export const addParticipantsToGroup = async ({
         VALUES ($1, $2)
       END IF
     )
-    SELECT * FROM client_is_group_admin`,
+    SELECT exists AS added FROM client_is_group_admin`,
     values: [
       group_conversation_id,
       activity_info,
@@ -181,41 +178,130 @@ export const addParticipantsToGroup = async ({
     ],
   }
 
-  return (await dbQuery(query)).rows[0]
+  return (await dbQuery(query)).rows[0].added
 
   // After this, if conversation type is "group", create group membership is automatically "trigger"ed for each inserted "UserConversation"
   // Afterwards, we programmatically log the activity
 }
 
-export const joinGroup = async () => {}
-
 /**
- * @param {object} param0
- * @param {number} param0.user_id
- * @param {number} param0.conversation_id
- * @param {Map<string, any>} param0.updateKVPairs
- * @param {PgPoolClient} dbClient
+ * @returns {Promise<boolean>} 
  */
-export const updateUserConversation = async ({
-  user_id,
-  conversation_id,
-  updateKVPairs,
+export const removeParticipantFromGroup = async ({
+  client_user_id,
+  participant_user_id,
+  group_conversation_id,
+  activity_info,
 }) => {
-  const [updateSetCols, updateSetValues] = [
-    [...updateKVPairs.keys()],
-    [...updateKVPairs.values()],
-  ]
-
   const query = {
-    text: `UPDATE "UserConversation" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} WHERE user_id = $${updateSetValues.length + 1} AND conversation_id = $${
-      updateSetValues.length + 2
-    }`,
-    values: [...updateSetValues, user_id, conversation_id],
+    text: `
+    WITH client_is_group_admin AS (
+      SELECT EXISTS(SELECT role 
+        FROM "GroupMembership" 
+        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    ), user_convo_cte AS (
+      UPDATE "UserConversation" 
+      SET deleted = true
+      WHERE conversation_id = $1 AND user_id = $3 AND (SELECT * FROM client_is_group_admin)
+    ), activity_log AS (
+      IF (SELECT * FROM client_is_group_admin) THEN
+        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+        VALUES ($1, $4)
+      END IF
+    )
+    SLECT exists AS removed FROM client_is_group_admin`,
+    values: [
+      group_conversation_id,
+      client_user_id,
+      participant_user_id,
+      activity_info,
+    ],
+  }
+
+  return (await dbQuery(query)).rows[0].removed
+}
+
+export const joinGroup = async ({
+  participant_user_id,
+  group_conversation_id,
+  activity_info,
+}) => {
+  const query = {
+    text: `
+    WITH user_convo_cte AS (
+      INSERT "UserConversation" (user_id, conversation_id)
+      VALUES ($1, $2)
+    ), activity_log AS (
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES ($2, $3)
+    )`,
+    values: [participant_user_id, group_conversation_id, activity_info],
   }
 
   await dbQuery(query)
+}
+
+export const leaveGroup = async ({
+  participant_user_id,
+  group_conversation_id,
+  activity_info,
+}) => {
+  const query = {
+    text: `
+    WITH convo_cte AS (
+      UPDATE "UserConversation" 
+      SET deleted = true
+      WHERE user_id = $1 AND conversation_id = $2
+    ), activity_log AS (
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES ($2, $3)
+    )`,
+    values: [participant_user_id, group_conversation_id, activity_info],
+  }
+
+  await dbQuery(query)
+}
+
+/**
+ * 
+ * @param {object} param0 
+ * @param {"admin" | "member"} param0.role 
+ * @returns {Promise<boolean>}
+ */
+export const changeGroupParticipantRole = async ({
+  client_user_id,
+  participant_user_id,
+  group_conversation_id,
+  activity_info,
+  role,
+}) => {
+  const query = {
+    text: `
+    WITH client_is_group_admin AS (
+      SELECT EXISTS(SELECT role 
+        FROM "GroupMembership" 
+        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    ), group_mem_cte AS (
+      UPDATE "GroupMembership" 
+      SET role = $4
+      WHERE group_conversation_id = $1 AND user_id = $3 AND (SELECT * FROM client_is_group_admin)
+    ), activity_log AS (
+      IF (SELECT * FROM client_is_group_admin) THEN
+        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+        VALUES ($1, $5)
+      END IF
+    )
+    SLECT exists AS done FROM client_is_group_admin`,
+    values: [
+      group_conversation_id,
+      client_user_id,
+      participant_user_id,
+      role,
+      activity_info,
+    ],
+  }
+
+  return (await dbQuery(query)).rows[0].done
 }
 
 /**
