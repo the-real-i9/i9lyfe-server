@@ -76,6 +76,12 @@ export class ChatRealtimeService {
       .emit("message reaction", reactionData)
   }
 
+  sendMessageReactionRemoval(conversation_id, reactionRemovalData) {
+    ChatRealtimeService.io
+      .to(`convo-room-${conversation_id}`)
+      .emit("message reaction removal", reactionRemovalData)
+  }
+
   sendMessageDeleted(conversation_id, deletionData) {
     ChatRealtimeService.io
       .to(`convo-room-${conversation_id}`)

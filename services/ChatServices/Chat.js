@@ -92,9 +92,29 @@ export class ChatService {
     /* Realtime actions */
     // update message reaction for other participants
     new ChatRealtimeService().sendMessageReaction(conversation_id, {
-      reactor_username: reactor.username,
+      reactor,
       message_id,
       reaction_code_point,
+    })
+  }
+
+  /**
+   * @param {object} param0
+   * @param {Object} param0.reactor
+   * @param {number} param0.reactor.user_id
+   * @param {string} param0.reactor.username
+   */
+  async removeReactionToMessage({ reactor, conversation_id, message_id }) {
+    await ChatModel.deleteMessageReaction({
+      reactor_user_id: reactor.user_id,
+      message_id,
+    })
+
+    /* Realtime actions */
+    // remove message reaction for other participants
+    new ChatRealtimeService().sendMessageReactionRemoval(conversation_id, {
+      reactor,
+      message_id,
     })
   }
 

@@ -185,7 +185,7 @@ export const addParticipantsToGroup = async ({
 }
 
 /**
- * @returns {Promise<boolean>} 
+ * @returns {Promise<boolean>}
  */
 export const removeParticipantFromGroup = async ({
   client_user_id,
@@ -263,9 +263,9 @@ export const leaveGroup = async ({
 }
 
 /**
- * 
- * @param {object} param0 
- * @param {"admin" | "member"} param0.role 
+ *
+ * @param {object} param0
+ * @param {"admin" | "member"} param0.role
  * @returns {Promise<boolean>}
  */
 export const changeGroupParticipantRole = async ({
@@ -392,28 +392,6 @@ export const isGroupAdmin = async (
   }
 
   return (await dbClient.query(query)).rows[0].isAdmin
-}
-
-/**
- * @param {object} param0
- * @param {number} param0.participant_user_id
- * @param {number} param0.group_conversation_id
- * @param {"admin" | "member"} param0.role
- * @param {PgPoolClient} dbClient
- */
-export const updateGroupMembership = async (
-  { participant_user_id, group_conversation_id, role },
-  dbClient
-) => {
-  const query = {
-    text: `
-    UPDATE "GroupMembership" 
-    SET role = $1 
-    WHERE group_conversation_id = $2 AND user_id = $3`,
-    values: [role, group_conversation_id, participant_user_id],
-  }
-
-  await dbClient.query(query)
 }
 
 /**
@@ -548,10 +526,10 @@ export const createMessageReaction = async ({
  * @param {number} param0.reactor_user_id
  * @param {PgPoolClient} dbClient
  */
-export const deleteMessageReaction = async (
-  { message_id, reactor_user_id },
-  dbClient
-) => {
+export const deleteMessageReaction = async ({
+  message_id,
+  reactor_user_id,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
@@ -559,7 +537,7 @@ export const deleteMessageReaction = async (
     values: [message_id, reactor_user_id],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -569,8 +547,8 @@ export const deleteMessageReaction = async (
  * @param {PgPoolClient} dbClient
  */
 export const updateUserConnectionStatus = async (
-  { user_id, connection_status },
-  dbClient
+  user_id,
+  connection_status
 ) => {
   /** @type {PgQueryConfig} */
   const query = {
@@ -583,7 +561,7 @@ export const updateUserConnectionStatus = async (
     ],
   }
 
-  await dbClient.query(query)
+  await dbQuery(query)
 }
 
 /**
@@ -655,9 +633,11 @@ export const createReportedMessage = async (
  * @param {"me" | "everyone"} param0.deleted_for
  * @param {PgPoolClient} dbClient
  */
-export const createMessageDeletionLog = async (
-  { deleter_user_id, message_id, deleted_for }
-) => {
+export const createMessageDeletionLog = async ({
+  deleter_user_id,
+  message_id,
+  deleted_for,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
