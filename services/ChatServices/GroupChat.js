@@ -1,5 +1,5 @@
 import * as ChatModel from "../../models/ChatModel.js"
-import { ChatRealtimeService } from "./ChatRealtimeService.js"
+import { ChatRealtimeService } from "../RealtimeServices/ChatRealtimeService.js"
 
 export class GroupChatService {
   /**
