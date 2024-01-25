@@ -14,6 +14,7 @@ import {
 } from "../models/PostCommentModel.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./NotificationService.js"
+import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
 
 class PostORComment {
   constructor(id, user_id) {
@@ -148,7 +149,7 @@ export class PostCommentService {
   }
 
   async addReaction(reactor_user_id, reaction_code_point) {
-    const notifData = await createReaction({
+    const { notifData, latestReactionCount } = await createReaction({
       reactor_user_id,
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
@@ -162,6 +163,11 @@ export class PostCommentService {
       ...restData,
       to: this.postOrComment.which(),
     })
+
+      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
+        this.postOrComment.id,
+        { reactions_count: latestReactionCount }
+      )
   }
 
   async addComment({ commenter_user_id, comment_text, attachment_url }) {
@@ -169,7 +175,7 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const { commentData, notifData } = {
+      const { commentData, notifData, latestCommentsRepliesCount } = {
         ...(await createComment(
           {
             commenter_user_id,
@@ -201,6 +207,11 @@ export class PostCommentService {
         on: this.postOrComment.which(),
       })
 
+      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
+        this.postOrComment.id,
+        { comments_count: latestCommentsRepliesCount }
+      )
+
       return commentData
     } catch (error) {
       dbClient.query("ROLLBACK")
@@ -216,7 +227,7 @@ export class PostCommentService {
       await dbClient.query("BEGIN")
 
       // Note: A Reply is also a form of Coment. It's just a  comment that belongs to a Comment
-      const { commentData: replyData, notifData } = {
+      const { commentData: replyData, notifData, latestCommentsRepliesCount } = {
         ...(await createComment(
           {
             commenter_user_id: replier_user_id,
@@ -248,6 +259,11 @@ export class PostCommentService {
         type: "reply",
         to: this.postOrComment.which(),
       })
+
+      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
+        this.postOrComment.id,
+        { replies_count: latestCommentsRepliesCount }
+      )
 
       return replyData
     } catch (error) {
@@ -308,6 +324,8 @@ export class PostCommentService {
       post_or_comment_id: this.postOrComment.id,
       reactor_user_id: this.postOrComment.user_id,
     })
+
+    /* Realtime: latestReactionsCount */
   }
 
   async deleteCommentORReply() {
@@ -315,5 +333,7 @@ export class PostCommentService {
       comment_or_reply_id: this.postOrComment.id,
       commenter_or_replier_user_id: this.postOrComment.user_id,
     })
+
+    /* Realtime: latestCommentRepliesCount */
   }
 }

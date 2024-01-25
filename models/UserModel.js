@@ -499,3 +499,16 @@ export const getUnreadNotificationsCount = async (client_user_id) => {
 
   return (await dbQuery(query)).rows[0].count
 }
+
+
+export const getUserFolloweesIds = async (user_id) => {
+  const query = {
+    text: `
+    SELECT followee_user_id
+    FROM "Follow"
+    WHERE follower_user_id = $1`,
+    values: [user_id],
+  }
+
+  return (await dbQuery(query)).rows
+}

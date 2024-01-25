@@ -196,14 +196,28 @@ export const createReaction = async ({
       VALUES ($1, $2, $4, $5, (SELECT new_reaction_id FROM pc_reaction)) 
       RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
     )
-    SELECT sender.id AS sender_user_id,
-      reaction_notification.receiver_user_id,
-      sender.username AS sender_username,
-      sender.profile_pic_url AS sender_profile_pic_url,
-      reaction_notification.type,
-      reaction_notification.${post_or_comment}_id
-    FROM reaction_notification
-    INNER JOIN "User" sender ON sender.id = reaction_notification.sender_user_id`,
+    SELECT json_build_object(
+      'notifData', (SELECT json_build_object(
+          'sender_user_id', sender.id,
+          'sender_username', sender.username,
+          'sender_profile_pic_url', sender.profile_pic_url,
+          'reciver_user_id', reaction_notification.receiver_user_id,
+          'type', reaction_notification.type,
+          '.${post_or_comment}_id', reaction_notification.${post_or_comment}_id
+        )
+        FROM reaction_notification
+        INNER JOIN "User" sender ON sender.id = reaction_notification.sender_user_id),
+      'latestReactionsCount',  ${
+        post_or_comment === "post"
+          ? `(SELECT reactions_count 
+              FROM "AllPostsView" 
+              WHERE post_id = $2)`
+          : `(SELECT reactions_count 
+              FROM "CommentsOnPost_RepliesToCommentView" 
+              WHERE main_comment_id = $2)`
+      } 
+    ) AS data
+    `,
     values: [
       reactor_user_id,
       post_or_comment_id,
@@ -213,7 +227,7 @@ export const createReaction = async ({
     ],
   }
 
-  return (await dbQuery(query)).rows[0]
+  return (await dbQuery(query)).rows[0].data
 }
 
 /**
@@ -272,7 +286,16 @@ export const createComment = async (
           'type', comment_notification.type,
           '${post_or_comment}_id', comment_notification.${post_or_comment}_id)
         FROM comment_notification
-        INNER JOIN "User" sender ON sender.id = comment_notification.sender_user_id)
+        INNER JOIN "User" sender ON sender.id = comment_notification.sender_user_id),
+      'latestCommentsRepliesCount', ${
+        post_or_comment === "post"
+          ? `(SELECT comments_count 
+              FROM "AllPostsView" 
+              WHERE post_id = $4)`
+          : `(SELECT replies_count 
+              FROM "CommentsOnPost_RepliesToCommentView" 
+              WHERE main_comment_id = $4)`
+      }
     ) AS data`,
     values: [
       commenter_user_id,
@@ -289,7 +312,7 @@ export const createComment = async (
 
 /* ************* */
 
-export const getFeedPosts = async ({client_user_id, limit, offset}) => {
+export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `

@@ -10,6 +10,7 @@ import {
 } from "../models/PostCommentModel.js"
 import { getDBClient } from "../models/db.js"
 import { Post, PostCommentService } from "./PostCommentService.js"
+import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
 
 export class PostService {
   /**
@@ -40,16 +41,19 @@ export class PostService {
       }
 
       await new PostCommentService(
-        new Post(postData.id, this.client_user_id)
+        new Post(postData.post_id, client_user_id)
       ).handleMentionsAndHashtags(
         {
           content_text: description,
-          content_owner_user_id: this.client_user_id,
+          content_owner_user_id: client_user_id,
         },
         dbClient
       )
 
       dbClient.query("COMMIT")
+
+      /* Realtime new post */
+      new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
 
       return postData
     } catch (error) {
@@ -63,6 +67,8 @@ export class PostService {
   /* A repost is a hasOne relationship: Repost hasOne Post */
   async repostPost(reposter_user_id, post_id) {
     await createRepost(reposter_user_id, post_id)
+
+    /* Realtime: latestRepostsCount */
   }
 
   async getFeedPosts({ client_user_id, limit, offset }) {
@@ -75,10 +81,14 @@ export class PostService {
 
   async savePost(post_id, client_user_id) {
     await savePost(post_id, client_user_id)
+
+    /* Realtime: latestSavesCount */
   }
 
   async unsavePost(post_id, client_user_id) {
     await unsavePost(post_id, client_user_id)
+
+    /* Realtime: latestSavesCount */
   }
 
   async deletePost(post_id, client_user_id) {
@@ -87,5 +97,7 @@ export class PostService {
 
   async deleteRepost(reposted_post_id, client_user_id) {
     await deleteRepost(reposted_post_id, client_user_id)
+
+    /* Realtime: latestRepostsCount */
   }
 }
