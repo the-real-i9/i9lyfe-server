@@ -58,13 +58,15 @@ export const createRepost = async (original_post_id, reposter_user_id) => {
 export const savePost = async (post_id, client_user_id) => {
   const query = {
     text: `
-    INSERT INTO "SavedPost" (saver_user_id, post_id) 
-    VALUES ($1, $2)
-    `,
+    WITH iisp AS (
+      INSERT INTO "SavedPost" (saver_user_id, post_id) 
+      VALUES ($1, $2)
+    )
+    SELECT saves_count FROM "AllPostsView" WHERE post_id = $2`,
     values: [client_user_id, post_id],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0].saves_count
 }
 
 /**
@@ -562,11 +564,24 @@ export const removeReactionToPost_OR_Comment = async ({
 }) => {
   const query = {
     text: `
-    DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2`,
+    WITH pc_reaction AS (
+      DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2
+    )
+    ${
+      post_or_comment === "post"
+        ? `
+      SELECT reactions_count 
+      FROM "AllPostsView" 
+      WHERE post_id = $1`
+        : `
+      SELECT reactions_count 
+      FROM "CommentsOnPost_RepliesToCommentView" 
+      WHERE main_comment_id = $1`
+    }`,
     values: [post_or_comment_id, reactor_user_id],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0].reactions_count
 }
 
 /**
@@ -596,9 +611,13 @@ export const deleteRepost = async (reposted_post_id, reposter_user_id) => {
 
 export const unsavePost = async (post_id, saver_user_id) => {
   const query = {
-    text: `DELETE  FROM "SavedPost" WHERE post_id = $1 AND saver_user_id = $2`,
+    text: `
+    WITH dsp AS (
+      DELETE  FROM "SavedPost" WHERE post_id = $1 AND saver_user_id = $2
+    )
+    SELECT saves_count FROM "AllPostsView" WHERE post_id = $1`,
     values: [post_id, saver_user_id],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0].saves_count
 }

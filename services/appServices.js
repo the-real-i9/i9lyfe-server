@@ -80,15 +80,21 @@ export class PostService {
   }
 
   async savePost(post_id, client_user_id) {
-    await savePost(post_id, client_user_id)
+    const latestSavesCount = await savePost(post_id, client_user_id)
 
     /* Realtime: latestSavesCount */
+    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
+      saves_count: latestSavesCount,
+    })
   }
-
+  
   async unsavePost(post_id, client_user_id) {
-    await unsavePost(post_id, client_user_id)
-
+    const latestSavesCount = await unsavePost(post_id, client_user_id)
+    
     /* Realtime: latestSavesCount */
+    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
+      saves_count: latestSavesCount,
+    })
   }
 
   async deletePost(post_id, client_user_id) {

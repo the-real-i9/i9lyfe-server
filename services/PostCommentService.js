@@ -149,7 +149,7 @@ export class PostCommentService {
   }
 
   async addReaction(reactor_user_id, reaction_code_point) {
-    const { notifData, latestReactionCount } = await createReaction({
+    const { notifData, latestReactionsCount } = await createReaction({
       reactor_user_id,
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
@@ -164,10 +164,10 @@ export class PostCommentService {
       to: this.postOrComment.which(),
     })
 
-      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
-        this.postOrComment.id,
-        { reactions_count: latestReactionCount }
-      )
+    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
+      this.postOrComment.id,
+      { reactions_count: latestReactionsCount }
+    )
   }
 
   async addComment({ commenter_user_id, comment_text, attachment_url }) {
@@ -227,7 +227,11 @@ export class PostCommentService {
       await dbClient.query("BEGIN")
 
       // Note: A Reply is also a form of Coment. It's just a  comment that belongs to a Comment
-      const { commentData: replyData, notifData, latestCommentsRepliesCount } = {
+      const {
+        commentData: replyData,
+        notifData,
+        latestCommentsRepliesCount,
+      } = {
         ...(await createComment(
           {
             commenter_user_id: replier_user_id,
@@ -319,13 +323,16 @@ export class PostCommentService {
   }
 
   async removeReaction() {
-    await removeReactionToPost_OR_Comment({
+    const latestReactionsCount = await removeReactionToPost_OR_Comment({
       post_or_comment: this.postOrComment.which(),
       post_or_comment_id: this.postOrComment.id,
       reactor_user_id: this.postOrComment.user_id,
     })
 
-    /* Realtime: latestReactionsCount */
+    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
+      this.postOrComment.id,
+      { reactions_count: latestReactionsCount }
+    )
   }
 
   async deleteCommentORReply() {
@@ -333,7 +340,5 @@ export class PostCommentService {
       comment_or_reply_id: this.postOrComment.id,
       commenter_or_replier_user_id: this.postOrComment.user_id,
     })
-
-    /* Realtime: latestCommentRepliesCount */
   }
 }
