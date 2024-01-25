@@ -20,9 +20,24 @@ export const createNewPost = async (
 ) => {
   const query = {
     text: `
-    INSERT INTO "Post" (user_id, media_urls, type, description) 
-    VALUES ($1, $2, $3, $4) 
-    RETURNING id, user_id, media_urls, type, description`,
+    WITH post (
+      INSERT INTO "Post" (user_id, media_urls, type, description) 
+      VALUES ($1, $2, $3, $4) 
+      RETURNING id, user_id, media_urls, type, description
+    )
+    SELECT post.id AS post_id,
+      media_urls,
+      type,
+      description,
+      json_build_object(
+        'user_id', "user".id,
+        'username', "user".username,
+        'name', "user".name,
+        'profile_pic_url', "user".profile_pic_url,
+        'connection_status', "user".connection_status
+      ) AS owner_user
+    FROM post
+    INNER JOIN "User" "user" ON "user".id = post.user_id`,
     values: [client_user_id, media_urls, type, description],
   }
 
