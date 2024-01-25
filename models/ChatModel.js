@@ -88,7 +88,7 @@ export const createGroupConversation = async ({
   await dbQuery(query)
 }
 
-export const deleteConversation = async (client_user_id, conversation_id) => {
+export const deleteUserConversation = async (client_user_id, conversation_id) => {
   const query = {
     text: `
     UPDATE "UserConversation" 

@@ -9,7 +9,7 @@ export class GroupChatService {
    * @param {string} param0.participants.username
    * @returns The data needed to display the group chat page history
    */
-  async createGroup({
+  async createGroupConversation({
     participants,
     client_username,
     title,
@@ -47,6 +47,8 @@ export class GroupChatService {
       group_conversation_id,
       groupConversationData
     )
+
+    return groupConversationData
   }
 
   /**
@@ -181,7 +183,7 @@ export class GroupChatService {
    * @param {string} param0.participant.username
    * @param {number} param0.group_conversation_id
    */
-  async makeAdmin({ client, participant, group_conversation_id }) {
+  async makeParticipantAdmin({ client, participant, group_conversation_id }) {
     const activity_info = {
       type: "participant_made_admin",
       made_by: client.username,
@@ -204,7 +206,7 @@ export class GroupChatService {
     }
   }
 
-  async removeFromAdmins({ client, admin_participant, group_conversation_id }) {
+  async removeParticipantFromAdmins({ client, admin_participant, group_conversation_id }) {
     const activity_info = {
       type: "admin_removed_from_admins",
       dropped_by: client.username,

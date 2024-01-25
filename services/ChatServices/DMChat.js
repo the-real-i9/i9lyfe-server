@@ -20,5 +20,7 @@ export class DMChatService {
         partner_user_id: partner.user_id,
         dm_conversation_id,
       })
+
+      return dm_conversation_id
   }
 }

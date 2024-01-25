@@ -1,13 +1,13 @@
 ## Pending Implementations
 - Chat routes and controllers - 23rd
-- Post and Comments realtime - 24th
+- Post and Comments realtime - 25th
   - New post, new comment
   - Post and Comment data counts
-- Explore & Search - 25th
+- Explore & Search - 26th
 - Create Database Indexes
-- Uploading User generated content to Cloud Storage and getting back URL to store in DB - 26th
+- Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Post images & videos
-- Frontend preparation - 27th
+- Frontend preparation - 28th
 
 
 

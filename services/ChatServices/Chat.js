@@ -10,8 +10,8 @@ export class ChatService {
     return await ChatModel.getAllUserConversations(client_user_id)
   }
 
-  async deleteConversation(client_user_id, conversation_id) {
-    await ChatModel.deleteConversation(client_user_id, conversation_id)
+  async deleteMyConversation(client_user_id, conversation_id) {
+    await ChatModel.deleteUserConversation(client_user_id, conversation_id)
   }
 
   async getConversationHistory({ conversation_id, limit, offset }) {
@@ -22,15 +22,9 @@ export class ChatService {
     })
   }
 
-  /**
-   * @param {object} param0
-   * @param {Object} param0.sender
-   * @param {number} param0.sender.user_id
-   * @param {string} param0.sender.username
-   */
-  async sendMessage({ sender, conversation_id, msg_content }) {
+  async sendMessage({ sender_user_id, conversation_id, msg_content }) {
     const newMessageData = await ChatModel.createMessage({
-      sender_user_id: sender.user_id,
+      sender_user_id,
       conversation_id,
       msg_content,
     })
@@ -100,7 +94,7 @@ export class ChatService {
    * @param {number} param0.reactor.user_id
    * @param {string} param0.reactor.username
    */
-  async removeReactionToMessage({ reactor, conversation_id, message_id }) {
+  async removeMyReactionToMessage({ reactor, conversation_id, message_id }) {
     await ChatModel.deleteMessageReaction({
       reactor_user_id: reactor.user_id,
       message_id,
@@ -120,14 +114,14 @@ export class ChatService {
    * @param {number} param0.deleter.user_id
    * @param {string} param0.deleter.username
    */
-  async deleteMessage({ deleter, conversation_id, message_id, deleted_for }) {
+  async deleteMessage({ deleter, conversation_id, message_id, delete_for }) {
     await ChatModel.createMessageDeletionLog({
       deleter_user_id: deleter.user_id,
       message_id,
-      deleted_for,
+      deleted_for: delete_for,
     })
 
-    if (deleted_for === "everyone") {
+    if (delete_for === "everyone") {
       /* Realtime actions */
       // delete message for other participants
       new ChatRealtimeService().sendMessageDeleted(conversation_id, {
