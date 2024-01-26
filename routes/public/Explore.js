@@ -5,6 +5,8 @@ const router = express.Router()
 /* Explore/Discover  */
 // GET all explore/discover contents (all posts) aggregated algorithmically based on various stats. Basically, this is like the route Instagram makes call to to render its Explore/Discover
 
+router.get("/explore")
+
 // GET all posts with search text
 
 // GET photo posts with search text
@@ -19,3 +21,5 @@ const router = express.Router()
 
 /* Hashtags */
 // GET all posts with an hashtag_name
+
+export default router

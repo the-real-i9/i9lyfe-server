@@ -1,7 +1,4 @@
 ## Pending Implementations
-- Post and Comments realtime - 25th
-  - New post, new comment
-  - Post and Comment data counts
 - Explore & Search - 26th
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Cover images, Post and Message binary datas
