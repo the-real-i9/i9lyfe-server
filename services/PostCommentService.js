@@ -157,16 +157,20 @@ export class PostCommentService {
       reaction_code_point,
     })
 
-    const { receiver_user_id, ...restData } = notifData
+    if (notifData) {
+      const { receiver_user_id, ...restData } = notifData
 
-    new NotificationService(receiver_user_id).pushNotification({
-      ...restData,
-      to: this.postOrComment.which(),
-    })
+      new NotificationService(receiver_user_id).pushNotification({
+        ...restData,
+        to: this.postOrComment.which(),
+      })
+    }
 
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
       this.postOrComment.id,
-      { reactions_count: latestReactionsCount }
+      // we add manually because, this data was returned from the same query, 
+      // which is yet to update the table, since the internal transaction hasn't committed
+      { reactions_count: latestReactionsCount + 1 }
     )
   }
 
@@ -201,15 +205,17 @@ export class PostCommentService {
 
       dbClient.query("COMMIT")
 
-      const { receiver_user_id, ...restData } = notifData
-      new NotificationService(receiver_user_id).pushNotification({
-        ...restData,
-        on: this.postOrComment.which(),
-      })
+      if (notifData) {
+        const { receiver_user_id, ...restData } = notifData
+        new NotificationService(receiver_user_id).pushNotification({
+          ...restData,
+          on: this.postOrComment.which(),
+        })
+      }
 
       new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
         this.postOrComment.id,
-        { comments_count: latestCommentsRepliesCount }
+        { comments_count: latestCommentsRepliesCount + 1 }
       )
 
       return commentData
@@ -257,16 +263,18 @@ export class PostCommentService {
 
       dbClient.query("COMMIT")
 
-      const { receiver_user_id, ...restData } = notifData
-      new NotificationService(receiver_user_id).pushNotification({
-        ...restData,
-        type: "reply",
-        to: this.postOrComment.which(),
-      })
+      if (notifData) {
+        const { receiver_user_id, ...restData } = notifData
+        new NotificationService(receiver_user_id).pushNotification({
+          ...restData,
+          type: "reply",
+          to: this.postOrComment.which(),
+        })
+      }
 
       new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
         this.postOrComment.id,
-        { replies_count: latestCommentsRepliesCount }
+        { replies_count: latestCommentsRepliesCount + 1 }
       )
 
       return replyData
@@ -331,7 +339,7 @@ export class PostCommentService {
 
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
       this.postOrComment.id,
-      { reactions_count: latestReactionsCount }
+      { reactions_count: latestReactionsCount - 1 }
     )
   }
 

@@ -45,7 +45,6 @@ export class PostCommentRealtimeService {
   }
 
   sendNewPost(user_id, newPostData) {
-    console.log(user_id, newPostData)
     PostCommentRealtimeService.io
       .to(`user_${user_id}_new_post_room`)
       .emit("new post", newPostData)

@@ -84,7 +84,7 @@ export class PostService {
 
     /* Realtime: latestSavesCount */
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
-      saves_count: latestSavesCount,
+      saves_count: latestSavesCount + 1,
     })
   }
   
@@ -93,7 +93,7 @@ export class PostService {
     
     /* Realtime: latestSavesCount */
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
-      saves_count: latestSavesCount,
+      saves_count: latestSavesCount - 1,
     })
   }
 
