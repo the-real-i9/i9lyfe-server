@@ -261,49 +261,33 @@ export const getUserPosts = async (username, client_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "post".id AS post_id,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
       type,
       media_urls,
       description,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
-      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
-      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
-      "client_reaction".reaction_code_point AS client_reaction,
-      CASE
-        WHEN "client_repost".id IS NULL THEN false
-        ELSE true
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $2 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $2 THEN true
+        ELSE false
       END AS client_reposted,
-      CASE
-        WHEN "client_saved_post".id IS NULL THEN false
-        ELSE true
+      CASE 
+        WHEN saver_user_id = $2 THEN true
+        ELSE false
       END AS client_saved
-    FROM "Post" "post"
-    INNER JOIN "User" "user" ON "user".id = "post".user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
-    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
-    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
-    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
-    LEFT JOIN "PostCommentReaction" "client_reaction" 
-      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $2
-    LEFT JOIN "Repost" "client_repost" 
-      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $2
-    LEFT JOIN "SavedPost" "client_saved_post" 
-      ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $2
-    WHERE "user".username = $1
-    GROUP BY owner_user_id, 
-      owner_username, 
-      owner_profile_pic_url, 
-      "post".id, 
-      type, 
-      media_urls, 
-      description, 
-      client_reaction, 
-      client_reposted,
-      client_saved`,
+    FROM "AllPostsView"
+    WHERE owner_username = $1`,
     values: [username, client_user_id],
   }
 
@@ -315,49 +299,33 @@ export const getMentionedPosts = async (client_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "post".id AS post_id,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      apv.post_id,
       type,
       media_urls,
       description,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
-      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
-      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
-      "client_reaction".reaction_code_point AS client_reaction,
-      CASE
-        WHEN "client_repost".id IS NULL THEN false
-        ELSE true
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $1 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $1 THEN true
+        ELSE false
       END AS client_reposted,
-      CASE
-        WHEN "client_saved_post".id IS NULL THEN false
-        ELSE true
+      CASE 
+        WHEN saver_user_id = $1 THEN true
+        ELSE false
       END AS client_saved
-    FROM "Post" "post"
-    INNER JOIN "User" "user" ON "user".id = "post".user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
-    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
-    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
-    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
-    LEFT JOIN "PostCommentReaction" "client_reaction" 
-      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $1
-    LEFT JOIN "Repost" "client_repost" 
-      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $1
-    LEFT JOIN "SavedPost" "client_saved_post" 
-      ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $1
-    INNER JOIN "PostCommentMention" "mention" ON "mention".post_id = "post".id AND "mention".user_id = $1
-    GROUP BY owner_user_id, 
-      owner_username, 
-      owner_profile_pic_url, 
-      "post".id, 
-      type, 
-      media_urls, 
-      description, 
-      client_reaction, 
-      client_reposted,
-      client_saved`,
+    FROM "AllPostsView" apv
+    INNER JOIN "PostCommentMention" mention ON mention.post_id = apv.post_id AND mention.user_id = $1`,
     values: [client_user_id],
   }
 
@@ -369,48 +337,33 @@ export const getReactedPosts = async (client_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "post".id AS post_id,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
       type,
       media_urls,
       description,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
-      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
-      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
-      "client_reaction".reaction_code_point AS client_reaction,
-      CASE
-        WHEN "client_repost".id IS NULL THEN false
-        ELSE true
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $1 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $1 THEN true
+        ELSE false
       END AS client_reposted,
-      CASE
-        WHEN "client_saved_post".id IS NULL THEN false
-        ELSE true
+      CASE 
+        WHEN saver_user_id = $1 THEN true
+        ELSE false
       END AS client_saved
-    FROM "Post" "post"
-    INNER JOIN "User" "user" ON "user".id = "post".user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
-    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
-    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
-    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
-    LEFT JOIN "Repost" "client_repost" 
-      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $1
-    LEFT JOIN "SavedPost" "client_saved_post" 
-      ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $1
-    INNER JOIN "PostCommentReaction" "client_reaction" 
-      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $1
-    GROUP BY owner_user_id, 
-      owner_username, 
-      owner_profile_pic_url, 
-      "post".id, 
-      type, 
-      media_urls, 
-      description, 
-      client_reaction, 
-      client_reposted,
-      client_saved`,
+    FROM "AllPostsView"
+    WHERE reactor_user_id = $1`,
     values: [client_user_id],
   }
 
@@ -422,47 +375,33 @@ export const getSavedPosts = async (client_user_id) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `
-    SELECT "user".id AS owner_user_id,
-      "user".username AS owner_username,
-      "user".profile_pic_url AS owner_profile_pic_url,
-      "post".id AS post_id,
+    SELECT json_build_object(
+        'id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
       type,
       media_urls,
       description,
-      COUNT(DISTINCT "any_reaction".id)::INTEGER AS reactions_count,
-      COUNT(DISTINCT "any_comment".id)::INTEGER AS comments_count, 
-      COUNT(DISTINCT "any_repost".id)::INTEGER AS reposts_count,
-      COUNT(DISTINCT "any_saved_post".id)::INTEGER AS saves_count,
-      "client_reaction".reaction_code_point AS client_reaction,
-      CASE
-        WHEN "client_repost".id IS NULL THEN false
-        ELSE true
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = $1 THEN reaction_code_point
+        ELSE NULL
+      END AS client_reaction,
+      CASE 
+        WHEN reposter_user_id = $1 THEN true
+        ELSE false
       END AS client_reposted,
-      CASE
-        WHEN "client_saved_post".id IS NULL THEN false
-        ELSE true
+      CASE 
+        WHEN saver_user_id = $1 THEN true
+        ELSE false
       END AS client_saved
-    FROM "Post" "post"
-    INNER JOIN "User" "user" ON "user".id = "post".user_id
-    LEFT JOIN "PostCommentReaction" "any_reaction" ON "any_reaction".post_id = "post".id 
-    LEFT JOIN "Comment" "any_comment" ON "any_comment".post_id = "post".id
-    LEFT JOIN "Repost" "any_repost" ON "any_repost".post_id = "post".id
-    LEFT JOIN "SavedPost" "any_saved_post" ON "any_saved_post".post_id = "post".id
-    LEFT JOIN "PostCommentReaction" "client_reaction" 
-      ON "client_reaction".post_id = "post".id AND "client_reaction".reactor_user_id = $1
-    LEFT JOIN "Repost" "client_repost" 
-      ON "client_repost".post_id = "post".id AND "client_repost".reposter_user_id = $1
-    INNER JOIN "SavedPost" "client_saved_post" ON "client_saved_post".post_id = "post".id AND "client_saved_post".saver_user_id = $1
-    GROUP BY owner_user_id, 
-      owner_username, 
-      owner_profile_pic_url, 
-      "post".id, 
-      type, 
-      media_urls, 
-      description, 
-      client_reaction, 
-      client_reposted,
-      client_saved`,
+    FROM "AllPostsView"
+    WHERE saver_user_id = $1`,
     values: [client_user_id],
   }
 
