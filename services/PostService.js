@@ -7,10 +7,10 @@ import {
   getPost,
   savePost,
   unsavePost,
-} from "../../models/PostCommentModel.js"
-import { getDBClient } from "../../models/db.js"
-import { Post, PostCommentService } from "../PostCommentService.js"
-import { PostCommentRealtimeService } from "../RealtimeServices/PostCommentRealtimeService.js"
+} from "../models/PostCommentModel.js"
+import { getDBClient } from "../models/db.js"
+import { Post, PostCommentService } from "./PostCommentService.js"
+import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
 
 export class PostService {
   /**

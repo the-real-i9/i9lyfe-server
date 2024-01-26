@@ -3,7 +3,7 @@ import {
   Post,
   PostCommentService,
 } from "../services/PostCommentService.js"
-import { PostService } from "../services/AppServices/PostService.js"
+import { PostService } from "../services/PostService.js"
 
 /**
  * @typedef {import("express").Request} ExpressRequest
