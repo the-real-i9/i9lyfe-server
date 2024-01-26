@@ -68,8 +68,8 @@ router.delete("/reposts/:repost_id", PCC.deleteRepostController)
 
 /* ====== POST SAVE ====== */
 
-router.post("/post_save", PCC.postSaveController)
-router.delete("/post_saves/:post_id", PCC.postUnsaveController)
+router.post("/save_post", PCC.postSaveController)
+router.delete("/saved_posts/:post_id", PCC.postUnsaveController)
 
 // GET insight data for a specific post
 
