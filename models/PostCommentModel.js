@@ -75,15 +75,20 @@ export const savePost = async (post_id, client_user_id) => {
  * @returns {Promise<number[]>}
  */
 export const mapUsernamesToUserIds = async (usernames, dbClient) => {
-  return await Promise.all(
-    usernames.map(async (username) => {
-      const query = {
-        text: 'SELECT id FROM "User" WHERE username = $1',
-        values: [username],
-      }
-      return (await dbClient.query(query)).rows[0].id
-    })
+  const query = {
+    text: 'SELECT id, username FROM "User" WHERE username = ANY($1)',
+    values: [[...usernames]],
+  }
+
+  const usernameToIdDict = (await dbClient.query(query)).rows.reduce(
+    (acc, { id, username }) => {
+      acc[username] = id
+      return acc
+    },
+    {}
   )
+
+  return usernames.map((username) => usernameToIdDict[username])
 }
 
 /**
