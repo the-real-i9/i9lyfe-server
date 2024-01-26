@@ -56,7 +56,7 @@ router.delete("/comment_reactions/:comment_id", PCC.removeCommentReactionControl
 
 /* ====== COMMENT'S REPLY ====== */
 
-router.post("/comment_reply", PCC.createCommentReplyController)
+router.post("/reply_to_comment", PCC.createCommentReplyController)
 router.get("/comments/:comment_id/replies", PCC.getAllRepliesToCommentController)
 router.get("/replies/:reply_id", PCC.getReplyController)
 router.delete("/comment_replies/:reply_id", PCC.deleteCommentReplyController)
