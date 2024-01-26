@@ -12,13 +12,13 @@ import { GroupChatService } from "../services/ChatServices/GroupChat.js"
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getUsersForChatController = async (req, res) => {
+export const getUsersToChatController = async (req, res) => {
   try {
     const { search } = req.query
 
     const { client_user_id } = req.auth
 
-    const users = new ChatService().getUsersForChat(client_user_id, search)
+    const users = new ChatService().getUsersToChat(client_user_id, search)
 
     res.status(200).send({ users })
   } catch (error) {

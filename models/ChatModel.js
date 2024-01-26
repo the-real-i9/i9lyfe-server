@@ -621,7 +621,7 @@ export const createMessageDeletionLog = async ({
 /**
  * @param {string} searchTerm
  */
-export const getUsersForChat = async (client_user_id, searchTerm) => {
+export const getUsersToChat = async (client_user_id, searchTerm) => {
   const query = {
     text: `
     SELECT "user".id, 

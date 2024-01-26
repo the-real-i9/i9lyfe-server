@@ -2,8 +2,8 @@ import * as ChatModel from "../../models/ChatModel.js"
 import { ChatRealtimeService } from "../RealtimeServices/ChatRealtimeService.js"
 
 export class ChatService {
-  async getUsersForChat(client_user_id, searchTerm) {
-    return await ChatModel.getUsersForChat(client_user_id, searchTerm)
+  async getUsersToChat(client_user_id, searchTerm) {
+    return await ChatModel.getUsersToChat(client_user_id, searchTerm)
   }
 
   async getMyConversations(client_user_id) {

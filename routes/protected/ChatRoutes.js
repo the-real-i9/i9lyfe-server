@@ -23,7 +23,7 @@ router.use(
   }
 )
 
-router.get("/users_for_chat", CC.getUsersForChatController)
+router.get("/users_to_chat", CC.getUsersToChatController)
 
 router.post("/create_dm_conversation", CC.createDMConversationController)
 
