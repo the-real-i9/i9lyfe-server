@@ -1,6 +1,5 @@
 import { getUserFolloweesIds } from "../../models/UserModel.js"
 
-
 export class PostCommentRealtimeService {
   /** @type {import("socket.io").Server} */
   static io = null
@@ -20,7 +19,7 @@ export class PostCommentRealtimeService {
     /* To receive new post from those you follow */
     const followeesNewPostRooms = (
       await getUserFolloweesIds(client_user_id)
-    ).map((user_id) => `user_${user_id}_new_post_room`)
+    ).map(({ followee_user_id }) => `user_${followee_user_id}_new_post_room`)
 
     socket.join(followeesNewPostRooms)
 
@@ -46,6 +45,7 @@ export class PostCommentRealtimeService {
   }
 
   sendNewPost(user_id, newPostData) {
+    console.log(user_id, newPostData)
     PostCommentRealtimeService.io
       .to(`user_${user_id}_new_post_room`)
       .emit("new post", newPostData)

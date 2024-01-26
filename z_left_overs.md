@@ -1,5 +1,5 @@
 ## Pending Implementations
-- Explore & Search - 26th
+- Routes testing with Postman - 26th
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Cover images, Post and Message binary datas
 - Frontend preparation - 28th

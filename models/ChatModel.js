@@ -653,7 +653,7 @@ export const getAllUserConversationIds = async (user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT conversation_id 
+    SELECT conversation_id AS c_id
     FROM "UserConversation"
     WHERE user_id = $1 AND deleted = false
     `,

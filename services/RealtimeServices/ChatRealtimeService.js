@@ -19,7 +19,7 @@ export class ChatRealtimeService {
     // On client's connection, get all the conversations they participate in and add join them to the corresponding rooms. This means that conversation rooms must have a naming convention with their coversation_id.
     const clientConversationRooms = (
       await getAllUserConversationIds(client_user_id)
-    ).map((c_id) => `convo-room-${c_id}`)
+    ).map(({ c_id }) => `convo-room-${c_id}`)
 
     socket.join(clientConversationRooms)
   }
