@@ -62,9 +62,13 @@ export const generateMultiRowInsertValuesParameters = ({
     )
     .join(", ")
 
-/** @param {string[]} cols */
-export const generateMultiColumnUpdateSetParameters = (cols) =>
-  cols.map((col, i) => `${col} = $${1 + i}`).join(", ")
+
+/** 
+ * @param {string[]} cols
+ * @param {number} paramNumFrom
+ */
+export const generateMultiColumnUpdateSetParameters = (cols, paramNumFrom = 1) =>
+  cols.map((col, i) => `${col} = $${paramNumFrom + i}`).join(", ")
 
 /**
  * @param {object} param0

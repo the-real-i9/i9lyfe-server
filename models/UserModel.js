@@ -148,11 +148,9 @@ export const updateUserProfile = async (client_user_id, updateKVPairs) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `UPDATE "User" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols
-    )} WHERE id = $${
-      updateSetValues.length + 1
-    } RETURNING id, email, username, name, profile_pic_url`,
-    values: [...updateSetValues, client_user_id],
+      updateSetCols, 2
+    )} WHERE id = $1 RETURNING id, email, username, name, profile_pic_url`,
+    values: [client_user_id, ...updateSetValues],
   }
 
   return await dbQuery(query)
