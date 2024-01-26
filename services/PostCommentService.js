@@ -168,9 +168,12 @@ export class PostCommentService {
 
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
       this.postOrComment.id,
-      // we add manually because, this data was returned from the same query, 
+      // we add manually because, this data was returned from the same query,
       // which is yet to update the table, since the internal transaction hasn't committed
-      { reactions_count: latestReactionsCount + 1 }
+      {
+        [`${this.postOrComment.which()}_id`]: this.postOrComment.id,
+        reactions_count: latestReactionsCount + 1,
+      }
     )
   }
 
@@ -215,7 +218,7 @@ export class PostCommentService {
 
       new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
         this.postOrComment.id,
-        { comments_count: latestCommentsRepliesCount + 1 }
+        { post_id: this.postOrComment.id,  comments_count: latestCommentsRepliesCount + 1 }
       )
 
       return commentData
@@ -274,7 +277,7 @@ export class PostCommentService {
 
       new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
         this.postOrComment.id,
-        { replies_count: latestCommentsRepliesCount + 1 }
+        { comment_id: this.postOrComment.id,  replies_count: latestCommentsRepliesCount + 1 }
       )
 
       return replyData
@@ -339,7 +342,10 @@ export class PostCommentService {
 
     new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
       this.postOrComment.id,
-      { reactions_count: latestReactionsCount - 1 }
+      { 
+        [`${this.postOrComment.which()}_id`]: this.postOrComment.id,
+        reactions_count: latestReactionsCount - 1,
+      }
     )
   }
 

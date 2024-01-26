@@ -46,7 +46,7 @@ router.delete("/post_comments/:comment_id", PCC.deletePostCommentController)
 
 /* ====== COMMENT'S REACTION====== */
 
-router.post("/comment_reaction", PCC.createCommentReactionController)
+router.post("/react_to_comment", PCC.createCommentReactionController)
 router.get("/comments/:comment_id/reactors", PCC.getAllReactorsToCommentController)
 router.get(
   "/comments/:comment_id/reactors/:reaction_code_point",

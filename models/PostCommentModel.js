@@ -422,7 +422,7 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
   const query = {
     text: `
     SELECT json_build_object(
-        'id', fid,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
