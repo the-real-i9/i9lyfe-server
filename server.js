@@ -7,7 +7,7 @@ const server = createServer(app)
 
 import { Server } from 'socket.io'
 import { NotificationService } from './services/NotificationService.js'
-import { ChatRealtimeService } from './services/ChatServices/ChatRealtimeService.js'
+import { ChatRealtimeService } from './services/RealtimeServices/ChatRealtimeService.js'
 import { PostCommentRealtimeService } from './services/RealtimeServices/PostCommentRealtimeService.js'
 
 export const io = new Server(server)

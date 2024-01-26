@@ -260,7 +260,7 @@ export const getUserPosts = async (username, client_user_id) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
@@ -298,7 +298,7 @@ export const getMentionedPosts = async (client_user_id) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
@@ -336,7 +336,7 @@ export const getReactedPosts = async (client_user_id) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
@@ -374,7 +374,7 @@ export const getSavedPosts = async (client_user_id) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,

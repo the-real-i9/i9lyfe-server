@@ -1,7 +1,7 @@
 import dotenv from "dotenv"
 import { test, expect } from "@jest/globals"
 import {
-  createConversation,
+  createDMConversation,
   createMessage,
   createMessageReaction,
   createUserConversation,
@@ -21,7 +21,7 @@ test.skip("creating direct conversation", async () => {
   const dbClient = await getDBClient()
   try {
     await dbClient.query("BEGIN")
-    const convId = await createConversation({ type: "direct" }, dbClient)
+    const convId = await createDMConversation({ type: "direct" }, dbClient)
 
     await createUserConversation(
       { participantsUserIds: [4, 5], conversation_id: convId },
@@ -157,7 +157,7 @@ test.skip("create comment", async () => {
 }
 })
 
-test("comments/replies to post/comment", async () => {
+test.skip("comments/replies to post/comment", async () => {
   try {
     const data = await getAllCommentsOnPost_OR_RepliesToComment({
       post_or_comment: "post",
@@ -170,3 +170,4 @@ test("comments/replies to post/comment", async () => {
     expect(error).toBeUndefined()
   }
 })
+

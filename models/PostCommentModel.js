@@ -20,7 +20,7 @@ export const createNewPost = async (
 ) => {
   const query = {
     text: `
-    WITH post (
+    WITH post AS (
       INSERT INTO "Post" (user_id, media_urls, type, description) 
       VALUES ($1, $2, $3, $4) 
       RETURNING id, user_id, media_urls, type, description
@@ -324,7 +324,7 @@ export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
@@ -369,7 +369,7 @@ export const getPost = async (post_id, client_user_id) => {
   const query = {
     text: `
     SELECT json_build_object(
-        'id', owner_user_id,
+        'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
@@ -455,7 +455,7 @@ export const getCommentOnPost_OR_ReplyToComment = async ({
   const query = {
     text: `
     SELECT json_build_object(
-      'id', owner_user_id,
+      'user_id', owner_user_id,
       'username', owner_username,
       'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
