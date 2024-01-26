@@ -20,4 +20,8 @@ export class AppService {
     }
     return await AppModel.searchHashtags(search)
   }
+
+  async getHashtagPosts(hashtag_name, client_user_id) {
+    return await AppModel.getHashtagPosts(hashtag_name, client_user_id)
+  }
 }

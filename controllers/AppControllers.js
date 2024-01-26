@@ -47,4 +47,18 @@ export const searchAndFilterController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getHashtagPostsController = async (req, res) => {}
+export const getHashtagPostsController = async (req, res) => {
+  try {
+    const { hashtag_name } = req.params
+
+    const hashtagPosts = await new AppService().getHashtagPosts(
+      hashtag_name,
+      req.auth?.client_user_id
+    )
+
+    res.status(200).send({ hashtagPosts })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
