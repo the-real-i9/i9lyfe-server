@@ -23,7 +23,7 @@ router.use(
 )
 /* ====== POST ====== */
 router.post("/new_post", PCC.createNewPostController)
-router.get("/home/feed", PCC.getHomeFeedController)
+router.get("/home_feed", PCC.getHomeFeedController)
 router.get("/posts/:post_id", PCC.getPostController)
 router.delete("/posts/:post_id", PCC.deletePostController)
 
