@@ -27,6 +27,6 @@ app.use("/api/user_public", UserPublicRoutes)
 
 app.use("/api/chat", ChatRoutes)
 
-app.use("/api/general", AppRoutes)
+app.use("/api/app", AppRoutes)
 
 export default app

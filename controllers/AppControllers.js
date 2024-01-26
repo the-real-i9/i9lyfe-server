@@ -3,7 +3,7 @@
  * @typedef {import("express").Response} ExpressResponse
  */
 
-import { AppService } from "../services/AppServices"
+import { AppService } from "../services/AppServices.js"
 
 /**
  * @param {ExpressRequest} req
@@ -11,8 +11,9 @@ import { AppService } from "../services/AppServices"
  */
 export const getExplorePostsController = async (req, res) => {
   try {
-    const { client_user_id = null } = req.auth
-    const explorePosts = await new AppService().getExplorePosts(client_user_id)
+    const explorePosts = await new AppService().getExplorePosts(
+      req.auth?.client_user_id ?? null
+    )
 
     res.status(200).send({ explorePosts })
   } catch (error) {
@@ -25,7 +26,22 @@ export const getExplorePostsController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const searchFilterController = async (req, res) => {}
+export const searchAndFilterController = async (req, res) => {
+  try {
+    const { search = "", category = "all" } = req.query
+
+    const result = await new AppService().searchAndFilter({
+      search,
+      category,
+      client_user_id: req.auth?.client_user_id ?? null,
+    })
+
+    res.status(200).send({ result })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
 
 /**
  * @param {ExpressRequest} req

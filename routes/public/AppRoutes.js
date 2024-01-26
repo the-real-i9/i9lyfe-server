@@ -4,7 +4,7 @@ import { expressjwt } from "express-jwt"
 import {
   getExplorePostsController,
   getHashtagPostsController,
-  searchFilterController,
+  searchAndFilterController,
 } from "../../controllers/AppControllers.js"
 
 dotenv.config()
@@ -28,7 +28,7 @@ router.use(
 
 router.get("/explore", getExplorePostsController)
 
-router.get("/explore/search", searchFilterController)
+router.get("/explore/search", searchAndFilterController)
 
 router.get("/hashtags/:hashtag_name", getHashtagPostsController)
 
