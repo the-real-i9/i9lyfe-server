@@ -54,11 +54,17 @@ export const createGroupConversationController = async (req, res) => {
       participants,
     } = req.body
 
-    const { client_username } = req.auth
+    const { client_user_id, client_username } = req.auth
 
     const group_conversation_id =
       await new GroupChatService().createGroupConversation({
-        participants,
+        participants: [
+          {
+            user_id: client_user_id,
+            username: client_username,
+          },
+          ...participants,
+        ],
         client_username,
         title,
         description,

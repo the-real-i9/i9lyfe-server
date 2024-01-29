@@ -96,8 +96,9 @@ export class ChatRealtimeService {
   sendNewGroupConversation(group_conversation_id) {
     ChatRealtimeService.io
       .to(`convo-room-${group_conversation_id}`)
-      .emit("new group", group_conversation_id)
-      // each user will update its conversations list manually, 
-      // as it's too expensive to send customized data for every group participant
+      .emit("new group", { group_conversation_id })
+    // each user will update its conversations list manually,
+    // as it's too expensive to send customized data for every group participant
   }
 }
+

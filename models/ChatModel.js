@@ -66,20 +66,22 @@ export const createGroupConversation = async ({
       VALUES ${generateMultiRowInsertValuesParameters({
         rowsCount: participantsUserIds.length,
         columnsCount: 1,
-        paramNumFrom: 3,
+        paramNumFrom: 4,
         // here I just concatenated each user_id column paceholder with conversation_id column value
       }).replace(
         /\$\d/g,
-        (m) => `${m}, SELECT group_conversation_id FROM group_convo_cte`
+        (m) => `${m}, (SELECT group_conversation_id FROM group_convo_cte)`
       )}
     ), activity_log AS (
       INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
-      VALUES (SELECT group_conversation_id FROM group_convo_cte, $2)
+      VALUES ((SELECT group_conversation_id FROM group_convo_cte), $2), 
+            ((SELECT group_conversation_id FROM group_convo_cte), $3)
     )
-    SELECT group_conversation_id FROM group_convo_cre`,
+    SELECT group_conversation_id FROM group_convo_cte`,
     values: [
       conversationInfo,
-      activity_info,
+      activity_info.group_created,
+      activity_info.part_added,
       ...participantsUserIds.map((user_id) => user_id),
     ],
   }

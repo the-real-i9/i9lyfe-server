@@ -16,7 +16,6 @@ export class GroupChatService {
     description,
     cover_image_url,
   }) {
-    /* Nothing returned yet */
     const group_conversation_id = await ChatModel.createGroupConversation({
       conversationInfo: {
         type: "group",
@@ -27,10 +26,15 @@ export class GroupChatService {
       },
       participantsUserIds: participants.map(({ user_id }) => user_id),
       activity_info: {
+        group_created: {
+          type: "group_created",
+          created_by: client_username,
+        },
+        part_added:{
         type: "participants_added",
         added_by: client_username,
         added_participants: participants.map(({ username }) => username),
-      },
+      }},
     })
 
     ChatRealtimeService.createGroupConversation(
