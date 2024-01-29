@@ -65,7 +65,7 @@ router.put(
   CC.changeGroupDescriptionController
 )
 
-router.get("/conversations/:group_conversation_id")
+router.get("/conversations/:group_conversation_id", CC.getGroupConversationController)
 
 router.get("/my_conversations", CC.getMyConversationsController)
 

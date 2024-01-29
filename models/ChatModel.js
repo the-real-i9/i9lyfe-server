@@ -76,7 +76,7 @@ export const createGroupConversation = async ({
       INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
       VALUES (SELECT group_conversation_id FROM group_convo_cte, $2)
     )
-    SELECT `,
+    SELECT group_conversation_id FROM group_convo_cre`,
     values: [
       conversationInfo,
       activity_info,
@@ -85,7 +85,7 @@ export const createGroupConversation = async ({
   }
 
   // return needed details
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0].group_conversation_id
 }
 
 export const deleteUserConversation = async (client_user_id, conversation_id) => {
@@ -323,10 +323,10 @@ export const getAllUserConversations = async (client_user_id) => {
     SELECT conversation_id,
       conversation_type,
       group_title,
-      group_cover_image,
+      group_image_url,
       updated_at,
       partner_name,
-      partner_profile_pic,
+      partner_profile_pic_url,
       partner_connection_status,
       partner_last_active,
       unread_messages_count,
@@ -339,6 +339,27 @@ export const getAllUserConversations = async (client_user_id) => {
   }
 
   return stripNulls((await dbQuery(query)).rows)
+}
+
+export const getGroupConversation = async (group_conversation_id, client_user_id) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    SELECT conversation_id AS group_conversation_id,
+      created_by,
+      group_title,
+      group_image_url,
+      updated_at,
+      unread_messages_count,
+      last_history_item
+    FROM "UserConversationsListView"
+    WHERE conversation_id = $1 AND client_user_id = $2
+    ORDER BY updated_at DESC
+    `,
+    values: [group_conversation_id, client_user_id],
+  }
+
+  return stripNulls((await dbQuery(query)).rows[0])
 }
 
 /**
@@ -458,14 +479,14 @@ export const acknowledgeMessageDelivered = async (user_id, message_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH already_acked AS (
-      SELECT delivered_to @> ARRAY[CAST ($1 AS INTEGER)] 
+    WITH not_already_acked AS (
+      SELECT NOT(delivered_to @> ARRAY[CAST ($1 AS INTEGER)]) 
       FROM "Message" 
       WHERE id = $2
     ), msg AS (
       UPDATE "Message" 
       SET delivered_to = array_append(delivered_to, $1) 
-      WHERE id = $2 AND (SELECT * FROM already_acked) = false
+      WHERE id = $2 AND (SELECT * FROM not_already_acked)
       RETURNING (delivery_status = 'delivered') AS is_delivered
     )
     SELECT is_delivered FROM msg`,
@@ -484,14 +505,14 @@ export const acknowledgeMessageRead = async (user_id, message_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH already_acked AS (
-      SELECT read_by @> ARRAY[CAST ($1 AS INTEGER)] 
+    WITH not_already_acked AS (
+      SELECT NOT(read_by @> ARRAY[CAST ($1 AS INTEGER)]) 
       FROM "Message" 
       WHERE id = $2
     ), msg AS (
       UPDATE "Message" 
       SET read_by = array_append(read_by, $1) 
-      WHERE id = $2 AND (SELECT * FROM already_acked) = false
+      WHERE id = $2 AND (SELECT * FROM not_already_acked)
       RETURNING (delivery_status = 'read') AS is_read
     )
     SELECT is_read FROM msg`,

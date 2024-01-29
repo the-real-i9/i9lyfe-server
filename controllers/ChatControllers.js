@@ -56,7 +56,7 @@ export const createGroupConversationController = async (req, res) => {
 
     const { client_username } = req.auth
 
-    const groupConversationData =
+    const group_conversation_id =
       await new GroupChatService().createGroupConversation({
         participants,
         client_username,
@@ -65,7 +65,7 @@ export const createGroupConversationController = async (req, res) => {
         cover_image_url,
       })
 
-    res.status(201).send({ groupConversationData })
+    res.status(201).send({ group_conversation_id })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -238,6 +238,24 @@ export const getMyConversationsController = async (req, res) => {
   }
 }
 
+export const getGroupConversationController = async (req, res) => {
+  try {
+    const { group_conversation_id } = req.params
+
+    const { client_user_id } = req.auth
+
+    const groupConversation = await new GroupChatService().getGroupConversation(
+      group_conversation_id,
+      client_user_id
+    )
+
+    res.status(200).send({ groupConversation })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
 export const deleteMyConversationController = async (req, res) => {
   try {
     const { conversation_id } = req.params
@@ -318,7 +336,7 @@ export const ackMessageReadController = async (req, res) => {
     const { conversation_id, message_id } = req.body
 
     const { client_user_id } = req.auth
-    
+
     await new ChatService().acknowledgeMessageRead({
       user_id: client_user_id,
       conversation_id,
@@ -334,7 +352,7 @@ export const ackMessageReadController = async (req, res) => {
 
 export const reactToMessageController = async (req, res) => {
   try {
-    const { conversation_id, message_id, reaction_code_point } = req.body
+    const { conversation_id, message_id, reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -345,7 +363,7 @@ export const reactToMessageController = async (req, res) => {
       },
       conversation_id,
       message_id,
-      reaction_code_point,
+      reaction_code_point: reaction.codePointAt(),
     })
 
     res.sendStatus(201)

@@ -37,17 +37,18 @@ export class ChatRealtimeService {
       ?.join(`convo-room-${dm_conversation_id}`)
   }
 
-  static createGroupConversation(
+  static async createGroupConversation(
     participantsUserIds,
     group_conversation_id
   ) {
     for (const p_user_id of participantsUserIds) {
-      ChatRealtimeService.sockClients
+      await ChatRealtimeService.sockClients
         .get(p_user_id)
         ?.join(`convo-room-${group_conversation_id}`)
     }
 
     // emit this event to all participants
+    new ChatRealtimeService().sendNewGroupConversation(group_conversation_id)
   }
 
   sendNewMessage(conversation_id, msgData) {
@@ -92,9 +93,11 @@ export class ChatRealtimeService {
       .emit("new activity log", activityLogData)
   }
 
-  sendNewGroupConversation(group_conversation_id, groupConversationData) {
+  sendNewGroupConversation(group_conversation_id) {
     ChatRealtimeService.io
       .to(`convo-room-${group_conversation_id}`)
-      .emit("new group", groupConversationData)
+      .emit("new group", group_conversation_id)
+      // each user will update its conversations list manually, 
+      // as it's too expensive to send customized data for every group participant
   }
 }

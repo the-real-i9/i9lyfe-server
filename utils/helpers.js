@@ -62,13 +62,14 @@ export const generateMultiRowInsertValuesParameters = ({
     )
     .join(", ")
 
-
-/** 
+/**
  * @param {string[]} cols
  * @param {number} paramNumFrom
  */
-export const generateMultiColumnUpdateSetParameters = (cols, paramNumFrom = 1) =>
-  cols.map((col, i) => `${col} = $${paramNumFrom + i}`).join(", ")
+export const generateMultiColumnUpdateSetParameters = (
+  cols,
+  paramNumFrom = 1
+) => cols.map((col, i) => `${col} = $${paramNumFrom + i}`).join(", ")
 
 /**
  * @param {object} param0
@@ -79,7 +80,7 @@ export const generateMultiColumnUpdateSetParameters = (cols, paramNumFrom = 1) =
 export const generateJsonbMultiKeysSetParameters = ({
   columnName,
   jsonbKeys,
-  paramNumFrom = 1
+  paramNumFrom = 1,
 }) => {
   // goal: [columnName] = jsonb_set([columnName], '{key}', '"$[paramNumFrom]"', '{key2}', '"$[paramNumFrom + 1]"')
   return `${columnName} = ${jsonbKeys
@@ -107,6 +108,7 @@ const removeNullFields = (obj) => {
 }
 
 export const stripNulls = (object) => {
-  if (Array.isArray(object)) return object.map(removeNullFields)
-  else removeNullFields(object)
+  return Array.isArray(object)
+    ? object.map(removeNullFields)
+    : removeNullFields(object)
 }

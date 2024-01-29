@@ -17,7 +17,7 @@ export class GroupChatService {
     cover_image_url,
   }) {
     /* Nothing returned yet */
-    const groupConversationData = await ChatModel.createGroupConversation({
+    const group_conversation_id = await ChatModel.createGroupConversation({
       conversationInfo: {
         type: "group",
         created_by: client_username,
@@ -33,22 +33,16 @@ export class GroupChatService {
       },
     })
 
-    const { group_conversation_id } = groupConversationData
-
-    // Implement realtime todos where appropriate
-    // here we have to create a socket room for this conversation and add these participants to it
-    await ChatRealtimeService.createGroupConversation(
+    ChatRealtimeService.createGroupConversation(
       participants.map(({ user_id }) => user_id),
       group_conversation_id
     )
 
-    // next we send the group creation and additon of participants to all participants
-    new ChatRealtimeService().sendNewGroupConversation(
-      group_conversation_id,
-      groupConversationData
-    )
+    return group_conversation_id
+  }
 
-    return groupConversationData
+  async getGroupConversation (group_conversation_id, client_user_id) {
+    return await ChatModel.getGroupConversation(group_conversation_id, client_user_id)
   }
 
   /**
@@ -206,7 +200,11 @@ export class GroupChatService {
     }
   }
 
-  async removeParticipantFromAdmins({ client, admin_participant, group_conversation_id }) {
+  async removeParticipantFromAdmins({
+    client,
+    admin_participant,
+    group_conversation_id,
+  }) {
     const activity_info = {
       type: "admin_removed_from_admins",
       dropped_by: client.username,
