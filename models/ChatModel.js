@@ -422,16 +422,16 @@ export const createMessage = async ({
       RETURNING sender_user_id, conversation_id, msg_content
     )
     SELECT json_build_object(
-        'user_id', user.id,
-        'profile_pic_url', user.profile_pic_url,
-        'username', user.username,
-        'name', user.name,
-        'connection_status', user.connection_status
+        'user_id', "user".id,
+        'profile_pic_url', "user".profile_pic_url,
+        'username', "user".username,
+        'name', "user".name,
+        'connection_status', "user".connection_status
       ) AS sender,
       conversation_id,
       msg_content
     FROM message_cte
-    INNER JOIN "User" user ON user.id = sender_user_id`,
+    INNER JOIN "User" "user" ON "user".id = sender_user_id`,
     values: [sender_user_id, conversation_id, msg_content],
   }
 

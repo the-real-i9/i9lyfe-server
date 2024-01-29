@@ -89,7 +89,7 @@ export const addParticipantsToGroupController = async (req, res) => {
       group_conversation_id,
     })
 
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -112,7 +112,7 @@ export const removeParticipantFromGroupController = async (req, res) => {
       participant,
       group_conversation_id,
     })
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -126,7 +126,7 @@ export const joinGroupController = async (req, res) => {
     const { group_conversation_id } = req.params
 
     await new GroupChatService().joinGroup(participant, group_conversation_id)
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -140,7 +140,7 @@ export const leaveGroupController = async (req, res) => {
     const { group_conversation_id } = req.params
 
     await new GroupChatService().leaveGroup(participant, group_conversation_id)
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -163,7 +163,7 @@ export const makeParticipantAdminController = async (req, res) => {
       participant,
       group_conversation_id,
     })
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -186,7 +186,7 @@ export const removeParticipantFromAdminsController = async (req, res) => {
       participant,
       group_conversation_id,
     })
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -209,7 +209,7 @@ export const changeGroupTitleController = async (req, res) => {
       group_conversation_id,
       newInfoKVPair: { title: new_group_title },
     })
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -232,7 +232,7 @@ export const changeGroupDescriptionController = async (req, res) => {
       group_conversation_id,
       newInfoKVPair: { description: new_group_description },
     })
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -265,7 +265,7 @@ export const deleteMyConversationController = async (req, res) => {
       conversation_id
     )
 
-    res.status(200)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -305,7 +305,7 @@ export const sendMessageController = async (req, res) => {
       msg_content,
     })
 
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -324,7 +324,7 @@ export const ackMessageDeliveredController = async (req, res) => {
       message_id,
     })
 
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -343,7 +343,7 @@ export const ackMessageReadController = async (req, res) => {
       message_id,
     })
 
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -368,7 +368,7 @@ export const reactToMessageController = async (req, res) => {
       reaction_code_point,
     })
 
-    res.status(201)
+    res.sendStatus(201)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -390,7 +390,7 @@ export const removeMyReactionToMessageController = async (req, res) => {
       message_id,
     })
 
-    res.status(200)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -415,7 +415,7 @@ export const deleteMyMessageController = async (req, res) => {
       delete_for,
     })
 
-    res.status(200)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
