@@ -74,9 +74,7 @@ export const createGroupConversationController = async (req, res) => {
 
 export const addParticipantsToGroupController = async (req, res) => {
   try {
-    const { participants } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participants } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -98,9 +96,7 @@ export const addParticipantsToGroupController = async (req, res) => {
 
 export const removeParticipantFromGroupController = async (req, res) => {
   try {
-    const { participant } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participant } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -121,9 +117,7 @@ export const removeParticipantFromGroupController = async (req, res) => {
 
 export const joinGroupController = async (req, res) => {
   try {
-    const { participant } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participant } = req.body
 
     await new GroupChatService().joinGroup(participant, group_conversation_id)
     res.sendStatus(201)
@@ -135,9 +129,7 @@ export const joinGroupController = async (req, res) => {
 
 export const leaveGroupController = async (req, res) => {
   try {
-    const { participant } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participant } = req.body
 
     await new GroupChatService().leaveGroup(participant, group_conversation_id)
     res.sendStatus(201)
@@ -149,9 +141,7 @@ export const leaveGroupController = async (req, res) => {
 
 export const makeParticipantAdminController = async (req, res) => {
   try {
-    const { participant } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participant } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -172,9 +162,7 @@ export const makeParticipantAdminController = async (req, res) => {
 
 export const removeParticipantFromAdminsController = async (req, res) => {
   try {
-    const { participant } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, participant } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -186,7 +174,7 @@ export const removeParticipantFromAdminsController = async (req, res) => {
       participant,
       group_conversation_id,
     })
-    res.sendStatus(201)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -195,9 +183,7 @@ export const removeParticipantFromAdminsController = async (req, res) => {
 
 export const changeGroupTitleController = async (req, res) => {
   try {
-    const { new_group_title } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, new_group_title } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -209,7 +195,7 @@ export const changeGroupTitleController = async (req, res) => {
       group_conversation_id,
       newInfoKVPair: { title: new_group_title },
     })
-    res.sendStatus(201)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -218,9 +204,7 @@ export const changeGroupTitleController = async (req, res) => {
 
 export const changeGroupDescriptionController = async (req, res) => {
   try {
-    const { new_group_description } = req.body
-
-    const { group_conversation_id } = req.params
+    const { group_conversation_id, new_group_description } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -232,7 +216,7 @@ export const changeGroupDescriptionController = async (req, res) => {
       group_conversation_id,
       newInfoKVPair: { description: new_group_description },
     })
-    res.sendStatus(201)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -293,9 +277,7 @@ export const getConversationHistoryController = async (req, res) => {
 
 export const sendMessageController = async (req, res) => {
   try {
-    const { msg_content } = req.body
-
-    const { conversation_id } = req.params
+    const { conversation_id, msg_content } = req.body
 
     const { client_user_id: sender_user_id } = req.auth
 
@@ -314,17 +296,17 @@ export const sendMessageController = async (req, res) => {
 
 export const ackMessageDeliveredController = async (req, res) => {
   try {
-    const { user_id } = req.body
+    const { conversation_id, message_id } = req.body
 
-    const { conversation_id, message_id } = req.params
+    const { client_user_id } = req.auth
 
     await new ChatService().acknowledgeMessageDelivered({
-      user_id,
+      user_id: client_user_id,
       conversation_id,
       message_id,
     })
 
-    res.sendStatus(201)
+    res.sendStatus(204)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -333,17 +315,17 @@ export const ackMessageDeliveredController = async (req, res) => {
 
 export const ackMessageReadController = async (req, res) => {
   try {
-    const { user_id } = req.body
+    const { conversation_id, message_id } = req.body
 
-    const { conversation_id, message_id } = req.params
-
+    const { client_user_id } = req.auth
+    
     await new ChatService().acknowledgeMessageRead({
-      user_id,
+      user_id: client_user_id,
       conversation_id,
       message_id,
     })
 
-    res.sendStatus(201)
+    res.sendStatus(204)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -352,11 +334,9 @@ export const ackMessageReadController = async (req, res) => {
 
 export const reactToMessageController = async (req, res) => {
   try {
-    const { reaction_code_point } = req.body
+    const { conversation_id, message_id, reaction_code_point } = req.body
 
     const { client_user_id, client_username } = req.auth
-
-    const { conversation_id, message_id } = req.params
 
     await new ChatService().reactToMessage({
       reactor: {

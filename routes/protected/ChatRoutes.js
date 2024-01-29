@@ -32,42 +32,36 @@ router.get("/conversations/:dm_conversation_id")
 router.post("/create_group_conversation", CC.createGroupConversationController)
 
 router.post(
-  "/conversations/:group_conversation_id/add_participants",
+  "/group_conversation/add_participants",
   CC.addParticipantsToGroupController
 )
 
 router.put(
-  "/conversations/:group_conversation_id/remove_participant",
+  "/group_conversation/remove_participant",
   CC.removeParticipantFromGroupController
 )
 
-router.post(
-  "/conversations/:group_conversation_id/join_group",
-  CC.joinGroupController
-)
+router.post("/group_conversation/join_group", CC.joinGroupController)
+
+router.put("/group_conversation/leave_group", CC.leaveGroupController)
 
 router.put(
-  "/conversations/:group_conversation_id/leave_group",
-  CC.leaveGroupController
-)
-
-router.put(
-  "/conversations/:group_conversation_id/make_participant_admin",
+  "/group_conversation/make_participant_admin",
   CC.makeParticipantAdminController
 )
 
 router.put(
-  "/conversations/:group_conversation_id/remove_participant_from_admins",
+  "/group_conversation/remove_participant_from_admins",
   CC.removeParticipantFromAdminsController
 )
 
 router.put(
-  "/conversations/:group_conversation_id/change_group_title",
+  "/group_conversation/change_group_title",
   CC.changeGroupTitleController
 )
 
 router.put(
-  "/conversations/:group_conversation_id/change_group_description",
+  "/group_conversation/change_group_description",
   CC.changeGroupDescriptionController
 )
 
@@ -86,23 +80,23 @@ router.get(
 )
 
 router.post(
-  "/conversations/:conversation_id/send_message",
+  "/send_message",
   uploadMessageFiles,
   CC.sendMessageController
 )
 
 router.put(
-  "/conversations/:conversation_id/messages/:message_id/ack_message_delivered",
+  "/ack_message_delivered",
   CC.ackMessageDeliveredController
 )
 
 router.put(
-  "/conversations/:conversation_id/messages/:message_id/ack_message_read",
+  "/ack_message_read",
   CC.ackMessageReadController
 )
 
 router.post(
-  "/conversations/:conversation_id/messages/:message_id/react_to_message",
+  "/react_to_message",
   CC.reactToMessageController
 )
 

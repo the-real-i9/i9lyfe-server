@@ -419,17 +419,18 @@ export const createMessage = async ({
     WITH message_cte AS (
       INSERT INTO "Message" (sender_user_id, conversation_id, msg_content) 
       VALUES ($1, $2, $3)
-      RETURNING sender_user_id, conversation_id, msg_content
+      RETURNING id AS message_id, sender_user_id, conversation_id, msg_content
     )
-    SELECT json_build_object(
+    SELECT message_id,
+      conversation_id,
+      msg_content,
+      json_build_object(
         'user_id', "user".id,
         'profile_pic_url', "user".profile_pic_url,
         'username', "user".username,
         'name', "user".name,
         'connection_status', "user".connection_status
-      ) AS sender,
-      conversation_id,
-      msg_content
+      ) AS sender
     FROM message_cte
     INNER JOIN "User" "user" ON "user".id = sender_user_id`,
     values: [sender_user_id, conversation_id, msg_content],
@@ -451,17 +452,27 @@ export const updateDeliveryStatus = () => {}
  * @returns {Promise<boolean>} Has message delivered to all conversation participants?
  */
 export const acknowledgeMessageDelivered = async (user_id, message_id) => {
+  // use CTE to prevent illegal operatons
+  // prevent a message from being acknowledge twice
+  // prevent a user that doesn't belong to conversation
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    UPDATE "Message" 
-    SET delivered_to = delivered_to || $1 
-    WHERE id = $2
-    RETURNING (delivery_status = 'delivered') AS is_delivered`,
+    WITH already_acked AS (
+      SELECT delivered_to @> ARRAY[CAST ($1 AS INTEGER)] 
+      FROM "Message" 
+      WHERE id = $2
+    ), msg AS (
+      UPDATE "Message" 
+      SET delivered_to = array_append(delivered_to, $1) 
+      WHERE id = $2 AND (SELECT * FROM already_acked) = false
+      RETURNING (delivery_status = 'delivered') AS is_delivered
+    )
+    SELECT is_delivered FROM msg`,
     values: [user_id, message_id],
   }
-
-  return (await dbQuery(query)).rows[0].is_delivered
+  
+  return (await dbQuery(query)).rows[0]?.is_delivered
 }
 
 /**
@@ -473,14 +484,21 @@ export const acknowledgeMessageRead = async (user_id, message_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    UPDATE "Message" 
-    SET read_by = read_by || $1 
-    WHERE id = $2
-    RETURNING (delivery_status = 'read') AS is_read`,
+    WITH already_acked AS (
+      SELECT read_by @> ARRAY[CAST ($1 AS INTEGER)] 
+      FROM "Message" 
+      WHERE id = $2
+    ), msg AS (
+      UPDATE "Message" 
+      SET read_by = array_append(read_by, $1) 
+      WHERE id = $2 AND (SELECT * FROM already_acked) = false
+      RETURNING (delivery_status = 'read') AS is_read
+    )
+    SELECT is_read FROM msg`,
     values: [user_id, message_id],
   }
 
-  return (await dbQuery(query)).rows[0].is_read
+  return (await dbQuery(query)).rows[0]?.is_read
 }
 
 /**
