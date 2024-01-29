@@ -14,11 +14,11 @@ import { GroupChatService } from "../services/ChatServices/GroupChat.js"
  */
 export const getUsersToChatController = async (req, res) => {
   try {
-    const { search } = req.query
+    const { search = "" } = req.query
 
     const { client_user_id } = req.auth
 
-    const users = new ChatService().getUsersToChat(client_user_id, search)
+    const users = await new ChatService().getUsersToChat(client_user_id, search)
 
     res.status(200).send({ users })
   } catch (error) {

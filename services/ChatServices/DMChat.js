@@ -15,7 +15,7 @@ export class DMChatService {
   async createDMConversation(client, partner) {
       const dm_conversation_id = await ChatModel.createDMConversation(client, partner.user_id)
 
-      await ChatRealtimeService.createDMConversation({
+      ChatRealtimeService.createDMConversation({
         client_user_id: client.user_id,
         partner_user_id: partner.user_id,
         dm_conversation_id,

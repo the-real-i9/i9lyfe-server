@@ -24,29 +24,27 @@ export class ChatRealtimeService {
     socket.join(clientConversationRooms)
   }
 
-  static async createDMConversation({
+  static createDMConversation({
     client_user_id,
     partner_user_id,
     dm_conversation_id,
   }) {
-    await Promise.all([
-      ChatRealtimeService.sockClients
-        ?.get(client_user_id)
-        .join(`convo-room-${dm_conversation_id}`),
-      ChatRealtimeService.sockClients
-        ?.get(partner_user_id)
-        .join(`convo-room-${dm_conversation_id}`),
-    ])
+    ChatRealtimeService.sockClients
+      .get(client_user_id)
+      ?.join(`convo-room-${dm_conversation_id}`)
+    ChatRealtimeService.sockClients
+      .get(partner_user_id)
+      ?.join(`convo-room-${dm_conversation_id}`)
   }
 
-  static async createGroupConversation(
+  static createGroupConversation(
     participantsUserIds,
     group_conversation_id
   ) {
     for (const p_user_id of participantsUserIds) {
-      await ChatRealtimeService.sockClients
-        ?.get(p_user_id)
-        .join(`convo-room-${group_conversation_id}`)
+      ChatRealtimeService.sockClients
+        .get(p_user_id)
+        ?.join(`convo-room-${group_conversation_id}`)
     }
 
     // emit this event to all participants

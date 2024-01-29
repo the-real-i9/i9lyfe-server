@@ -24,7 +24,7 @@ export const createDMConversation = async (client, partner_user_id) => {
     RETURNING id AS dm_conversation_id
   ), user_convo_cte AS (
     INSERT INTO "UserConversation" (user_id, conversation_id) 
-    VALUES ($2, SELECT dm_conversation_id FROM dm_convo_cte), ($3, SELECT dm_conversation_id FROM dm_convo_cte)
+    VALUES ($2, (SELECT dm_conversation_id FROM dm_convo_cte)), ($3, (SELECT dm_conversation_id FROM dm_convo_cte))
   )
   SELECT dm_conversation_id FROM dm_convo_cte`,
     values: [
@@ -619,9 +619,9 @@ export const createMessageDeletionLog = async ({
 }
 
 /**
- * @param {string} searchTerm
+ * @param {string} search
  */
-export const getUsersToChat = async (client_user_id, searchTerm) => {
+export const getUsersToChat = async (client_user_id, search) => {
   const query = {
     text: `
     SELECT "user".id, 
@@ -637,11 +637,11 @@ export const getUsersToChat = async (client_user_id, searchTerm) => {
       ON "client_user_conv".conversation_id = "other_user_conv".conversation_id AND "client_user_conv".user_id = $2
 	  LEFT JOIN "Conversation" "conv" 
       ON "other_user_conv".conversation_id = "conv".id
-	  WHERE (username LIKE '%$1%' OR name LIKE '%$1%') AND "user".id != $2 AND "conv".info ->> 'type' != 'group'`,
-    values: [searchTerm, client_user_id],
+	  WHERE (username LIKE $1 OR name LIKE $1) AND "user".id != $2 AND ("conv".info ->> 'type' != 'group' OR "conv".info ->> 'type' IS NULL)`,
+    values: [`%${search}%`, client_user_id],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows
 }
 
 /* Helpers */
