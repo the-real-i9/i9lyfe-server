@@ -87,10 +87,10 @@ export class ChatRealtimeService {
       .emit("message deleted", deletionData)
   }
 
-  sendGroupActivityLog(group_conversation_id, activityLogData) {
+  sendGroupActivityLog(group_conversation_id, groupActivityLogData) {
     ChatRealtimeService.io
       .to(`convo-room-${group_conversation_id}`)
-      .emit("new activity log", activityLogData)
+      .emit("new group activity", groupActivityLogData)
   }
 
   sendNewGroupConversation(group_conversation_id) {

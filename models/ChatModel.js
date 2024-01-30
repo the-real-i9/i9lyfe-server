@@ -117,22 +117,18 @@ export const changeGroupInfo = async ({
 }) => {
   const [[infoKey, newInfoValue]] = Object.entries(newInfoKVPair)
 
+  // the procedure will raise error if client is not group admin
   const query = {
     text: `
-    WITH client_is_group_admin AS (
-      SELECT EXISTS(SELECT role 
-        FROM "GroupMembership" 
-        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    WITH check_admin AS (
+      CALL check_client_is_group_admin($1, $2)
     ), convo_cte AS (
       UPDATE "Conversation" SET info = jsonb_set(info, '{$4}', '$5')
-      WHERE conversation_id = $1 AND (SELECT * FROM client_is_group_admin)
+      WHERE conversation_id = $1
     ), activity_log AS (
-      IF (SELECT * FROM client_is_group_admin) THEN
         INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
         VALUES ($1, $3)
-      END IF
-    )
-    SLECT exists AS changed FROM client_is_group_admin`,
+    )`,
     values: [
       group_conversation_id,
       client_user_id,
@@ -142,7 +138,7 @@ export const changeGroupInfo = async ({
     ],
   }
 
-  return (await dbQuery(query)).rows[0].changed
+  await dbQuery(query)
 }
 
 /**
@@ -160,39 +156,29 @@ export const addParticipantsToGroup = async ({
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH client_is_group_admin AS (
-      SELECT EXISTS(SELECT role 
-        FROM "GroupMembership" 
-        WHERE group_conversation_id = $1 AND user_id = $3 AND deleted = false AND role = 'admin')
+    WITH check_admin AS (
+      CALL check_client_is_group_admin($1, $2)
     ), user_convo_cte AS (
-      IF (SELECT * FROM client_is_group_admin) THEN
-        INSERT INTO "UserConversation" (user_id, conversation_id) 
-        VALUES ${generateMultiRowInsertValuesParameters({
-          rowsCount: participantsUserIds.length,
-          columnsCount: 1,
-          paramNumFrom: 4,
-          // here I just concatenated each user_id column paceholder with conversation_id column value
-        }).replace(/\$\d/g, (m) => `${m}, $1`)}
-      END IF
+      INSERT INTO "UserConversation" (user_id, conversation_id) 
+      VALUES ${generateMultiRowInsertValuesParameters({
+        rowsCount: participantsUserIds.length,
+        columnsCount: 1,
+        paramNumFrom: 4,
+        // here I just concatenated each user_id column paceholder with conversation_id column value
+      }).replace(/\$\d/g, (m) => `${m}, $1`)}
     ), activity_log AS (
-      IF (SELECT * FROM client_is_group_admin) THEN
-        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
-        VALUES ($1, $2)
-      END IF
-    )
-    SELECT exists AS added FROM client_is_group_admin`,
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES ($1, $3)
+    )`,
     values: [
       group_conversation_id,
-      activity_info,
       client_user_id,
+      activity_info,
       ...participantsUserIds.map((user_id) => user_id),
     ],
   }
 
-  return (await dbQuery(query)).rows[0].added
-
-  // After this, if conversation type is "group", create group membership is automatically "trigger"ed for each inserted "UserConversation"
-  // Afterwards, we programmatically log the activity
+  await dbQuery(query)
 }
 
 /**
@@ -206,21 +192,16 @@ export const removeParticipantFromGroup = async ({
 }) => {
   const query = {
     text: `
-    WITH client_is_group_admin AS (
-      SELECT EXISTS(SELECT role 
-        FROM "GroupMembership" 
-        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    WITH check_admin AS (
+      CALL check_client_is_group_admin($1, $2)
     ), user_convo_cte AS (
       UPDATE "UserConversation" 
       SET deleted = true
-      WHERE conversation_id = $1 AND user_id = $3 AND (SELECT * FROM client_is_group_admin)
+      WHERE conversation_id = $1 AND user_id = $3
     ), activity_log AS (
-      IF (SELECT * FROM client_is_group_admin) THEN
-        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
-        VALUES ($1, $4)
-      END IF
-    )
-    SLECT exists AS removed FROM client_is_group_admin`,
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES ($1, $4)
+    )`,
     values: [
       group_conversation_id,
       client_user_id,
@@ -229,7 +210,7 @@ export const removeParticipantFromGroup = async ({
     ],
   }
 
-  return (await dbQuery(query)).rows[0].removed
+  await dbQuery(query)
 }
 
 export const joinGroup = async ({
@@ -288,21 +269,16 @@ export const changeGroupParticipantRole = async ({
 }) => {
   const query = {
     text: `
-    WITH client_is_group_admin AS (
-      SELECT EXISTS(SELECT role 
-        FROM "GroupMembership" 
-        WHERE group_conversation_id = $1 AND user_id = $2 AND deleted = false AND role = 'admin')
+    WITH check_admin AS (
+      CALL check_client_is_group_admin($1, $2)
     ), group_mem_cte AS (
       UPDATE "GroupMembership" 
       SET role = $4
-      WHERE group_conversation_id = $1 AND user_id = $3 AND (SELECT * FROM client_is_group_admin)
+      WHERE group_conversation_id = $1 AND user_id = $3
     ), activity_log AS (
-      IF (SELECT * FROM client_is_group_admin) THEN
-        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
-        VALUES ($1, $5)
-      END IF
-    )
-    SLECT exists AS done FROM client_is_group_admin`,
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info) 
+      VALUES ($1, $5)
+    )`,
     values: [
       group_conversation_id,
       client_user_id,
@@ -312,7 +288,7 @@ export const changeGroupParticipantRole = async ({
     ],
   }
 
-  return (await dbQuery(query)).rows[0].done
+  await dbQuery(query)
 }
 
 /**

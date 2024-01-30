@@ -30,11 +30,12 @@ export class GroupChatService {
           type: "group_created",
           created_by: client_username,
         },
-        part_added:{
-        type: "participants_added",
-        added_by: client_username,
-        added_participants: participants.map(({ username }) => username),
-      }},
+        part_added: {
+          type: "participants_added",
+          added_by: client_username,
+          added_participants: participants.map(({ username }) => username),
+        },
+      },
     })
 
     ChatRealtimeService.createGroupConversation(
@@ -45,8 +46,11 @@ export class GroupChatService {
     return group_conversation_id
   }
 
-  async getGroupConversation (group_conversation_id, client_user_id) {
-    return await ChatModel.getGroupConversation(group_conversation_id, client_user_id)
+  async getGroupConversation(group_conversation_id, client_user_id) {
+    return await ChatModel.getGroupConversation(
+      group_conversation_id,
+      client_user_id
+    )
   }
 
   /**
@@ -66,7 +70,7 @@ export class GroupChatService {
       added_participants: participants.map(({ username }) => username),
     }
 
-    const participantsAdded = await ChatModel.addParticipantsToGroup({
+    await ChatModel.addParticipantsToGroup({
       client_user_id: client.user_id,
       participantsUserIds: participants.map(({ user_id }) => user_id),
       activity_info,
@@ -74,12 +78,10 @@ export class GroupChatService {
 
     /* Realtime action */
     // send activity log to participants
-    if (participantsAdded) {
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info,
-      })
-    }
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   /**
@@ -99,7 +101,7 @@ export class GroupChatService {
       removed_participant: participant.username,
     }
 
-    const removed = await ChatModel.removeParticipantFromGroup({
+    await ChatModel.removeParticipantFromGroup({
       client_user_id: client.user_id,
       participant_user_id: participant.user_id,
       group_conversation_id,
@@ -108,12 +110,10 @@ export class GroupChatService {
 
     /* Realtime action */
     // send activity log to participants
-    if (removed) {
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info,
-      })
-    }
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   /**
@@ -188,20 +188,19 @@ export class GroupChatService {
       new_admin: participant.username,
     }
 
-    const done = await ChatModel.changeGroupParticipantRole({
+    await ChatModel.changeGroupParticipantRole({
       client_user_id: client.user_id,
       participant_user_id: participant.user_id,
       group_conversation_id,
       activity_info,
       role: "admin",
     })
+
     // Implement realtime todos where appropriate
-    if (done) {
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info,
-      })
-    }
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   async removeParticipantFromAdmins({
@@ -215,7 +214,7 @@ export class GroupChatService {
       ex_admin: admin_participant.username,
     }
 
-    const done = await ChatModel.changeGroupParticipantRole({
+    await ChatModel.changeGroupParticipantRole({
       client_user_id: client.user_id,
       participant_user_id: admin_participant.user_id,
       group_conversation_id,
@@ -223,12 +222,10 @@ export class GroupChatService {
       role: "member",
     })
     // Implement realtime todos where appropriate
-    if (done) {
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info,
-      })
-    }
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   /**
@@ -247,19 +244,17 @@ export class GroupChatService {
       [`new_group_${infoKey}`]: newInfoValue,
     }
 
-    const changed = await ChatModel.changeGroupInfo({
+    await ChatModel.changeGroupInfo({
       client_user_id: client.user_id,
       group_conversation_id,
       newInfoKVPair,
       activity_info,
     })
 
-    if (changed) {
-      new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
-        group_conversation_id,
-        activity_info,
-      })
-    }
+    new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
+      group_conversation_id,
+      activity_info,
+    })
   }
 
   changeGroupPhoto() {}
