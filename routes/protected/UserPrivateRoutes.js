@@ -8,6 +8,7 @@ import {
   getUserNotificationsController,
   getUserReactedPostsController,
   getUserSavedPostsController,
+  readUserNotificationController,
   unfollowUserController,
   updateUserConnectionStatusController,
   updateUserProfileController,
@@ -42,6 +43,7 @@ router.put("/upload_profile_picture", uploadProfilePictureController)
 
 router.put("/update_my_connection_status", updateUserConnectionStatusController)
 
+router.put("/read_my_notification", readUserNotificationController)
 
 // GET posts user has been mentioned in
 router.get("/mentioned_posts", getUserMentionedPostsController)
@@ -53,6 +55,7 @@ router.get("/reacted_posts", getUserReactedPostsController)
 router.get("/saved_posts", getUserSavedPostsController)
 
 // GET user notifications
-router.get("/notifications", getUserNotificationsController)
+router.get("/my_notifications", getUserNotificationsController)
+
 
 export default router

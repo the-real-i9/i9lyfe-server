@@ -8,6 +8,7 @@ import {
   getUserFollowing,
   getUserPosts,
   getUserProfile,
+  readUserNotification,
   unfollowUser,
   updateUserConnectionStatus,
   updateUserProfile,
@@ -35,6 +36,10 @@ export class UserService {
 
   async updateConnectionStatus(new_connection_status) {
     await updateUserConnectionStatus(this.client_user_id, new_connection_status)
+  }
+
+  async readNotification(notification_id) {
+    await readUserNotification(notification_id, this.client_user_id)
   }
 
   async uploadProfilePicture() {
@@ -70,9 +75,9 @@ export class UserService {
     return await getSavedPosts(this.client_user_id)
   }
 
-  /** @param {Date} from_date  */
-  async getNotifications(from_date) {
-    return await getUnreadNotifications(this.client_user_id, from_date)
+  /** @param {Date} from  */
+  async getNotifications(from) {
+    return await getUnreadNotifications(this.client_user_id, from)
   }
 
   /* DELETEs */

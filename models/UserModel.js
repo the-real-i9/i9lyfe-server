@@ -410,19 +410,37 @@ export const updateUserConnectionStatus = async (
   await dbQuery(query)
 }
 
+export const readUserNotification = async (
+  notification_id,
+  client_user_id
+) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    UPDATE "Notification" SET is_read = true
+    WHERE id = $1 AND receiver_user_id = $2`,
+    values: [
+      notification_id,
+      client_user_id,
+    ],
+  }
+
+  await dbQuery(query)
+}
+
 // GET user notifications
 /**
  *
  * @param {number} client_user_id
  * @param {Date} from
  */
-export const getUnreadNotifications = async (client_user_id, from_date) => {
+export const getUnreadNotifications = async (client_user_id, from) => {
   const query = {
     text: `
     SELECT * 
     FROM "Notification" 
     WHERE receiver_user_id = $1 AND created_at >= $2`,
-    values: [client_user_id, from_date],
+    values: [client_user_id, from],
   }
 
   return stripNulls((await dbQuery(query)).rows)

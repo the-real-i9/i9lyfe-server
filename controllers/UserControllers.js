@@ -65,6 +65,22 @@ export const updateUserConnectionStatusController = async (req, res) => {
   }
 }
 
+export const readUserNotificationController = async (req, res) => {
+  try {
+    const { notification_id } = req.body
+
+    const { client_user_id } = req.auth
+
+    await new UserService(client_user_id).readNotification(notification_id)
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+
 
 export const uploadProfilePictureController = async (req, res) => {
   try {
@@ -187,13 +203,13 @@ export const getUserSavedPostsController = async (req, res) => {
 
 export const getUserNotificationsController = async (req, res) => {
   try {
-    const { from_date } = req.query
+    const { from } = req.query
 
     const { client_user_id } = req.auth
 
     const notifications = await new UserService(
       client_user_id
-    ).getNotifications(from_date)
+    ).getNotifications(from)
 
     res.status(200).send({ notifications })
   } catch (error) {
