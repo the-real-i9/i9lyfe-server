@@ -1,15 +1,5 @@
 import { UserService } from "../services/UserService.js"
 
-
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- */
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const followUserController = async (req, res) => {
   try {
     // always get user_id from the jwtToken req.auth
@@ -26,13 +16,10 @@ export const followUserController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const unfollowUserController = async (req, res) => {
   try {
-    const { followee_user_id } = req.body
+    const { followee_user_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -45,10 +32,7 @@ export const unfollowUserController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const updateUserProfileController = async (req, res) => {
   try {
     const updateKVPairs = req.body
@@ -66,10 +50,22 @@ export const updateUserProfileController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+export const updateUserConnectionStatusController = async (req, res) => {
+  try {
+    const { new_connection_status } = req.body
+
+    const { client_user_id } = req.auth
+
+    await new UserService(client_user_id).updateConnectionStatus(new_connection_status)
+
+    res.sendStatus(200)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+
 export const uploadProfilePictureController = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
@@ -81,10 +77,7 @@ export const uploadProfilePictureController = async (req, res) => {
 
 /* GETs */
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserProfileController = async (req, res) => {
   try {
     const { username } = req.params
@@ -100,10 +93,7 @@ export const getUserProfileController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
@@ -119,10 +109,7 @@ export const getUserFollowersController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserFollowingController = async (req, res) => {
   try {
     const { username } = req.params
@@ -138,10 +125,7 @@ export const getUserFollowingController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
@@ -156,10 +140,7 @@ export const getUserPostsController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserMentionedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
@@ -175,10 +156,7 @@ export const getUserMentionedPostsController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserReactedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
@@ -192,10 +170,7 @@ export const getUserReactedPostsController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserSavedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
@@ -209,10 +184,7 @@ export const getUserSavedPostsController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getUserNotificationsController = async (req, res) => {
   try {
     const { from_date } = req.query

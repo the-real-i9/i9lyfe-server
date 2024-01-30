@@ -73,52 +73,31 @@ export const changeUserPassword = async (email, newPassword) => {
  * @param {object} param0
  * @param {number} param0.client_user_id
  * @param {number} param0.to_follow_user_id
- * @param {import("pg").PoolClient} dbClient
  */
-export const followUser = async (
-  { client_user_id, to_follow_user_id },
-  dbClient
-) => {
+export const followUser = async ({ client_user_id, to_follow_user_id }) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
-    text: `INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2) RETURNING id`,
-    values: [client_user_id, to_follow_user_id],
-  }
-
-  return (await dbClient.query(query)).rows[0].id
-}
-
-/**
- * @param {object} param0
- * @param {import("pg").PoolClient} dbClient
- */
-export const createFollowNotification = async (
-  { client_user_id, followee_user_id, new_follow_id },
-  dbClient
-) => {
-  const query = {
-    text: `INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, follow_created_id) 
-    VALUES ($1, $2, $3, $4) RETURNING id`,
-    values: ["follow", client_user_id, followee_user_id, new_follow_id],
-  }
-
-  const notifId = (await dbClient.query(query)).rows[0].id
-
-  const getCreatedNotifQuery = {
     text: `
-    SELECT "sender".id AS sender_user_id,
-      "notification".receiver_user_id,
-      "sender".username AS sender_username,
-      "sender".profile_pic_url AS sender_profile_pic_url,
-      "notification".type
-    FROM "Notification" "notification"
-    INNER JOIN "User" "sender" ON "sender".id = "notification".sender_user_id
-    WHERE "notification".id = $1
-    `,
-    values: [notifId],
+    WITH new_follow_cte AS (
+      INSERT INTO "Follow" (follower_user_id, followee_user_id) VALUES ($1, $2) 
+    ), follow_notif_cte AS (
+      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id) 
+      VALUES ($3, $1, $2) 
+      RETURNING type, sender_user_id, receiver_user_id
+    )
+    SELECT notification.type,
+      notification.receiver_user_id,
+      json_build_object(
+        'user_id', sender.id,
+        'username', sender.username,
+        'profile_pic_url', sender.profile_pic_url
+      ) AS sender
+    FROM follow_notif_cte notification
+    INNER JOIN "User" sender ON sender.id = notification.sender_user_id`,
+    values: [client_user_id, to_follow_user_id, "follow"],
   }
 
-  return (await dbClient.query(getCreatedNotifQuery)).rows[0]
+  return (await dbQuery(query)).rows[0]
 }
 
 /**
@@ -148,12 +127,15 @@ export const updateUserProfile = async (client_user_id, updateKVPairs) => {
   /** @type {import("pg").QueryConfig} */
   const query = {
     text: `UPDATE "User" SET ${generateMultiColumnUpdateSetParameters(
-      updateSetCols, 2
-    )} WHERE id = $1 RETURNING id, email, username, name, profile_pic_url`,
+      updateSetCols,
+      2
+    )} 
+    WHERE id = $1 
+    RETURNING id, email, username, name, profile_pic_url, bio, birthday`,
     values: [client_user_id, ...updateSetValues],
   }
 
-  return await dbQuery(query)
+  return (await dbQuery(query)).rows[0]
 }
 
 export const uploadProfilePicture = async (client_user_id, profile_pic_url) => {
@@ -406,6 +388,28 @@ export const getSavedPosts = async (client_user_id) => {
   return (await dbQuery(query)).rows
 }
 
+/**
+ * @param {number} user_id
+ * @param {"online" | "offline"} connection_status
+ */
+export const updateUserConnectionStatus = async (
+  user_id,
+  connection_status
+) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: `
+    UPDATE "User" SET connection_status = $1, last_active = $2 WHERE id = $3`,
+    values: [
+      connection_status,
+      connection_status === "offline" ? new Date() : null,
+      user_id,
+    ],
+  }
+
+  await dbQuery(query)
+}
+
 // GET user notifications
 /**
  *
@@ -436,7 +440,6 @@ export const getUnreadNotificationsCount = async (client_user_id) => {
 
   return (await dbQuery(query)).rows[0].count
 }
-
 
 export const getUserFolloweesIds = async (user_id) => {
   const query = {

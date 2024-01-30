@@ -1,5 +1,4 @@
 import {
-  createFollowNotification,
   followUser,
   getMentionedPosts,
   getReactedPosts,
@@ -10,9 +9,9 @@ import {
   getUserPosts,
   getUserProfile,
   unfollowUser,
+  updateUserConnectionStatus,
   updateUserProfile,
 } from "../models/UserModel.js"
-import { getDBClient } from "../models/db.js"
 import { NotificationService } from "./NotificationService.js"
 
 export class UserService {
@@ -21,48 +20,21 @@ export class UserService {
   }
 
   async follow(to_follow_user_id) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
-
-      const new_follow_id = await followUser({
-        client_user_id: this.client_user_id,
-        to_follow_user_id,
-      }, dbClient)
-      
-      await this.#createFollowNotification({
-        followee_user_id: to_follow_user_id,
-        new_follow_id,
-      }, dbClient)
-      dbClient.query("COMMIT")
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
-    }
-  }
-
-  async #createFollowNotification({ followee_user_id, new_follow_id }, dbClient) {
-    const notifData = await createFollowNotification({
+    const followNotifData = await followUser({
       client_user_id: this.client_user_id,
-      followee_user_id,
-      new_follow_id,
-    }, dbClient)
+      to_follow_user_id,
+    })
 
-    const { receiver_user_id, ...restData } = notifData
+    const { receiver_user_id, ...restData } = followNotifData
     new NotificationService(receiver_user_id).pushNotification(restData)
   }
 
   async updateProfile(updateKVPairs) {
-    const result = await updateUserProfile(
-      this.client_user_id,
-      updateKVPairs
-    )
+    return await updateUserProfile(this.client_user_id, updateKVPairs)
+  }
 
-    const updatedUserData = result.rows[0]
-
-    return updatedUserData
+  async updateConnectionStatus(new_connection_status) {
+    await updateUserConnectionStatus(this.client_user_id, new_connection_status)
   }
 
   async uploadProfilePicture() {

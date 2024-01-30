@@ -9,6 +9,7 @@ import {
   getUserReactedPostsController,
   getUserSavedPostsController,
   unfollowUserController,
+  updateUserConnectionStatusController,
   updateUserProfileController,
   uploadProfilePictureController,
 } from "../../controllers/UserControllers.js"
@@ -33,11 +34,14 @@ router.use(
 
 router.post("/follow_user", followUserController)
 
-router.delete("/unfollow_user/:followee_user_id", unfollowUserController)
+router.delete("/followings/:followee_user_id", unfollowUserController)
 
-router.put("/update_user_profile", updateUserProfileController)
+router.put("/update_my_profile", updateUserProfileController)
 
 router.put("/upload_profile_picture", uploadProfilePictureController)
+
+router.put("/update_my_connection_status", updateUserConnectionStatusController)
+
 
 // GET posts user has been mentioned in
 router.get("/mentioned_posts", getUserMentionedPostsController)
