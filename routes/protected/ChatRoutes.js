@@ -65,17 +65,17 @@ router.put(
   CC.changeGroupDescriptionController
 )
 
-router.get("/conversations/:group_conversation_id", CC.getGroupConversationController)
-
 router.get("/my_conversations", CC.getMyConversationsController)
 
+router.get("/my_conversations/:conversation_id", CC.getConversationController)
+
 router.delete(
-  "/conversations/:conversation_id",
+  "/my_conversations/:conversation_id",
   CC.deleteMyConversationController
 )
 
 router.get(
-  "/conversations/:conversation_id/history",
+  "/my_conversations/:conversation_id/history",
   CC.getConversationHistoryController
 )
 

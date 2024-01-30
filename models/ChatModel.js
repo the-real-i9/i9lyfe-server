@@ -311,22 +311,25 @@ export const getAllUserConversations = async (client_user_id) => {
   return stripNulls((await dbQuery(query)).rows)
 }
 
-export const getGroupConversation = async (group_conversation_id, client_user_id) => {
+export const getConversation = async (conversation_id, client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT conversation_id AS group_conversation_id,
-      created_by,
+    SELECT conversation_id,
+      conversation_type,
       group_title,
       group_image_url,
       updated_at,
+      partner_name,
+      partner_profile_pic_url,
+      partner_connection_status,
+      partner_last_active,
       unread_messages_count,
       last_history_item
     FROM "UserConversationsListView"
     WHERE conversation_id = $1 AND client_user_id = $2
-    ORDER BY updated_at DESC
     `,
-    values: [group_conversation_id, client_user_id],
+    values: [conversation_id, client_user_id],
   }
 
   return stripNulls((await dbQuery(query)).rows[0])

@@ -10,6 +10,13 @@ export class ChatService {
     return await ChatModel.getAllUserConversations(client_user_id)
   }
 
+  async getConversation(conversation_id, client_user_id) {
+    return await ChatModel.getConversation(
+      conversation_id,
+      client_user_id
+    )
+  }
+
   async deleteMyConversation(client_user_id, conversation_id) {
     await ChatModel.deleteUserConversation(client_user_id, conversation_id)
   }

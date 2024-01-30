@@ -46,13 +46,6 @@ export class GroupChatService {
     return group_conversation_id
   }
 
-  async getGroupConversation(group_conversation_id, client_user_id) {
-    return await ChatModel.getGroupConversation(
-      group_conversation_id,
-      client_user_id
-    )
-  }
-
   /**
    * @param {object} param0
    * @param {object} param0.client

@@ -244,18 +244,18 @@ export const getMyConversationsController = async (req, res) => {
   }
 }
 
-export const getGroupConversationController = async (req, res) => {
+export const getConversationController = async (req, res) => {
   try {
-    const { group_conversation_id } = req.params
+    const { conversation_id } = req.params
 
     const { client_user_id } = req.auth
 
-    const groupConversation = await new GroupChatService().getGroupConversation(
-      group_conversation_id,
+    const conversation = await new ChatService().getConversation(
+      conversation_id,
       client_user_id
     )
 
-    res.status(200).send({ groupConversation })
+    res.status(200).send({ conversation })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
