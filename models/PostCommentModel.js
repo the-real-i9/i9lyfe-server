@@ -197,10 +197,9 @@ export const createReaction = async ({
     WITH pc_reaction AS (
       INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
       VALUES ($1, $2, $3) 
-      RETURNING id AS new_reaction_id
     ), reaction_notification AS (
-      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id, reaction_created_id)
-      VALUES ($1, $2, $4, $5, (SELECT new_reaction_id FROM pc_reaction)) 
+      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id)
+      VALUES ($1, $2, $4, $5) 
       RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
     )
     SELECT json_build_object(

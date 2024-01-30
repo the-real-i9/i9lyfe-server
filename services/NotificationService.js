@@ -24,13 +24,13 @@ export class NotificationService {
   notifyNewNotification() {
     NotificationService.sockClients
       .get(this.receiver_user_id)
-      ?.emit("new_notification")
+      ?.emit("new notification")
   }
 
   pushNotification(notificationData) {
     NotificationService.sockClients
       .get(this.receiver_user_id)
-      ?.emit("push_notification", notificationData)
+      ?.emit("push notification", notificationData)
     
     this.notifyNewNotification()
   }
@@ -41,7 +41,7 @@ export class NotificationService {
     NotificationService.sockClients
       .get(this.receiver_user_id)
       .emit(
-        "unread_notifications",
+        "unread notifications",
         count,
         `You have ${count} unread notifications.`
       )

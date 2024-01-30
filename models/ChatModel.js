@@ -533,28 +533,6 @@ export const deleteMessageReaction = async (message_id, reactor_user_id) => {
 }
 
 /**
- * @param {number} user_id
- * @param {"online" | "offline"} connection_status
- */
-export const updateUserConnectionStatus = async (
-  user_id,
-  connection_status
-) => {
-  /** @type {PgQueryConfig} */
-  const query = {
-    text: `
-    UPDATE "User" SET connection_status = $1, last_active = $2 WHERE user_id = $3`,
-    values: [
-      connection_status,
-      connection_status === "offline" ? new Date() : null,
-      user_id,
-    ],
-  }
-
-  await dbQuery(query)
-}
-
-/**
  * @param {number} blocking_user_id
  * @param {number} blocked_user_id
  */
