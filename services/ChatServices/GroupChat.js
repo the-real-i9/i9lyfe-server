@@ -38,7 +38,7 @@ export class GroupChatService {
       },
     })
 
-    ChatRealtimeService.createGroupConversation(
+    ChatRealtimeService.addParticipantsToGroup(
       participants.map(({ user_id }) => user_id),
       group_conversation_id
     )
@@ -70,6 +70,12 @@ export class GroupChatService {
     })
 
     /* Realtime action */
+    // add new participants to group
+    ChatRealtimeService.addParticipantsToGroup(
+      participants.map(({ user_id }) => user_id),
+      group_conversation_id
+    )
+
     // send activity log to participants
     new ChatRealtimeService().sendGroupActivityLog(group_conversation_id, {
       group_conversation_id,

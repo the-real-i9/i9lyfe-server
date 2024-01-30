@@ -37,18 +37,18 @@ export class ChatRealtimeService {
       ?.join(`convo-room-${dm_conversation_id}`)
   }
 
-  static async createGroupConversation(
+  static async addParticipantsToGroup(
     participantsUserIds,
     group_conversation_id
   ) {
-    for (const p_user_id of participantsUserIds) {
-      await ChatRealtimeService.sockClients
-        .get(p_user_id)
-        ?.join(`convo-room-${group_conversation_id}`)
-    }
+    for (const new_part_user_id of participantsUserIds) {
+      const userSock = ChatRealtimeService.sockClients.get(new_part_user_id)
 
-    // emit this event to all participants
-    new ChatRealtimeService().sendNewGroupConversation(group_conversation_id)
+      if (userSock) {
+        userSock.join(`convo-room-${group_conversation_id}`)
+        userSock.emit("new group", { group_conversation_id })
+      }
+    }
   }
 
   sendNewMessage(conversation_id, msgData) {
@@ -92,13 +92,4 @@ export class ChatRealtimeService {
       .to(`convo-room-${group_conversation_id}`)
       .emit("new group activity", groupActivityLogData)
   }
-
-  sendNewGroupConversation(group_conversation_id) {
-    ChatRealtimeService.io
-      .to(`convo-room-${group_conversation_id}`)
-      .emit("new group", { group_conversation_id })
-    // each user will update its conversations list manually,
-    // as it's too expensive to send customized data for every group participant
-  }
 }
-
