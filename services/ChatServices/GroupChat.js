@@ -210,7 +210,7 @@ export class GroupChatService {
   }) {
     const activity_info = {
       type: "admin_removed_from_admins",
-      dropped_by: client.username,
+      removed_by: client.username,
       ex_admin: admin_participant.username,
     }
 

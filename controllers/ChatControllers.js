@@ -159,7 +159,7 @@ export const makeParticipantAdminController = async (req, res) => {
       participant,
       group_conversation_id,
     })
-    res.sendStatus(201)
+    res.sendStatus(200)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -168,7 +168,7 @@ export const makeParticipantAdminController = async (req, res) => {
 
 export const removeParticipantFromAdminsController = async (req, res) => {
   try {
-    const { group_conversation_id, participant } = req.body
+    const { group_conversation_id, admin_participant } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -177,7 +177,7 @@ export const removeParticipantFromAdminsController = async (req, res) => {
         user_id: client_user_id,
         username: client_username,
       },
-      participant,
+      admin_participant,
       group_conversation_id,
     })
     res.sendStatus(200)

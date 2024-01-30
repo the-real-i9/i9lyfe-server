@@ -120,21 +120,19 @@ export const changeGroupInfo = async ({
   // the procedure will raise error if client is not group admin
   const query = {
     text: `
-    WITH check_admin AS (
-      CALL check_client_is_group_admin($1, $2)
-    ), convo_cte AS (
-      UPDATE "Conversation" SET info = jsonb_set(info, '{$4}', '$5')
-      WHERE conversation_id = $1
+    WITH convo_cte AS (
+      UPDATE "Conversation" SET info = jsonb_set(info, $4, $5)
+      WHERE id = $1
     ), activity_log AS (
-        INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
-        VALUES ($1, $3)
-    )`,
+      INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
+      VALUES ($1, $3)
+    ) SELECT check_client_is_group_admin($1, $2)`,
     values: [
       group_conversation_id,
       client_user_id,
       activity_info,
-      infoKey,
-      newInfoValue,
+      [infoKey],
+      JSON.stringify(newInfoValue),
     ],
   }
 
@@ -156,9 +154,7 @@ export const addParticipantsToGroup = async ({
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    WITH check_admin AS (
-      CALL check_client_is_group_admin($1, $2)
-    ), user_convo_cte AS (
+    WITH user_convo_cte AS (
       INSERT INTO "UserConversation" (user_id, conversation_id) 
       VALUES ${generateMultiRowInsertValuesParameters({
         rowsCount: participantsUserIds.length,
@@ -169,7 +165,7 @@ export const addParticipantsToGroup = async ({
     ), activity_log AS (
       INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
       VALUES ($1, $3)
-    )`,
+    ) SELECT check_client_is_group_admin($1, $2)`,
     values: [
       group_conversation_id,
       client_user_id,
@@ -192,16 +188,14 @@ export const removeParticipantFromGroup = async ({
 }) => {
   const query = {
     text: `
-    WITH check_admin AS (
-      CALL check_client_is_group_admin($1, $2)
-    ), user_convo_cte AS (
+    WITH user_convo_cte AS (
       UPDATE "UserConversation" 
       SET deleted = true
       WHERE conversation_id = $1 AND user_id = $3
     ), activity_log AS (
       INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info)
       VALUES ($1, $4)
-    )`,
+    ) SELECT check_client_is_group_admin($1, $2)`,
     values: [
       group_conversation_id,
       client_user_id,
@@ -269,16 +263,14 @@ export const changeGroupParticipantRole = async ({
 }) => {
   const query = {
     text: `
-    WITH check_admin AS (
-      CALL check_client_is_group_admin($1, $2)
-    ), group_mem_cte AS (
+    WITH  group_mem_cte AS (
       UPDATE "GroupMembership" 
       SET role = $4
       WHERE group_conversation_id = $1 AND user_id = $3
     ), activity_log AS (
       INSERT INTO "GroupConversationActivityLog" (group_conversation_id, activity_info) 
       VALUES ($1, $5)
-    )`,
+    ) SELECT check_client_is_group_admin($1, $2)`,
     values: [
       group_conversation_id,
       client_user_id,
