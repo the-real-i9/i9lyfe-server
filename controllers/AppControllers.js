@@ -1,14 +1,6 @@
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- */
-
 import { AppService } from "../services/AppServices.js"
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getExplorePostsController = async (req, res) => {
   try {
     const explorePosts = await new AppService().getExplorePosts(
@@ -22,10 +14,7 @@ export const getExplorePostsController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const searchAndFilterController = async (req, res) => {
   try {
     const { search = "", category = "all" } = req.query
@@ -43,10 +32,7 @@ export const searchAndFilterController = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+
 export const getHashtagPostsController = async (req, res) => {
   try {
     const { hashtag_name } = req.params

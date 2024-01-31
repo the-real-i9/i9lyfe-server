@@ -69,10 +69,7 @@ export const searchAndFilterPosts = async ({
         ELSE false
       END AS client_saved
     FROM "AllPostsView"
-    WHERE to_tsvector(description) @@ to_tsquery($1) ${
-      type !== "all" ? "AND type = $2" : ""
-    }
-    `,
+    WHERE (to_tsvector(description) @@ to_tsquery($1) AND type = $2) OR to_tsvector(description) @@ to_tsquery($1)`,
     values: [search, type, client_user_id],
   }
 
@@ -84,9 +81,9 @@ export const searchHashtags = async (search) => {
     text: `
     SELECT hashtag_name, COUNT(post_id) AS posts_count 
     FROM "PostCommentHashtag"
-    WHERE hashtag_name LIKE '%$1%'
+    WHERE hashtag_name LIKE $1
     GROUP BY hashtag_name`,
-    values: [search],
+    values: [`%${search}%`],
   }
 
   return (await dbQuery(query)).rows
