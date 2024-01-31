@@ -133,7 +133,7 @@ export const getHashtagPosts = async (hashtag_name, client_user_id) => {
         ELSE false
       END AS client_saved
     FROM "AllPostsView" apv
-    INNER JOIN "PostCommentHashtag" pch USING post_id
+    INNER JOIN "PostCommentHashtag" pch ON pch.post_id = apv.post_id
     WHERE pch.hashtag_name = $1
     `,
     values: [hashtag_name, client_user_id],
