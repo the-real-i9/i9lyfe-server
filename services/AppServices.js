@@ -8,17 +8,17 @@ export class AppService {
   /**
    * @param {object} param0
    * @param {string} param0.search
-   * @param {"all" | "photos" | "videos" | "reels" | "stories" | "hashtags"} param0.category
+   * @param {"all" | "users" | "photos" | "videos" | "reels" | "stories" | "hashtags"} param0.category
    */
   async searchAndFilter({ search, category, client_user_id }) {
-    if (category !== "hashtags") {
-      return await AppModel.searchAndFilterPosts({
-        search,
-        type: category,
-        client_user_id,
-      })
-    }
-    return await AppModel.searchHashtags(search)
+    if (category === "hashtags") return await AppModel.searchHashtags(search)
+    if (category === "users") return await AppModel.searchUsers(search)
+
+    return await AppModel.searchAndFilterPosts({
+      search,
+      type: category,
+      client_user_id,
+    })
   }
 
   async getHashtagPosts(hashtag_name, client_user_id) {
