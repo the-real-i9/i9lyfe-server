@@ -90,13 +90,16 @@ export const createGroupConversation = async ({
   return (await dbQuery(query)).rows[0].group_conversation_id
 }
 
-export const deleteUserConversation = async (client_user_id, conversation_id) => {
+export const deleteUserConversation = async (
+  client_user_id,
+  conversation_id
+) => {
   const query = {
     text: `
     UPDATE "UserConversation" 
     SET deleted = true
     WHERE user_id = $1 AND conversation_id = $2`,
-    values: [client_user_id, conversation_id]
+    values: [client_user_id, conversation_id],
   }
 
   await dbQuery(query)
@@ -465,7 +468,7 @@ export const acknowledgeMessageDelivered = async (user_id, message_id) => {
     SELECT is_delivered FROM msg`,
     values: [user_id, message_id],
   }
-  
+
   return (await dbQuery(query)).rows[0]?.is_delivered
 }
 
@@ -555,7 +558,7 @@ export const createBlockedUser = async (blocking_user_id, blocked_user_id) => {
  */
 export const deleteBlockedUser = async (blocking_user_id, blocked_user_id) => {
   const query = {
-    text: `DELETE FROM "BlockedUser" WHERE blocking_user_id = $1 AND blocked_user_id = $2`,
+    text: 'DELETE FROM "BlockedUser" WHERE blocking_user_id = $1 AND blocked_user_id = $2',
     values: [blocking_user_id, blocked_user_id],
   }
 

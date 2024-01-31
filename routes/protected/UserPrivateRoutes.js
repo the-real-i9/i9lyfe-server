@@ -57,5 +57,4 @@ router.get("/saved_posts", getUserSavedPostsController)
 // GET user notifications
 router.get("/my_notifications", getUserNotificationsController)
 
-
 export default router

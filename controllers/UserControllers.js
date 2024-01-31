@@ -16,7 +16,6 @@ export const followUserController = async (req, res) => {
   }
 }
 
-
 export const unfollowUserController = async (req, res) => {
   try {
     const { followee_user_id } = req.params
@@ -31,7 +30,6 @@ export const unfollowUserController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const updateUserProfileController = async (req, res) => {
   try {
@@ -56,7 +54,9 @@ export const updateUserConnectionStatusController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await new UserService(client_user_id).updateConnectionStatus(new_connection_status)
+    await new UserService(client_user_id).updateConnectionStatus(
+      new_connection_status
+    )
 
     res.sendStatus(200)
   } catch (error) {
@@ -80,8 +80,6 @@ export const readUserNotificationController = async (req, res) => {
   }
 }
 
-
-
 export const uploadProfilePictureController = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
@@ -92,7 +90,6 @@ export const uploadProfilePictureController = async (req, res) => {
 }
 
 /* GETs */
-
 
 export const getUserProfileController = async (req, res) => {
   try {
@@ -109,7 +106,6 @@ export const getUserProfileController = async (req, res) => {
   }
 }
 
-
 export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
@@ -124,7 +120,6 @@ export const getUserFollowersController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const getUserFollowingController = async (req, res) => {
   try {
@@ -141,7 +136,6 @@ export const getUserFollowingController = async (req, res) => {
   }
 }
 
-
 export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
@@ -155,7 +149,6 @@ export const getUserPostsController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const getUserMentionedPostsController = async (req, res) => {
   try {
@@ -172,7 +165,6 @@ export const getUserMentionedPostsController = async (req, res) => {
   }
 }
 
-
 export const getUserReactedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
@@ -186,7 +178,6 @@ export const getUserReactedPostsController = async (req, res) => {
   }
 }
 
-
 export const getUserSavedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
@@ -199,7 +190,6 @@ export const getUserSavedPostsController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const getUserNotificationsController = async (req, res) => {
   try {

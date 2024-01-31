@@ -4,15 +4,6 @@ import {
   SignupEmailConfirmationStrategy,
 } from "../../services/EmailConfirmationService.js"
 
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- */
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const signupController = async (req, res) => {
   const { stage } = req.query
 
@@ -24,10 +15,6 @@ export const signupController = async (req, res) => {
   stageHandlers[stage](req, res)
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 const newAccountRequestHandler = async (req, res) => {
   try {
     const response = await new EmailConfirmationService(
@@ -44,10 +31,6 @@ const newAccountRequestHandler = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 const emailVerificationHandler = async (req, res) => {
   try {
     const response = await new EmailConfirmationService(
@@ -65,10 +48,6 @@ const emailVerificationHandler = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 const userRegistrationHandler = async (req, res) => {
   try {
     const { email } = req.session.email_verification_data
