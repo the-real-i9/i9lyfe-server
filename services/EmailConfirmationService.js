@@ -67,7 +67,7 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
       req.session.email_verification_data
     const { code: userInputCode } = req.body
 
-    if (!tokensMatch(verificationCode, userInputCode)) {
+    if (!tokensMatch(Number(verificationCode), Number(userInputCode))) {
       return {
         ok: false,
         err: {
