@@ -17,7 +17,7 @@ export const signupProgressValidation = (req, res, next) => {
 
   if (stage === "user_registration") rejectUnconfirmedEmail(res, req.session.email_verification_data.verified)
 
-  next()
+  return next()
 }
 
 /**
