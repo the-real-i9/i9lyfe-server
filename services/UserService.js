@@ -7,7 +7,7 @@ export class UserService {
   }
 
   async getClientUser() {
-    return await UM.getUserById(this.client_user_id, "id username, email, name, profile_pic_url, connection_status")
+    return await UM.getUserById(this.client_user_id, "id username email name profile_pic_url connection_status")
   }
 
   async follow(to_follow_user_id) {
