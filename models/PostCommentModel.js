@@ -326,7 +326,7 @@ export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
         'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
-      ) AS owner_user,
+      ) AS owner,
       post_id,
       type,
       media_urls,
@@ -346,7 +346,8 @@ export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
       CASE 
         WHEN saver_user_id = $1 THEN true
         ELSE false
-      END AS client_saved
+      END AS client_saved,
+      created_at
     FROM "AllPostsView"
     INNER JOIN "Follow" follow ON follow.followee_user_id = owner_user_id
     WHERE follow.follower_user_id = $1

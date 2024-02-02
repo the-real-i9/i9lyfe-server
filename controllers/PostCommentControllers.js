@@ -221,13 +221,13 @@ export const getHomeFeedController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const homeFeed = await new PostService().getFeedPosts({
+    const homeFeedPosts = await new PostService().getFeedPosts({
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send({ homeFeed })
+    res.status(200).send({ homeFeedPosts })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
