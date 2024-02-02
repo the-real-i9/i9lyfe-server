@@ -36,6 +36,22 @@ export const createNewUser = async (fields) => {
 }
 
 /**
+ * @param {number} user_id
+ * @param {string} selectFields
+ */
+export const getUserById = async (user_id, selectFields) => {
+  /** @type {import("pg").QueryConfig} */
+  const query = {
+    text: `SELECT ${commaSeparateString(
+      selectFields
+    )} FROM "User" WHERE id = $1`,
+    values: [user_id],
+  }
+
+  return (await dbQuery(query)).rows[0]
+}
+
+/**
  * @param {string} email
  * @param {string} selectFields
  */

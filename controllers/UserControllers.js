@@ -1,8 +1,20 @@
 import { UserService } from "../services/UserService.js"
 
+export const getClientUserController = async (req, res) => {
+  try {
+    const { client_user_id } = req.auth
+
+    const clientUser = await new UserService(client_user_id).getClientUser()
+
+    res.status(200).send({ clientUser })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
 export const followUserController = async (req, res) => {
   try {
-    // always get user_id from the jwtToken req.auth
     const { to_follow_user_id } = req.body
 
     const { client_user_id } = req.auth
