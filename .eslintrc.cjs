@@ -22,7 +22,7 @@ module.exports = {
         "sourceType": "module"
     },
     "globals": {
-        "process": "readonly",
+        "process": "readonly"
     },
     "rules": {
         "no-empty": "off"

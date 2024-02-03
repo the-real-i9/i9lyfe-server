@@ -1,6 +1,8 @@
 import express from "express"
 import dotenv from "dotenv"
 import cors from "cors"
+import path, { dirname } from "path"
+import { fileURLToPath } from 'url';
 
 import AuthRoutes from "./routes/public/AuthRoutes.js"
 import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
@@ -19,7 +21,11 @@ app.use(cors({
   credentials: true,
 }))
 
-app.use(express.json())
+const __dirname = dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, "static")))
+
+app.use(express.json({ limit: "10mb" }))
+
 
 app.use("/api/auth", AuthRoutes)
 

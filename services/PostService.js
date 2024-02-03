@@ -25,23 +25,19 @@ export class PostService {
     try {
       await dbClient.query("BEGIN")
 
-      const postData = {
-        ...(await createNewPost(
-          {
-            client_user_id,
-            media_urls,
-            type,
-            description,
-          },
-          dbClient
-        )),
-        reactions_count: 0,
-        comments_count: 0,
-        reposts_count: 0,
-      }
+      const post_id = await createNewPost(
+        {
+          client_user_id,
+          media_urls,
+          type,
+          description,
+        },
+        dbClient
+      )
+      
 
       await new PostCommentService(
-        new Post(postData.post_id, client_user_id)
+        new Post(post_id, client_user_id)
       ).handleMentionsAndHashtags(
         {
           content_text: description,
@@ -50,10 +46,12 @@ export class PostService {
         dbClient
       )
 
-      dbClient.query("COMMIT")
+      await dbClient.query("COMMIT")
+
+      const postData = await this.getPost(post_id, client_user_id)
 
       /* Realtime new post */
-      new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
+      // new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
 
       return postData
     } catch (error) {

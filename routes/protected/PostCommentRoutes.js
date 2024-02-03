@@ -3,6 +3,7 @@ import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import * as PCC from "../../controllers/PostCommentControllers.js"
+import { uploadPostFiles } from "../../middlewares/appMiddlewares.js"
 
 dotenv.config()
 
@@ -21,8 +22,10 @@ router.use(
     }
   }
 )
+
+
 /* ====== POST ====== */
-router.post("/new_post", PCC.createNewPostController)
+router.post("/new_post", uploadPostFiles, PCC.createNewPostController)
 router.get("/home_feed", PCC.getHomeFeedController)
 router.get("/posts/:post_id", PCC.getPostController)
 router.delete("/posts/:post_id", PCC.deletePostController)

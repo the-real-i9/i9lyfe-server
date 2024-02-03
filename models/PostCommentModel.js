@@ -20,28 +20,14 @@ export const createNewPost = async (
 ) => {
   const query = {
     text: `
-    WITH post AS (
       INSERT INTO "Post" (user_id, media_urls, type, description) 
       VALUES ($1, $2, $3, $4) 
-      RETURNING id, user_id, media_urls, type, description
-    )
-    SELECT post.id AS post_id,
-      media_urls,
-      type,
-      description,
-      json_build_object(
-        'user_id', "user".id,
-        'username', "user".username,
-        'name', "user".name,
-        'profile_pic_url', "user".profile_pic_url,
-        'connection_status', "user".connection_status
-      ) AS owner_user
-    FROM post
-    INNER JOIN "User" "user" ON "user".id = post.user_id`,
+      RETURNING id AS post_id
+    `,
     values: [client_user_id, media_urls, type, description],
   }
 
-  return (await dbClient.query(query)).rows[0]
+  return (await dbClient.query(query)).rows[0].post_id
 }
 
 export const createRepost = async (original_post_id, reposter_user_id) => {
@@ -349,8 +335,8 @@ export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
       END AS client_saved,
       created_at
     FROM "AllPostsView"
-    INNER JOIN "Follow" follow ON follow.followee_user_id = owner_user_id
-    WHERE follow.follower_user_id = $1
+    LEFT JOIN "Follow" follow ON follow.followee_user_id = owner_user_id
+    WHERE follow.follower_user_id = $1 OR owner_user_id = $1
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3`,
     values: [client_user_id, limit, offset],
@@ -372,7 +358,7 @@ export const getPost = async (post_id, client_user_id) => {
         'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
-      ) AS owner_user,
+      ) AS owner,
       post_id,
       type,
       media_urls,
