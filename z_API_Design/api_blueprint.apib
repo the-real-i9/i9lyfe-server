@@ -1,2 +1,123 @@
-# Description
+FORMAT: 1A
+
+# i9lyfe - server
+
+A social media application sever implementing a wide range of social media interaction.
+
+# Group User Signup
+
+## New account account [/api/auth/signup?stage=new_account_request]
+
+### Request new account [POST]
+
+The email address with which you want to create an account
+
++ email (string) - A valid email address and not already used.
+
++ Request (application/json)
+    
+            {
+                "email": "example@gmail.com"
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "msg": "Enter the 6-digit code sent to {yourEmail}"
+            }
+
++ Response 400 (application/json)
+
+            {
+                "reason": "An account already exists with this email!"
+            }
+
+## Email verification [/api/auth/signup?stage=email_verification]
+
+### Verify your email [POST]
+
+Enter the 6-digit code sent to your email
+
++ code (number) - 6-digit code
+
++ Request (application/json)
+
+    + Headers
+
+            Cookie: connect.sid={encoded_session_id}
+    
+    + Body
+
+            {
+                "code": "123456"
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "msg": "Your email has been verified!"
+            }
+
++ Response 400 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "reason": "Incorrect/Expired verification code. Re-check your mail or Re-submit email."
+            }
+
+## User registration [/api/auth/signup?=user_registration]
+
+### Register user [POST]
+
+Fill in your profile information
+
++ **username** (string, required) - Username must be unique. Minimum of 3-digits.
++ **password** (string, required) - A strong password. Minimum of 8-digts.
++ **name** (string, required) - Display name
++ **birthday** (datestring, required) - Date of birth
++ **bio** (string, optional) -
+
++ Request (application/json)
+
+    + Headers
+
+            Cookie: connect.sid={encoded_session_id}
+    
+    + Body
+
+            {
+                "username": "mckenney",
+                "password": "fhunmytor",
+                "name": "Kehinde Ogunrinola",
+                "birthday": "2000-11-07",
+                "bio": "Something about you...",
+            }
+
++ Response 201 (application/json)
+
+            {
+                "msg": "Signup success. You're automatically logged in.",
+                "jwtToken": "${JWT_TOKEN}"
+            }
+
+# Group User Signin
+
+# Signin [/api/auth/signin]
 

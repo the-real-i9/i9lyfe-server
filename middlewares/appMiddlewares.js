@@ -31,8 +31,9 @@ export const uploadMessageFiles = (req, res, next) => {
 export const uploadPostFiles = async (req, res, next) => {
   try {
     const media_urls = await Promise.all(req.body.media_blobs.map(async (dataArray, i) => {
-      const filePath = path.resolve("static", "post_files", `${req.body.type}${i}-${Date.now()}.jpg`)
-      const fileUrl = `http://localhost:5000/post_files/${req.body.type}${i}-${Date.now()}.jpg`
+      const now = Date.now()
+      const filePath = path.resolve("static", "post_files", `${req.body.type}${i}-${now}.jpg`)
+      const fileUrl = `http://localhost:5000/post_files/${req.body.type}${i}-${now}.jpg`
 
       await fs.writeFile(filePath, Buffer.from(dataArray))
 

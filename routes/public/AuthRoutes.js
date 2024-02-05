@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 
 import {
   expressSessionMiddleware,
+  passwordResetProgressValidation,
   signupProgressValidation,
 } from "../../middlewares/authMiddlewares.js"
 import { signupController } from "../../controllers/authControllers/signupController.js"
@@ -35,6 +36,6 @@ router.post("/signup", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
 
-router.post("/forgot_password", passwordResetController)
+router.post("/forgot_password", passwordResetProgressValidation, passwordResetController)
 
 export default router

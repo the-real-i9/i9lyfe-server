@@ -2,8 +2,11 @@
 - Routes testing with Postman - 26th
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Cover images, Post and Message binary datas
-- Frontend preparation - 28th
-
+- Design document | API Blueprint
+- Architectural diagramming
+- Write all tests
+- ER diagram
+- DB Normalization
 
 
 ### Realtime Chat Events & Listeners
