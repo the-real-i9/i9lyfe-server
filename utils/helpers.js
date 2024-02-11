@@ -13,9 +13,8 @@ export const generateCodeWithExpiration = () => {
  * @param {string|Buffer|JSON} payload
  * @returns {string} A JWT Token
  */
-export const generateJwtToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" })
-}
+export const generateJwtToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET)
 
 /**
  * @param {number} compareToken

@@ -411,7 +411,7 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
         'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
-      ) AS owner_user,
+      ) AS owner,
       main_comment_id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
       comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
       attachment_url,
@@ -476,7 +476,7 @@ export const getAllReactorsToPost_OR_Comment = async ({
     SELECT "user".id AS user_id, 
       "user".profile_pic_url, 
       "user".username, 
-      "user".name,
+      "user".name AS display_name,
       CASE
         WHEN "client_follows".id IS NULL THEN false
         ELSE true
