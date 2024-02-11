@@ -9,6 +9,7 @@ import { Server } from 'socket.io'
 import { NotificationService } from './services/NotificationService.js'
 import { ChatRealtimeService } from './services/RealtimeServices/ChatRealtimeService.js'
 import { PostCommentRealtimeService } from './services/RealtimeServices/PostCommentRealtimeService.js'
+import { renewJwtToken } from './services/authServices.js'
 
 export const io = new Server(server)
 
@@ -25,6 +26,7 @@ io.on("connection", (socket) => {
   NotificationService.initRTC(io, socket)
   ChatRealtimeService.initRTC(io, socket)
   PostCommentRealtimeService.initRTC(io, socket)
+  renewJwtToken(socket)
 })
 
 server.listen(5000, 'localhost', () => {

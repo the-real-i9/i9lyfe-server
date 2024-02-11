@@ -25,20 +25,39 @@ export class PostCommentRealtimeService {
 
     /* To receive metrics update for post when in view */
     socket.on(
-      "subscribe to post-comment metrics update",
-      (post_or_comment_id) => {
+      "subscribe to post metrics update",
+      (post_id) => {
         socket.join(
-          `post-comment_${post_or_comment_id}_metrics_update_subscribers`
+          `post_${post_id}_metrics_update_subscribers`
         )
       }
     )
 
     /* To stop receiving metrics update for post when out of view */
     socket.on(
-      "unsubscribe from post-comment metrics update",
-      (post_or_comment_id) => {
+      "unsubscribe from post metrics update",
+      (post_id) => {
         socket.leave(
-          `post-comment_${post_or_comment_id}_metrics_update_subscribers`
+          `post_${post_id}_metrics_update_subscribers`
+        )
+      }
+    )
+
+    socket.on(
+      "subscribe to comment metrics update",
+      (comment_id) => {
+        socket.join(
+          `comment_${comment_id}_metrics_update_subscribers`
+        )
+      }
+    )
+
+    /* To stop receiving metrics update for post when out of view */
+    socket.on(
+      "unsubscribe from comment metrics update",
+      (comment_id) => {
+        socket.leave(
+          `comment_${comment_id}_metrics_update_subscribers`
         )
       }
     )
@@ -50,9 +69,14 @@ export class PostCommentRealtimeService {
       .emit("new post", newPostData)
   }
 
-  sendPostCommentMetricsUpdate(post_or_comment_id, data) {
+
+  /**
+   * @param {object} param0 
+   * @param {"post" | "comment"} param0.entity 
+   */
+  sendEntityMetricsUpdate({entity, entity_id, data}) {
     PostCommentRealtimeService.io
-      .to(`post-comment_${post_or_comment_id}_metrics_update_subscribers`)
-      .emit("latest post-comment metric", data)
+      .to(`${entity}_${entity_id}_metrics_update_subscribers`)
+      .emit(`latest ${entity} metric`, data)
   }
 }

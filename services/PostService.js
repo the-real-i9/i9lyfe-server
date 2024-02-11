@@ -34,7 +34,6 @@ export class PostService {
         },
         dbClient
       )
-      
 
       await new PostCommentService(
         new Post(post_id, client_user_id)
@@ -51,7 +50,7 @@ export class PostService {
       const postData = await this.getPost(post_id, client_user_id)
 
       /* Realtime new post */
-      // new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
+      new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
 
       return postData
     } catch (error) {
@@ -65,8 +64,6 @@ export class PostService {
   /* A repost is a hasOne relationship: Repost hasOne Post */
   async repostPost(reposter_user_id, post_id) {
     await createRepost(reposter_user_id, post_id)
-
-    /* Realtime: latestRepostsCount */
   }
 
   async getFeedPosts({ client_user_id, limit, offset }) {
@@ -78,22 +75,30 @@ export class PostService {
   }
 
   async savePost(post_id, client_user_id) {
-    const latestSavesCount = await savePost(post_id, client_user_id)
+    const currentSavesCount = await savePost(post_id, client_user_id)
 
-    /* Realtime: latestSavesCount */
-    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
+    /* Realtime: currentSavesCount */
+    new PostCommentRealtimeService().sendEntityMetricsUpdate({
+      entity: "post",
       post_id,
-      saves_count: latestSavesCount + 1,
+      data: {
+        post_id,
+        saves_count: currentSavesCount + 1,
+      },
     })
   }
-  
+
   async unsavePost(post_id, client_user_id) {
-    const latestSavesCount = await unsavePost(post_id, client_user_id)
-    
-    /* Realtime: latestSavesCount */
-    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(post_id, {
+    const currentSavesCount = await unsavePost(post_id, client_user_id)
+
+    /* Realtime: currentSavesCount */
+    new PostCommentRealtimeService().sendEntityMetricsUpdate({
+      entity: "post",
       post_id,
-      saves_count: latestSavesCount - 1,
+      data: {
+        post_id,
+        saves_count: currentSavesCount - 1,
+      },
     })
   }
 
@@ -103,7 +108,5 @@ export class PostService {
 
   async deleteRepost(reposted_post_id, client_user_id) {
     await deleteRepost(reposted_post_id, client_user_id)
-
-    /* Realtime: latestRepostsCount */
   }
 }

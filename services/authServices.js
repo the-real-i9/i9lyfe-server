@@ -111,3 +111,14 @@ export const passwordResetService = async (userEmail, newPassword) => {
     data: null,
   }
 }
+
+/**
+ * @param {import("socket.io").Socket} socket
+ */
+export const renewJwtToken = (socket) => {
+  const { client_user_id, client_username } = socket.jwt_payload
+
+  const newJwtToken = generateJwtToken({ client_user_id, client_username })
+
+  socket.emit("renewed jwt", newJwtToken)
+}

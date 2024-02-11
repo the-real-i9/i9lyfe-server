@@ -79,16 +79,16 @@ export const mapUsernamesToUserIds = async (usernames, dbClient) => {
 
 /**
  * @param {object} param0
- * @param {number} param0.post_or_comment_id
+ * @param {number} param0.entity_id
  * @param {number[]} param0.mentioned_user_ids
  * @param {number} param0.content_owner_user_id
- * @param {"post" | "comment"} param0.post_or_comment
+ * @param {"post" | "comment"} param0.entity
  * @param {PgPoolClient} dbClient
  */
 export const createMentions = async (
   {
-    post_or_comment,
-    post_or_comment_id,
+    entity,
+    entity_id,
     mentioned_user_ids,
     content_owner_user_id,
   },
@@ -98,38 +98,38 @@ export const createMentions = async (
   const query = {
     text: `
     WITH pc_mention AS (
-      INSERT INTO "PostCommentMention" (${post_or_comment}_id, user_id) 
+      INSERT INTO "PostCommentMention" (${entity}_id, user_id) 
       VALUES ${generateMultiRowInsertValuesParameters({
         rowsCount: mentioned_user_ids.length,
         columnsCount: 2,
       })}
     ), mention_notification AS (
-      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${post_or_comment}_id) 
+      INSERT INTO "Notification" (type, sender_user_id, receiver_user_id, ${entity}_id) 
       VALUES ${generateMultiRowInsertValuesParameters({
         rowsCount: mentioned_user_ids.length,
         columnsCount: 4,
         paramNumFrom: mentioned_user_ids.length * 2 + 1,
       })} 
-      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+      RETURNING type, sender_user_id, receiver_user_id, ${entity}_id
     )
     SELECT sender.id AS sender_user_id,
       mention_notification.receiver_user_id,
       sender.username AS sender_username,
       sender.profile_pic_url AS sender_profile_pic_url,
       mention_notification.type,
-      mention_notification.${post_or_comment}_id
+      mention_notification.${entity}_id
     FROM mention_notification
     INNER JOIN "User" sender ON sender.id = mention_notification.sender_user_id`,
     values: [
       ...mentioned_user_ids.map((mentioned_user_id) => [
-        post_or_comment_id,
+        entity_id,
         mentioned_user_id,
       ]),
       ...mentioned_user_ids.map((receiver_user_id) => [
         "mention",
         content_owner_user_id,
         receiver_user_id,
-        post_or_comment_id,
+        entity_id,
       ]),
     ].flat(),
   }
@@ -139,23 +139,23 @@ export const createMentions = async (
 
 /**
  * @param {object} param0
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id
+ * @param {"post" | "comment"} param0.entity
+ * @param {number} param0.entity_id
  * @param {string[]} param0.hashtag_names
  * @param {PgPoolClient} dbClient
  */
 export const createHashtags = async (
-  { post_or_comment, post_or_comment_id, hashtag_names },
+  { entity, entity_id, hashtag_names },
   dbClient
 ) => {
   const query = {
-    text: `INSERT INTO "PostCommentHashtag" (${post_or_comment}_id, hashtag_name) 
+    text: `INSERT INTO "PostCommentHashtag" (${entity}_id, hashtag_name) 
     VALUES ${generateMultiRowInsertValuesParameters({
       rowsCount: hashtag_names.length,
       columnsCount: 2,
     })}`,
     values: hashtag_names
-      .map((hashtag_name) => [post_or_comment_id, hashtag_name])
+      .map((hashtag_name) => [entity_id, hashtag_name])
       .flat(),
   }
 
@@ -166,27 +166,27 @@ export const createHashtags = async (
  * @param {object} param0
  * @param {number} param0.reactor_user_id
  * @param {number} param0.content_owner_user_id
- * @param {"post" | "comment"} param0.post_or_comment Post `id` or Comment `id`
- * @param {number} param0.post_or_comment_id
+ * @param {"post" | "comment"} param0.entity 
+ * @param {number} param0.entity_id Post `id` or Comment `id`
  * @param {number} param0.reaction_code_point
  */
 export const createReaction = async ({
   reactor_user_id,
   content_owner_user_id,
-  post_or_comment,
-  post_or_comment_id,
+  entity,
+  entity_id,
   reaction_code_point,
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: `
     WITH pc_reaction AS (
-      INSERT INTO "PostCommentReaction" (reactor_user_id, ${post_or_comment}_id, reaction_code_point) 
+      INSERT INTO "PostCommentReaction" (reactor_user_id, ${entity}_id, reaction_code_point) 
       VALUES ($1, $2, $3) 
     ), reaction_notification AS (
-      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id)
+      INSERT INTO "Notification" (sender_user_id, ${entity}_id, type, receiver_user_id)
       VALUES ($1, $2, $4, $5) 
-      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+      RETURNING type, sender_user_id, receiver_user_id, ${entity}_id
     )
     SELECT json_build_object(
       'notifData', (SELECT json_build_object(
@@ -195,24 +195,24 @@ export const createReaction = async ({
           'sender_profile_pic_url', sender.profile_pic_url,
           'reciver_user_id', reaction_notification.receiver_user_id,
           'type', reaction_notification.type,
-          '.${post_or_comment}_id', reaction_notification.${post_or_comment}_id
+          '${entity}_id', reaction_notification.${entity}_id
         )
         FROM reaction_notification
         INNER JOIN "User" sender ON sender.id = reaction_notification.sender_user_id),
-      'latestReactionsCount',  ${
-        post_or_comment === "post"
+      'currentReactionsCount',  ${
+        entity === "post"
           ? `(SELECT reactions_count 
               FROM "AllPostsView" 
               WHERE post_id = $2)`
           : `(SELECT reactions_count 
-              FROM "CommentsOnPost_RepliesToCommentView" 
+              FROM "AllCommentsView" 
               WHERE main_comment_id = $2)`
       } 
     ) AS data
     `,
     values: [
       reactor_user_id,
-      post_or_comment_id,
+      entity_id,
       reaction_code_point,
       "reaction",
       content_owner_user_id,
@@ -229,8 +229,8 @@ export const createReaction = async ({
  * @param {number} param0.content_owner_user_id
  * @param {string} param0.comment_text
  * @param {string} param0.attachment_url
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id
+ * @param {"post" | "comment"} param0.entity
+ * @param {number} param0.entity_id
  * @param {PgPoolClient} dbClient
  */
 export const createComment = async (
@@ -239,8 +239,8 @@ export const createComment = async (
     content_owner_user_id,
     comment_text,
     attachment_url,
-    post_or_comment,
-    post_or_comment_id,
+    entity,
+    entity_id,
   },
   dbClient
 ) => {
@@ -248,44 +248,32 @@ export const createComment = async (
   const query = {
     text: `
     WITH comment_cte AS (
-      INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${post_or_comment}_id)
+      INSERT INTO "Comment" (commenter_user_id, comment_text, attachment_url, ${entity}_id)
       VALUES ($1, $2, $3, $4) 
-      RETURNING id AS new_comment_id, commenter_user_id${
-        post_or_comment === "comment" ? " AS replier_user_id" : ""
-      }, comment_text${
-      post_or_comment === "comment" ? " AS reply_text" : ""
-    }, attachment_url
+      RETURNING id AS new_comment_id, commenter_user_id, comment_text, attachment_url
     ), comment_notification AS (
-      INSERT INTO "Notification" (sender_user_id, ${post_or_comment}_id, type, receiver_user_id, comment_created_id)
+      INSERT INTO "Notification" (sender_user_id, ${entity}_id, type, receiver_user_id, comment_created_id)
       VALUES ($1, $4, $5, $6, (SELECT new_comment_id FROM comment_cte)) 
-      RETURNING type, sender_user_id, receiver_user_id, ${post_or_comment}_id
+      RETURNING type, sender_user_id, receiver_user_id, ${entity}_id
     )
     SELECT json_build_object(
-      'commentData', (SELECT json_build_object(
-          'id', new_comment_id,
-          ${
-            post_or_comment === "comment"
-              ? `'replier_user_id', replier_user_id, 'reply_text', reply_text,`
-              : `'commenter_user_id', commenter_user_id, 'comment_text', comment_text,`
-          }
-          'attachment_url', attachment_url)
-        FROM comment_cte),
+      'comment_id', (SELECT new_comment_id FROM comment_cte),
       'notifData', (SELECT json_build_object(
           'sender_user_id', sender.id,
           'receiver_user_id', comment_notification.receiver_user_id,
           'sender_username', sender.username,
           'sender_profile_pic_url', sender.profile_pic_url,
           'type', comment_notification.type,
-          '${post_or_comment}_id', comment_notification.${post_or_comment}_id)
+          '${entity}_id', comment_notification.${entity}_id)
         FROM comment_notification
         INNER JOIN "User" sender ON sender.id = comment_notification.sender_user_id),
-      'latestCommentsRepliesCount', ${
-        post_or_comment === "post"
+      'currentCommentsCount', ${
+        entity === "post"
           ? `(SELECT comments_count 
               FROM "AllPostsView" 
               WHERE post_id = $4)`
-          : `(SELECT replies_count 
-              FROM "CommentsOnPost_RepliesToCommentView" 
+          : `(SELECT comments_count 
+              FROM "AllCommentsView" 
               WHERE main_comment_id = $4)`
       }
     ) AS data`,
@@ -293,7 +281,7 @@ export const createComment = async (
       commenter_user_id,
       comment_text,
       attachment_url,
-      post_or_comment_id,
+      entity_id,
       "comment",
       content_owner_user_id,
     ],
@@ -390,16 +378,16 @@ export const getPost = async (post_id, client_user_id) => {
 
 /**
  * @param {object} param0
- * @param {"post" | "comment"} param0.post_or_comment
- * @param {number} param0.post_or_comment_id
+ * @param {"post" | "comment"} param0.entity
+ * @param {number} param0.entity_id
  * @param {number} param0.client_user_id
  * @param {number} param0.limit
  * @param {number} param0.offset
  * @returns
  */
-export const getAllCommentsOnPost_OR_RepliesToComment = async ({
-  post_or_comment,
-  post_or_comment_id,
+export const getComments = async ({
+  entity,
+  entity_id,
   client_user_id,
   limit,
   offset,
@@ -412,8 +400,8 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
       ) AS owner,
-      main_comment_id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-      comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+      main_comment_id AS ${entity === "post" ? "comment" : "reply"}_id,
+      comment_text AS ${entity === "post" ? "comment" : "reply"}_text,
       attachment_url,
       reactions_count,
       replies_count,
@@ -421,20 +409,19 @@ export const getAllCommentsOnPost_OR_RepliesToComment = async ({
         WHEN reactor_user_id = $2 THEN reaction_code_point 
         ELSE NULL
       END AS client_reaction
-    FROM "CommentsOnPost_RepliesToCommentView"
-    WHERE owner_${post_or_comment}_id = $1 
+    FROM "AllCommentsView"
+    WHERE owner_${entity}_id = $1 
     ORDER BY created_at DESC
     LIMIT $3 OFFSET $4
     `,
-    values: [post_or_comment_id, client_user_id, limit, offset],
+    values: [entity_id, client_user_id, limit, offset],
   }
 
   return (await dbQuery(query)).rows
 }
 
-export const getCommentOnPost_OR_ReplyToComment = async ({
-  post_or_comment,
-  comment_or_reply_id,
+export const getComment = async ({
+  comment_id,
   client_user_id,
 }) => {
   /** @type {PgQueryConfig} */
@@ -445,8 +432,8 @@ export const getCommentOnPost_OR_ReplyToComment = async ({
       'username', owner_username,
       'profile_pic_url', owner_profile_pic_url
       ) AS owner_user,
-      main_comment_id AS ${post_or_comment === "post" ? "comment" : "reply"}_id,
-      comment_text AS ${post_or_comment === "post" ? "comment" : "reply"}_text,
+      main_comment_id AS comment_id,
+      comment_text,
       attachment_url,
       reactions_count,
       replies_count,
@@ -454,18 +441,18 @@ export const getCommentOnPost_OR_ReplyToComment = async ({
         WHEN reactor_user_id = $2 THEN reaction_code_point 
         ELSE null
       END AS client_reaction
-    FROM "CommentsOnPost_RepliesToCommentView"
+    FROM "AllCommentsView"
     WHERE main_comment_id = $1
     `,
-    values: [comment_or_reply_id, client_user_id],
+    values: [comment_id, client_user_id],
   }
 
   return (await dbQuery(query)).rows[0]
 }
 
-export const getAllReactorsToPost_OR_Comment = async ({
-  post_or_comment,
-  post_or_comment_id,
+export const getReactors = async ({
+  entity,
+  entity_id,
   client_user_id,
   limit,
   offset,
@@ -485,18 +472,18 @@ export const getAllReactorsToPost_OR_Comment = async ({
     INNER JOIN "User" "user" ON "reaction".reactor_user_id = "user".id 
     LEFT JOIN "Follow" "client_follows" 
       ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $2
-    WHERE "reaction".${post_or_comment}_id = $1
+    WHERE "reaction".${entity}_id = $1
     ORDER BY "reaction".created_at DESC
     LIMIT $3 OFFSET $4`,
-    values: [post_or_comment_id, client_user_id, limit, offset],
+    values: [entity_id, client_user_id, limit, offset],
   }
 
   return (await dbQuery(query)).rows
 }
 
-export const getAllReactorsWithReactionToPost_OR_Comment = async ({
-  post_or_comment,
-  post_or_comment_id,
+export const getReactorsWithReaction = async ({
+  entity,
+  entity_id,
   reaction_code_point,
   client_user_id,
   limit,
@@ -517,11 +504,11 @@ export const getAllReactorsWithReactionToPost_OR_Comment = async ({
     INNER JOIN "User" "user" ON "reaction".reactor_user_id = "user".id 
     LEFT JOIN "Follow" "client_follows" 
       ON "client_follows".followee_user_id = "user".id AND "client_follows".follower_user_id = $3
-    WHERE "reaction".${post_or_comment}_id = $1 AND "reaction".reaction_code_point = $2
+    WHERE "reaction".${entity}_id = $1 AND "reaction".reaction_code_point = $2
     ORDER BY "reaction".created_at DESC
     LIMIT $4 OFFSET $5`,
     values: [
-      post_or_comment_id,
+      entity_id,
       reaction_code_point,
       client_user_id,
       limit,
@@ -544,51 +531,68 @@ export const deletePost = async (post_id, user_id) => {
 
 /**
  * @param {object} param0
- * @param {"post" | "comment"} post_or_comment
- * @param {number} post_or_comment_id
+ * @param {"post" | "comment"} entity
+ * @param {number} entity_id
  * @param {number} reactor_user_id
  */
-export const removeReactionToPost_OR_Comment = async ({
-  post_or_comment,
-  post_or_comment_id,
+export const removeReaction = async ({
+  entity,
+  entity_id,
   reactor_user_id,
 }) => {
   const query = {
     text: `
     WITH pc_reaction AS (
-      DELETE FROM "PostCommentReaction" WHERE ${post_or_comment}_id = $1 AND reactor_user_id = $2
+      DELETE FROM "PostCommentReaction" WHERE ${entity}_id = $1 AND reactor_user_id = $2
     )
     ${
-      post_or_comment === "post"
+      entity === "post"
         ? `
       SELECT reactions_count 
       FROM "AllPostsView" 
       WHERE post_id = $1`
         : `
       SELECT reactions_count 
-      FROM "CommentsOnPost_RepliesToCommentView" 
+      FROM "AllCommentsView" 
       WHERE main_comment_id = $1`
     }`,
-    values: [post_or_comment_id, reactor_user_id],
+    values: [entity_id, reactor_user_id],
   }
 
   return (await dbQuery(query)).rows[0].reactions_count
 }
 
+
 /**
- * @param {number} comment_or_reply_id
- * @param {number} commenter_or_replier_user_id
+ * @param {object} param0 
+ * @param {"post" | "comment"} param0.owner_entity 
  */
-export const deleteCommentOnPost_OR_ReplyToComment = async (
-  comment_or_reply_id,
-  commenter_or_replier_user_id
-) => {
+export const deleteComment = async ({
+  entity,
+  entity_id,
+  comment_id,
+}) => {
   const query = {
-    text: `DELETE FROM "Comment" WHERE id = $1 AND commenter_user_id = $2`,
-    values: [comment_or_reply_id, commenter_or_replier_user_id],
+    text: `
+    WITH comment_cte (
+      DELETE FROM "Comment" WHERE id = $1
+    )
+    ${
+      entity === "post"
+        ? `
+      SELECT comments_count 
+      FROM "AllPostsView" 
+      WHERE post_id = $2`
+        : `
+      SELECT comments_count 
+      FROM "AllCommentsView" 
+      WHERE main_comment_id = $2`
+    }
+    `,
+    values: [comment_id, entity_id],
   }
 
-  await dbQuery(query)
+  return (await dbQuery(query)).rows[0].comments_count
 }
 
 export const deleteRepost = async (reposted_post_id, reposter_user_id) => {

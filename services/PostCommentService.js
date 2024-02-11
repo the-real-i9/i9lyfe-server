@@ -1,22 +1,10 @@
 import { getDBClient } from "../models/db.js"
-import {
-  createComment,
-  createHashtags,
-  createMentions,
-  createReaction,
-  deleteCommentOnPost_OR_ReplyToComment,
-  getAllCommentsOnPost_OR_RepliesToComment,
-  getAllReactorsToPost_OR_Comment,
-  getAllReactorsWithReactionToPost_OR_Comment,
-  getCommentOnPost_OR_ReplyToComment,
-  mapUsernamesToUserIds,
-  removeReactionToPost_OR_Comment,
-} from "../models/PostCommentModel.js"
+import * as PCM from "../models/PostCommentModel.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./NotificationService.js"
 import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
 
-class PostORComment {
+class Entity {
   constructor(id, user_id) {
     /** @type {number} */
     this.id = id
@@ -34,7 +22,7 @@ class PostORComment {
   }
 }
 
-export class Post extends PostORComment {
+export class Post extends Entity {
   /**
    * @param {number} user_id
    * @param {number} id
@@ -54,7 +42,7 @@ export class Post extends PostORComment {
   }
 }
 
-export class Comment extends PostORComment {
+export class Comment extends Entity {
   /**
    * @param {number} user_id
    * @param {number} id
@@ -75,10 +63,10 @@ export class Comment extends PostORComment {
 }
 
 export class PostCommentService {
-  /** @param {Post | Comment} postOrComment  */
-  constructor(postOrComment) {
-    /** @type {PostORComment} */
-    this.postOrComment = postOrComment
+  /** @param {Post | Comment} entity  */
+  constructor(entity) {
+    /** @type {Entity} */
+    this.entity = entity
   }
   /**
    * @param {object} param0
@@ -90,91 +78,132 @@ export class PostCommentService {
     { content_text, content_owner_user_id },
     dbClient
   ) {
+    const hashtags = extractHashtags(content_text)
+    const mentions = extractMentions(content_text)
     await Promise.all([
-      this.#handleHashtags(content_text, dbClient),
-      this.#handleMentions({ content_text, content_owner_user_id }, dbClient),
+      this.#handleHashtags(hashtags, dbClient),
+      this.#handleMentions({ mentions, content_owner_user_id }, dbClient),
     ])
   }
 
   /**
-   * @param {string} content_text
+   * @param {string[]} hashtags
    * @param {import("pg").PoolClient} dbClient
    */
-  async #handleHashtags(content_text, dbClient) {
-    const hashtags = extractHashtags(content_text)
-    if (hashtags) {
-      await createHashtags(
-        {
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-          hashtag_names: hashtags,
-        },
-        dbClient
-      )
-    }
+  async #handleHashtags(hashtags, dbClient) {
+    if (!hashtags) return
+    await PCM.createHashtags(
+      {
+        entity: this.entity.which(),
+        entity_id: this.entity.id,
+        hashtag_names: hashtags,
+      },
+      dbClient
+    )
   }
 
   /**
    * @param {object} param0
-   * @param {string} param0.content_text
+   * @param {string[]} param0.mentions
    * @param {number} param0.content_owner_user_id
    * @param {import("pg").PoolClient} dbClient
    */
-  async #handleMentions({ content_text, content_owner_user_id }, dbClient) {
-    const mentions = extractMentions(content_text)
+  async #handleMentions({ mentions, content_owner_user_id }, dbClient) {
+    if (!mentions) return
+    const mentioned_user_ids = await PCM.mapUsernamesToUserIds(mentions, dbClient)
+    const mentionNotifications = await PCM.createMentions(
+      {
+        entity: this.entity.which(),
+        entity_id: this.entity.id,
+        mentioned_user_ids: mentioned_user_ids.filter(
+          (id) => id !== content_owner_user_id
+        ),
+        content_owner_user_id,
+      },
+      dbClient
+    )
 
-    if (mentions) {
-      const mentioned_user_ids = await mapUsernamesToUserIds(mentions, dbClient)
-      const mentionNotifications = await createMentions(
-        {
-          post_or_comment: this.postOrComment.which(),
-          post_or_comment_id: this.postOrComment.id,
-          mentioned_user_ids: mentioned_user_ids.filter(
-            (id) => id !== content_owner_user_id
-          ),
-          content_owner_user_id,
-        },
-        dbClient
-      )
-
-      mentionNotifications.forEach((notifData) => {
-        const { receiver_user_id, ...restData } = notifData
-
-        new NotificationService(receiver_user_id).pushNotification({
-          ...restData,
-          in: this.postOrComment.which(),
-        })
-      })
-    }
-  }
-
-  async addReaction(reactor_user_id, reaction_code_point) {
-    const { notifData, latestReactionsCount } = await createReaction({
-      reactor_user_id,
-      post_or_comment: this.postOrComment.which(),
-      post_or_comment_id: this.postOrComment.id,
-      content_owner_user_id: this.postOrComment.user_id,
-      reaction_code_point,
-    })
-
-    if (notifData) {
+    mentionNotifications.forEach((notifData) => {
       const { receiver_user_id, ...restData } = notifData
 
       new NotificationService(receiver_user_id).pushNotification({
         ...restData,
-        to: this.postOrComment.which(),
+        in: this.entity.which(),
       })
-    }
+    })
+  }
 
-    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
-      this.postOrComment.id,
-      // we add manually because, this data was returned from the same query,
-      // which is yet to update the table, since the internal transaction hasn't committed
-      {
-        [`${this.postOrComment.which()}_id`]: this.postOrComment.id,
-        reactions_count: latestReactionsCount + 1,
-      }
+  async #createReaction(reactor_user_id, reaction_code_point) {
+    const data = await PCM.createReaction({
+      reactor_user_id,
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
+      content_owner_user_id: this.entity.user_id,
+      reaction_code_point,
+    })
+
+    return data
+  }
+
+  #sendReactionPushNotification(notifData) {
+    if (!notifData) return
+    const { receiver_user_id, ...restData } = notifData
+
+    new NotificationService(receiver_user_id).pushNotification({
+      ...restData,
+      to: this.entity.which(),
+    })
+  }
+
+  #sendLatestEntityMetric(metricKey, metricValue) {
+    new PostCommentRealtimeService().sendEntityMetricsUpdate({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
+      data: {
+        [`${this.entity.which()}_id`]: this.entity.id,
+        metricKey: metricValue,
+      },
+    })
+  }
+
+  async addReaction(reactor_user_id, reaction_code_point) {
+    const data = await this.#createReaction(
+      reactor_user_id,
+      reaction_code_point
     )
+    this.#sendReactionPushNotification(data.notifData)
+    this.#sendLatestEntityMetric(
+      "reactions_count",
+      data.currentReactionsCount + 1
+    )
+  }
+
+  async #createComment(
+    { commenter_user_id, comment_text, attachment_url },
+    dbClient
+  ) {
+    const data = await PCM.createComment(
+      {
+        commenter_user_id,
+        comment_text,
+        attachment_url,
+        entity: this.entity.which(),
+        entity_id: this.entity.id,
+        content_owner_user_id: this.entity.user_id,
+      },
+      dbClient
+    )
+
+    return data
+  }
+
+  #sendCommentPushNotification(notifData) {
+    if (!notifData) return
+    const { receiver_user_id, ...restData } = notifData
+    new NotificationService(receiver_user_id).pushNotification({
+      ...restData,
+      on: this.entity.which(),
+    })
   }
 
   async addComment({ commenter_user_id, comment_text, attachment_url }) {
@@ -182,21 +211,10 @@ export class PostCommentService {
     try {
       await dbClient.query("BEGIN")
 
-      const { commentData, notifData, latestCommentsRepliesCount } = {
-        ...(await createComment(
-          {
-            commenter_user_id,
-            comment_text,
-            attachment_url,
-            post_or_comment: this.postOrComment.which(),
-            post_or_comment_id: this.postOrComment.id,
-            content_owner_user_id: this.postOrComment.user_id,
-          },
-          dbClient
-        )),
-        reactions_count: 0,
-        replies_count: 0,
-      }
+      const data = await this.#createComment(
+        { commenter_user_id, comment_text, attachment_url },
+        dbClient
+      )
 
       await this.handleMentionsAndHashtags(
         {
@@ -205,20 +223,18 @@ export class PostCommentService {
         },
         dbClient
       )
+      await dbClient.query("COMMIT")
 
-      dbClient.query("COMMIT")
+      this.#sendCommentPushNotification(data.notifData)
 
-      if (notifData) {
-        const { receiver_user_id, ...restData } = notifData
-        new NotificationService(receiver_user_id).pushNotification({
-          ...restData,
-          on: this.postOrComment.which(),
-        })
-      }
+      this.#sendLatestEntityMetric(
+        "comments_count",
+        data.currentCommentsCount + 1
+      )
 
-      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
-        this.postOrComment.id,
-        { post_id: this.postOrComment.id,  comments_count: latestCommentsRepliesCount + 1 }
+      const commentData = await this.getComment(
+        data.comment_id,
+        commenter_user_id
       )
 
       return commentData
@@ -230,102 +246,42 @@ export class PostCommentService {
     }
   }
 
-  async addReply({ replier_user_id, reply_text, attachment_url }) {
-    const dbClient = await getDBClient()
-    try {
-      await dbClient.query("BEGIN")
-
-      // Note: A Reply is also a form of Coment. It's just a  comment that belongs to a Comment
-      const {
-        commentData: replyData,
-        notifData,
-        latestCommentsRepliesCount,
-      } = {
-        ...(await createComment(
-          {
-            commenter_user_id: replier_user_id,
-            comment_text: reply_text,
-            attachment_url,
-            post_or_comment: this.postOrComment.which(),
-            post_or_comment_id: this.postOrComment.id,
-            content_owner_user_id: this.postOrComment.user_id,
-          },
-          dbClient
-        )),
-        reactions_count: 0,
-        replies_count: 0,
-      }
-
-      await this.handleMentionsAndHashtags(
-        {
-          content_text: reply_text,
-          content_owner_user_id: replier_user_id,
-        },
-        dbClient
-      )
-
-      dbClient.query("COMMIT")
-
-      if (notifData) {
-        const { receiver_user_id, ...restData } = notifData
-        new NotificationService(receiver_user_id).pushNotification({
-          ...restData,
-          type: "reply",
-          to: this.postOrComment.which(),
-        })
-      }
-
-      new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
-        this.postOrComment.id,
-        { comment_id: this.postOrComment.id,  replies_count: latestCommentsRepliesCount + 1 }
-      )
-
-      return replyData
-    } catch (error) {
-      dbClient.query("ROLLBACK")
-      throw error
-    } finally {
-      dbClient.release()
-    }
-  }
-
-  async getAllCommentsORReplies({ client_user_id, limit, offset }) {
-    return await getAllCommentsOnPost_OR_RepliesToComment({
-      post_or_comment: this.postOrComment.which(),
-      post_or_comment_id: this.postOrComment.id,
+  async getComments({ client_user_id, limit, offset }) {
+    return await PCM.getComments({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
       client_user_id,
       limit,
       offset,
     })
   }
 
-  async getCommentORReply(comment_or_reply_id, client_user_id) {
-    return await getCommentOnPost_OR_ReplyToComment({
-      post_or_comment: this.postOrComment.which(),
-      comment_or_reply_id,
+  async getComment(comment_id, client_user_id) {
+    return await PCM.getComment({
+      comment_id,
       client_user_id,
     })
   }
 
-  async getAllReactors({ client_user_id, limit, offset }) {
-    return await getAllReactorsToPost_OR_Comment({
-      post_or_comment: this.postOrComment.which(),
-      post_or_comment_id: this.postOrComment.id,
+  async getReactors({ client_user_id, limit, offset }) {
+    return await PCM.getReactors({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
       client_user_id,
       limit,
       offset,
     })
   }
 
-  async getAllReactorsWithReaction({
+  async getReactorsWithReaction({
     reaction_code_point,
     client_user_id,
     limit,
     offset,
   }) {
-    return await getAllReactorsWithReactionToPost_OR_Comment({
-      post_or_comment: this.postOrComment.which(),
-      post_or_comment_id: this.postOrComment.id,
+    return await PCM.getReactorsWithReaction({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
       reaction_code_point,
       client_user_id,
       limit,
@@ -334,25 +290,22 @@ export class PostCommentService {
   }
 
   async removeReaction() {
-    const latestReactionsCount = await removeReactionToPost_OR_Comment({
-      post_or_comment: this.postOrComment.which(),
-      post_or_comment_id: this.postOrComment.id,
-      reactor_user_id: this.postOrComment.user_id,
+    const currentReactionsCount = await PCM.removeReaction({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
+      reactor_user_id: this.entity.user_id,
     })
 
-    new PostCommentRealtimeService().sendPostCommentMetricsUpdate(
-      this.postOrComment.id,
-      { 
-        [`${this.postOrComment.which()}_id`]: this.postOrComment.id,
-        reactions_count: latestReactionsCount - 1,
-      }
-    )
+    this.#sendLatestEntityMetric("reactions_count", currentReactionsCount - 1)
   }
 
-  async deleteCommentORReply() {
-    await deleteCommentOnPost_OR_ReplyToComment({
-      comment_or_reply_id: this.postOrComment.id,
-      commenter_or_replier_user_id: this.postOrComment.user_id,
+  async deleteComment(comment_id) {
+    const currentCommentsCount = await PCM.deleteComment({
+      entity: this.entity.which(),
+      entity_id: this.entity.id,
+      comment_id,
     })
+
+    this.#sendLatestEntityMetric("comments_count", currentCommentsCount - 1)
   }
 }
