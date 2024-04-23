@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules npx jest --testTimeout=5000 --forceExit",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules npx jest --testTimeout=5000 --detectOpenHandles",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

@@ -49,17 +49,30 @@ export const generateMultiRowInsertValuesParameters = ({
   rowsCount,
   columnsCount,
   paramNumFrom = 1,
-}) =>
-  Array(rowsCount)
-    .fill()
-    .map(
-      (r, ri) =>
-        `(${Array(columnsCount)
-          .fill()
-          .map((f, fi) => `$${ri * columnsCount + (fi + paramNumFrom)}`)
-          .join(", ")})`
-    )
-    .join(", ")
+}) => {
+  // Case: (rowsCount: 3, columnsCount: 2)
+  let paramString = ""
+
+  for (let ri = 0; ri < rowsCount; ri++) {
+    paramString += "("
+    for (let ci = 0; ci < columnsCount; ci++) {
+      // 1st row
+        // (0 * 2) + 0 + 1 = 1
+        // (0 * 2) + 1 + 1 = 2
+      // 2nd row
+        // (1 * 2) + 0 + 1 = 3
+        // (1 * 2) + 1 + 1 = 4
+      const n = (ri * columnsCount) + ci + paramNumFrom
+      paramString += "$" + n + ", "
+    }
+    paramString = paramString.slice(0, -2)
+    paramString += "), "
+  }
+  paramString = paramString.slice(0, -2)
+
+
+  return paramString
+}
 
 /**
  * @param {string[]} cols

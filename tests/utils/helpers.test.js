@@ -5,7 +5,7 @@ import {
   generateJsonbMultiKeysSetParameters,
   generateMultiColumnUpdateSetParameters,
   generateMultiRowInsertValuesParameters,
-} from "../utils/helpers.js"
+} from "../../utils/helpers.js"
 
 test("extract mentions", () => {
   const text = "This is a text with @kenny you @samuel"
@@ -25,7 +25,7 @@ test("extract hashtags", () => {
 
 test("generate multiple rows INSERT INTO [table] ... VALUES [parameters]", () => {
   const res = (rowsCount, columnsCount) =>
-    generateMultiRowInsertValuesParameters(rowsCount, columnsCount)
+    generateMultiRowInsertValuesParameters({rowsCount, columnsCount})
 
   expect(res(3, 2)).toBe("($1, $2), ($3, $4), ($5, $6)")
   expect(res(3, 3)).toBe("($1, $2, $3), ($4, $5, $6), ($7, $8, $9)")
@@ -38,7 +38,7 @@ test("generate multiple columns update UPDATE [table] SET [parameters] string", 
   expect(res).toBe("name = $1, username = $2")
 })
 
-test("", async () => {
+test("generate jsonb multi-keys set parameters", async () => {
   const res = (paramNumFrom) =>
     generateJsonbMultiKeysSetParameters({
       columnName: "info",
@@ -46,11 +46,10 @@ test("", async () => {
       paramNumFrom,
     })
 
-  console.log(res(5))
   expect(res(1)).toBe(
-    `info, '{apple}', '"$1"', '{banana}', '"$2"', '{cherry}', '"$3"'`
+    `info = jsonb_set(info, '{apple}', '"$1"'), jsonb_set(info, '{banana}', '"$2"'), jsonb_set(info, '{cherry}', '"$3"')`
   )
   expect(res(5)).toBe(
-    `info, '{apple}', '"$5"', '{banana}', '"$6"', '{cherry}', '"$7"'`
+    `info = jsonb_set(info, '{apple}', '"$5"'), jsonb_set(info, '{banana}', '"$6"'), jsonb_set(info, '{cherry}', '"$7"')`
   )
 })
