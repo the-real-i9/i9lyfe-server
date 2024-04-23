@@ -4,7 +4,7 @@ import { expressjwt } from "express-jwt"
 
 import {
   followUserController,
-  getClientUserController,
+  getSessionUserController,
   getUserMentionedPostsController,
   getUserNotificationsController,
   getUserReactedPostsController,
@@ -34,7 +34,7 @@ router.use(
   }
 )
 
-router.get("/client_user", getClientUserController)
+router.get("/session_user", getSessionUserController)
 
 router.post("/follow_user", followUserController)
 

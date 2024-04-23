@@ -4,10 +4,10 @@ import dotenv from "dotenv"
 
 dotenv.config()
 
-const email = "oluwarinolasam@gmail.com"
+const email = "ogunrinola.kehinde@yahoo.com"
 const prefixPath = "http://localhost:5000/api/auth"
 const signupCookie =
-  "connect.sid=s%3A_7fE748pXm1V2X-JSKdE7Dhhj4ITLtgi.vKTYVGgqkYFS89rCBqtpr8B50acqD%2Bm5sef6zoOsUl4; Path=/api/auth/signup; Expires=Tue, 23 Apr 2024 20:51:36 GMT; HttpOnly"
+'connect.sid=s%3AhPgd1EINQ52C_HAsQ3yGJQ20TQprO7tE.QiIQormLNi4mlmtVhHTiaaldah3JlqQ3ByWjCyeJcMY; Path=/api/auth/signup; Expires=Tue, 23 Apr 2024 22:03:50 GMT; HttpOnly'
 
 xtest("signup: request new account", async () => {
   const res = await axios.post(prefixPath + "/signup/request_new_account", {
@@ -25,7 +25,7 @@ xtest("signup: request new account", async () => {
 })
 
 xtest("signup: verify email", async () => {
-  const code = 569475
+  const code = 359900
   const res = await axios.post(
     prefixPath + "/signup/verify_email",
     { code },
@@ -42,11 +42,11 @@ xtest("signup: verify email", async () => {
 
 xtest("signup: register user", async () => {
   const userInfo = {
-    username: "i9x",
+    username: "dollyp",
     password: "fhunmytor",
-    name: "Kenny Samuel",
-    birthday: new Date(2000, 10, 7),
-    bio: "Testing testing!",
+    name: "Dolapo Olaleye",
+    birthday: new Date(1999, 10, 7),
+    bio: "Testing testing dollyp!",
   }
 
   const res = await axios.post(

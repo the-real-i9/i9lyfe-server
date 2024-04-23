@@ -1,6 +1,6 @@
 import { UserService } from "../services/UserService.js"
 
-export const getClientUserController = async (req, res) => {
+export const getSessionUserController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
