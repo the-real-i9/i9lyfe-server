@@ -8,14 +8,14 @@ import { getDBPool } from "../models/db.js"
  * @param {import('express').NextFunction} next
  */
 export const signupProgressValidation = (req, res, next) => {
-  const { stage } = req.params
+  const { step } = req.params
 
-  if (["email_verification", "user_registration"].includes(stage))
+  if (["email_verification", "user_registration"].includes(step))
     confirmOngoingRegistration(res, req.session.email_verification_data)
 
-  if (stage === "email_verification") rejectConfirmedEmail(res, req.session.email_verification_data.verified)
+  if (step === "email_verification") rejectConfirmedEmail(res, req.session.email_verification_data.verified)
 
-  if (stage === "user_registration") rejectUnconfirmedEmail(res, req.session.email_verification_data.verified)
+  if (step === "user_registration") rejectUnconfirmedEmail(res, req.session.email_verification_data.verified)
 
   return next()
 }
@@ -26,14 +26,14 @@ export const signupProgressValidation = (req, res, next) => {
  * @param {import('express').NextFunction} next
  */
 export const passwordResetProgressValidation = (req, res, next) => {
-  const { stage } = req.query
+  const { step } = req.params
 
-  if (["email_confirmation", "password_reset"].includes(stage))
+  if (["email_confirmation", "password_reset"].includes(step))
     confirmOngoingRegistration(res, req.session.password_reset_email_confirmation_data)
 
-  if (stage === "email_confirmation") rejectConfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
+  if (step === "email_confirmation") rejectConfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
 
-  if (stage === "password_reset") rejectUnconfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
+  if (step === "password_reset") rejectUnconfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
 
   next()
 }

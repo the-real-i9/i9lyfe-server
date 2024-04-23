@@ -32,10 +32,10 @@ router.use(
   )
 )
 
-router.post("/signup/:stage", signupProgressValidation, signupController)
+router.post("/signup/:step", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
 
-router.post("/forgot_password", passwordResetProgressValidation, passwordResetController)
+router.post("/forgot_password/:step", passwordResetProgressValidation, passwordResetController)
 
 export default router

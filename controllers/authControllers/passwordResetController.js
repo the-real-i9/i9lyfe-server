@@ -14,15 +14,15 @@ import {
  * @param {ExpressResponse} res
  */
 export const passwordResetController = async (req, res) => {
-  const { stage } = req.query
+  const { step } = req.params
 
-  const stageHandlers = {
-    password_reset_request: (req, res) => passwordResetRequestHandler(req, res),
-    email_confirmation: (req, res) =>
+  const stepHandlers = {
+    request_password_reset: (req, res) => passwordResetRequestHandler(req, res),
+    confirm_email: (req, res) =>
       passwordResetEmailConfirmationHandler(req, res),
-    password_reset: (req, res) => passwordResetHandler(req, res),
+    reset_password: (req, res) => passwordResetHandler(req, res),
   }
-  stageHandlers[stage](req, res)
+  stepHandlers[step](req, res)
 }
 
 /**

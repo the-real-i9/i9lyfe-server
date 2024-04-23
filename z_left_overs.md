@@ -1,3 +1,6 @@
+### Session User JWT
+`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MywiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzEzOTAyMTA2fQ.myi_rjVxUwzNf-bkMSQI8fXaroP4MRufIo5fzs7F-to`
+
 ## Pending Implementations
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Cover images, Post and Message binary datas
@@ -7,7 +10,6 @@
 - ER diagram
 - DB Normalization
 - Implementing OWASP Security measures
-
 
 ### Realtime Chat Events & Listeners
 <table>
