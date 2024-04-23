@@ -46,7 +46,7 @@ export const uploadPostFiles = async (req, res, next) => {
 
     return next()
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }

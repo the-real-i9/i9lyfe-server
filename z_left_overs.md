@@ -1,5 +1,4 @@
 ## Pending Implementations
-- Routes testing with Postman - 26th
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th
   - Profile pictures, Cover images, Post and Message binary datas
 - Design document | API Blueprint
@@ -7,6 +6,7 @@
 - Write all tests
 - ER diagram
 - DB Normalization
+- Implementing OWASP Security measures
 
 
 ### Realtime Chat Events & Listeners

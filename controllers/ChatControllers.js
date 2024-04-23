@@ -22,7 +22,7 @@ export const getUsersToChatController = async (req, res) => {
 
     res.status(200).send({ users })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -40,7 +40,7 @@ export const createDMConversationController = async (req, res) => {
 
     res.status(201).send({ dm_conversation_id })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -73,7 +73,7 @@ export const createGroupConversationController = async (req, res) => {
 
     res.status(201).send({ group_conversation_id })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -95,7 +95,7 @@ export const addParticipantsToGroupController = async (req, res) => {
 
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -116,7 +116,7 @@ export const removeParticipantFromGroupController = async (req, res) => {
     })
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -128,7 +128,7 @@ export const joinGroupController = async (req, res) => {
     await new GroupChatService().joinGroup(participant, group_conversation_id)
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -140,7 +140,7 @@ export const leaveGroupController = async (req, res) => {
     await new GroupChatService().leaveGroup(participant, group_conversation_id)
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -161,7 +161,7 @@ export const makeParticipantAdminController = async (req, res) => {
     })
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -182,7 +182,7 @@ export const removeParticipantFromAdminsController = async (req, res) => {
     })
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -203,7 +203,7 @@ export const changeGroupTitleController = async (req, res) => {
     })
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -224,7 +224,7 @@ export const changeGroupDescriptionController = async (req, res) => {
     })
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -239,7 +239,7 @@ export const getMyConversationsController = async (req, res) => {
 
     res.status(200).send({ myConversations })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -257,7 +257,7 @@ export const getConversationController = async (req, res) => {
 
     res.status(200).send({ conversation })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -275,7 +275,7 @@ export const deleteMyConversationController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -294,7 +294,7 @@ export const getConversationHistoryController = async (req, res) => {
 
     res.status(200).send({ conversationHistory })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -313,7 +313,7 @@ export const sendMessageController = async (req, res) => {
 
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -332,7 +332,7 @@ export const ackMessageDeliveredController = async (req, res) => {
 
     res.sendStatus(204)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -351,7 +351,7 @@ export const ackMessageReadController = async (req, res) => {
 
     res.sendStatus(204)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -374,7 +374,7 @@ export const reactToMessageController = async (req, res) => {
 
     res.sendStatus(201)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -396,7 +396,7 @@ export const removeMyReactionToMessageController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -421,7 +421,7 @@ export const deleteMyMessageController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }

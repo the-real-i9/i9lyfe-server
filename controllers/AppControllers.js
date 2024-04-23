@@ -9,7 +9,7 @@ export const getExplorePostsController = async (req, res) => {
 
     res.status(200).send({ explorePosts })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -27,7 +27,7 @@ export const searchAndFilterController = async (req, res) => {
 
     res.status(200).send({ result })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -44,7 +44,7 @@ export const getHashtagPostsController = async (req, res) => {
 
     res.status(200).send({ hashtagPosts })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }

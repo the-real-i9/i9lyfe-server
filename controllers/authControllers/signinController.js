@@ -16,7 +16,7 @@ export const signinController = async (req, res) => {
       jwtToken: response.data.jwtToken,
     })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }

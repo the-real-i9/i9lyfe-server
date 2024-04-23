@@ -32,7 +32,7 @@ test.skip("creating direct conversation", async () => {
     expect(convId).toBeTruthy()
   } catch (error) {
     dbClient.query("ROLLBACK")
-    console.error(error)
+    // console.error(error)
   } finally {
     dbClient.release()
   }
@@ -59,7 +59,7 @@ test.skip("send new direct message", async () => {
     })
   } catch (error) {
     expect(error).toBeUndefined()
-    console.error(error)
+    // console.error(error)
   }
 })
 
@@ -75,7 +75,7 @@ test.skip("send new group message", async () => {
     })
   } catch (error) {
     expect(error).toBeUndefined()
-    console.error(error)
+    // console.error(error)
   }
 })
 
@@ -86,7 +86,7 @@ test.skip("update message delivery status", async () => {
       updateKVPairs: new Map().set("delivery_status", "delivered"),
     })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     expect(error).toBeUndefined()
   }
   // only update a group message's delivery status when it is true for all members of the group
@@ -114,7 +114,7 @@ test.skip("get conversation history", async () => {
 
     console.log(res)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     expect(error).toBeUndefined()
   }
 })
@@ -150,7 +150,7 @@ test.skip("create comment", async () => {
   dbClient.query("COMMIT")
 } catch (error) {
   dbClient.query("ROLLBACK")
-  console.error(error)
+  // console.error(error)
   expect(error).toBeUndefined()
 } finally {
   dbClient.release()

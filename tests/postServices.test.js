@@ -17,7 +17,7 @@ test("create new post", async () => {
 
     console.log(data)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     expect(error).toBeUndefined()
   }
 })
@@ -31,7 +31,7 @@ test.skip("react to post", async () => {
 
     console.log(data)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     expect(error).toBeUndefined()
   }
 })

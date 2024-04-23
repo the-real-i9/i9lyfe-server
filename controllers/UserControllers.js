@@ -8,7 +8,7 @@ export const getClientUserController = async (req, res) => {
 
     res.status(200).send({ clientUser })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -23,7 +23,7 @@ export const followUserController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -38,7 +38,7 @@ export const unfollowUserController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -55,7 +55,7 @@ export const updateUserProfileController = async (req, res) => {
 
     res.status(200).send({ updatedUserData })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -72,7 +72,7 @@ export const updateUserConnectionStatusController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -87,7 +87,7 @@ export const readUserNotificationController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -96,7 +96,7 @@ export const uploadProfilePictureController = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -113,7 +113,7 @@ export const getUserProfileController = async (req, res) => {
 
     res.status(200).send({ profileData })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -128,7 +128,7 @@ export const getUserFollowersController = async (req, res) => {
 
     res.status(200).send({ userFollowers })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -143,7 +143,7 @@ export const getUserFollowingController = async (req, res) => {
 
     res.status(200).send({ userFollowing })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -172,7 +172,7 @@ export const getUserMentionedPostsController = async (req, res) => {
 
     res.status(200).send({ mentionedPosts })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -185,7 +185,7 @@ export const getUserReactedPostsController = async (req, res) => {
 
     res.status(200).send({ reactedPosts })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -198,7 +198,7 @@ export const getUserSavedPostsController = async (req, res) => {
 
     res.status(200).send({ savedPosts })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
@@ -215,7 +215,7 @@ export const getUserNotificationsController = async (req, res) => {
 
     res.status(200).send({ notifications })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
