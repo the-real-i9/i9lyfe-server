@@ -1,5 +1,5 @@
 ### Session User JWT
-`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MywiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzEzOTAyMTA2fQ.myi_rjVxUwzNf-bkMSQI8fXaroP4MRufIo5fzs7F-to`
+`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MywiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzEzOTA0OTUxfQ.f8DfuwetMyjWoipFQw54wkzIaMgrLCeRzTXKPFjQZdU`
 
 ## Pending Implementations
 - Uploading User generated content to Cloud Storage and getting back URL to store in DB - 27th

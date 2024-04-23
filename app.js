@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 import AuthRoutes from "./routes/public/AuthRoutes.js"
 import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
-import UserPrivateRoutes from "./routes/protected/UserPrivateRoutes.js"
+import UserProtectedRoutes from "./routes/protected/UserProtectedRoutes.js"
 import ChatRoutes from "./routes/protected/ChatRoutes.js"
 import UserPublicRoutes from "./routes/public/UserPublicRoutes.js"
 import AppRoutes from "./routes/public/AppRoutes.js"
@@ -31,7 +31,7 @@ app.use("/api/auth", AuthRoutes)
 
 app.use("/api/post_comment", PostCommentRoutes)
 
-app.use("/api/user_private", UserPrivateRoutes)
+app.use("/api/user_private", UserProtectedRoutes)
 app.use("/api/user_public", UserPublicRoutes)
 
 app.use("/api/chat", ChatRoutes)

@@ -69,6 +69,18 @@ xtest("signup: register user", async () => {
   )
 })
 
-test("signin", async () => {
-  
+xtest("signin", async () => {
+  const res = await axios.post(prefixPath + "/signin", {
+    email: "oluwarinolasam@gmail.com",
+    password: "fhunmytor",
+  })
+
+  if (res.status === 200) {
+    console.log(res.data)
+  }
+
+  expect(res.status).toBe(200)
+  expect(res.data.msg).toBe("Signin success!")
 })
+
+test()
