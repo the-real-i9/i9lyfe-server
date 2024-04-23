@@ -5,17 +5,17 @@ import {
 } from "../../services/EmailConfirmationService.js"
 
 export const signupController = async (req, res) => {
-  const { stage } = req.query
+  const { stage } = req.params
 
   const stageHandlers = {
-    new_account_request: (req, res) => newAccountRequestHandler(req, res),
-    email_verification: (req, res) => emailVerificationHandler(req, res),
-    user_registration: (req, res) => userRegistrationHandler(req, res),
+    request_new_account: (req, res) => newAccountRequestController(req, res),
+    verify_email: (req, res) => emailVerificationController(req, res),
+    register_user: (req, res) => userRegistrationController(req, res),
   }
   stageHandlers[stage](req, res)
 }
 
-const newAccountRequestHandler = async (req, res) => {
+const newAccountRequestController = async (req, res) => {
   try {
     const response = await new EmailConfirmationService(
       new SignupEmailConfirmationStrategy()
@@ -31,7 +31,7 @@ const newAccountRequestHandler = async (req, res) => {
   }
 }
 
-const emailVerificationHandler = async (req, res) => {
+const emailVerificationController = async (req, res) => {
   try {
     const response = await new EmailConfirmationService(
       new SignupEmailConfirmationStrategy()
@@ -48,7 +48,7 @@ const emailVerificationHandler = async (req, res) => {
   }
 }
 
-const userRegistrationHandler = async (req, res) => {
+const userRegistrationController = async (req, res) => {
   try {
     const { email } = req.session.email_verification_data
     const response = await userRegistrationService({ email, ...req.body })

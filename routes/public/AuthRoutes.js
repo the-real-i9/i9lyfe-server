@@ -32,7 +32,7 @@ router.use(
   )
 )
 
-router.post("/signup", signupProgressValidation, signupController)
+router.post("/signup/:stage", signupProgressValidation, signupController)
 
 router.post("/signin", signinController)
 

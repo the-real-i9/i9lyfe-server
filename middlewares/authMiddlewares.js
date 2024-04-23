@@ -8,7 +8,7 @@ import { getDBPool } from "../models/db.js"
  * @param {import('express').NextFunction} next
  */
 export const signupProgressValidation = (req, res, next) => {
-  const { stage } = req.query
+  const { stage } = req.params
 
   if (["email_verification", "user_registration"].includes(stage))
     confirmOngoingRegistration(res, req.session.email_verification_data)
