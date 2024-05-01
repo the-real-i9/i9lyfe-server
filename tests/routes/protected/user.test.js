@@ -25,7 +25,7 @@ xtest("get session user", async () => {
   console.log(res.data.clientUser)
 })
 
-xtest("follow user", async () => {
+test("follow user", async () => {
   const res = await axios.post(
     prefixPath + "/users/4/follow",
     null,
@@ -78,7 +78,7 @@ xtest("get posts saved", async () => {
   expect(res.data).toHaveProperty("savedPosts")
 })
 
-test("get my notifications", async () => {
+xtest("get my notifications", async () => {
   const res = await axios.get(prefixPath + "/my_notifications?from=2024-04-30", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
