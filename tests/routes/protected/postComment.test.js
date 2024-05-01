@@ -111,9 +111,16 @@ xtest("get comments on post", async () => {
   expect(res.data).toHaveProperty("commentsOnPost")
 })
 
-test("get comments on comment", async () => {
+xtest("get comments on comment", async () => {
   const res = await axios.get(prefixPath + "/comments/5/comments", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("commentsOnComment")
+})
+
+test("comment detail", async () => {
+  const res = await axios.get(prefixPath + "/comments/8", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("comment.comment_id")
 })

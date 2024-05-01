@@ -399,7 +399,7 @@ export const getComments = async ({
         'user_id', owner_user_id,
         'username', owner_username,
         'profile_pic_url', owner_profile_pic_url
-      ) AS owner,
+      ) AS owner_user,
       main_comment_id AS ${entity === "post" ? "comment" : "reply"}_id,
       comment_text AS ${entity === "post" ? "comment" : "reply"}_text,
       attachment_url,
