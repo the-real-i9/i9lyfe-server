@@ -7,12 +7,14 @@ dotenv.config()
 const email = "ogunrinola.kehinde@yahoo.com"
 const prefixPath = "http://localhost:5000/api/auth"
 const signupCookie =
-'connect.sid=s%3AhPgd1EINQ52C_HAsQ3yGJQ20TQprO7tE.QiIQormLNi4mlmtVhHTiaaldah3JlqQ3ByWjCyeJcMY; Path=/api/auth/signup; Expires=Tue, 23 Apr 2024 22:03:50 GMT; HttpOnly'
+  "connect.sid=s%3AhPgd1EINQ52C_HAsQ3yGJQ20TQprO7tE.QiIQormLNi4mlmtVhHTiaaldah3JlqQ3ByWjCyeJcMY; Path=/api/auth/signup; Expires=Tue, 23 Apr 2024 22:03:50 GMT; HttpOnly"
 
 xtest("signup: request new account", async () => {
-  const res = await axios.post(prefixPath + "/signup/request_new_account", {
-    email,
-  })
+  const reqData = { email }
+  const res = await axios.post(
+    prefixPath + "/signup/request_new_account",
+    reqData
+  )
 
   if (res.status === 200) {
     console.log(res.headers["set-cookie"])
@@ -25,23 +27,19 @@ xtest("signup: request new account", async () => {
 })
 
 xtest("signup: verify email", async () => {
-  const code = 359900
-  const res = await axios.post(
-    prefixPath + "/signup/verify_email",
-    { code },
-    {
-      headers: {
-        Cookie: signupCookie,
-      },
-    }
-  )
+  const reqData = { code: 359900 }
+  const res = await axios.post(prefixPath + "/signup/verify_email", reqData, {
+    headers: {
+      Cookie: signupCookie,
+    },
+  })
 
   expect(res.status).toBe(200)
   expect(res.data.msg).toBe(`Your email ${email} has been verified!`)
 })
 
 xtest("signup: register user", async () => {
-  const userInfo = {
+  const reqData = {
     username: "dollyp",
     password: "fhunmytor",
     name: "Dolapo Olaleye",
@@ -49,15 +47,11 @@ xtest("signup: register user", async () => {
     bio: "Testing testing dollyp!",
   }
 
-  const res = await axios.post(
-    prefixPath + "/signup/register_user",
-    { ...userInfo },
-    {
-      headers: {
-        Cookie: signupCookie,
-      },
-    }
-  )
+  const res = await axios.post(prefixPath + "/signup/register_user", reqData, {
+    headers: {
+      Cookie: signupCookie,
+    },
+  })
 
   if (res.status === 201) {
     console.log(res.data)
@@ -70,10 +64,8 @@ xtest("signup: register user", async () => {
 })
 
 xtest("signin", async () => {
-  const res = await axios.post(prefixPath + "/signin", {
-    email: "oluwarinolasam@gmail.com",
-    password: "fhunmytor",
-  })
+  const reqData = { email: "oluwarinolasam@gmail.com", password: "fhunmytor" }
+  const res = await axios.post(prefixPath + "/signin", reqData)
 
   if (res.status === 200) {
     console.log(res.data)
