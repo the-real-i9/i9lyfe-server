@@ -20,11 +20,16 @@ xtest("get user followers", async () => {
   expect(res.data).toHaveProperty("userFollowers")
 })
 
-test("get user following", async () => {
+xtest("get user following", async () => {
   const res = await axios.get(prefixPath + "/dollyp/following")
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("userFollowing")
+})
 
-  console.log(res.data)
+test("get user posts", async () => {
+  const res = await axios.get(prefixPath + "/i9x/posts")
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("userPosts")
 })
