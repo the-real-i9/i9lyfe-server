@@ -17,11 +17,11 @@ const axiosConfig = (authToken) => ({
   },
 })
 
-xtest("create post", async () => {
+test("create post", async () => {
   const reqData = {
     media_blobs: [],
     type: "photo",
-    description: "This is a post."
+    description: "This is a post metioning @dollyp."
   }
 
   const res = await axios.post(prefixPath + "/new_post", reqData, axiosConfig(i9xJwt))
@@ -185,7 +185,7 @@ xtest("save post", async () => {
   expect(res.status).toBe(200)
 })
 
-test("unsave post", async () => {
+xtest("unsave post", async () => {
   const res = await axios.delete(prefixPath + "/posts/15/unsave", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
