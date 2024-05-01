@@ -57,12 +57,23 @@ xtest("edit profile", async () => {
   expect(res.data).toHaveProperty("updatedUserData.name")
 })
 
-test("get posts mentioned in", async () => {
+xtest("get posts mentioned in", async () => {
   const res = await axios.get(prefixPath + "/mentioned_posts", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("mentionedPosts")
-
-  console.log(res.data)
 })
 
+xtest("get posts reacted to", async () => {
+  const res = await axios.get(prefixPath + "/reacted_posts", axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("reactedPosts")
+})
+
+test("get posts saved", async () => {
+  const res = await axios.get(prefixPath + "/saved_posts", axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("savedPosts")
+})
