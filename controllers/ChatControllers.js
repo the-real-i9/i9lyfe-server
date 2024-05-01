@@ -229,15 +229,15 @@ export const changeGroupDescriptionController = async (req, res) => {
   }
 }
 
-export const getMyConversationsController = async (req, res) => {
+export const getConversationsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const myConversations = await new ChatService().getMyConversations(
+    const conversations = await new ChatService().getMyConversations(
       client_user_id
     )
 
-    res.status(200).send({ myConversations })
+    res.status(200).send({ conversations })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -262,7 +262,7 @@ export const getConversationController = async (req, res) => {
   }
 }
 
-export const deleteMyConversationController = async (req, res) => {
+export const deleteConversationController = async (req, res) => {
   try {
     const { conversation_id } = req.params
 
@@ -301,7 +301,8 @@ export const getConversationHistoryController = async (req, res) => {
 
 export const sendMessageController = async (req, res) => {
   try {
-    const { conversation_id, msg_content } = req.body
+    const { conversation_id } = req.params
+    const { msg_content } = req.body
 
     const { client_user_id: sender_user_id } = req.auth
 
@@ -320,7 +321,7 @@ export const sendMessageController = async (req, res) => {
 
 export const ackMessageDeliveredController = async (req, res) => {
   try {
-    const { conversation_id, message_id } = req.body
+    const { conversation_id, message_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -339,7 +340,7 @@ export const ackMessageDeliveredController = async (req, res) => {
 
 export const ackMessageReadController = async (req, res) => {
   try {
-    const { conversation_id, message_id } = req.body
+    const { conversation_id, message_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -358,7 +359,8 @@ export const ackMessageReadController = async (req, res) => {
 
 export const reactToMessageController = async (req, res) => {
   try {
-    const { conversation_id, message_id, reaction } = req.body
+    const { conversation_id, message_id } = req.params
+    const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
 
@@ -379,7 +381,7 @@ export const reactToMessageController = async (req, res) => {
   }
 }
 
-export const removeMyReactionToMessageController = async (req, res) => {
+export const removeReactionToMessageController = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
 
@@ -401,7 +403,7 @@ export const removeMyReactionToMessageController = async (req, res) => {
   }
 }
 
-export const deleteMyMessageController = async (req, res) => {
+export const deleteMessageController = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
 

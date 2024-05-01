@@ -27,8 +27,6 @@ router.get("/users_to_chat", CC.getUsersToChatController)
 
 router.post("/create_dm_conversation", CC.createDMConversationController)
 
-router.get("/conversations/:dm_conversation_id")
-
 router.post("/create_group_conversation", CC.createGroupConversationController)
 
 router.post(
@@ -65,49 +63,49 @@ router.put(
   CC.changeGroupDescriptionController
 )
 
-router.get("/my_conversations", CC.getMyConversationsController)
+router.get("/conversations", CC.getConversationsController)
 
-router.get("/my_conversations/:conversation_id", CC.getConversationController)
+router.get("/conversations/:conversation_id", CC.getConversationController)
 
 router.delete(
-  "/my_conversations/:conversation_id",
-  CC.deleteMyConversationController
+  "/conversations/:conversation_id",
+  CC.deleteConversationController
 )
 
 router.get(
-  "/my_conversations/:conversation_id/history",
+  "/conversations/:conversation_id/history",
   CC.getConversationHistoryController
 )
 
 router.post(
-  "/send_message",
+  "/conversations/:conversation_id/send_message",
   uploadMessageFiles,
   CC.sendMessageController
 )
 
 router.put(
-  "/ack_message_delivered",
+  "/conversations/:conversation_id/messages/:message_id/delivered",
   CC.ackMessageDeliveredController
 )
 
 router.put(
-  "/ack_message_read",
+  "/conversations/:conversation_id/messages/:message_id/read",
   CC.ackMessageReadController
 )
 
 router.post(
-  "/react_to_message",
+  "/conversations/:conversation_id/messages/:message_id/react",
   CC.reactToMessageController
 )
 
 router.delete(
-  "/conversations/:conversation_id/messages/:message_id/remove_my_reaction",
-  CC.removeMyReactionToMessageController
+  "/conversations/:conversation_id/messages/:message_id/remove_reaction",
+  CC.removeReactionToMessageController
 )
 
 router.delete(
   "/conversations/:conversation_id/messages/:message_id",
-  CC.deleteMyMessageController
+  CC.deleteMessageController
 )
 
 export default router

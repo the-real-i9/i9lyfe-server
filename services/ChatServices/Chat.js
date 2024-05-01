@@ -102,10 +102,7 @@ export class ChatService {
    * @param {string} param0.reactor.username
    */
   async removeMyReactionToMessage({ reactor, conversation_id, message_id }) {
-    await ChatModel.deleteMessageReaction({
-      reactor_user_id: reactor.user_id,
-      message_id,
-    })
+    await ChatModel.deleteMessageReaction(message_id, reactor.user_id)
 
     /* Realtime actions */
     // remove message reaction for other participants
