@@ -38,7 +38,7 @@ xtest("home feed", async () => {
 })
 
 xtest("post detail", async () => {
-  const res = await axios.get(prefixPath + "/posts/14", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/posts/15", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("post.post_id")
@@ -167,8 +167,26 @@ xtest("remove comment reaction", async () => {
   expect(res.status).toBe(200)
 })
 
-test("repost post", async () => {
+xtest("repost post", async () => {
   const res = await axios.post(prefixPath + "/posts/15/repost", null, axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+})
+
+xtest("unrepost post", async () => {
+  const res = await axios.delete(prefixPath + "/posts/15/unrepost", axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+})
+
+xtest("save post", async () => {
+  const res = await axios.post(prefixPath + "/posts/15/save", null, axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+})
+
+test("unsave post", async () => {
+  const res = await axios.delete(prefixPath + "/posts/15/unsave", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })

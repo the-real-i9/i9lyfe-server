@@ -178,7 +178,7 @@ export const createRepostController = async (req, res) => {
  */
 export const postSaveController = async (req, res) => {
   try {
-    const { post_id } = req.body
+    const { post_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -529,10 +529,10 @@ export const removeReactionToCommentController = async (req, res) => {
  */
 export const deleteRepostController = async (req, res) => {
   try {
-    const { reposted_post_id } = req.params
+    const { post_id: original_post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService().deleteRepost(reposted_post_id, client_user_id)
+    await new PostService().deleteRepost(original_post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {

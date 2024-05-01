@@ -106,7 +106,7 @@ export class PostService {
     await deletePost(post_id, client_user_id)
   }
 
-  async deleteRepost(reposted_post_id, client_user_id) {
-    await deleteRepost(reposted_post_id, client_user_id)
+  async deleteRepost(original_post_id, client_user_id) {
+    await deleteRepost(original_post_id, client_user_id)
   }
 }

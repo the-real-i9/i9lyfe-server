@@ -66,12 +66,12 @@ router.delete("/comments/:comment_id/remove_reaction", PCC.removeReactionToComme
 /* ====== REPOST ====== */
 
 router.post("/posts/:post_id/repost", PCC.createRepostController)
-router.delete("/reposts/:repost_id", PCC.deleteRepostController)
+router.delete("/posts/:post_id/unrepost", PCC.deleteRepostController)
 
 /* ====== POST SAVE ====== */
 
-router.post("/save_post", PCC.postSaveController)
-router.delete("/saved_posts/:post_id", PCC.postUnsaveController)
+router.post("/posts/:post_id/save", PCC.postSaveController)
+router.delete("/posts/:post_id/unsave", PCC.postUnsaveController)
 
 // GET insight data for a specific post
 

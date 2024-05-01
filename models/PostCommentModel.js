@@ -596,10 +596,10 @@ export const deleteComment = async ({
   return (await dbQuery(query)).rows[0].comments_count
 }
 
-export const deleteRepost = async (reposted_post_id, reposter_user_id) => {
+export const deleteRepost = async (original_post_id, reposter_user_id) => {
   const query = {
     text: `DELETE FROM "Repost" WHERE post_id = $1 AND reposter_user_id = $2`,
-    values: [reposted_post_id, reposter_user_id],
+    values: [original_post_id, reposter_user_id],
   }
 
   await dbQuery(query)
