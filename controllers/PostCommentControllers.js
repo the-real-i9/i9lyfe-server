@@ -264,11 +264,11 @@ export const getCommentsOnPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postComments = await new PostCommentService(
+    const commentsOnPost = await new PostCommentService(
       new Post(post_id)
     ).getComments({ client_user_id, limit, offset })
 
-    res.status(200).send({ postComments })
+    res.status(200).send({ commentsOnPost })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -359,11 +359,11 @@ export const getCommentsOnCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const comments = await new PostCommentService(
+    const commentsOnComment = await new PostCommentService(
       new Comment(parent_comment_id)
     ).getComments({ client_user_id, limit, offset })
 
-    res.status(200).send({ comments })
+    res.status(200).send({ commentsOnComment })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
