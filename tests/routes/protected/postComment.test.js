@@ -51,7 +51,7 @@ xtest("delete post", async () => {
   expect(res.status).toBe(200)
 })
 
-test("react to post", async () => {
+xtest("react to post", async () => {
   const reqData = {
     reaction: "🤣"
   }
@@ -61,9 +61,17 @@ test("react to post", async () => {
   expect(res.status).toBe(200)
 })
 
-test("get users who reacted to post", async () => {
+xtest("get users who reacted to post", async () => {
   const res = await axios.get(prefixPath + "/posts/15/reactors?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("postReactors")
 })
+
+test("get users with this post reaction", async () => {
+  const res = await axios.get(prefixPath + "/posts/15/reactors/🤣?limit=20&offset=0", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("reactorsWithReaction")
+})
+

@@ -327,7 +327,7 @@ export const getReactorsToPostController = async (req, res) => {
  */
 export const getReactorsWithReactionToPostController = async (req, res) => {
   try {
-    const { post_id, reaction_code_point } = req.params
+    const { post_id, reaction } = req.params
 
     const { limit, offset } = req.query
 
@@ -336,7 +336,7 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
     const reactorsWithReaction = await new PostCommentService(
       new Post(post_id)
     ).getReactorsWithReaction({
-      reaction_code_point,
+      reaction_code_point: reaction.codePointAt(),
       client_user_id,
       limit,
       offset,
