@@ -36,9 +36,9 @@ router.use(
 
 router.get("/session_user", getSessionUserController)
 
-router.post("/follow_user", followUserController)
+router.post("/users/:user_id/follow", followUserController)
 
-router.delete("/followings/:followee_user_id", unfollowUserController)
+router.delete("/users/:user_id/unfollow", unfollowUserController)
 
 router.put("/update_my_profile", updateUserProfileController)
 

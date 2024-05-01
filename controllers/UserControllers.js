@@ -15,7 +15,7 @@ export const getSessionUserController = async (req, res) => {
 
 export const followUserController = async (req, res) => {
   try {
-    const { to_follow_user_id } = req.body
+    const { user_id: to_follow_user_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -30,7 +30,7 @@ export const followUserController = async (req, res) => {
 
 export const unfollowUserController = async (req, res) => {
   try {
-    const { followee_user_id } = req.params
+    const { user_id: followee_user_id } = req.params
 
     const { client_user_id } = req.auth
 

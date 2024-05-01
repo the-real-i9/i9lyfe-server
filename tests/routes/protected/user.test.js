@@ -23,17 +23,13 @@ xtest("get session user", async () => {
 })
 
 xtest("follow user", async () => {
-  const res = await axios.post(
-    prefixPath + "/follow_user",
-    { to_follow_user_id: 4 },
-    axiosConfig
-  )
+  const res = await axios.post(prefixPath + "/users/4/follow", null, axiosConfig)
 
   expect(res.status).toBe(200)
 })
 
 xtest("unfollow user", async () => {
-  const res = await axios.delete(prefixPath + "/followings/4", axiosConfig)
+  const res = await axios.delete(prefixPath + "/users/4/unfollow", axiosConfig)
 
   expect(res.status).toBe(200)
 })
@@ -48,6 +44,3 @@ test("edit profile", async () => {
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("updatedUserData.name")
 })
-
-
-// xtest()
