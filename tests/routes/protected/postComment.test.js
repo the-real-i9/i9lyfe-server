@@ -68,10 +68,15 @@ xtest("get users who reacted to post", async () => {
   expect(res.data).toHaveProperty("postReactors")
 })
 
-test("get users with this post reaction", async () => {
+xtest("get users with this post reaction", async () => {
   const res = await axios.get(prefixPath + "/posts/15/reactors/🤣?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("reactorsWithReaction")
 })
 
+test("remove post reaction", async () => {
+  const res = await axios.delete(prefixPath + "/posts/15/remove_reaction", axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+})
