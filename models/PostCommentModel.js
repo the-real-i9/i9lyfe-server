@@ -571,11 +571,12 @@ export const deleteComment = async ({
   entity,
   entity_id,
   comment_id,
+  commenter_user_id,
 }) => {
   const query = {
     text: `
     WITH comment_cte AS (
-      DELETE FROM "Comment" WHERE id = $1
+      DELETE FROM "Comment" WHERE id = $1 AND commenter_user_id = $3
     )
     ${
       entity === "post"
@@ -589,7 +590,7 @@ export const deleteComment = async ({
       WHERE main_comment_id = $2`
     }
     `,
-    values: [comment_id, entity_id],
+    values: [comment_id, entity_id, commenter_user_id],
   }
 
   return (await dbQuery(query)).rows[0].comments_count

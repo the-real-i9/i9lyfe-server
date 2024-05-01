@@ -453,8 +453,8 @@ export const removeReactionToPostController = async (req, res) => {
     const { client_user_id } = req.auth
 
     await new PostCommentService(
-      new Post(post_id, client_user_id)
-    ).removeReaction()
+      new Post(post_id)
+    ).removeReaction(client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -473,8 +473,8 @@ export const deleteCommentOnPostController = async (req, res) => {
     const { client_user_id } = req.auth
 
     await new PostCommentService(
-      new Post(post_id, client_user_id)
-    ).deleteComment(comment_id)
+      new Post(post_id)
+    ).deleteComment(client_user_id, comment_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -493,8 +493,8 @@ export const deleteCommentOnCommentController = async (req, res) => {
     const { client_user_id } = req.auth
 
     await new PostCommentService(
-      new Comment(parent_comment_id, client_user_id)
-    ).deleteComment(comment_id)
+      new Comment(parent_comment_id)
+    ).deleteComment(client_user_id, comment_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -513,8 +513,8 @@ export const removeReactionToCommentController = async (req, res) => {
     const { client_user_id } = req.auth
 
     await new PostCommentService(
-      new Comment(comment_id, client_user_id)
-    ).removeReaction()
+      new Comment(comment_id)
+    ).removeReaction(client_user_id)
 
     res.sendStatus(200)
   } catch (error) {

@@ -293,21 +293,22 @@ export class PostCommentService {
     })
   }
 
-  async removeReaction() {
+  async removeReaction(reactor_user_id) {
     const currentReactionsCount = await PCM.removeReaction({
       entity: this.entity.which(),
       entity_id: this.entity.id,
-      reactor_user_id: this.entity.user_id,
+      reactor_user_id,
     })
 
     this.#sendLatestEntityMetric("reactions_count", currentReactionsCount - 1)
   }
 
-  async deleteComment(comment_id) {
+  async deleteComment(commenter_user_id, comment_id) {
     const currentCommentsCount = await PCM.deleteComment({
       entity: this.entity.which(),
       entity_id: this.entity.id,
       comment_id,
+      commenter_user_id,
     })
 
     this.#sendLatestEntityMetric("comments_count", currentCommentsCount - 1)

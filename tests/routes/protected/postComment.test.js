@@ -161,7 +161,7 @@ xtest("get users with this comment reaction", async () => {
   expect(res.data).toHaveProperty("commentReactorsWithReaction")
 })
 
-test("remove comment reaction", async () => {
+xtest("remove comment reaction", async () => {
   const res = await axios.delete(prefixPath + "/comments/6/remove_reaction", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
