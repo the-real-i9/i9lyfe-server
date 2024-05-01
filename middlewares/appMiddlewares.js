@@ -30,6 +30,7 @@ export const uploadMessageFiles = (req, res, next) => {
  */
 export const uploadPostFiles = async (req, res, next) => {
   try {
+    // "https://storage.cloud.google.com/i9lyfe-bucket/%s"
     const media_urls = await Promise.all(req.body.media_blobs.map(async (dataArray, i) => {
       const now = Date.now()
       const filePath = path.resolve("static", "post_files", `${req.body.type}${i}-${now}.jpg`)

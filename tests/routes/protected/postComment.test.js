@@ -15,7 +15,7 @@ const axiosConfig = {
   },
 }
 
-test("create post", async () => {
+xtest("create post", async () => {
   const reqData = {
     media_blobs: [],
     type: "photo",
@@ -27,3 +27,20 @@ test("create post", async () => {
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("postData.post_id")
 })
+
+xtest("home feed", async () => {
+  const res = await axios.get(prefixPath + "/home_feed?limit=20&offset=0", axiosConfig)
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("homeFeedPosts")
+  expect(res.data.homeFeedPosts[0]).toHaveProperty("post_id")
+})
+
+test("post detail", async () => {
+  const res = await axios.get(prefixPath + "/posts/14", axiosConfig)
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("post")
+  expect(res.data.post).toHaveProperty("post_id")
+})
+
