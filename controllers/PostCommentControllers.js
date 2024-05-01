@@ -216,7 +216,7 @@ export const postUnsaveController = async (req, res) => {
  */
 export const getHomeFeedController = async (req, res) => {
   try {
-    const { limit, offset } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
@@ -266,7 +266,7 @@ export const getCommentsOnPostController = async (req, res) => {
 
     const postComments = await new PostCommentService(
       new Post(post_id)
-    ).getAllCommentsORReplies({ client_user_id, limit, offset })
+    ).getComments({ client_user_id, limit, offset })
 
     res.status(200).send({ postComments })
   } catch (error) {
@@ -285,11 +285,11 @@ export const getCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postComment = await new PostCommentService(
+    const comment = await new PostCommentService(
       new Post()
-    ).getCommentORReply(comment_id, client_user_id)
+    ).getComment(comment_id, client_user_id)
 
-    res.status(200).send({ postComment })
+    res.status(200).send({ comment })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -304,7 +304,7 @@ export const getReactorsToPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { limit, offset } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
@@ -327,7 +327,7 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
   try {
     const { post_id, reaction } = req.params
 
-    const { limit, offset } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
@@ -374,32 +374,11 @@ export const getCommentsOnCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReplyController = async (req, res) => {
-  try {
-    const { reply_id } = req.params
-
-    const { client_user_id } = req.auth
-
-    const commentReply = await new PostCommentService(
-      new Comment()
-    ).getCommentORReply(reply_id, client_user_id)
-
-    res.status(200).send({ commentReply })
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const getReactorsToCommentController = async (req, res) => {
   try {
     const { comment_id } = req.params
 
-    const { limit, offset } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
@@ -422,7 +401,7 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
-    const { limit, offset } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
