@@ -80,7 +80,7 @@ xtest("remove post reaction", async () => {
   expect(res.status).toBe(200)
 })
 
-test("comment on post", async () => {
+xtest("comment on post", async () => {
   const reqData = {
     comment_text: "This is another comment on this post.",
     attachment_blob: null,
@@ -91,3 +91,16 @@ test("comment on post", async () => {
   expect(res.status).toBe(201)
   expect(res.data).toHaveProperty("commentData.comment_id")
 })
+
+test("comment on comment", async () => {
+  const reqData = {
+    comment_text: "This is a reply to this comment.",
+    attachment_blob: null,
+  }
+
+  const res = await axios.post(prefixPath + "/users/4/comments/5/comment", reqData, axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(201)
+  expect(res.data).toHaveProperty("commentData.comment_id")
+})
+

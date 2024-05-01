@@ -42,8 +42,8 @@ router.delete("/posts/:post_id/remove_reaction", PCC.removeReactionToPostControl
 
 /* ====== POST'S COMMENT ====== */
 
-router.post("/users/:user_id/posts/:post_id/comment", uploadCommentFiles, PCC.commentOnPostController)
-router.post("/users/:user_id/comments/:comment_id/comment", uploadCommentFiles, PCC.commentOnCommentController)
+router.post("/users/:post_owner_user_id/posts/:post_id/comment", uploadCommentFiles, PCC.commentOnPostController)
+router.post("/users/:parent_comment_owner_user_id/comments/:comment_id/comment", uploadCommentFiles, PCC.commentOnCommentController)
 
 router.get("/posts/:post_id/comments", PCC.getCommentsOnPostController)
 router.get("/comments/:parent_comment_id/comments", PCC.getCommentsOnCommentController)

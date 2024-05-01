@@ -69,7 +69,7 @@ export const reactToPostController = async (req, res) => {
  */
 export const commentOnPostController = async (req, res) => {
   try {
-    const { post_id, user_id: post_owner_user_id } = req.params
+    const { post_id, post_owner_user_id } = req.params
     const {
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
@@ -122,9 +122,9 @@ export const reactToCommentController = async (req, res) => {
  */
 export const commentOnCommentController = async (req, res) => {
   try {
-    const { comment_id, user_id: comment_owner_user_id } = req.params
+    const { comment_id, parent_comment_owner_user_id } = req.params
     const {
-      reply_text,
+      comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
       attachment_url = null,
     } = req.body
@@ -136,17 +136,17 @@ export const commentOnCommentController = async (req, res) => {
     // All Replies are Comments and behave like Comments
     // But, not all Comments are Replies, as Comments belong to Posts and Replies do not.
 
-    const replyData = await new PostCommentService(
-      new Comment(comment_id, comment_owner_user_id)
+    const commentData = await new PostCommentService(
+      new Comment(comment_id, parent_comment_owner_user_id)
     ).addComment({
       commenter_user_id: client_user_id,
-      comment_text: reply_text,
+      comment_text,
       attachment_url,
     })
 
     // asynchronously send a reply notification with the NotificationService via WebSockets
 
-    res.status(201).send({ replyData })
+    res.status(201).send({ commentData })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
