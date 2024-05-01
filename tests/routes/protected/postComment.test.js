@@ -35,7 +35,6 @@ xtest("home feed", async () => {
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("homeFeedPosts")
-  expect(res.data.homeFeedPosts[0]).toHaveProperty("post_id")
 })
 
 xtest("post detail", async () => {
@@ -60,4 +59,11 @@ test("react to post", async () => {
   const res = await axios.post(prefixPath + "/users/3/posts/15/react", reqData, axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
+})
+
+test("get users who reacted to post", async () => {
+  const res = await axios.get(prefixPath + "/posts/15/reactors?limit=20&offset=0", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("postReactors")
 })

@@ -32,7 +32,7 @@ export const createNewPostController = async (req, res) => {
 
     res.status(200).send({ postData })
   } catch (error) {
-    console.error(error)
+    // console.error(error)
     res.sendStatus(500)
   }
 }
