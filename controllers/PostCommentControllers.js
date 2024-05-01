@@ -43,7 +43,7 @@ export const createNewPostController = async (req, res) => {
  */
 export const reactToPostController = async (req, res) => {
   try {
-    const { post_id, user_id: post_owner_user_id } = req.params
+    const { post_id, post_owner_user_id } = req.params
     const { reaction } = req.body
     // Should I accept the code point directly?
     const reaction_code_point = reaction.codePointAt()
@@ -97,8 +97,9 @@ export const commentOnPostController = async (req, res) => {
  */
 export const reactToCommentController = async (req, res) => {
   try {
-    const { comment_id, comment_owner_user_id, reaction } = req.body
-    // Should I accept the code point directly?
+    const { comment_id, comment_owner_user_id } = req.params
+    const { reaction } = req.body
+
     const reaction_code_point = reaction.codePointAt()
 
     const { client_user_id: reactor_user_id } = req.auth
@@ -285,9 +286,10 @@ export const getCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const comment = await new PostCommentService(
-      new Post()
-    ).getComment(comment_id, client_user_id)
+    const comment = await new PostCommentService(new Post()).getComment(
+      comment_id,
+      client_user_id
+    )
 
     res.status(200).send({ comment })
   } catch (error) {
@@ -399,7 +401,7 @@ export const getReactorsToCommentController = async (req, res) => {
  */
 export const getReactorsWithReactionToCommentController = async (req, res) => {
   try {
-    const { comment_id, reaction_code_point } = req.params
+    const { comment_id, reaction } = req.params
 
     const { limit = 20, offset = 0 } = req.query
 
@@ -408,7 +410,7 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
     const commentReactorsWithReaction = await new PostCommentService(
       new Comment(comment_id)
     ).getReactorsWithReaction({
-      reaction_code_point,
+      reaction_code_point: reaction.codePointAt(),
       client_user_id,
       limit,
       offset,

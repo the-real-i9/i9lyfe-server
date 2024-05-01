@@ -32,7 +32,7 @@ router.delete("/posts/:post_id", PCC.deletePostController)
 
 /* ====== POST'S REACTION ====== */
 
-router.post("/users/:user_id/posts/:post_id/react", PCC.reactToPostController)
+router.post("/users/:post_owner_user_id/posts/:post_id/react", PCC.reactToPostController)
 router.get("/posts/:post_id/reactors", PCC.getReactorsToPostController)
 router.get(
   "/posts/:post_id/reactors/:reaction",
@@ -55,10 +55,10 @@ router.delete("/comments/:parent_comment_id/comments/:comment_id", PCC.deleteCom
 
 /* ====== COMMENT'S REACTION====== */
 
-router.post("/react_to_comment", PCC.reactToCommentController)
+router.post("/users/:comment_owner_user_id/comments/:comment_id/react", PCC.reactToCommentController)
 router.get("/comments/:comment_id/reactors", PCC.getReactorsToCommentController)
 router.get(
-  "/comments/:comment_id/reactors/:reaction_code_point",
+  "/comments/:comment_id/reactors/:reaction",
   PCC.getReactorsWithReactionToCommentController
 )
 router.delete("/comments/:comment_id/remove_reaction", PCC.removeReactionToCommentController)

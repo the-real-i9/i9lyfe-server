@@ -131,9 +131,38 @@ xtest("delete comment on post", async () => {
   expect(res.status).toBe(200)
 })
 
-test("delete comment on comment", async () => {
+xtest("delete comment on comment", async () => {
   const res = await axios.delete(prefixPath + "/comments/6/comments/10", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
 
+xtest("react to comment", async () => {
+  const reqData = {
+    reaction: "🎯"
+  }
+
+  const res = await axios.post(prefixPath + "/users/4/comments/6/react", reqData, axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+})
+
+xtest("get users who reacted to comment", async () => {
+  const res = await axios.get(prefixPath + "/comments/6/reactors", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("commentReactors")
+})
+
+xtest("get users with this comment reaction", async () => {
+  const res = await axios.get(prefixPath + "/comments/6/reactors/🎯?limit=20&offset=0", axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("commentReactorsWithReaction")
+})
+
+test("remove comment reaction", async () => {
+  const res = await axios.delete(prefixPath + "/comments/6/remove_reaction", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+})
