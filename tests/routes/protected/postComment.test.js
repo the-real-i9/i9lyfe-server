@@ -166,3 +166,9 @@ xtest("remove comment reaction", async () => {
 
   expect(res.status).toBe(200)
 })
+
+test("repost post", async () => {
+  const res = await axios.post(prefixPath + "/posts/15/repost", null, axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(200)
+})

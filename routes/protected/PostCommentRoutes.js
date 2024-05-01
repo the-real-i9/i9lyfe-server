@@ -65,7 +65,7 @@ router.delete("/comments/:comment_id/remove_reaction", PCC.removeReactionToComme
 
 /* ====== REPOST ====== */
 
-router.post("/repost", PCC.createRepostController)
+router.post("/posts/:post_id/repost", PCC.createRepostController)
 router.delete("/reposts/:repost_id", PCC.deleteRepostController)
 
 /* ====== POST SAVE ====== */

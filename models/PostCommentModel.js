@@ -30,7 +30,7 @@ export const createNewPost = async (
   return (await dbClient.query(query)).rows[0].post_id
 }
 
-export const createRepost = async (original_post_id, reposter_user_id) => {
+export const createRepost = async (reposter_user_id, original_post_id) => {
   const query = {
     text: `
     INSERT INTO "Repost" (post_id, reposter_user_id) 

@@ -160,7 +160,7 @@ export const commentOnCommentController = async (req, res) => {
  */
 export const createRepostController = async (req, res) => {
   try {
-    const { post_id } = req.body
+    const { post_id } = req.params
     const { client_user_id } = req.auth
 
     await new PostService().repostPost(client_user_id, post_id)
