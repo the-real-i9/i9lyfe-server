@@ -16,3 +16,13 @@ const axiosConfig = (authToken) => ({
     Authorization: `Bearer ${authToken}`,
   },
 })
+
+test("get users to chat with", async () => {
+  const res = await axios.get(prefixPath + "/users_to_chat", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("users")
+
+  console.log(res.data)
+})
+
