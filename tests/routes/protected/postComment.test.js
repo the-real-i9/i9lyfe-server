@@ -94,11 +94,11 @@ xtest("comment on post", async () => {
 
 xtest("comment on comment", async () => {
   const reqData = {
-    comment_text: "This is another reply to this comment.",
+    comment_text: "Now what?",
     attachment_blob: null,
   }
 
-  const res = await axios.post(prefixPath + "/users/4/comments/5/comment", reqData, axiosConfig(i9xJwt))
+  const res = await axios.post(prefixPath + "/users/4/comments/6/comment", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(201)
   expect(res.data).toHaveProperty("commentData.comment_id")
@@ -125,8 +125,15 @@ xtest("comment detail", async () => {
   expect(res.data).toHaveProperty("comment.comment_id")
 })
 
-test("delete comment on post", async () => {
+xtest("delete comment on post", async () => {
   const res = await axios.delete(prefixPath + "/posts/15/comments/5", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
+
+test("delete comment on comment", async () => {
+  const res = await axios.delete(prefixPath + "/comments/6/comments/10", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+})
+
