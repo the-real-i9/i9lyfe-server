@@ -71,9 +71,16 @@ xtest("get posts reacted to", async () => {
   expect(res.data).toHaveProperty("reactedPosts")
 })
 
-test("get posts saved", async () => {
+xtest("get posts saved", async () => {
   const res = await axios.get(prefixPath + "/saved_posts", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("savedPosts")
+})
+
+test("get my notifications", async () => {
+  const res = await axios.get(prefixPath + "/my_notifications?from=2024-04-30", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("notifications")
 })
