@@ -110,7 +110,10 @@ export class PostCommentService {
    */
   async #handleMentions({ mentions, content_owner_user_id }, dbClient) {
     if (!mentions) return
-    const mentioned_user_ids = await PCM.mapUsernamesToUserIds(mentions, dbClient)
+    const mentioned_user_ids = await PCM.mapUsernamesToUserIds(
+      mentions,
+      dbClient
+    )
     const mentionNotifications = await PCM.createMentions(
       {
         entity: this.entity.which(),
@@ -223,6 +226,7 @@ export class PostCommentService {
         },
         dbClient
       )
+
       await dbClient.query("COMMIT")
 
       this.#sendCommentPushNotification(data.notifData)

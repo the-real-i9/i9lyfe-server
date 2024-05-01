@@ -41,8 +41,7 @@ xtest("post detail", async () => {
   const res = await axios.get(prefixPath + "/posts/14", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("post")
-  expect(res.data.post).toHaveProperty("post_id")
+  expect(res.data).toHaveProperty("post.post_id")
 })
 
 xtest("delete post", async () => {
@@ -75,8 +74,20 @@ xtest("get users with this post reaction", async () => {
   expect(res.data).toHaveProperty("reactorsWithReaction")
 })
 
-test("remove post reaction", async () => {
+xtest("remove post reaction", async () => {
   const res = await axios.delete(prefixPath + "/posts/15/remove_reaction", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
+})
+
+test("comment on post", async () => {
+  const reqData = {
+    comment_text: "This is another comment on this post.",
+    attachment_blob: null,
+  }
+
+  const res = await axios.post(prefixPath + "/users/3/posts/15/comment", reqData, axiosConfig(dollypJwt))
+
+  expect(res.status).toBe(201)
+  expect(res.data).toHaveProperty("commentData.comment_id")
 })

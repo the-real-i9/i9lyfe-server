@@ -404,7 +404,7 @@ export const getComments = async ({
       comment_text AS ${entity === "post" ? "comment" : "reply"}_text,
       attachment_url,
       reactions_count,
-      replies_count,
+      comments_count,
       CASE 
         WHEN reactor_user_id = $2 THEN reaction_code_point 
         ELSE NULL
@@ -436,7 +436,7 @@ export const getComment = async ({
       comment_text,
       attachment_url,
       reactions_count,
-      replies_count,
+      comments_count,
       CASE 
         WHEN reactor_user_id = $2 THEN reaction_code_point 
         ELSE null

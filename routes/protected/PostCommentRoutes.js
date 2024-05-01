@@ -3,7 +3,7 @@ import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import * as PCC from "../../controllers/PostCommentControllers.js"
-import { uploadPostFiles } from "../../middlewares/appMiddlewares.js"
+import { uploadCommentFiles, uploadPostFiles } from "../../middlewares/appMiddlewares.js"
 
 dotenv.config()
 
@@ -42,8 +42,8 @@ router.delete("/posts/:post_id/remove_reaction", PCC.removeReactionToPostControl
 
 /* ====== POST'S COMMENT ====== */
 
-router.post("/comment_on_post", PCC.commentOnPostController)
-router.post("/comment_on_comment", PCC.commentOnCommentController)
+router.post("/users/:user_id/posts/:post_id/comment", uploadCommentFiles, PCC.commentOnPostController)
+router.post("/users/:user_id/comments/:comment_id/comment", uploadCommentFiles, PCC.commentOnCommentController)
 
 router.get("/posts/:post_id/comments", PCC.getCommentsOnPostController)
 router.get("/comments/:parent_comment_id/comments", PCC.getCommentsOnCommentController)

@@ -1,7 +1,3 @@
-import fs from "fs/promises"
-import { Buffer } from "buffer"
-import path from "path"
-
 /**
  * @typedef {import("express").Request} ExpressRequest
  * @typedef {import("express").Response} ExpressResponse
@@ -31,19 +27,26 @@ export const uploadMessageFiles = (req, res, next) => {
 export const uploadPostFiles = async (req, res, next) => {
   try {
     // "https://storage.cloud.google.com/i9lyfe-bucket/%s"
-    const media_urls = await Promise.all(req.body.media_blobs.map(async (dataArray, i) => {
-      const now = Date.now()
-      const filePath = path.resolve("static", "post_files", `${req.body.type}${i}-${now}.jpg`)
-      const fileUrl = `http://localhost:5000/post_files/${req.body.type}${i}-${now}.jpg`
-
-      await fs.writeFile(filePath, Buffer.from(dataArray))
-
-      return fileUrl
-    }))
     
-    req.body.media_urls = media_urls
+    req.body.media_urls = []
     
     delete req.body.media_blobs
+
+    return next()
+  } catch (error) {
+    // console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+export const uploadCommentFiles = async (req, res, next) => {
+  try {
+    // "https://storage.cloud.google.com/i9lyfe-bucket/%s"
+    
+    
+    req.body.attachment_url = ""
+    
+    delete req.body.attachment_blob
 
     return next()
   } catch (error) {

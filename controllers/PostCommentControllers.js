@@ -69,12 +69,11 @@ export const reactToPostController = async (req, res) => {
  */
 export const commentOnPostController = async (req, res) => {
   try {
+    const { post_id, user_id: post_owner_user_id } = req.params
     const {
-      post_id,
-      post_owner_user_id,
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url = null,
+      attachment_url = "",
     } = req.body
 
     const { client_user_id: commenter_user_id } = req.auth
@@ -123,9 +122,8 @@ export const reactToCommentController = async (req, res) => {
  */
 export const commentOnCommentController = async (req, res) => {
   try {
+    const { comment_id, user_id: comment_owner_user_id } = req.params
     const {
-      comment_id,
-      comment_owner_user_id,
       reply_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
       attachment_url = null,
@@ -420,10 +418,7 @@ export const getReactorsToCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReactorsWithReactionToCommentController = async (
-  req,
-  res
-) => {
+export const getReactorsWithReactionToCommentController = async (req, res) => {
   try {
     const { comment_id, reaction_code_point } = req.params
 
@@ -564,5 +559,3 @@ export const deleteRepostController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
-
