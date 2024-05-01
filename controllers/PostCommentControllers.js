@@ -476,7 +476,7 @@ export const deleteCommentOnPostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

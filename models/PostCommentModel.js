@@ -574,7 +574,7 @@ export const deleteComment = async ({
 }) => {
   const query = {
     text: `
-    WITH comment_cte (
+    WITH comment_cte AS (
       DELETE FROM "Comment" WHERE id = $1
     )
     ${
