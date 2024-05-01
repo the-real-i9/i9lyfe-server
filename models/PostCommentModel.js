@@ -10,7 +10,7 @@ import { dbQuery } from "./db.js"
  * @param {object} post
  * @param {number} post.client_user_id
  * @param {string[]} post.media_urls
- * @param {string} post.type
+ * @param {"photo" | "video" | "reel" | "story"} post.type
  * @param {string} post.description
  * @param {PgPoolClient} dbClient
  */

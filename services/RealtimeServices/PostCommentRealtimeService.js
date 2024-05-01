@@ -65,7 +65,7 @@ export class PostCommentRealtimeService {
 
   sendNewPost(user_id, newPostData) {
     PostCommentRealtimeService.io
-      .to(`user_${user_id}_new_post_room`)
+      ?.to(`user_${user_id}_new_post_room`)
       .emit("new post", newPostData)
   }
 
@@ -76,7 +76,7 @@ export class PostCommentRealtimeService {
    */
   sendEntityMetricsUpdate({entity, entity_id, data}) {
     PostCommentRealtimeService.io
-      .to(`${entity}_${entity_id}_metrics_update_subscribers`)
+      ?.to(`${entity}_${entity_id}_metrics_update_subscribers`)
       .emit(`latest ${entity} metric`, data)
   }
 }

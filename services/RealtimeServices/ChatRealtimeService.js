@@ -53,43 +53,43 @@ export class ChatRealtimeService {
 
   sendNewMessage(conversation_id, msgData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("new message", msgData)
   }
 
   sendMessageDelivered(conversation_id, infoData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("message delivered", infoData)
   }
 
   sendMessageRead(conversation_id, infoData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("message read", infoData)
   }
 
   sendMessageReaction(conversation_id, reactionData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("message reaction", reactionData)
   }
 
   sendMessageReactionRemoval(conversation_id, reactionRemovalData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("message reaction removal", reactionRemovalData)
   }
 
   sendMessageDeleted(conversation_id, deletionData) {
     ChatRealtimeService.io
-      .to(`convo-room-${conversation_id}`)
+      ?.to(`convo-room-${conversation_id}`)
       .emit("message deleted", deletionData)
   }
 
   sendGroupActivityLog(group_conversation_id, groupActivityLogData) {
     ChatRealtimeService.io
-      .to(`convo-room-${group_conversation_id}`)
+      ?.to(`convo-room-${group_conversation_id}`)
       .emit("new group activity", groupActivityLogData)
   }
 }

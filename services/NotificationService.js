@@ -40,7 +40,7 @@ export class NotificationService {
     if (!Number(count)) return
     NotificationService.sockClients
       .get(this.receiver_user_id)
-      .emit(
+      ?.emit(
         "unread notifications",
         count,
         `You have ${count} unread notifications.`
