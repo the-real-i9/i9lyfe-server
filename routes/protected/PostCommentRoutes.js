@@ -32,7 +32,7 @@ router.delete("/posts/:post_id", PCC.deletePostController)
 
 /* ====== POST'S REACTION ====== */
 
-router.post("/react_to_post", PCC.reactToPostController)
+router.post("/users/:user_id/posts/:post_id/react", PCC.reactToPostController)
 router.get("/posts/:post_id/reactors", PCC.getReactorsToPostController)
 router.get(
   "/posts/:post_id/reactors/:reaction_code_point",

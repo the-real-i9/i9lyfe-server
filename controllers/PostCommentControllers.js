@@ -43,7 +43,8 @@ export const createNewPostController = async (req, res) => {
  */
 export const reactToPostController = async (req, res) => {
   try {
-    const { post_id, post_owner_user_id, reaction } = req.body
+    const { post_id, user_id: post_owner_user_id } = req.params
+    const { reaction } = req.body
     // Should I accept the code point directly?
     const reaction_code_point = reaction.codePointAt()
 
