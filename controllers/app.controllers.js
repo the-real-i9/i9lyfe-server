@@ -15,11 +15,11 @@ export const getExplorePostsController = async (req, res) => {
 
 export const searchAndFilterController = async (req, res) => {
   try {
-    const { search = "", category = "all" } = req.query
+    const { search = "", filter = "all" } = req.query
 
-    const result = await new AppService().searchAndFilter({
+    const result = await AppService.searchAndFilter({
       search,
-      category,
+      filter,
       client_user_id: req.auth?.client_user_id ?? null,
     })
 
@@ -34,7 +34,7 @@ export const getHashtagPostsController = async (req, res) => {
   try {
     const { hashtag_name } = req.params
 
-    const hashtagPosts = await new AppService().getHashtagPosts(
+    const hashtagPosts = await AppService.getHashtagPosts(
       hashtag_name,
       req.auth?.client_user_id
     )
