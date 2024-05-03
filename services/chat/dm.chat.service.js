@@ -1,5 +1,5 @@
-import * as ChatModel from "../../models/ChatModel.js"
-import { ChatRealtimeService } from "../RealtimeServices/ChatRealtimeService.js"
+import * as ChatModel from "../../models/chat.model.js"
+import { ChatRealtimeService } from "../realtime/chat.realtime.service.js"
 
 export class DMChatService {
   /**
@@ -12,7 +12,7 @@ export class DMChatService {
    * @param {string} partner.username
    * @returns The data needed to display the DM chat page for the client
    */
-  async createDMConversation(client, partner) {
+  static async createDMConversation(client, partner) {
       const dm_conversation_id = await ChatModel.createDMConversation(client, partner.user_id)
 
       ChatRealtimeService.createDMConversation({

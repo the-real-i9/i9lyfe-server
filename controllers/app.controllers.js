@@ -1,9 +1,8 @@
-import { AppService } from "../services/AppServices.js"
-
+import { AppService } from "../services/app.service.js"
 
 export const getExplorePostsController = async (req, res) => {
   try {
-    const explorePosts = await new AppService().getExplorePosts(
+    const explorePosts = await AppService.getExplorePosts(
       req.auth?.client_user_id ?? null
     )
 
@@ -13,7 +12,6 @@ export const getExplorePostsController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const searchAndFilterController = async (req, res) => {
   try {
@@ -31,7 +29,6 @@ export const searchAndFilterController = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
 
 export const getHashtagPostsController = async (req, res) => {
   try {

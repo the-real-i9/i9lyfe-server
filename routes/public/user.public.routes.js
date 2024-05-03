@@ -7,7 +7,7 @@ import {
   getUserFollowingController,
   getUserPostsController,
   getUserProfileController,
-} from "../../controllers/UserControllers.js"
+} from "../../controllers/user.controllers.js"
 
 const router = express.Router()
 

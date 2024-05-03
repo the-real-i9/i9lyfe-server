@@ -3,9 +3,9 @@
  * @typedef {import("express").Response} ExpressResponse
  */
 
-import { ChatService } from "../services/ChatServices/Chat.js"
-import { DMChatService } from "../services/ChatServices/DMChat.js"
-import { GroupChatService } from "../services/ChatServices/GroupChat.js"
+import { ChatService } from "../services/chat/chat.service.js"
+import { DMChatService } from "../services/chat/dm.chat.service.js"
+import { GroupChatService } from "../services/chat/group.chat.service.js"
 
 /**
  *
@@ -18,7 +18,7 @@ export const getUsersToChatController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const users = await new ChatService().getUsersToChat(client_user_id, search)
+    const users = await ChatService.getUsersToChat(client_user_id, search)
 
     res.status(200).send({ users })
   } catch (error) {
@@ -33,7 +33,7 @@ export const createDMConversationController = async (req, res) => {
 
     const { client_user_id, client_username } = req.auth
 
-    const dm_conversation_id = await new DMChatService().createDMConversation(
+    const dm_conversation_id = await DMChatService.createDMConversation(
       { user_id: client_user_id, username: client_username },
       partner
     )
@@ -57,7 +57,7 @@ export const createGroupConversationController = async (req, res) => {
     const { client_user_id, client_username } = req.auth
 
     const group_conversation_id =
-      await new GroupChatService().createGroupConversation({
+      await GroupChatService.createGroupConversation({
         participants: [
           {
             user_id: client_user_id,

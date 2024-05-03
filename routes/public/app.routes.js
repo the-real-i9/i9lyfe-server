@@ -5,7 +5,7 @@ import {
   getExplorePostsController,
   getHashtagPostsController,
   searchAndFilterController,
-} from "../../controllers/AppControllers.js"
+} from "../../controllers/app.controllers.js"
 
 dotenv.config()
 

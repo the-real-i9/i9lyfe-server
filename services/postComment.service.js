@@ -1,8 +1,9 @@
 import { getDBClient } from "../models/db.js"
-import * as PCM from "../models/PostCommentModel.js"
+import * as PCM from "../models/postComment.model.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
-import { NotificationService } from "./NotificationService.js"
-import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
+import { NotificationService } from "./notification.service.js"
+import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
+
 
 class Entity {
   constructor(id, user_id) {
@@ -159,7 +160,7 @@ export class PostCommentService {
   }
 
   #sendLatestEntityMetric(metricKey, metricValue) {
-    new PostCommentRealtimeService().sendEntityMetricsUpdate({
+    PostCommentRealtimeService.sendEntityMetricsUpdate({
       entity: this.entity.which(),
       entity_id: this.entity.id,
       data: {

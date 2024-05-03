@@ -1,4 +1,5 @@
-import { getUserFolloweesIds } from "../../models/UserModel.js"
+import { getUserFolloweesIds } from "../../models/user.model.js"
+
 
 export class PostCommentRealtimeService {
   /** @type {import("socket.io").Server} */
@@ -63,7 +64,7 @@ export class PostCommentRealtimeService {
     )
   }
 
-  sendNewPost(user_id, newPostData) {
+  static sendNewPost(user_id, newPostData) {
     PostCommentRealtimeService.io
       ?.to(`user_${user_id}_new_post_room`)
       .emit("new post", newPostData)
@@ -74,7 +75,7 @@ export class PostCommentRealtimeService {
    * @param {object} param0 
    * @param {"post" | "comment"} param0.entity 
    */
-  sendEntityMetricsUpdate({entity, entity_id, data}) {
+  static sendEntityMetricsUpdate({entity, entity_id, data}) {
     PostCommentRealtimeService.io
       ?.to(`${entity}_${entity_id}_metrics_update_subscribers`)
       .emit(`latest ${entity} metric`, data)

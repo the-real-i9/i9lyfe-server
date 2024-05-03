@@ -1,4 +1,4 @@
-import * as ChatModel from "../../models/ChatModel.js"
+import * as ChatModel from "../../models/chat.model.js"
 import { ChatRealtimeService } from "../realtime/chat.realtime.service.js"
 
 export class GroupChatService {
@@ -9,7 +9,7 @@ export class GroupChatService {
    * @param {string} param0.participants.username
    * @returns The data needed to display the group chat page history
    */
-  async createGroupConversation({
+  static async createGroupConversation({
     participants,
     client_username,
     title,
@@ -56,7 +56,7 @@ export class GroupChatService {
    * @param {string} param0.participants.username
    * @param {number} param0.group_conversation_id
    */
-  async addParticipants({ client, participants, group_conversation_id }) {
+  static async addParticipants({ client, participants, group_conversation_id }) {
     const activity_info = {
       type: "participants_added",
       added_by: client.username,
@@ -93,7 +93,7 @@ export class GroupChatService {
    * @param {string} param0.participant.username
    * @param {number} param0.group_conversation_id
    */
-  async removeParticipant({ client, participant, group_conversation_id }) {
+  static async removeParticipant({ client, participant, group_conversation_id }) {
     const activity_info = {
       type: "participant_removed",
       removed_by: client.username,
@@ -121,7 +121,7 @@ export class GroupChatService {
    * @param {string} participant.username
    * @param {number} group_conversation_id
    */
-  async joinGroup(participant, group_conversation_id) {
+  static async joinGroup(participant, group_conversation_id) {
     const activity_info = {
       type: "group_joined",
       who_joined: participant.username,
@@ -150,7 +150,7 @@ export class GroupChatService {
    * @param {string} participant.username
    * @param {number} group_conversation_id
    */
-  async leaveGroup(participant, group_conversation_id) {
+  static async leaveGroup(participant, group_conversation_id) {
     const activity_info = {
       type: "group_left",
       who_left: participant.username,
@@ -180,7 +180,7 @@ export class GroupChatService {
    * @param {string} param0.participant.username
    * @param {number} param0.group_conversation_id
    */
-  async makeParticipantAdmin({ client, participant, group_conversation_id }) {
+  static async makeParticipantAdmin({ client, participant, group_conversation_id }) {
     const activity_info = {
       type: "participant_made_admin",
       made_by: client.username,
@@ -202,7 +202,7 @@ export class GroupChatService {
     })
   }
 
-  async removeParticipantFromAdmins({
+  static async removeParticipantFromAdmins({
     client,
     admin_participant,
     group_conversation_id,
@@ -234,7 +234,7 @@ export class GroupChatService {
    * @param {string} param0.client.username
    * @param {Object<string, string>} param0.newInfoKVPair
    */
-  async changeGroupInfo({ client, group_conversation_id, newInfoKVPair }) {
+  static async changeGroupInfo({ client, group_conversation_id, newInfoKVPair }) {
     const [[infoKey, newInfoValue]] = Object.entries(newInfoKVPair)
 
     const activity_info = {

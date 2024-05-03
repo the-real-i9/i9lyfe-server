@@ -1,27 +1,28 @@
-import * as ChatModel from "../../models/ChatModel.js"
-import { ChatRealtimeService } from "../RealtimeServices/ChatRealtimeService.js"
+import * as ChatModel from "../../models/chat.model.js"
+import { ChatRealtimeService } from "../realtime/chat.realtime.service.js"
+
 
 export class ChatService {
-  async getUsersToChat(client_user_id, search) {
+  static async getUsersToChat(client_user_id, search) {
     return await ChatModel.getUsersToChat(client_user_id, search)
   }
 
-  async getMyConversations(client_user_id) {
+  static async getMyConversations(client_user_id) {
     return await ChatModel.getAllUserConversations(client_user_id)
   }
 
-  async getConversation(conversation_id, client_user_id) {
+  static async getConversation(conversation_id, client_user_id) {
     return await ChatModel.getConversation(
       conversation_id,
       client_user_id
     )
   }
 
-  async deleteMyConversation(client_user_id, conversation_id) {
+  static async deleteMyConversation(client_user_id, conversation_id) {
     await ChatModel.deleteUserConversation(client_user_id, conversation_id)
   }
 
-  async getConversationHistory({ conversation_id, limit, offset }) {
+  static async getConversationHistory({ conversation_id, limit, offset }) {
     return await ChatModel.getConversationHistory({
       conversation_id,
       limit,
@@ -29,17 +30,17 @@ export class ChatService {
     })
   }
 
-  async sendMessage({ sender_user_id, conversation_id, msg_content }) {
+  static async sendMessage({ sender_user_id, conversation_id, msg_content }) {
     const newMessageData = await ChatModel.createMessage({
       sender_user_id,
       conversation_id,
       msg_content,
     })
 
-    new ChatRealtimeService().sendNewMessage(conversation_id, newMessageData)
+    ChatRealtimeService.sendNewMessage(conversation_id, newMessageData)
   }
 
-  async acknowledgeMessageDelivered({ user_id, conversation_id, message_id }) {
+  static async acknowledgeMessageDelivered({ user_id, conversation_id, message_id }) {
     const isDelivered = await ChatModel.acknowledgeMessageDelivered(
       user_id,
       message_id
@@ -55,7 +56,7 @@ export class ChatService {
     }
   }
 
-  async acknowledgeMessageRead({ user_id, conversation_id, message_id }) {
+  static async acknowledgeMessageRead({ user_id, conversation_id, message_id }) {
     const isRead = await ChatModel.acknowledgeMessageRead(user_id, message_id)
 
     if (isRead) {
@@ -74,7 +75,7 @@ export class ChatService {
    * @param {number} param0.reactor.user_id
    * @param {string} param0.reactor.username
    */
-  async reactToMessage({
+  static async reactToMessage({
     reactor,
     conversation_id,
     message_id,
@@ -101,7 +102,7 @@ export class ChatService {
    * @param {number} param0.reactor.user_id
    * @param {string} param0.reactor.username
    */
-  async removeMyReactionToMessage({ reactor, conversation_id, message_id }) {
+  static async removeMyReactionToMessage({ reactor, conversation_id, message_id }) {
     await ChatModel.deleteMessageReaction(message_id, reactor.user_id)
 
     /* Realtime actions */
@@ -118,7 +119,7 @@ export class ChatService {
    * @param {number} param0.deleter.user_id
    * @param {string} param0.deleter.username
    */
-  async deleteMessage({ deleter, conversation_id, message_id, delete_for }) {
+  static async deleteMessage({ deleter, conversation_id, message_id, delete_for }) {
     await ChatModel.createMessageDeletionLog({
       deleter_user_id: deleter.user_id,
       message_id,

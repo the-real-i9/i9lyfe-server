@@ -14,7 +14,7 @@ import {
   updateUserConnectionStatusController,
   editUserController,
   uploadProfilePictureController,
-} from "../../controllers/UserControllers.js"
+} from "../../controllers/user.controllers.js"
 
 dotenv.config()
 

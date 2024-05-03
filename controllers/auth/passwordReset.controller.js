@@ -1,4 +1,4 @@
-import { passwordResetService } from "../../services/auth/authServices.js"
+import { passwordResetService } from "../../services/auth/auth.service.js"
 import {
   EmailConfirmationService,
   PasswordResetEmailConfirmationStrategy,

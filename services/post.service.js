@@ -7,10 +7,11 @@ import {
   getPost,
   savePost,
   unsavePost,
-} from "../models/PostCommentModel.js"
+} from "../models/postComment.model.js"
 import { getDBClient } from "../models/db.js"
-import { Post, PostCommentService } from "./PostCommentService.js"
-import { PostCommentRealtimeService } from "./RealtimeServices/PostCommentRealtimeService.js"
+import { Post, PostCommentService } from "./postComment.service.js"
+import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
+
 
 export class PostService {
   /**
@@ -50,7 +51,7 @@ export class PostService {
       const postData = await this.getPost(post_id, client_user_id)
 
       /* Realtime new post */
-      new PostCommentRealtimeService().sendNewPost(client_user_id, postData)
+      PostCommentRealtimeService.sendNewPost(client_user_id, postData)
 
       return postData
     } catch (error) {

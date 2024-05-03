@@ -2,8 +2,8 @@ import express from "express"
 import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
-import * as PCC from "../../controllers/PostCommentControllers.js"
-import { uploadCommentFiles, uploadPostFiles } from "../../middlewares/appMiddlewares.js"
+import * as PCC from "../../controllers/postComment.controllers.js"
+import { uploadCommentFiles, uploadPostFiles } from "../../middlewares/app.middlewares.js"
 
 dotenv.config()
 

@@ -1,4 +1,5 @@
-import { getUnreadNotificationsCount } from "../models/UserModel.js"
+import { getUnreadNotificationsCount } from "../models/user.model"
+
 
 export class NotificationService {
   constructor(receiver_user_id) {

@@ -1,4 +1,5 @@
-import { getAllUserConversationIds } from "../../models/ChatModel.js"
+import { getAllUserConversationIds } from "../../models/chat.model.js"
+
 
 export class ChatRealtimeService {
   /** @type {import("socket.io").Server} */
@@ -51,43 +52,43 @@ export class ChatRealtimeService {
     }
   }
 
-  sendNewMessage(conversation_id, msgData) {
+  static sendNewMessage(conversation_id, msgData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("new message", msgData)
   }
 
-  sendMessageDelivered(conversation_id, infoData) {
+  static sendMessageDelivered(conversation_id, infoData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("message delivered", infoData)
   }
 
-  sendMessageRead(conversation_id, infoData) {
+  static sendMessageRead(conversation_id, infoData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("message read", infoData)
   }
 
-  sendMessageReaction(conversation_id, reactionData) {
+  static sendMessageReaction(conversation_id, reactionData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("message reaction", reactionData)
   }
 
-  sendMessageReactionRemoval(conversation_id, reactionRemovalData) {
+  static sendMessageReactionRemoval(conversation_id, reactionRemovalData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("message reaction removal", reactionRemovalData)
   }
 
-  sendMessageDeleted(conversation_id, deletionData) {
+  static sendMessageDeleted(conversation_id, deletionData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${conversation_id}`)
       .emit("message deleted", deletionData)
   }
 
-  sendGroupActivityLog(group_conversation_id, groupActivityLogData) {
+  static sendGroupActivityLog(group_conversation_id, groupActivityLogData) {
     ChatRealtimeService.io
       ?.to(`convo-room-${group_conversation_id}`)
       .emit("new group activity", groupActivityLogData)

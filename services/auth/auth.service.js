@@ -88,7 +88,7 @@ export const userSigninService = async (email, passwordInput) => {
   }
 }
 
-export const passwordReserService = async (userEmail, newPassword) => {
+export const passwordResetService = async (userEmail, newPassword) => {
   const passwordHash = await hashPassword(newPassword)
 
   await changeUserPassword(userEmail, passwordHash)

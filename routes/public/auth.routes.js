@@ -6,7 +6,7 @@ import {
   passwordResetProgressValidation,
   signupProgressValidation,
 } from "../../middlewares/auth.middlewares.js"
-import { signupController } from "../../controllers/auth/signupController.js"
+import { signupController } from "../../controllers/auth/signup.controller.js"
 import { signinController } from "../../controllers/auth/signin.controller.js"
 import { passwordResetController } from "../../controllers/auth/passwordReset.controller.js"
 

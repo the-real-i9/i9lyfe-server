@@ -2,8 +2,8 @@ import express from "express"
 import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
-import * as CC from "../../controllers/ChatControllers.js"
-import { uploadMessageFiles } from "../../middlewares/appMiddlewares.js"
+import * as CC from "../../controllers/chat.controllers.js"
+import { uploadMessageFiles } from "../../middlewares/app.middlewares.js"
 
 dotenv.config()
 
