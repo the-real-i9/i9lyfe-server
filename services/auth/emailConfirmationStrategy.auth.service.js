@@ -1,18 +1,17 @@
-/* eslint-disable no-unused-vars */
-import { userExists } from "../models/UserModel.js"
+import { userExists } from "../../models/user.model.js"
 import {
   generateCodeWithExpiration,
   tokenLives,
   tokensMatch,
-} from "../utils/helpers.js"
-import sendMail from "./MailingService.js"
+} from "../../utils/helpers.js"
+import sendMail from "../mail.service.js"
 
 /**
  * Stragegy pattern
  * @interface
  * @abstract
  */
-class EmailConfirmationStrategy {
+export class EmailConfirmationStrategy {
   /** @param {import('express').Request} req */
   async handleEmailSubmission(req) {
     throw new Error("handleEmailSubmission must be implemented")
@@ -191,21 +190,4 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
   }
 }
 
-export class EmailConfirmationService {
-  /** @param {SignupEmailConfirmationStrategy | PasswordResetEmailConfirmationStrategy} emailConfirmationStrategy  */
-  // dependency injection
-  constructor(emailConfirmationStrategy) {
-    /** @type SignupEmailConfirmationStrategy | PasswordResetEmailConfirmationStrategy */
-    this.emailConfirmationStrategy = emailConfirmationStrategy
-  }
 
-  /** @param {import('express').Request} req */
-  async handleEmailSubmission(req) {
-    return await this.emailConfirmationStrategy.handleEmailSubmission(req)
-  }
-
-  /** @param {import('express').Request} req */
-  async handleTokenValidation(req) {
-    return await this.emailConfirmationStrategy.handleTokenValidation(req)
-  }
-}

@@ -4,7 +4,7 @@ import cors from "cors"
 import path, { dirname } from "path"
 import { fileURLToPath } from 'url';
 
-import AuthRoutes from "./routes/public/AuthRoutes.js"
+import authRoutes from "./routes/public/auth.routes.js"
 import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
 import UserProtectedRoutes from "./routes/protected/UserProtectedRoutes.js"
 import ChatRoutes from "./routes/protected/ChatRoutes.js"
@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, "static")))
 app.use(express.json({ limit: "10mb" }))
 
 
-app.use("/api/auth", AuthRoutes)
+app.use("/api/auth", authRoutes)
 
 app.use("/api/post_comment", PostCommentRoutes)
 

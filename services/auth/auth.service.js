@@ -1,15 +1,23 @@
 import bcrypt from "bcrypt"
-import {
-  changeUserPassword,
-  createNewUser,
-  getUserByEmail,
-} from "../models/UserModel.js"
-import { generateJwtToken } from "../utils/helpers.js"
-import sendMail from "./MailingService.js"
+import { generateJwtToken } from "../../utils/helpers.js"
+import sendMail from "../mail.service.js"
+import { changeUserPassword, createUser, getUser } from "../../models/user.model.js"
+
+/** @typedef {import('express').Request} ExpRequest */
+/** @typedef {import('express').Response} ExpResponse */
 
 /** @param {string} password */
-export const hashPassword = async (password) => {
+const hashPassword = async (password) => {
   return await bcrypt.hash(password, 10)
+}
+
+/**
+ * @param {string} passwordInput Password supplied by user
+ * @param {string} passwordHash The hashed version stored in database
+ * @returns The compare result; true if both match and false otherwise
+ */
+const passwordMatch = async (passwordInput, passwordHash) => {
+  return await bcrypt.compare(passwordInput, passwordHash)
 }
 
 /**
@@ -24,13 +32,11 @@ export const hashPassword = async (password) => {
 export const userRegistrationService = async (userDataInput) => {
   const passwordHash = await hashPassword(userDataInput.password)
 
-  const result = await createNewUser({
+  const userData = await createUser({
     ...userDataInput,
     password: passwordHash,
     birthday: new Date(userDataInput.birthday),
   })
-
-  const userData = result.rows[0]
 
   const jwtToken = generateJwtToken({
     client_user_id: userData.id,
@@ -45,25 +51,13 @@ export const userRegistrationService = async (userDataInput) => {
 }
 
 /**
- * @param {string} passwordInput Password supplied by user
- * @param {string} passwordHash The hashed version stored in database
- * @returns The compare result; true if both match and false otherwise
- */
-const passwordMatch = async (passwordInput, passwordHash) => {
-  return await bcrypt.compare(passwordInput, passwordHash)
-}
-
-/**
  * @param {string} email
  * @param {string} passwordInput
  */
 export const userSigninService = async (email, passwordInput) => {
-  const result = await getUserByEmail(
-    email,
-    "id email username password name profile_pic_url"
-  )
+  const user = await getUser(email, true)
 
-  if (result.rowCount === 0) {
+  if (!user) {
     return {
       ok: false,
       err: { code: 422, reason: "Incorrect email or password" },
@@ -71,7 +65,7 @@ export const userSigninService = async (email, passwordInput) => {
     }
   }
 
-  const { password: passwordHash, ...userData } = result.rows[0]
+  const { password: passwordHash, ...userData } = user
   if (!(await passwordMatch(passwordInput, passwordHash))) {
     return {
       ok: false,
@@ -94,7 +88,7 @@ export const userSigninService = async (email, passwordInput) => {
   }
 }
 
-export const passwordResetService = async (userEmail, newPassword) => {
+export const passwordReserService = async (userEmail, newPassword) => {
   const passwordHash = await hashPassword(newPassword)
 
   await changeUserPassword(userEmail, passwordHash)
@@ -109,6 +103,21 @@ export const passwordResetService = async (userEmail, newPassword) => {
     ok: true,
     err: null,
     data: null,
+  }
+}
+
+/** @param {import("./emailConfirmationStrategy.auth.service.js").EmailConfirmationStrategy} emailConfirmationStrategy */
+export const emailConfirmationService = (emailConfirmationStrategy) => {
+  return {
+    /** @param {ExpRequest} req */
+    async handleEmailSubmission(req) {
+      return await emailConfirmationStrategy.handleEmailSubmission(req)
+    },
+
+    /** @param {ExpRequest} req */
+    async handleTokenValidation(req) {
+      return await emailConfirmationStrategy.handleTokenValidation(req)
+    },
   }
 }
 

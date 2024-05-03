@@ -1,8 +1,7 @@
-import { userRegistrationService } from "../../services/authServices.js"
+import { emailConfirmationService, userRegistrationService } from "../../services/auth/auth.service.js"
 import {
-  EmailConfirmationService,
   SignupEmailConfirmationStrategy,
-} from "../../services/EmailConfirmationService.js"
+} from "../../services/auth/emailConfirmationStrategy.auth.service.js"
 
 export const signupController = async (req, res) => {
   const { step } = req.params
@@ -17,7 +16,7 @@ export const signupController = async (req, res) => {
 
 const newAccountRequestHandler = async (req, res) => {
   try {
-    const response = await new EmailConfirmationService(
+    const response = await emailConfirmationService(
       new SignupEmailConfirmationStrategy()
     ).handleEmailSubmission(req)
 
@@ -33,7 +32,7 @@ const newAccountRequestHandler = async (req, res) => {
 
 const emailVerificationHandler = async (req, res) => {
   try {
-    const response = await new EmailConfirmationService(
+    const response = await emailConfirmationService(
       new SignupEmailConfirmationStrategy()
     ).handleTokenValidation(req)
 

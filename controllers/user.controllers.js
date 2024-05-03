@@ -43,17 +43,17 @@ export const unfollowUserController = async (req, res) => {
   }
 }
 
-export const updateUserProfileController = async (req, res) => {
+export const editUserController = async (req, res) => {
   try {
-    const updateKVPairs = req.body
+    const updateDict = req.body
 
     const { client_user_id } = req.auth
 
     const updatedUserData = await new UserService(client_user_id).updateProfile(
-      new Map(Object.entries(updateKVPairs))
+      Object.entries(updateDict)
     )
 
-    res.status(200).send({ updatedUserData })
+    res.status(200)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

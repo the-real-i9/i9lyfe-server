@@ -1,5 +1,5 @@
-import * as UM from "../models/UserModel.js"
-import { NotificationService } from "./NotificationService.js"
+import * as UM from "../models/user.model.js"
+import { NotificationService } from "./notification.service.js"
 
 export class UserService {
   constructor(client_user_id) {
@@ -7,21 +7,18 @@ export class UserService {
   }
 
   async getClientUser() {
-    return await UM.getUserById(this.client_user_id, "id username email name profile_pic_url connection_status")
+    return await UM.getUser(this.client_user_id)
   }
 
   async follow(to_follow_user_id) {
-    const followNotifData = await UM.followUser({
-      client_user_id: this.client_user_id,
-      to_follow_user_id,
-    })
+    const followNotifData = await UM.followUser(this.client_user_id, to_follow_user_id)
 
     const { receiver_user_id, ...restData } = followNotifData
     new NotificationService(receiver_user_id).pushNotification(restData)
   }
 
   async updateProfile(updateKVPairs) {
-    return await UM.updateUserProfile(this.client_user_id, updateKVPairs)
+    await UM.editUser(this.client_user_id, updateKVPairs)
   }
 
   async updateConnectionStatus(new_connection_status) {

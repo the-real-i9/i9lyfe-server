@@ -12,7 +12,7 @@ import {
   readUserNotificationController,
   unfollowUserController,
   updateUserConnectionStatusController,
-  updateUserProfileController,
+  editUserController,
   uploadProfilePictureController,
 } from "../../controllers/UserControllers.js"
 
@@ -40,7 +40,7 @@ router.post("/users/:user_id/follow", followUserController)
 
 router.delete("/users/:user_id/unfollow", unfollowUserController)
 
-router.put("/update_my_profile", updateUserProfileController)
+router.put("/update_my_profile", editUserController)
 
 router.put("/upload_profile_picture", uploadProfilePictureController)
 

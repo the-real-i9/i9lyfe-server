@@ -19,7 +19,7 @@ export class PostCommentRealtimeService {
     /* To receive new post from those you follow */
     const followeesNewPostRooms = (
       await getUserFolloweesIds(client_user_id)
-    ).map(({ followee_user_id }) => `user_${followee_user_id}_new_post_room`)
+    ).map((followee_user_id) => `user_${followee_user_id}_new_post_room`)
 
     socket.join(followeesNewPostRooms)
 
