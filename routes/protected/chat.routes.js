@@ -25,47 +25,9 @@ router.use(
 
 router.get("/users_to_chat", CC.getUsersToChatController)
 
-router.post("/create_dm_conversation", CC.createDMConversationController)
-
-router.post("/create_group_conversation", CC.createGroupConversationController)
-
-router.post(
-  "/group_conversation/add_participants",
-  CC.addParticipantsToGroupController
-)
-
-router.put(
-  "/group_conversation/remove_participant",
-  CC.removeParticipantFromGroupController
-)
-
-router.post("/group_conversation/join_group", CC.joinGroupController)
-
-router.put("/group_conversation/leave_group", CC.leaveGroupController)
-
-router.put(
-  "/group_conversation/make_participant_admin",
-  CC.makeParticipantAdminController
-)
-
-router.put(
-  "/group_conversation/remove_participant_from_admins",
-  CC.removeParticipantFromAdminsController
-)
-
-router.put(
-  "/group_conversation/change_group_title",
-  CC.changeGroupTitleController
-)
-
-router.put(
-  "/group_conversation/change_group_description",
-  CC.changeGroupDescriptionController
-)
+router.post("/create_conversation", CC.createConversationController)
 
 router.get("/conversations", CC.getConversationsController)
-
-router.get("/conversations/:conversation_id", CC.getConversationController)
 
 router.delete(
   "/conversations/:conversation_id",
@@ -78,33 +40,33 @@ router.get(
 )
 
 router.post(
-  "/conversations/:conversation_id/send_message",
+  "/conversations/:conversation_id/partner/:partner_user_id/send_message",
   uploadMessageFiles,
   CC.sendMessageController
 )
 
 router.put(
-  "/conversations/:conversation_id/messages/:message_id/delivered",
+  "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/delivered",
   CC.ackMessageDeliveredController
 )
 
 router.put(
-  "/conversations/:conversation_id/messages/:message_id/read",
+  "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/read",
   CC.ackMessageReadController
 )
 
 router.post(
-  "/conversations/:conversation_id/messages/:message_id/react",
+  "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/react",
   CC.reactToMessageController
 )
 
 router.delete(
-  "/conversations/:conversation_id/messages/:message_id/remove_reaction",
+  "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/remove_reaction",
   CC.removeReactionToMessageController
 )
 
 router.delete(
-  "/conversations/:conversation_id/messages/:message_id",
+  "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id",
   CC.deleteMessageController
 )
 

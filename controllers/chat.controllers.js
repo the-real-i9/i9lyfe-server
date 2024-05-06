@@ -4,8 +4,6 @@
  */
 
 import { ChatService } from "../services/chat/chat.service.js"
-import { DMChatService } from "../services/chat/dm.chat.service.js"
-import { GroupChatService } from "../services/chat/group.chat.service.js"
 
 /**
  *
@@ -27,202 +25,19 @@ export const getUsersToChatController = async (req, res) => {
   }
 }
 
-export const createDMConversationController = async (req, res) => {
+export const createConversationController = async (req, res) => {
   try {
-    const { partner } = req.body
+    const { partner, init_message } = req.body
 
     const { client_user_id, client_username } = req.auth
 
-    const dm_conversation_id = await DMChatService.createDMConversation(
+    const dm_conversation_id = await ChatService.createConversation(
       { user_id: client_user_id, username: client_username },
-      partner
+      partner,
+      init_message
     )
 
     res.status(201).send({ dm_conversation_id })
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const createGroupConversationController = async (req, res) => {
-  try {
-    const {
-      title,
-      description = "",
-      cover_image_url = "",
-      participants,
-    } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    const group_conversation_id =
-      await GroupChatService.createGroupConversation({
-        participants: [
-          {
-            user_id: client_user_id,
-            username: client_username,
-          },
-          ...participants,
-        ],
-        client_username,
-        title,
-        description,
-        cover_image_url,
-      })
-
-    res.status(201).send({ group_conversation_id })
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const addParticipantsToGroupController = async (req, res) => {
-  try {
-    const { group_conversation_id, participants } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().addParticipants({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      participants,
-      group_conversation_id,
-    })
-
-    res.sendStatus(201)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const removeParticipantFromGroupController = async (req, res) => {
-  try {
-    const { group_conversation_id, participant } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().removeParticipant({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      participant,
-      group_conversation_id,
-    })
-    res.sendStatus(201)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const joinGroupController = async (req, res) => {
-  try {
-    const { group_conversation_id, participant } = req.body
-
-    await new GroupChatService().joinGroup(participant, group_conversation_id)
-    res.sendStatus(201)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const leaveGroupController = async (req, res) => {
-  try {
-    const { group_conversation_id, participant } = req.body
-
-    await new GroupChatService().leaveGroup(participant, group_conversation_id)
-    res.sendStatus(201)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const makeParticipantAdminController = async (req, res) => {
-  try {
-    const { group_conversation_id, participant } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().makeParticipantAdmin({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      participant,
-      group_conversation_id,
-    })
-    res.sendStatus(200)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const removeParticipantFromAdminsController = async (req, res) => {
-  try {
-    const { group_conversation_id, admin_participant } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().removeParticipantFromAdmins({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      admin_participant,
-      group_conversation_id,
-    })
-    res.sendStatus(200)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const changeGroupTitleController = async (req, res) => {
-  try {
-    const { group_conversation_id, new_group_title } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().changeGroupInfo({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      group_conversation_id,
-      newInfoKVPair: { title: new_group_title },
-    })
-    res.sendStatus(200)
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const changeGroupDescriptionController = async (req, res) => {
-  try {
-    const { group_conversation_id, new_group_description } = req.body
-
-    const { client_user_id, client_username } = req.auth
-
-    await new GroupChatService().changeGroupInfo({
-      client: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      group_conversation_id,
-      newInfoKVPair: { description: new_group_description },
-    })
-    res.sendStatus(200)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -233,29 +48,9 @@ export const getConversationsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const conversations = await new ChatService().getMyConversations(
-      client_user_id
-    )
+    const conversations = await ChatService.getMyConversations(client_user_id)
 
     res.status(200).send({ conversations })
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-export const getConversationController = async (req, res) => {
-  try {
-    const { conversation_id } = req.params
-
-    const { client_user_id } = req.auth
-
-    const conversation = await new ChatService().getConversation(
-      conversation_id,
-      client_user_id
-    )
-
-    res.status(200).send({ conversation })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -268,10 +63,7 @@ export const deleteConversationController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await new ChatService().deleteMyConversation(
-      client_user_id,
-      conversation_id
-    )
+    await ChatService.deleteMyConversation(client_user_id, conversation_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -286,7 +78,7 @@ export const getConversationHistoryController = async (req, res) => {
 
     const { limit = 50, offset = 0 } = req.query
 
-    const conversationHistory = await new ChatService().getConversationHistory({
+    const conversationHistory = await ChatService.getConversationHistory({
       conversation_id,
       limit,
       offset,
@@ -299,20 +91,25 @@ export const getConversationHistoryController = async (req, res) => {
   }
 }
 
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
+ */
 export const sendMessageController = async (req, res) => {
   try {
-    const { conversation_id } = req.params
+    const { conversation_id, partner_user_id } = req.params
     const { msg_content } = req.body
 
-    const { client_user_id: sender_user_id } = req.auth
+    const { client_user_id } = req.auth
 
-    await new ChatService().sendMessage({
-      sender_user_id,
+    const client_res = await ChatService.sendMessage({
+      client_user_id,
+      partner_user_id,
       conversation_id,
       msg_content,
     })
 
-    res.sendStatus(201)
+    res.send(201).json(client_res)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -321,14 +118,18 @@ export const sendMessageController = async (req, res) => {
 
 export const ackMessageDeliveredController = async (req, res) => {
   try {
-    const { conversation_id, message_id } = req.params
+    const { conversation_id, partner_user_id, message_id } = req.params
+
+    const { delivery_time } = req.body
 
     const { client_user_id } = req.auth
 
-    await new ChatService().acknowledgeMessageDelivered({
-      user_id: client_user_id,
+    await ChatService.acknowledgeMessageDelivered({
+      client_user_id,
+      partner_user_id,
       conversation_id,
       message_id,
+      delivery_time
     })
 
     res.sendStatus(204)
@@ -340,12 +141,13 @@ export const ackMessageDeliveredController = async (req, res) => {
 
 export const ackMessageReadController = async (req, res) => {
   try {
-    const { conversation_id, message_id } = req.params
+    const { conversation_id, partner_user_id, message_id } = req.params
 
     const { client_user_id } = req.auth
 
-    await new ChatService().acknowledgeMessageRead({
-      user_id: client_user_id,
+    await ChatService.acknowledgeMessageRead({
+      client_user_id,
+      partner_user_id,
       conversation_id,
       message_id,
     })
@@ -359,17 +161,18 @@ export const ackMessageReadController = async (req, res) => {
 
 export const reactToMessageController = async (req, res) => {
   try {
-    const { conversation_id, message_id } = req.params
+    const { conversation_id, partner_user_id, message_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
 
-    await new ChatService().reactToMessage({
+    await ChatService.reactToMessage({
+      conversation_id,
       reactor: {
         user_id: client_user_id,
         username: client_username,
       },
-      conversation_id,
+      partner_user_id,
       message_id,
       reaction_code_point: reaction.codePointAt(),
     })
@@ -383,16 +186,17 @@ export const reactToMessageController = async (req, res) => {
 
 export const removeReactionToMessageController = async (req, res) => {
   try {
-    const { client_user_id, client_username } = req.auth
+    const { client_user_id, partner_user_id, client_username } = req.auth
 
     const { conversation_id, message_id } = req.params
 
-    await new ChatService().removeMyReactionToMessage({
+    await ChatService.removeReactionToMessage({
+      conversation_id,
       reactor: {
         user_id: client_user_id,
         username: client_username,
       },
-      conversation_id,
+      partner_user_id,
       message_id,
     })
 
@@ -405,18 +209,19 @@ export const removeReactionToMessageController = async (req, res) => {
 
 export const deleteMessageController = async (req, res) => {
   try {
-    const { client_user_id, client_username } = req.auth
-
+    const { conversation_id, partner_user_id, message_id } = req.params
+    
     const { delete_for } = req.query
-
-    const { conversation_id, message_id } = req.params
-
-    await new ChatService().deleteMessage({
+    
+    const { client_user_id, client_username } = req.auth
+    
+    await ChatService.deleteMessage({
+      conversation_id,
       deleter: {
         user_id: client_user_id,
         username: client_username,
       },
-      conversation_id,
+      partner_user_id,
       message_id,
       delete_for,
     })
