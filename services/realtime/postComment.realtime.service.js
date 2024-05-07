@@ -71,13 +71,16 @@ export class PostCommentRealtimeService {
   }
 
 
-  /**
-   * @param {object} param0 
-   * @param {"post" | "comment"} param0.entity 
-   */
-  static sendEntityMetricsUpdate({entity, entity_id, data}) {
+  
+  static sendPostMetricsUpdate(post_id, data) {
     PostCommentRealtimeService.io
-      ?.to(`${entity}_${entity_id}_metrics_update_subscribers`)
-      .emit(`latest ${entity} metric`, data)
+      ?.to(`post_${post_id}_metrics_update_subscribers`)
+      .emit(`latest post metric`, data)
+  }
+
+  static sendCommentMetricsUpdate(comment_id, data) {
+    PostCommentRealtimeService.io
+      ?.to(`comment_${comment_id}_metrics_update_subscribers`)
+      .emit(`latest comment metric`, data)
   }
 }
