@@ -1,8 +1,12 @@
-import * as AppModel from "../models/app.model.js"
+import * as AM from "../models/app.model.js"
 
 export class AppService {
+  static async getFeedPosts({ client_user_id, limit, offset }) {
+    return await AM.getFeedPosts({ client_user_id, limit, offset })
+  }
+
   static async getExplorePosts(client_user_id) {
-    return await AppModel.getAllPosts(client_user_id)
+    return await AM.getAllPosts(client_user_id)
   }
 
   /**
@@ -12,10 +16,10 @@ export class AppService {
    */
   static async searchAndFilter({ search, filter, client_user_id }) {
     return filter === "hashtag"
-      ? await AppModel.searchHashtags(search)
+      ? await AM.searchHashtags(search)
       : filter === "user"
-      ? await AppModel.searchUsers(search)
-      : await AppModel.searchAndFilterPosts({
+      ? await AM.searchUsers(search)
+      : await AM.searchAndFilterPosts({
           search,
           filter,
           client_user_id,
@@ -23,6 +27,6 @@ export class AppService {
   }
 
   static async getHashtagPosts(hashtag_name, client_user_id) {
-    return await AppModel.getHashtagPosts(hashtag_name, client_user_id)
+    return await AM.getHashtagPosts(hashtag_name, client_user_id)
   }
 }

@@ -9,6 +9,16 @@ export const getAllPosts = async (client_user_id) => {
   return (await dbQuery(query)).rows[0].all_posts
 }
 
+export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: "SELECT * FROM get_feed_posts($1, $2)",
+    values: [client_user_id, limit, offset],
+  }
+
+  return (await dbQuery(query)).rows
+}
+
 export const searchAndFilterPosts = async ({
   search,
   filter,
