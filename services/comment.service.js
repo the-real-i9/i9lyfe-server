@@ -122,6 +122,22 @@ export class CommentService {
     })
   }
 
+  static async getReactorsWithReaction({
+    comment_id,
+    reaction_code_point,
+    client_user_id,
+    limit,
+    offset,
+  }) {
+    return await PCM.getReactorsWithReactionToComment({
+      comment_id,
+      reaction_code_point,
+      client_user_id,
+      limit,
+      offset,
+    })
+  }
+
   static async removeReaction(target_comment_id, client_user_id) {
     const { latest_reactions_count } = await PCM.removeReactionToComment(
       target_comment_id,

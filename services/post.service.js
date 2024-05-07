@@ -11,7 +11,7 @@ export class PostService {
    * @param {string} post.type
    * @param {string} post.description
    */
-  static async createPost({ client_user_id, media_urls, type, description }) {
+  static async create({ client_user_id, media_urls, type, description }) {
     const hashtags = extractHashtags(description)
     const mentions = extractMentions(description)
 
@@ -159,6 +159,22 @@ export class PostService {
     })
   }
 
+  static async getReactorsWithReaction({
+    post_id,
+    reaction_code_point,
+    client_user_id,
+    limit,
+    offset,
+  }) {
+    return await PCM.getReactorsWithReactionToPost({
+      post_id,
+      reaction_code_point,
+      client_user_id,
+      limit,
+      offset,
+    })
+  }
+
   static async removeReaction(target_post_id, client_user_id) {
     const { latest_reactions_count } = await PCM.removeReactionToPost(
       target_post_id,
@@ -190,16 +206,16 @@ export class PostService {
       latest_saves_count,
     })
   }
-  /* A repost is a hasOne relationship: Repost hasOne Post */
-  static async repost(reposter_user_id, post_id) {
-    await PCM.createRepost(reposter_user_id, post_id)
+
+  static async repost(post_id, client_user_id) {
+    await PCM.createRepost(post_id, client_user_id)
   }
 
   static async delete(post_id, client_user_id) {
     await PCM.deletePost(post_id, client_user_id)
   }
 
-  static async unrepost(original_post_id, client_user_id) {
-    await PCM.deleteRepost(original_post_id, client_user_id)
+  static async unrepost(post_id, client_user_id) {
+    await PCM.deleteRepost(post_id, client_user_id)
   }
 }

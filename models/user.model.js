@@ -160,44 +160,44 @@ export const getUserFollowing = async (username, client_user_id) => {
 export const getUserPosts = async (username, client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT user_posts FROM get_user_posts($1, $2)",
+    text: "SELECT * FROM get_user_posts($1, $2)",
     values: [username, client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].user_posts
+  return (await dbQuery(query)).rows
 }
 
 // GET posts user has been mentioned in
 export const getMentionedPosts = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT mentioned_posts FROM get_mentioned_posts($1)",
+    text: "SELECT * FROM get_mentioned_posts($1)",
     values: [client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].mentioned_posts
+  return (await dbQuery(query)).rows
 }
 
 // GET posts reacted by user
 export const getReactedPosts = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT reacted_posts FROM get_reacted_posts($1)",
+    text: "SELECT * FROM get_reacted_posts($1)",
     values: [client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].reacted_posts
+  return (await dbQuery(query)).rows
 }
 
 // GET posts saved by this user
 export const getSavedPosts = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT saved_posts FROM get_saved_posts($1)",
+    text: "SELECT * FROM get_saved_posts($1)",
     values: [client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].saved_posts
+  return (await dbQuery(query)).rows
 }
 
 /**

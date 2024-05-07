@@ -118,4 +118,3 @@ When a user acknowledges `read` -- `BEFORE UPDATE`
     socket.leave(`post_${post_id}_updates_subscribers`)
   })
   ```
-  

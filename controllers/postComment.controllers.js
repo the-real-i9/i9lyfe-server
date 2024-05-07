@@ -1,9 +1,5 @@
-import {
-  Comment,
-  Post,
-  PostCommentService,
-} from "../services/postComment.service.js"
-import { PostService } from "../services/post.service.js"
+import { PostService as Post } from "../services/post.service.js"
+import { CommentService as Comment } from "../services/comment.service.js"
 
 /**
  * @typedef {import("express").Request} ExpressRequest
@@ -21,7 +17,7 @@ export const createNewPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postData = await new PostService().createPost({
+    const postData = await Post.create({
       client_user_id,
       media_urls,
       type,
@@ -43,16 +39,19 @@ export const createNewPostController = async (req, res) => {
  */
 export const reactToPostController = async (req, res) => {
   try {
-    const { post_id, post_owner_user_id } = req.params
+    const { target_post_id, target_post_owner_user_id } = req.params
     const { reaction } = req.body
-    // Should I accept the code point directly?
+
     const reaction_code_point = reaction.codePointAt()
 
-    const { client_user_id: reactor_user_id } = req.auth
+    const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Post(post_id, post_owner_user_id)
-    ).addReaction(reactor_user_id, reaction_code_point)
+    await Post.reactTo({
+      client_user_id,
+      target_post_id,
+      target_post_owner_user_id,
+      reaction_code_point,
+    })
 
     // asynchronously send a reaction notification with the NotificationService via WebSockets
 
@@ -69,18 +68,22 @@ export const reactToPostController = async (req, res) => {
  */
 export const commentOnPostController = async (req, res) => {
   try {
-    const { post_id, post_owner_user_id } = req.params
+    const { target_post_id, target_post_owner_user_id } = req.params
     const {
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
       attachment_url = "",
     } = req.body
 
-    const { client_user_id: commenter_user_id } = req.auth
+    const { client_user_id } = req.auth
 
-    const commentData = await new PostCommentService(
-      new Post(post_id, post_owner_user_id)
-    ).addComment({ commenter_user_id, comment_text, attachment_url })
+    const commentData = await Post.commentOn({
+      client_user_id,
+      target_post_id,
+      target_post_owner_user_id,
+      comment_text,
+      attachment_url,
+    })
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
 
@@ -97,18 +100,19 @@ export const commentOnPostController = async (req, res) => {
  */
 export const reactToCommentController = async (req, res) => {
   try {
-    const { comment_id, comment_owner_user_id } = req.params
+    const { target_comment_id, target_comment_owner_user_id } = req.params
     const { reaction } = req.body
 
     const reaction_code_point = reaction.codePointAt()
 
-    const { client_user_id: reactor_user_id } = req.auth
+    const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Comment(comment_id, comment_owner_user_id)
-    ).addReaction(reactor_user_id, reaction_code_point)
-
-    // asynchronously send a reaction notification with the NotificationService via WebSockets
+    await Comment.reactTo({
+      client_user_id,
+      target_comment_id,
+      target_comment_owner_user_id,
+      reaction_code_point,
+    })
 
     res.sendStatus(200)
   } catch (error) {
@@ -123,29 +127,22 @@ export const reactToCommentController = async (req, res) => {
  */
 export const commentOnCommentController = async (req, res) => {
   try {
-    const { comment_id, parent_comment_owner_user_id } = req.params
+    const { target_comment_id, target_comment_owner_user_id } = req.params
     const {
       comment_text,
       // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url = null,
+      attachment_url = "",
     } = req.body
 
     const { client_user_id } = req.auth
 
-    // Observe that, a reply is a comment on a comment,
-    // or, technically put, Comments are nested data structures
-    // All Replies are Comments and behave like Comments
-    // But, not all Comments are Replies, as Comments belong to Posts and Replies do not.
-
-    const commentData = await new PostCommentService(
-      new Comment(comment_id, parent_comment_owner_user_id)
-    ).addComment({
-      commenter_user_id: client_user_id,
+    const commentData = await Comment.commentOn({
+      client_user_id,
+      target_comment_id,
+      target_comment_owner_user_id,
       comment_text,
-      attachment_url,
+      attachment_url
     })
-
-    // asynchronously send a reply notification with the NotificationService via WebSockets
 
     res.status(201).send({ commentData })
   } catch (error) {
@@ -163,7 +160,7 @@ export const createRepostController = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService().repostPost(client_user_id, post_id)
+    await Post.repost(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -182,7 +179,7 @@ export const postSaveController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await new PostService().savePost(post_id, client_user_id)
+    await Post.save(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -200,7 +197,7 @@ export const postUnsaveController = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService().unsavePost(post_id, client_user_id)
+    await Post.unsave(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -215,36 +212,13 @@ export const postUnsaveController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getHomeFeedController = async (req, res) => {
-  try {
-    const { limit = 20, offset = 0 } = req.query
-
-    const { client_user_id } = req.auth
-
-    const homeFeedPosts = await new PostService().getFeedPosts({
-      client_user_id,
-      limit,
-      offset,
-    })
-
-    res.status(200).send({ homeFeedPosts })
-  } catch (error) {
-    // console.error(error)
-    res.sendStatus(500)
-  }
-}
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const getPostController = async (req, res) => {
   try {
     const { post_id } = req.params
 
     const { client_user_id } = req.auth
 
-    const post = await new PostService().getPost(post_id, client_user_id)
+    const post = await Post.getDetail(post_id, client_user_id)
 
     res.status(200).send({ post })
   } catch (error) {
@@ -265,9 +239,12 @@ export const getCommentsOnPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentsOnPost = await new PostCommentService(
-      new Post(post_id)
-    ).getComments({ client_user_id, limit, offset })
+    const commentsOnPost = await Post.getComments({
+      post_id,
+      client_user_id,
+      limit,
+      offset
+    })
 
     res.status(200).send({ commentsOnPost })
   } catch (error) {
@@ -286,10 +263,7 @@ export const getCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const comment = await new PostCommentService(new Post()).getComment(
-      comment_id,
-      client_user_id
-    )
+    const comment = await Comment.getDetail(comment_id, client_user_id)
 
     res.status(200).send({ comment })
   } catch (error) {
@@ -310,9 +284,12 @@ export const getReactorsToPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postReactors = await new PostCommentService(
-      new Post(post_id)
-    ).getReactors({ client_user_id, limit, offset })
+    const postReactors = await Post.getReactors({
+      post_id,
+      client_user_id,
+      limit,
+      offset
+    })
 
     res.status(200).send({ postReactors })
   } catch (error) {
@@ -333,13 +310,12 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const reactorsWithReaction = await new PostCommentService(
-      new Post(post_id)
-    ).getReactorsWithReaction({
+    const reactorsWithReaction = await Post.getReactorsWithReaction({
+      post_id,
       reaction_code_point: reaction.codePointAt(),
       client_user_id,
       limit,
-      offset,
+      offset
     })
 
     res.status(200).send({ reactorsWithReaction })
@@ -355,15 +331,18 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
  */
 export const getCommentsOnCommentController = async (req, res) => {
   try {
-    const { parent_comment_id } = req.params
+    const { comment_id } = req.params
 
     const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
-    const commentsOnComment = await new PostCommentService(
-      new Comment(parent_comment_id)
-    ).getComments({ client_user_id, limit, offset })
+    const commentsOnComment = await Comment.getComments({
+      comment_id,
+      client_user_id,
+      limit,
+      offset
+    })
 
     res.status(200).send({ commentsOnComment })
   } catch (error) {
@@ -384,9 +363,12 @@ export const getReactorsToCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentReactors = await new PostCommentService(
-      new Comment(comment_id)
-    ).getReactors({ client_user_id, limit, offset })
+    const commentReactors = await Comment.getReactors({
+      comment_id,
+      client_user_id,
+      limit,
+      offset
+    })
 
     res.status(200).send({ commentReactors })
   } catch (error) {
@@ -407,9 +389,8 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentReactorsWithReaction = await new PostCommentService(
-      new Comment(comment_id)
-    ).getReactorsWithReaction({
+    const commentReactorsWithReaction = await Comment.getReactorsWithReaction({
+      comment_id,
       reaction_code_point: reaction.codePointAt(),
       client_user_id,
       limit,
@@ -434,7 +415,7 @@ export const deletePostController = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService().deletePost(post_id, client_user_id)
+    await Post.delete(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -449,12 +430,10 @@ export const deletePostController = async (req, res) => {
  */
 export const removeReactionToPostController = async (req, res) => {
   try {
-    const { post_id } = req.params
+    const { target_post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Post(post_id)
-    ).removeReaction(client_user_id)
+    await Post.removeReaction(target_post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -467,14 +446,16 @@ export const removeReactionToPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const deleteCommentOnPostController = async (req, res) => {
+export const removeCommentOnPostController = async (req, res) => {
   try {
     const { post_id, comment_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Post(post_id)
-    ).deleteComment(client_user_id, comment_id)
+    await Post.removeComment({
+      post_id,
+      comment_id,
+      client_user_id,
+    })
 
     res.sendStatus(200)
   } catch (error) {
@@ -487,14 +468,16 @@ export const deleteCommentOnPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const deleteCommentOnCommentController = async (req, res) => {
+export const removeCommentOnCommentController = async (req, res) => {
   try {
     const { parent_comment_id, comment_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Comment(parent_comment_id)
-    ).deleteComment(client_user_id, comment_id)
+    await Comment.removeComment({
+      parent_comment_id,
+      comment_id,
+      client_user_id,
+    })
 
     res.sendStatus(200)
   } catch (error) {
@@ -509,12 +492,10 @@ export const deleteCommentOnCommentController = async (req, res) => {
  */
 export const removeReactionToCommentController = async (req, res) => {
   try {
-    const { comment_id } = req.params
+    const { target_comment_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostCommentService(
-      new Comment(comment_id)
-    ).removeReaction(client_user_id)
+    await Comment.removeReaction(target_comment_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
@@ -529,10 +510,10 @@ export const removeReactionToCommentController = async (req, res) => {
  */
 export const deleteRepostController = async (req, res) => {
   try {
-    const { post_id: original_post_id } = req.params
+    const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await new PostService().deleteRepost(original_post_id, client_user_id)
+    await Post.unrepost(post_id, client_user_id)
 
     res.sendStatus(200)
   } catch (error) {
