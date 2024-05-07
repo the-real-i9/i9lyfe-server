@@ -1,8 +1,5 @@
-import { passwordResetService } from "../../services/auth/auth.service.js"
-import {
-  EmailConfirmationService,
-  PasswordResetEmailConfirmationStrategy,
-} from "../../services/auth/emailConfirmationStrategy.auth.service.js"
+import { emailConfirmationService, passwordResetService } from "../../services/auth/auth.service.js"
+import { PasswordResetEmailConfirmationStrategy } from "../../services/auth/emailConfirmationStrategy.auth.service.js"
 
 /**
  * @typedef {import("express").Request} ExpressRequest
@@ -32,7 +29,7 @@ export const passwordResetController = async (req, res) => {
 
 const passwordResetRequestHandler = async (req, res) => {
   try {
-    const response = await new EmailConfirmationService(
+    const response = await emailConfirmationService(
       new PasswordResetEmailConfirmationStrategy()
     ).handleEmailSubmission(req)
 
@@ -52,7 +49,7 @@ const passwordResetRequestHandler = async (req, res) => {
  */
 const passwordResetEmailConfirmationHandler = async (req, res) => {
   try {
-    const response = await new EmailConfirmationService(
+    const response = await emailConfirmationService(
       new PasswordResetEmailConfirmationStrategy()
     ).handleTokenValidation(req)
 

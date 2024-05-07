@@ -4,12 +4,12 @@ import cors from "cors"
 import path, { dirname } from "path"
 import { fileURLToPath } from 'url';
 
-import authRoutes from "./routes/public/auth.routes.js"
-import PostCommentRoutes from "./routes/protected/PostCommentRoutes.js"
-import UserProtectedRoutes from "./routes/protected/UserProtectedRoutes.js"
-import ChatRoutes from "./routes/protected/ChatRoutes.js"
-import UserPublicRoutes from "./routes/public/UserPublicRoutes.js"
-import AppRoutes from "./routes/public/AppRoutes.js"
+import AuthRoutes from "./routes/public/auth.routes.js"
+import PostCommentRoutes from "./routes/protected/postComment.routes.js"
+import UserProtectedRoutes from "./routes/protected/user.protected.routes.js"
+import ChatRoutes from "./routes/protected/chat.routes.js"
+import UserPublicRoutes from "./routes/public/user.public.routes.js"
+import AppRoutes from "./routes/public/app.routes.js"
 
 
 dotenv.config()
@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, "static")))
 app.use(express.json({ limit: "10mb" }))
 
 
-app.use("/api/auth", authRoutes)
+app.use("/api/auth", AuthRoutes)
 
 app.use("/api/post_comment", PostCommentRoutes)
 

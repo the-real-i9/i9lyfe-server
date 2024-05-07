@@ -1,4 +1,4 @@
-import { getUnreadNotificationsCount } from "../models/user.model"
+import { getUnreadNotificationsCount } from "../models/user.model.js"
 
 
 export class NotificationService {
