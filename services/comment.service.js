@@ -19,7 +19,7 @@ export class CommentService {
       comment_notif,
       mention_notifs,
       latest_comments_count,
-    } = await PCM.createCommentOnPost({
+    } = await PCM.createCommentOnComment({
       target_comment_id,
       target_comment_owner_user_id,
       client_user_id,
@@ -38,7 +38,7 @@ export class CommentService {
       })
     })
 
-    // notify post owner of comment
+    // notify comment owner of comment
     if (comment_notif) {
       const { receiver_user_id, ...restData } = comment_notif
       new NotificationService(receiver_user_id).pushNotification({
@@ -46,7 +46,7 @@ export class CommentService {
       })
     }
 
-    // update metrics for post for all post watchers
+    // update metrics for comment for all comment watchers
     PostCommentRealtimeService.sendCommentMetricsUpdate(target_comment_id, {
       comment_id: target_comment_id,
       latest_comments_count,
@@ -98,7 +98,7 @@ export class CommentService {
         reaction_code_point,
       })
 
-    // notify post owner of reaction
+    // notify comment owner of reaction
     if (reaction_notif) {
       const { receiver_user_id, ...restData } = reaction_notif
       new NotificationService(receiver_user_id).pushNotification({
@@ -106,7 +106,7 @@ export class CommentService {
       })
     }
 
-    // update metrics for post for all post watchers
+    // update metrics for comment for all comment watchers
     PostCommentRealtimeService.sendCommentMetricsUpdate(target_comment_id, {
       comment_id: target_comment_id,
       latest_reactions_count,

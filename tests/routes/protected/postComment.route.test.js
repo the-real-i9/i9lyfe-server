@@ -7,9 +7,9 @@ dotenv.config()
 
 const prefixPath = "http://localhost:5000/api/post_comment"
 const i9xJwt =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MywiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzEzOTA0OTUxfQ.f8DfuwetMyjWoipFQw54wkzIaMgrLCeRzTXKPFjQZdU"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MSwiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzE1MTE5NTM3fQ.SgMAU2aK2A1FABBxOZDkJtTTiDGKSyhHb9516Fo0PsY"
 
-const dollypJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6NCwiY2xpZW50X3VzZXJuYW1lIjoiZG9sbHlwIiwiaWF0IjoxNzEzOTA2MzgwfQ.h_vTw7aXvC3uuTpRExJFqdc8xRkOAfZeC0IbgoXM7nA"
+const dollypJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MiwiY2xpZW50X3VzZXJuYW1lIjoiZG9sbHlwIiwiaWF0IjoxNzE1MTE5NjAzfQ.3UGpL3sDN5akB-zqpHfsq5qNJrY2snVxtRItESaADrc"
 
 const axiosConfig = (authToken) => ({
   headers: {
@@ -17,7 +17,7 @@ const axiosConfig = (authToken) => ({
   },
 })
 
-test("create post", async () => {
+xtest("create post", async () => {
   const reqData = {
     media_blobs: [],
     type: "photo",
@@ -30,22 +30,17 @@ test("create post", async () => {
   expect(res.data).toHaveProperty("postData.post_id")
 })
 
-xtest("home feed", async () => {
-  const res = await axios.get(prefixPath + "/home_feed?limit=20&offset=0", axiosConfig(i9xJwt))
-
-  expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("homeFeedPosts")
-})
-
 xtest("post detail", async () => {
-  const res = await axios.get(prefixPath + "/posts/15", axiosConfig(dollypJwt))
+  const res = await axios.get(prefixPath + "/posts/4", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("post.post_id")
+
+  console.log(res.data.post)
 })
 
 xtest("delete post", async () => {
-  const res = await axios.delete(prefixPath + "/posts/14", axiosConfig(i9xJwt))
+  const res = await axios.delete(prefixPath + "/posts/4", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
@@ -55,41 +50,45 @@ xtest("react to post", async () => {
     reaction: "🤣"
   }
 
-  const res = await axios.post(prefixPath + "/users/3/posts/15/react", reqData, axiosConfig(dollypJwt))
+  const res = await axios.post(prefixPath + "/users/1/posts/4/react", reqData, axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("get users who reacted to post", async () => {
-  const res = await axios.get(prefixPath + "/posts/15/reactors?limit=20&offset=0", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/posts/4/reactors?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("postReactors")
 })
 
 xtest("get users with this post reaction", async () => {
-  const res = await axios.get(prefixPath + "/posts/15/reactors/🤣?limit=20&offset=0", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/posts/4/reactors/🤣?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("reactorsWithReaction")
+
+  // console.log(res.data.reactorsWithReaction)
 })
 
 xtest("remove post reaction", async () => {
-  const res = await axios.delete(prefixPath + "/posts/15/remove_reaction", axiosConfig(dollypJwt))
+  const res = await axios.delete(prefixPath + "/posts/4/remove_reaction", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("comment on post", async () => {
   const reqData = {
-    comment_text: "This is another comment on this post.",
+    comment_text: "This is another comment on this post from @i9x.",
     attachment_blob: null,
   }
 
-  const res = await axios.post(prefixPath + "/users/3/posts/15/comment", reqData, axiosConfig(dollypJwt))
+  const res = await axios.post(prefixPath + "/users/1/posts/4/comment", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(201)
   expect(res.data).toHaveProperty("commentData.comment_id")
+
+  console.log(res.data.commentData)
 })
 
 xtest("comment on comment", async () => {
@@ -98,17 +97,21 @@ xtest("comment on comment", async () => {
     attachment_blob: null,
   }
 
-  const res = await axios.post(prefixPath + "/users/4/comments/6/comment", reqData, axiosConfig(i9xJwt))
+  const res = await axios.post(prefixPath + "/users/2/comments/5/comment", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(201)
   expect(res.data).toHaveProperty("commentData.comment_id")
+
+  console.log(res.data.commentData)
 })
 
 xtest("get comments on post", async () => {
-  const res = await axios.get(prefixPath + "/posts/15/comments", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/posts/4/comments", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("commentsOnPost")
+
+  console.log(res.data.commentsOnPost)
 })
 
 xtest("get comments on comment", async () => {
@@ -116,23 +119,27 @@ xtest("get comments on comment", async () => {
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("commentsOnComment")
+
+  console.log(res.data.commentsOnComment)
 })
 
 xtest("comment detail", async () => {
-  const res = await axios.get(prefixPath + "/comments/8", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/comments/5", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("comment.comment_id")
+
+  console.log(res.data.comment)
 })
 
 xtest("delete comment on post", async () => {
-  const res = await axios.delete(prefixPath + "/posts/15/comments/5", axiosConfig(dollypJwt))
+  const res = await axios.delete(prefixPath + "/posts/4/comments/9", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("delete comment on comment", async () => {
-  const res = await axios.delete(prefixPath + "/comments/6/comments/10", axiosConfig(i9xJwt))
+  const res = await axios.delete(prefixPath + "/comments/5/comments/8", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
@@ -142,51 +149,55 @@ xtest("react to comment", async () => {
     reaction: "🎯"
   }
 
-  const res = await axios.post(prefixPath + "/users/4/comments/6/react", reqData, axiosConfig(i9xJwt))
+  const res = await axios.post(prefixPath + "/users/2/comments/5/react", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("get users who reacted to comment", async () => {
-  const res = await axios.get(prefixPath + "/comments/6/reactors", axiosConfig(i9xJwt))
+  const res = await axios.get(prefixPath + "/comments/5/reactors", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("commentReactors")
+
+  console.log(res.data.commentReactors)
 })
 
 xtest("get users with this comment reaction", async () => {
-  const res = await axios.get(prefixPath + "/comments/6/reactors/🎯?limit=20&offset=0", axiosConfig(dollypJwt))
+  const res = await axios.get(prefixPath + "/comments/5/reactors/🎯?limit=20&offset=0", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("commentReactorsWithReaction")
+
+  console.log(res.data.commentReactorsWithReaction)
 })
 
 xtest("remove comment reaction", async () => {
-  const res = await axios.delete(prefixPath + "/comments/6/remove_reaction", axiosConfig(i9xJwt))
+  const res = await axios.delete(prefixPath + "/comments/5/remove_reaction", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("repost post", async () => {
-  const res = await axios.post(prefixPath + "/posts/15/repost", null, axiosConfig(dollypJwt))
+  const res = await axios.post(prefixPath + "/posts/4/repost", null, axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("unrepost post", async () => {
-  const res = await axios.delete(prefixPath + "/posts/15/unrepost", axiosConfig(dollypJwt))
+  const res = await axios.delete(prefixPath + "/posts/4/unrepost", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("save post", async () => {
-  const res = await axios.post(prefixPath + "/posts/15/save", null, axiosConfig(dollypJwt))
+  const res = await axios.post(prefixPath + "/posts/4/save", null, axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })
 
 xtest("unsave post", async () => {
-  const res = await axios.delete(prefixPath + "/posts/15/unsave", axiosConfig(dollypJwt))
+  const res = await axios.delete(prefixPath + "/posts/4/unsave", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
 })

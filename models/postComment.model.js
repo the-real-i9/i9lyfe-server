@@ -25,7 +25,7 @@ export const createNewPost = async ({
 }) => {
   const query = {
     text: "SELECT new_post_id, mention_notifs FROM create_post($1, $2, $3, $4, $5, $6)",
-    values: [client_user_id, media_urls, type, description, mentions, hashtags],
+    values: [client_user_id, [...media_urls], type, description, [...mentions], [...hashtags]],
   }
 
   return (await dbQuery(query)).rows[0]

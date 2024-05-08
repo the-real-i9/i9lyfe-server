@@ -89,7 +89,7 @@ export const commentOnPostController = async (req, res) => {
 
     res.status(201).send({ commentData })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
