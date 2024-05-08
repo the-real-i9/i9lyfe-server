@@ -80,11 +80,11 @@ export const changeUserPassword = async (email, newPassword) => {
 export const followUser = async (client_user_id, to_follow_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT notification_data FROM follow_user($1, $2)",
+    text: "SELECT follow_notif FROM follow_user($1, $2)",
     values: [client_user_id, to_follow_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].notification_data
+  return (await dbQuery(query)).rows[0]
 }
 
 /**
@@ -201,22 +201,19 @@ export const getSavedPosts = async (client_user_id) => {
 }
 
 /**
- * @param {number} user_id
- * @param {"online" | "offline"} connection_status
+ * @param {object} param0
+ * @param {"online" | "offline"} param0.connection_status
+ * @param {Date} param0.last_active
  */
-export const updateUserConnectionStatus = async (
-  user_id,
-  connection_status
-) => {
+export const updateUserConnectionStatus = async ({
+  client_user_id,
+  connection_status,
+  last_active,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: `
-    UPDATE i9l_user SET connection_status = $1, last_active = $2 WHERE id = $3`,
-    values: [
-      connection_status,
-      connection_status === "offline" ? new Date() : null,
-      user_id,
-    ],
+    text: `UPDATE i9l_user SET connection_status = $1, last_active = $2 WHERE id = $3`,
+    values: [connection_status, last_active, client_user_id],
   }
 
   await dbQuery(query)
@@ -240,16 +237,13 @@ export const readUserNotification = async (notification_id, client_user_id) => {
  * @param {number} client_user_id
  * @param {Date} from
  */
-export const getUnreadNotifications = async (client_user_id, from) => {
+export const getUserNotifications = async (client_user_id, from) => {
   const query = {
-    text: `
-    SELECT * 
-    FROM notification
-    WHERE receiver_user_id = $1 AND created_at >= $2`,
+    text: "SELECT notifications FROM get_user_notifications($1, $2)",
     values: [client_user_id, from],
   }
 
-  return stripNulls((await dbQuery(query)).rows)
+  return (await dbQuery(query)).rows[0].notifications
 }
 
 export const getUnreadNotificationsCount = async (client_user_id) => {

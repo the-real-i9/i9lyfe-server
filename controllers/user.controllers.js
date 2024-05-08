@@ -43,31 +43,32 @@ export const unfollowUserController = async (req, res) => {
   }
 }
 
-export const editUserController = async (req, res) => {
+export const editProfileController = async (req, res) => {
   try {
     const updateDict = req.body
 
     const { client_user_id } = req.auth
 
-    await UserService.updateProfile(
-      client_user_id,
-      Object.entries(updateDict)
-    )
+    await UserService.editProfile(client_user_id, Object.entries(updateDict))
 
     res.status(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
 export const updateUserConnectionStatusController = async (req, res) => {
   try {
-    const { new_connection_status } = req.body
+    const { connection_status, last_active = null } = req.body
 
     const { client_user_id } = req.auth
 
-    await UserService.updateConnectionStatus(client_user_id, new_connection_status)
+    await UserService.updateConnectionStatus({
+      client_user_id,
+      connection_status,
+      last_active,
+    })
 
     res.sendStatus(200)
   } catch (error) {
@@ -106,7 +107,10 @@ export const getUserProfileController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const profileData = await UserService.getProfile(username, req.auth?.client_user_id)
+    const profileData = await UserService.getProfile(
+      username,
+      req.auth?.client_user_id
+    )
 
     res.status(200).send({ profileData })
   } catch (error) {
@@ -119,7 +123,10 @@ export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowers = await UserService.getFollowers(username, req.auth?.client_user_id)
+    const userFollowers = await UserService.getFollowers(
+      username,
+      req.auth?.client_user_id
+    )
 
     res.status(200).send({ userFollowers })
   } catch (error) {
@@ -132,7 +139,10 @@ export const getUserFollowingController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowing = await UserService.getFollowing(username, req.auth?.client_user_id)
+    const userFollowing = await UserService.getFollowing(
+      username,
+      req.auth?.client_user_id
+    )
 
     res.status(200).send({ userFollowing })
   } catch (error) {
@@ -201,11 +211,14 @@ export const getUserNotificationsController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const notifications = await UserService.getNotifications(client_user_id, from)
+    const notifications = await UserService.getUserNotifications(
+      client_user_id,
+      from
+    )
 
     res.status(200).send({ notifications })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

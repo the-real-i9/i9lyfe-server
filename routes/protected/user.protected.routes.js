@@ -12,8 +12,8 @@ import {
   readUserNotificationController,
   unfollowUserController,
   updateUserConnectionStatusController,
-  editUserController,
   uploadProfilePictureController,
+  editProfileController,
 } from "../../controllers/user.controllers.js"
 
 dotenv.config()
@@ -40,7 +40,7 @@ router.post("/users/:user_id/follow", followUserController)
 
 router.delete("/users/:user_id/unfollow", unfollowUserController)
 
-router.put("/update_my_profile", editUserController)
+router.put("/edit_my_profile", editProfileController)
 
 router.put("/upload_profile_picture", uploadProfilePictureController)
 

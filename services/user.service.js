@@ -7,18 +7,29 @@ export class UserService {
   }
 
   static async follow(client_user_id, to_follow_user_id) {
-    const followNotifData = await UM.followUser(client_user_id, to_follow_user_id)
+    const { follow_notif } = await UM.followUser(
+      client_user_id,
+      to_follow_user_id
+    )
 
-    const { receiver_user_id, ...restData } = followNotifData
+    const { receiver_user_id, ...restData } = follow_notif
     new NotificationService(receiver_user_id).pushNotification(restData)
   }
 
-  static async updateProfile(client_user_id, updateKVPairs) {
+  static async editProfile(client_user_id, updateKVPairs) {
     await UM.editUser(client_user_id, updateKVPairs)
   }
 
-  static async updateConnectionStatus(client_user_id, new_connection_status) {
-    await UM.updateUserConnectionStatus(client_user_id, new_connection_status)
+  static async updateConnectionStatus({
+    client_user_id,
+    connection_status,
+    last_active,
+  }) {
+    await UM.updateUserConnectionStatus({
+      client_user_id,
+      connection_status,
+      last_active,
+    })
   }
 
   static async readNotification(notification_id, client_user_id) {
@@ -59,8 +70,8 @@ export class UserService {
   }
 
   /** @param {Date} from  */
-  static async getNotifications(client_user_id, from) {
-    return await UM.getUnreadNotifications(client_user_id, from)
+  static async getUserNotifications(client_user_id, from) {
+    return await UM.getUserNotifications(client_user_id, from)
   }
 
   /* DELETEs */
