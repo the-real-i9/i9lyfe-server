@@ -1,10 +1,6 @@
 import * as AM from "../models/app.model.js"
 
 export class AppService {
-  static async getFeedPosts({ client_user_id, limit, offset }) {
-    return await AM.getFeedPosts({ client_user_id, limit, offset })
-  }
-
   static async getExplorePosts(client_user_id) {
     return await AM.getAllPosts(client_user_id)
   }

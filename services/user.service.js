@@ -41,6 +41,10 @@ export class UserService {
   }
 
   /* GETs */
+  static async getFeedPosts({ client_user_id, limit, offset }) {
+    return await UM.getFeedPosts({ client_user_id, limit, offset })
+  }
+  
   static async getProfile(username, client_user_id) {
     return await UM.getUserProfile(username, client_user_id)
   }

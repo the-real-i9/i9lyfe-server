@@ -71,6 +71,14 @@ xtest("update connection status", async () => {
   expect(res.status).toBe(200)
 })
 
+xtest("get home feed posts", async () => {
+  const res = await axios.get(prefixPath + "/home_feed", axiosConfig(i9xJwt))
+
+  expect(res.status).toBe(200)
+  expect(res.data).toHaveProperty("homeFeedPosts")
+  console.log(res.data.homeFeedPosts)
+})
+
 xtest("get posts mentioned in", async () => {
   const res = await axios.get(
     prefixPath + "/mentioned_posts",

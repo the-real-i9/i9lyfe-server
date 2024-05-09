@@ -1,4 +1,3 @@
-import { stripNulls } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /** @typedef {import("pg").QueryConfig} PgQueryConfig */
@@ -120,8 +119,16 @@ export const uploadProfilePicture = async (client_user_id, profile_pic_url) => {
 }
 
 /* ************* */
+export const getFeedPosts = async ({ client_user_id, limit, offset }) => {
+  /** @type {PgQueryConfig} */
+  const query = {
+    text: "SELECT * FROM get_feed_posts($1, $2, $3)",
+    values: [client_user_id, limit, offset],
+  }
 
-// GET user profile data
+  return (await dbQuery(query)).rows
+}
+
 /** @param {string} username */
 export const getUserProfile = async (username, client_user_id) => {
   /** @type {PgQueryConfig} */

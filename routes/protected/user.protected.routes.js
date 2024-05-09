@@ -14,6 +14,7 @@ import {
   updateUserConnectionStatusController,
   uploadProfilePictureController,
   editProfileController,
+  getHomeFeedController,
 } from "../../controllers/user.controllers.js"
 
 dotenv.config()
@@ -33,6 +34,7 @@ router.use(
     }
   }
 )
+router.get("/home_feed", getHomeFeedController)
 
 router.get("/session_user", getSessionUserController)
 

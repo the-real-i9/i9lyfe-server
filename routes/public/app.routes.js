@@ -4,7 +4,6 @@ import { expressjwt } from "express-jwt"
 import {
   getExplorePostsController,
   getHashtagPostsController,
-  getHomeFeedController,
   searchAndFilterController,
 } from "../../controllers/app.controllers.js"
 
@@ -26,8 +25,6 @@ router.use(
     }
   }
 )
-
-router.get("/home_feed", getHomeFeedController)
 
 router.get("/explore", getExplorePostsController)
 

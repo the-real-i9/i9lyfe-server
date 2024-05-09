@@ -13,6 +13,7 @@ export const getSessionUserController = async (req, res) => {
   }
 }
 
+
 export const followUserController = async (req, res) => {
   try {
     const { user_id: to_follow_user_id } = req.params
@@ -102,6 +103,29 @@ export const uploadProfilePictureController = async (req, res) => {
 }
 
 /* GETs */
+
+/**
+ * @param {ExpressRequest} req
+ * @param {ExpressResponse} res
+ */
+export const getHomeFeedController = async (req, res) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query
+
+    const { client_user_id } = req.auth
+
+    const homeFeedPosts = await UserService.getFeedPosts({
+      client_user_id,
+      limit,
+      offset,
+    })
+
+    res.status(200).send({ homeFeedPosts })
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
 
 export const getUserProfileController = async (req, res) => {
   try {
