@@ -162,6 +162,7 @@ export const getUserPostsController = async (req, res) => {
 
     res.status(200).send({ userPosts })
   } catch (error) {
+    // console.error(error)
     res.sendStatus(500)
   }
 }

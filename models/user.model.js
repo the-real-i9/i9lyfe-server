@@ -137,22 +137,22 @@ export const getUserProfile = async (username, client_user_id) => {
 export const getUserFollowers = async (username, client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT followers_list FROM get_user_followers($1, $2)",
+    text: "SELECT * FROM get_user_followers($1, $2)",
     values: [username, client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].followers_list
+  return (await dbQuery(query)).rows
 }
 
 // GET user following
 export const getUserFollowing = async (username, client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT following_list FROM get_user_following($1, $2)",
+    text: "SELECT * FROM get_user_following($1, $2)",
     values: [username, client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].following_list
+  return (await dbQuery(query)).rows
 }
 
 // GET user posts

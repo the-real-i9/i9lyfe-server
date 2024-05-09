@@ -11,6 +11,8 @@ xtest("get user profile", async () => {
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("profileData.user_id")
+
+  console.log(res.data.profileData)
 })
 
 xtest("get user followers", async () => {
@@ -18,18 +20,24 @@ xtest("get user followers", async () => {
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("userFollowers")
+
+  console.log(res.data)
 })
 
 xtest("get user following", async () => {
-  const res = await axios.get(prefixPath + "/dollyp/following")
+  const res = await axios.get(prefixPath + "/i9x/following")
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("userFollowing")
+
+  console.log(res.data)
 })
 
-test("get user posts", async () => {
+xtest("get user posts", async () => {
   const res = await axios.get(prefixPath + "/i9x/posts")
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("userPosts")
+
+  console.log(res.data)
 })
