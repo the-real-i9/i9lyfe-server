@@ -149,7 +149,7 @@ export const getUserFollowers = async ({
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_user_followers($1, $2)",
+    text: "SELECT * FROM get_user_followers($1, $2, $3, $4)",
     values: [username, limit, offset, client_user_id],
   }
 
@@ -165,7 +165,7 @@ export const getUserFollowing = async ({
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_user_following($1, $2)",
+    text: "SELECT * FROM get_user_following($1, $2, $3, $4)",
     values: [username, limit, offset, client_user_id],
   }
 
@@ -182,7 +182,7 @@ export const getUserPosts = async ({
 }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_user_posts($1, $2)",
+    text: "SELECT * FROM get_user_posts($1, $2, $3, $4)",
     values: [username, limit, offset, client_user_id],
   }
 
@@ -266,11 +266,11 @@ export const getUserNotifications = async ({
   offset,
 }) => {
   const query = {
-    text: "SELECT notifications FROM get_user_notifications($1, $2, $3, $4)",
+    text: "SELECT user_notifications FROM get_user_notifications($1, $2, $3, $4)",
     values: [client_user_id, from, limit, offset],
   }
 
-  return (await dbQuery(query)).rows[0].notifications
+  return (await dbQuery(query)).rows[0].user_notifications
 }
 
 export const getUnreadNotificationsCount = async (client_user_id) => {

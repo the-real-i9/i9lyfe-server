@@ -111,10 +111,10 @@ xtest("get posts saved", async () => {
   expect(res.data).toHaveProperty("savedPosts")
 })
 
-xtest("get my notifications", async () => {
+test("get my notifications", async () => {
   const res = await axios.get(
     prefixPath + "/my_notifications?from=2024-04-30",
-    axiosConfig(dollypJwt)
+    axiosConfig(i9xJwt)
   )
 
   expect(res.status).toBe(200)
