@@ -20,8 +20,8 @@ const axiosConfig = (authToken) => ({
 xtest("create post", async () => {
   const reqData = {
     media_blobs: [],
-    type: "photo",
-    description: "This is a post metioning @dollyp."
+    type: "video",
+    description: "This is a post mentioning @dollyp and hashtaging #genius."
   }
 
   const res = await axios.post(prefixPath + "/new_post", reqData, axiosConfig(i9xJwt))
