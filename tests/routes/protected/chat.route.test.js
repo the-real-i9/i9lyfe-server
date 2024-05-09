@@ -8,7 +8,8 @@ const prefixPath = "http://localhost:5000/api/chat"
 const i9xJwt =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MSwiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzE1MTE5NTM3fQ.SgMAU2aK2A1FABBxOZDkJtTTiDGKSyhHb9516Fo0PsY"
 
-const dollypJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MiwiY2xpZW50X3VzZXJuYW1lIjoiZG9sbHlwIiwiaWF0IjoxNzE1MTE5NjAzfQ.3UGpL3sDN5akB-zqpHfsq5qNJrY2snVxtRItESaADrc"
+const dollypJwt =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MiwiY2xpZW50X3VzZXJuYW1lIjoiZG9sbHlwIiwiaWF0IjoxNzE1MTE5NjAzfQ.3UGpL3sDN5akB-zqpHfsq5qNJrY2snVxtRItESaADrc"
 
 const axiosConfig = (authToken) => ({
   headers: {
@@ -17,98 +18,146 @@ const axiosConfig = (authToken) => ({
 })
 
 xtest("get users to chat with", async () => {
-  const res = await axios.get(prefixPath + "/users_to_chat", axiosConfig(i9xJwt))
+  const res = await axios.get(
+    prefixPath + "/users_to_chat",
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("users")
+
+  console.log(res.data.users)
 })
 
-xtest("create dm conversation", async () => {
+xtest("create conversation", async () => {
   const reqData = {
     partner: {
-      user_id: 4,
-      username: "dollyp"
-    }
+      user_id: 2,
+      username: "dollyp",
+    },
+    init_message: {
+      type: "text",
+      text_content: "Hi! How're you?",
+    },
   }
 
-  const res = await axios.post(prefixPath + "/create_dm_conversation", reqData, axiosConfig(i9xJwt))
+  const res = await axios.post(
+    prefixPath + "/create_conversation",
+    reqData,
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(201)
-  expect(res.data).toHaveProperty("dm_conversation_id")
+  expect(res.data).toHaveProperty("conversation_id")
+
+  console.log(res.data)
 })
 
 xtest("send message", async () => {
   const reqData = {
     msg_content: {
       type: "text",
-      text_content: "Hi! How're you?"
-    }
+      text_content: "Heeeyy! I'm fine!",
+    },
   }
 
-  const res = await axios.post(prefixPath + "/conversations/2/send_message", reqData, axiosConfig(i9xJwt))
+  const res = await axios.post(
+    prefixPath + "/conversations/5/partner/1/send_message",
+    reqData,
+    axiosConfig(dollypJwt)
+  )
 
   expect(res.status).toBe(201)
+  expect(res.data).toHaveProperty("new_msg_id")
+
+  console.log(res.data)
 })
 
 xtest("get my conversations", async () => {
-  const res = await axios.get(prefixPath + "/conversations", axiosConfig(dollypJwt))
+  const res = await axios.get(
+    prefixPath + "/conversations",
+    axiosConfig(dollypJwt)
+  )
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("conversations")
-})
 
-xtest("get conversation", async () => {
-  const res = await axios.get(prefixPath + "/conversations/2", axiosConfig(dollypJwt))
-
-  expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("conversation")
+  console.log(res.data.conversations)
 })
 
 xtest("delete conversation", async () => {
-  const res = await axios.delete(prefixPath + "/conversations/2", axiosConfig(i9xJwt))
+  const res = await axios.delete(
+    prefixPath + "/conversations/2",
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(200)
 })
 
 xtest("get conversation history", async () => {
-  const res = await axios.get(prefixPath + "/conversations/2/history", axiosConfig(i9xJwt))
+  const res = await axios.get(
+    prefixPath + "/conversations/5/history",
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(200)
   expect(res.data).toHaveProperty("conversationHistory")
 
-  console.log(res.data)
+  console.log(res.data.conversationHistory)
 })
 
 xtest("acknowledge message delivered", async () => {
-  const res = await axios.put(prefixPath + "/conversations/2/messages/2/delivered", null, axiosConfig(dollypJwt))
+  const reqData = {
+    delivery_time: new Date(),
+  }
+
+  const res = await axios.put(
+    prefixPath + "/conversations/5/partner/1/messages/2/delivered",
+    reqData,
+    axiosConfig(dollypJwt)
+  )
 
   expect(res.status).toBe(204)
 })
 
 xtest("acknowledge message read", async () => {
-  const res = await axios.put(prefixPath + "/conversations/2/messages/2/read", null, axiosConfig(dollypJwt))
+  const res = await axios.put(
+    prefixPath + "/conversations/5/partner/1/messages/2/read",
+    null,
+    axiosConfig(dollypJwt)
+  )
 
   expect(res.status).toBe(204)
 })
 
 xtest("react to message", async () => {
   const reqData = {
-    reaction: "🥰"
+    reaction: "🥰",
   }
 
-  const res = await axios.post(prefixPath + "/conversations/2/messages/2/react", reqData, axiosConfig(dollypJwt))
+  const res = await axios.post(
+    prefixPath + "/conversations/5/partner/2/messages/2/react",
+    reqData,
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(201)
 })
 
-xtest("remove reaction to message", async () => {
-  const res = await axios.delete(prefixPath + "/conversations/2/messages/2/remove_reaction", axiosConfig(dollypJwt))
+test("remove reaction to message", async () => {
+  const res = await axios.delete(
+    prefixPath + "/conversations/5/partner/2/messages/2/remove_reaction",
+    axiosConfig(i9xJwt)
+  )
 
   expect(res.status).toBe(200)
 })
 
-test("delete message", async () => {
-  const res = await axios.delete(prefixPath + "/conversations/2/messages/2?delete_for=me", axiosConfig(dollypJwt))
+xtest("delete message", async () => {
+  const res = await axios.delete(
+    prefixPath + "/conversations/2/messages/2?delete_for=me",
+    axiosConfig(dollypJwt)
+  )
 
   expect(res.status).toBe(200)
 })

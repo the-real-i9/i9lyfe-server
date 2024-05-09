@@ -20,7 +20,7 @@ export const getUsersToChatController = async (req, res) => {
 
     res.status(200).send({ users })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -31,13 +31,13 @@ export const createConversationController = async (req, res) => {
 
     const { client_user_id, client_username } = req.auth
 
-    const dm_conversation_id = await ChatService.createConversation(
+    const client_res = await ChatService.createConversation(
       { user_id: client_user_id, username: client_username },
       partner,
       init_message
     )
 
-    res.status(201).send({ dm_conversation_id })
+    res.status(201).send(client_res)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -109,9 +109,9 @@ export const sendMessageController = async (req, res) => {
       msg_content,
     })
 
-    res.send(201).json(client_res)
+    res.status(201).send(client_res)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -186,9 +186,9 @@ export const reactToMessageController = async (req, res) => {
 
 export const removeReactionToMessageController = async (req, res) => {
   try {
-    const { client_user_id, partner_user_id, client_username } = req.auth
+    const { client_user_id, client_username } = req.auth
 
-    const { conversation_id, message_id } = req.params
+    const { conversation_id, partner_user_id, message_id } = req.params
 
     await ChatService.removeReactionToMessage({
       conversation_id,
@@ -202,7 +202,7 @@ export const removeReactionToMessageController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

@@ -28,7 +28,7 @@ export class ChatService {
   }
 
   static async getMyConversations(client_user_id) {
-    return await ChatModel.getAllUserConversations(client_user_id)
+    return await ChatModel.getUserConversations(client_user_id)
   }
 
   static async deleteMyConversation(client_user_id, conversation_id) {
@@ -67,7 +67,12 @@ export class ChatService {
     message_id,
     delivery_time,
   }) {
-    await ChatModel.acknowledgeMessageDelivered({client_user_id, conversation_id, message_id, delivery_time})
+    await ChatModel.acknowledgeMessageDelivered({
+      client_user_id,
+      conversation_id,
+      message_id,
+      delivery_time,
+    })
 
     ChatRealtimeService.send("message delivered", partner_user_id, {
       conversation_id,
@@ -81,7 +86,11 @@ export class ChatService {
     partner_user_id,
     message_id,
   }) {
-    await ChatModel.acknowledgeMessageRead(client_user_id, conversation_id, message_id)
+    await ChatModel.acknowledgeMessageRead({
+      client_user_id,
+      conversation_id,
+      message_id,
+    })
 
     ChatRealtimeService.send("message read", partner_user_id, {
       conversation_id,
@@ -132,7 +141,7 @@ export class ChatService {
 
     /* Realtime actions */
     // remove message reaction for other participants
-    ChatRealtimeService("message reaction removed", partner_user_id, {
+    ChatRealtimeService.send("message reaction removed", partner_user_id, {
       reactor,
       conversation_id,
       message_id,

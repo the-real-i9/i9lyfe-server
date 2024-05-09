@@ -2,9 +2,7 @@
  * @typedef {import("pg").QueryConfig} PgQueryConfig
  */
 
-import {
-  stripNulls,
-} from "../utils/helpers.js"
+import { stripNulls } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /**
@@ -13,15 +11,15 @@ import { dbQuery } from "./db.js"
  * @param {string} client.username
  * @param {number} partner_user_id
  */
-export const createConversation = async (client, partner_user_id, init_message) => {
+export const createConversation = async (
+  client,
+  partner_user_id,
+  init_message
+) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: "SELECT client_res, partner_res FROM create_conversation($1, $2, $3)",
-    values: [
-      client.user_id,
-      partner_user_id,
-      init_message,
-    ],
+    values: [client.user_id, partner_user_id, init_message],
   }
 
   // return needed details
@@ -43,18 +41,17 @@ export const deleteUserConversation = async (
   await dbQuery(query)
 }
 
-
 /**
  * @param {number} client_user_id
  */
-export const getAllUserConversations = async (client_user_id) => {
+export const getUserConversations = async (client_user_id) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT user_convos FROM get_user_conversations($1)",
+    text: "SELECT * FROM get_user_conversations($1)",
     values: [client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].user_convos
+  return (await dbQuery(query)).rows
 }
 
 /**
@@ -82,12 +79,12 @@ export const getConversationHistory = async ({
   /** @type {PgQueryConfig} */
   const query = {
     text: `
-    SELECT history FROM get_conversation_history($1, $2, $3)
+    SELECT * FROM get_conversation_history($1, $2, $3)
     `,
     values: [conversation_id, limit, offset],
   }
 
-  return (await dbQuery(query)).rows[0].history
+  return (await dbQuery(query)).rows
 }
 
 /**
@@ -132,8 +129,12 @@ export const createMessage = async ({
   return (await dbQuery(query)).rows[0]
 }
 
-
-export const acknowledgeMessageDelivered = async ({client_user_id, conversation_id, message_id, delivery_time}) => {
+export const acknowledgeMessageDelivered = async ({
+  client_user_id,
+  conversation_id,
+  message_id,
+  delivery_time,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: "SELECT ack_msg_delivered($1, $2, $3, $4)",
@@ -143,10 +144,14 @@ export const acknowledgeMessageDelivered = async ({client_user_id, conversation_
   await dbQuery(query)
 }
 
-export const acknowledgeMessageRead = async (client_user_id, conversation_id, message_id) => {
+export const acknowledgeMessageRead = async ({
+  client_user_id,
+  conversation_id,
+  message_id,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT ack_msg_delivered($1, $2, $3)",
+    text: "SELECT ack_msg_read($1, $2, $3)",
     values: [client_user_id, conversation_id, message_id],
   }
 
@@ -213,7 +218,7 @@ export const createBlockedUser = async (blocking_user_id, blocked_user_id) => {
  */
 export const deleteBlockedUser = async (blocking_user_id, blocked_user_id) => {
   const query = {
-    text: 'DELETE FROM blocked_user WHERE blocking_user_id = $1 AND blocked_user_id = $2',
+    text: "DELETE FROM blocked_user WHERE blocking_user_id = $1 AND blocked_user_id = $2",
     values: [blocking_user_id, blocked_user_id],
   }
 
@@ -271,9 +276,9 @@ export const createMessageDeletionLog = async ({
  */
 export const getUsersToChat = async (client_user_id, search) => {
   const query = {
-    text: "SELECT users_to_chat FROM get_users_to_chat($1, $2)",
+    text: "SELECT * FROM get_users_to_chat($1, $2)",
     values: [`%${search}%`, client_user_id],
   }
 
-  return (await dbQuery(query)).rows[0].users_to_chat
+  return (await dbQuery(query)).rows
 }
