@@ -1,8 +1,8 @@
 import * as AM from "../models/app.model.js"
 
 export class AppService {
-  static async getExplorePosts(client_user_id) {
-    return await AM.getExplorePosts(client_user_id)
+  static async getExplorePosts({ limit, offset, client_user_id }) {
+    return await AM.getExplorePosts({ limit, offset, client_user_id })
   }
 
   /**

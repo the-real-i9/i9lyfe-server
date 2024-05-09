@@ -44,38 +44,53 @@ export class UserService {
   static async getFeedPosts({ client_user_id, limit, offset }) {
     return await UM.getFeedPosts({ client_user_id, limit, offset })
   }
-  
+
   static async getProfile(username, client_user_id) {
     return await UM.getUserProfile(username, client_user_id)
   }
 
-  static async getFollowers(username, client_user_id) {
-    return await UM.getUserFollowers(username, client_user_id)
+  static async getFollowers({ username, limit, offset, client_user_id }) {
+    return await UM.getUserFollowers({
+      username,
+      limit,
+      offset,
+      client_user_id,
+    })
   }
 
-  static async getFollowing(username, client_user_id) {
-    return await UM.getUserFollowing(username, client_user_id)
+  static async getFollowing({ username, limit, offset, client_user_id }) {
+    return await UM.getUserFollowing({
+      username,
+      limit,
+      offset,
+      client_user_id,
+    })
   }
 
-  static async getPosts(username, client_user_id) {
-    return await UM.getUserPosts(username, client_user_id)
+  static async getPosts({ username, limit, offset, client_user_id }) {
+    return await UM.getUserPosts({ username, limit, offset, client_user_id })
   }
 
-  static async getMentionedPosts(client_user_id) {
-    return await UM.getMentionedPosts(client_user_id)
+  static async getMentionedPosts({ limit, offset, client_user_id }) {
+    return await UM.getMentionedPosts({ limit, offset, client_user_id })
   }
 
-  static async getReactedPosts(client_user_id) {
-    return await UM.getReactedPosts(client_user_id)
+  static async getReactedPosts({ limit, offset, client_user_id }) {
+    return await UM.getReactedPosts({ limit, offset, client_user_id })
   }
 
-  static async getSavedPosts(client_user_id) {
-    return await UM.getSavedPosts(client_user_id)
+  static async getSavedPosts({ limit, offset, client_user_id }) {
+    return await UM.getSavedPosts({ limit, offset, client_user_id })
   }
 
   /** @param {Date} from  */
-  static async getUserNotifications(client_user_id, from) {
-    return await UM.getUserNotifications(client_user_id, from)
+  static async getUserNotifications({ client_user_id, from, limit, offset }) {
+    return await UM.getUserNotifications({
+      client_user_id,
+      from,
+      limit,
+      offset,
+    })
   }
 
   /* DELETEs */

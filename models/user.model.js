@@ -141,22 +141,32 @@ export const getUserProfile = async (username, client_user_id) => {
 }
 
 // GET user followers
-export const getUserFollowers = async (username, client_user_id) => {
+export const getUserFollowers = async ({
+  username,
+  limit,
+  offset,
+  client_user_id,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: "SELECT * FROM get_user_followers($1, $2)",
-    values: [username, client_user_id],
+    values: [username, limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
 }
 
 // GET user following
-export const getUserFollowing = async (username, client_user_id) => {
+export const getUserFollowing = async ({
+  username,
+  limit,
+  offset,
+  client_user_id,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: "SELECT * FROM get_user_following($1, $2)",
-    values: [username, client_user_id],
+    values: [username, limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
@@ -164,44 +174,49 @@ export const getUserFollowing = async (username, client_user_id) => {
 
 // GET user posts
 /** @param {string} username */
-export const getUserPosts = async (username, client_user_id) => {
+export const getUserPosts = async ({
+  username,
+  limit,
+  offset,
+  client_user_id,
+}) => {
   /** @type {PgQueryConfig} */
   const query = {
     text: "SELECT * FROM get_user_posts($1, $2)",
-    values: [username, client_user_id],
+    values: [username, limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
 }
 
 // GET posts user has been mentioned in
-export const getMentionedPosts = async (client_user_id) => {
+export const getMentionedPosts = async ({ limit, offset, client_user_id }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_mentioned_posts($1)",
-    values: [client_user_id],
+    text: "SELECT * FROM get_mentioned_posts($1, $2, $3)",
+    values: [limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
 }
 
 // GET posts reacted by user
-export const getReactedPosts = async (client_user_id) => {
+export const getReactedPosts = async ({ limit, offset, client_user_id }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_reacted_posts($1)",
-    values: [client_user_id],
+    text: "SELECT * FROM get_reacted_posts($1, $2, $3)",
+    values: [limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
 }
 
 // GET posts saved by this user
-export const getSavedPosts = async (client_user_id) => {
+export const getSavedPosts = async ({ limit, offset, client_user_id }) => {
   /** @type {PgQueryConfig} */
   const query = {
-    text: "SELECT * FROM get_saved_posts($1)",
-    values: [client_user_id],
+    text: "SELECT * FROM get_saved_posts($1, $2, $3)",
+    values: [limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows
@@ -244,10 +259,15 @@ export const readUserNotification = async (notification_id, client_user_id) => {
  * @param {number} client_user_id
  * @param {Date} from
  */
-export const getUserNotifications = async (client_user_id, from) => {
+export const getUserNotifications = async ({
+  client_user_id,
+  from,
+  limit,
+  offset,
+}) => {
   const query = {
-    text: "SELECT notifications FROM get_user_notifications($1, $2)",
-    values: [client_user_id, from],
+    text: "SELECT notifications FROM get_user_notifications($1, $2, $3, $4)",
+    values: [client_user_id, from, limit, offset],
   }
 
   return (await dbQuery(query)).rows[0].notifications

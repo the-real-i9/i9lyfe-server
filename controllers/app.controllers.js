@@ -2,9 +2,13 @@ import { AppService } from "../services/app.service.js"
 
 export const getExplorePostsController = async (req, res) => {
   try {
-    const explorePosts = await AppService.getExplorePosts(
-      req.auth?.client_user_id
-    )
+    const { limit = 20, offset = 0 } = req.query
+    
+    const explorePosts = await AppService.getExplorePosts({
+      limit,
+      offset,
+      client_user_id: req.auth?.client_user_id,
+    })
 
     res.status(200).send({ explorePosts })
   } catch (error) {

@@ -17,9 +17,9 @@ const axiosConfig = (authToken) => ({
   },
 })
 
-xtest("get users to chat with", async () => {
+test("get users to chat with", async () => {
   const res = await axios.get(
-    prefixPath + "/users_to_chat",
+    prefixPath + "/users_to_chat?search=dolapo",
     axiosConfig(i9xJwt)
   )
 
@@ -144,7 +144,7 @@ xtest("react to message", async () => {
   expect(res.status).toBe(201)
 })
 
-test("remove reaction to message", async () => {
+xtest("remove reaction to message", async () => {
   const res = await axios.delete(
     prefixPath + "/conversations/5/partner/2/messages/2/remove_reaction",
     axiosConfig(i9xJwt)

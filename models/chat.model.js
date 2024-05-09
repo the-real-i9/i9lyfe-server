@@ -273,10 +273,15 @@ export const createMessageDeletionLog = async ({
 /**
  * @param {string} search
  */
-export const getUsersToChat = async (client_user_id, search) => {
+export const getUsersToChat = async ({
+  search,
+  limit,
+  offset,
+  client_user_id,
+}) => {
   const query = {
-    text: "SELECT * FROM get_users_to_chat($1, $2)",
-    values: [`%${search}%`, client_user_id],
+    text: "SELECT * FROM get_users_to_chat($1, $2, $3, $4)",
+    values: [`%${search}%`, limit, offset, client_user_id],
   }
 
   return (await dbQuery(query)).rows

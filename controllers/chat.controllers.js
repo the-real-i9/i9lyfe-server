@@ -12,11 +12,16 @@ import { ChatService } from "../services/chat/chat.service.js"
  */
 export const getUsersToChatController = async (req, res) => {
   try {
-    const { search = "" } = req.query
+    const { search = "", limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
-    const users = await ChatService.getUsersToChat(client_user_id, search)
+    const users = await ChatService.getUsersToChat({
+      client_user_id,
+      search,
+      limit,
+      offset,
+    })
 
     res.status(200).send({ users })
   } catch (error) {
@@ -129,7 +134,7 @@ export const ackMessageDeliveredController = async (req, res) => {
       partner_user_id,
       conversation_id,
       message_id,
-      delivery_time
+      delivery_time,
     })
 
     res.sendStatus(204)
@@ -210,11 +215,11 @@ export const removeReactionToMessageController = async (req, res) => {
 export const deleteMessageController = async (req, res) => {
   try {
     const { conversation_id, partner_user_id, message_id } = req.params
-    
+
     const { delete_for } = req.query
-    
+
     const { client_user_id, client_username } = req.auth
-    
+
     await ChatService.deleteMessage({
       conversation_id,
       deleter: {

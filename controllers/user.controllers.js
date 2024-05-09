@@ -13,7 +13,6 @@ export const getSessionUserController = async (req, res) => {
   }
 }
 
-
 export const followUserController = async (req, res) => {
   try {
     const { user_id: to_follow_user_id } = req.params
@@ -147,10 +146,14 @@ export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowers = await UserService.getFollowers(
+    const {limit = 20, offset = 0} = req.query
+
+    const userFollowers = await UserService.getFollowers({
       username,
-      req.auth?.client_user_id
-    )
+      limit,
+      offset,
+      client_user_id: req.auth?.client_user_id
+    })
 
     res.status(200).send({ userFollowers })
   } catch (error) {
@@ -163,10 +166,14 @@ export const getUserFollowingController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userFollowing = await UserService.getFollowing(
+    const {limit = 20, offset = 0} = req.query
+
+    const userFollowing = await UserService.getFollowing({
       username,
-      req.auth?.client_user_id
-    )
+      limit,
+      offset,
+      client_user_id: req.auth?.client_user_id
+    })
 
     res.status(200).send({ userFollowing })
   } catch (error) {
@@ -179,10 +186,14 @@ export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const userPosts = await UserService.getPosts(
+    const {limit = 20, offset = 0} = req.query
+
+    const userPosts = await UserService.getPosts({
       username,
-      req.auth?.client_user_id
-    )
+      limit,
+      offset,
+      client_user_id: req.auth?.client_user_id
+    })
 
     res.status(200).send({ userPosts })
   } catch (error) {
@@ -195,7 +206,13 @@ export const getUserMentionedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const mentionedPosts = await UserService.getMentionedPosts(client_user_id)
+    const { limit = 20, offset = 0 } = req.query
+
+    const mentionedPosts = await UserService.getMentionedPosts({
+      limit,
+      offset,
+      client_user_id,
+    })
 
     res.status(200).send({ mentionedPosts })
   } catch (error) {
@@ -208,7 +225,13 @@ export const getUserReactedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const reactedPosts = await UserService.getReactedPosts(client_user_id)
+    const { limit = 20, offset = 0 } = req.query
+
+    const reactedPosts = await UserService.getReactedPosts({
+      limit,
+      offset,
+      client_user_id,
+    })
 
     res.status(200).send({ reactedPosts })
   } catch (error) {
@@ -221,7 +244,13 @@ export const getUserSavedPostsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const savedPosts = await UserService.getSavedPosts(client_user_id)
+    const { limit = 20, offset = 0 } = req.query
+
+    const savedPosts = await UserService.getSavedPosts({
+      limit,
+      offset,
+      client_user_id,
+    })
 
     res.status(200).send({ savedPosts })
   } catch (error) {
@@ -232,14 +261,16 @@ export const getUserSavedPostsController = async (req, res) => {
 
 export const getUserNotificationsController = async (req, res) => {
   try {
-    const { from } = req.query
+    const { from, limit, offset } = req.query
 
     const { client_user_id } = req.auth
 
-    const notifications = await UserService.getUserNotifications(
+    const notifications = await UserService.getUserNotifications({
       client_user_id,
-      from
-    )
+      from,
+      limit,
+      offset,
+    })
 
     res.status(200).send({ notifications })
   } catch (error) {
