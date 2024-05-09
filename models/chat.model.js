@@ -2,7 +2,6 @@
  * @typedef {import("pg").QueryConfig} PgQueryConfig
  */
 
-import { stripNulls } from "../utils/helpers.js"
 import { dbQuery } from "./db.js"
 
 /**
