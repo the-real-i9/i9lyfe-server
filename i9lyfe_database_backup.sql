@@ -23,11 +23,11 @@ SET row_security = off;
 CREATE TYPE public.ui_comment_struct AS (
 	owner_user json,
 	comment_id integer,
-	attachment_url text,
 	comment_text text,
+	attachment_url text,
 	reactions_count integer,
 	comments_count integer,
-	client_reaction boolean
+	client_reaction integer
 );
 
 
@@ -47,7 +47,7 @@ CREATE TYPE public.ui_post_struct AS (
 	comments_count integer,
 	reposts_count integer,
 	saves_count integer,
-	client_reaction boolean,
+	client_reaction integer,
 	client_reposted boolean,
 	client_saved boolean
 );
@@ -166,14 +166,13 @@ BEGIN
 	
 	-- create mention notifications
 	INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id)
-	VALUES ('mention', client_user_id, ment_user_id, ret_comment_id);
+	VALUES ('mention_in_comment', client_user_id, ment_user_id, ret_comment_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
 		'receiver_user_id', ment_user_id,
 		'sender', client_data,
-		'type', 'mention',
-		'comment_id', ret_comment_id,
-		'in', 'comment'
+		'type', 'mention_in_comment',
+		'comment_id', ret_comment_id
 	));
   END LOOP;
   
@@ -193,10 +192,10 @@ BEGIN
   mention_notifs := mention_notifs_acc;
   comment_notif := json_build_object(
 	  'receiver_user_id', target_comment_owner_user_id,
-	  'type', 'comment'
+	  'type', 'comment_on_comment',
 	  'sender', client_data,
-	  'comment_id', in_target_comment_id,
-	  'on', 'comment'
+	  'target_comment_id', in_target_comment_id,
+	  'comment_created_id', ret_comment_id
   );
   
   SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE target_comment_id = in_target_comment_id;
@@ -252,14 +251,13 @@ BEGIN
 	
 	-- create mention notifications
 	INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id)
-	VALUES ('mention', client_user_id, ment_user_id, ret_comment_id);
+	VALUES ('mention_in_comment', client_user_id, ment_user_id, ret_comment_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
 		'receiver_user_id', ment_user_id,
 		'sender', client_data,
-		'type', 'mention',
-		'comment_id', ret_comment_id,
-		'in', 'comment'
+		'type', 'mention_in_comment',
+		'comment_id', ret_comment_id
 	));
   END LOOP;
   
@@ -279,10 +277,10 @@ BEGIN
   mention_notifs := mention_notifs_acc;
   comment_notif := json_build_object(
 	  'receiver_user_id', target_post_owner_user_id,
-	  'type', 'comment'
+	  'type', 'comment_on_post',
 	  'sender', client_data,
 	  'post_id', in_target_post_id,
-	  'on', 'post'
+	  'comment_created_id', ret_comment_id
   );
   
   SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE target_post_id = in_target_post_id;
@@ -318,7 +316,7 @@ BEGIN
   VALUES (ret_conversation_id, in_with_user_id, in_initiator_user_id);
   
   INSERT INTO message_(sender_user_id, conversation_id, msg_content)
-  VALUES (in_initiator_user_id, res_conversation_id, in_message)
+  VALUES (in_initiator_user_id, ret_conversation_id, init_message)
   RETURNING id INTO ret_message_id;
   
   SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url) INTO client_data
@@ -346,10 +344,10 @@ $$;
 ALTER FUNCTION public.create_conversation(OUT client_res json, OUT partner_res json, in_initiator_user_id integer, in_with_user_id integer, init_message json) OWNER TO postgres;
 
 --
--- Name: create_message(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: create_message(integer, integer, json); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content integer) RETURNS record
+CREATE FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content json) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -384,7 +382,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content integer) OWNER TO postgres;
+ALTER FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content json) OWNER TO postgres;
 
 --
 -- Name: create_post(integer, text[], text, text, character varying[], character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
@@ -430,14 +428,13 @@ BEGIN
 	
 	-- create mention notifications
 	INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id)
-	VALUES ('mention', client_user_id, ment_user_id, ret_post_id);
+	VALUES ('mention_in_post', client_user_id, ment_user_id, ret_post_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
 		'receiver_user_id', ment_user_id,
 		'sender', client_data,
-		'type', 'mention',
-		'post_id', ret_post_id,
-		'in', 'post'
+		'type', 'mention_in_post',
+		'post_id', ret_post_id
 	));
   END LOOP;
   
@@ -479,15 +476,16 @@ BEGIN
 	  'profile_pic_url', profile_pic_url
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id)
-  VALUES ('reaction_to_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id);
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id, reaction_code_point)
+  VALUES ('reaction_to_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
 	  'receiver_user_id', target_comment_owner_user_id,
-	  'type', 'reaction'
-	  'sender', client_data,
+	  'type', 'reaction_to_comment',
+	  'reaction_code_point', in_reaction_code_point,
 	  'comment_id', in_target_comment_id,
-	  'to', 'comment'
+	  'sender', client_data
+	  
   );
   
   SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE target_comment_id = in_target_comment_id;
@@ -519,15 +517,15 @@ BEGIN
 	  'profile_pic_url', profile_pic_url
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id)
-  VALUES ('reaction_to_post', client_user_id, target_post_owner_user_id, in_target_post_id);
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id, reaction_code_point)
+  VALUES ('reaction_to_post', client_user_id, target_post_owner_user_id, in_target_post_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
 	  'receiver_user_id', target_post_owner_user_id,
-	  'type', 'reaction'
-	  'sender', client_data,
+	  'type', 'reaction_to_post',
 	  'post_id', in_target_post_id,
-	  'to', 'post'
+	  'reaction_code_point', in_reaction_code_point,
+	  'sender', client_data
   );
   
   SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE target_post_id = in_target_post_id;
@@ -600,11 +598,11 @@ ALTER FUNCTION public.edit_user(client_user_id integer, col_updates character va
 -- Name: follow_user(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.follow_user(OUT notification_data json, client_user_id integer, to_follow_user_id integer) RETURNS json
+CREATE FUNCTION public.follow_user(OUT follow_notif json, client_user_id integer, to_follow_user_id integer) RETURNS json
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  notification_sender json;
+  client_data json;
 BEGIN
   -- create follow relationship
   INSERT INTO follow (follower_user_id, followee_user_id) 
@@ -614,18 +612,18 @@ BEGIN
   INSERT INTO notification (type, sender_user_id, receiver_user_id) 
   VALUES ('follow', client_user_id, to_follow_user_id);
   
-  -- retrieve client (notification_sender)
+  -- populate client_data
   SELECT json_build_object(
 	  'user_id', id,
 	  'username', username,
 	  'profile_pic_url', profile_pic_url
-  ) INTO notification_sender FROM i9l_user WHERE id = in_client_user_id;
+  ) INTO client_data FROM i9l_user WHERE id = client_user_id;
 	  
   -- create and assign notification_data
-  notification_data := json_build_object(
+  follow_notif := json_build_object(
 	  'type', 'follow',
 	  'receiver_user_id', to_follow_user_id,
-	  'sender', notification_sender
+	  'sender', client_data
   );
   
   RETURN;
@@ -633,7 +631,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.follow_user(OUT notification_data json, client_user_id integer, to_follow_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.follow_user(OUT follow_notif json, client_user_id integer, to_follow_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_comment(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -732,26 +730,151 @@ $$;
 
 ALTER FUNCTION public.get_comments_on_post(in_target_post_id integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
 
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: i9l_user; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.i9l_user (
+    id integer NOT NULL,
+    email character varying(255) NOT NULL,
+    username character varying(255) NOT NULL,
+    password character varying NOT NULL,
+    name character varying NOT NULL,
+    birthday date NOT NULL,
+    bio character varying(300) DEFAULT 'Hey there! I"m using i9lyfe.'::character varying,
+    profile_pic_url character varying DEFAULT ''::character varying NOT NULL,
+    connection_status text DEFAULT 'online'::text NOT NULL,
+    last_active timestamp without time zone,
+    acc_deleted boolean DEFAULT false,
+    cover_pic_url text DEFAULT ''::text NOT NULL,
+    CONSTRAINT "User_check" CHECK ((((connection_status = 'offline'::text) AND (last_active IS NOT NULL)) OR ((connection_status = 'online'::text) AND (last_active IS NULL)))),
+    CONSTRAINT "User_connection_status_check" CHECK ((connection_status = ANY (ARRAY['online'::text, 'offline'::text])))
+);
+
+
+ALTER TABLE public.i9l_user OWNER TO postgres;
+
+--
+-- Name: message_; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.message_ (
+    id integer NOT NULL,
+    sender_user_id integer NOT NULL,
+    conversation_id integer NOT NULL,
+    msg_content jsonb,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    delivery_status text DEFAULT 'sent'::text NOT NULL,
+    reply_to_id integer,
+    CONSTRAINT "Message_delivery_status_check" CHECK ((delivery_status = ANY (ARRAY['sent'::text, 'delivered'::text, 'read'::text])))
+);
+
+
+ALTER TABLE public.message_ OWNER TO postgres;
+
+--
+-- Name: message_reaction; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.message_reaction (
+    id integer NOT NULL,
+    message_id integer NOT NULL,
+    reactor_user_id integer NOT NULL,
+    reaction_code_point integer NOT NULL
+);
+
+
+ALTER TABLE public.message_reaction OWNER TO postgres;
+
+--
+-- Name: ConversationHistoryView; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public."ConversationHistoryView" AS
+ SELECT msg.id AS msg_id,
+    json_build_object('id', sender.id, 'username', sender.username, 'profile_pic_url', sender.profile_pic_url) AS sender,
+    msg.msg_content,
+    msg.delivery_status,
+    ( SELECT array_agg(message_reaction.reaction_code_point) AS array_agg
+           FROM public.message_reaction
+          WHERE (message_reaction.message_id = msg.id)) AS reactions,
+    msg.created_at,
+    msg.conversation_id
+   FROM (public.message_ msg
+     JOIN public.i9l_user sender ON ((sender.id = msg.sender_user_id)))
+  ORDER BY msg.created_at DESC;
+
+
+ALTER VIEW public."ConversationHistoryView" OWNER TO postgres;
+
 --
 -- Name: get_conversation_history(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_conversation_history(OUT history json, in_conversation_id integer, in_limit integer, in_offset integer) RETURNS json
+CREATE FUNCTION public.get_conversation_history(in_conversation_id integer, in_limit integer, in_offset integer) RETURNS SETOF public."ConversationHistoryView"
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(h_item) INTO history FROM (SELECT h_item, created_at 
-    FROM "ConversationHistoryView"
-    WHERE conversation_id = in_conversation_id
-    LIMIT in_limit OFFSET in_offset)
-  ORDER BY created_at ASC;
+  RETURN QUERY SELECT * FROM (
+	  SELECT * FROM "ConversationHistoryView"
+      WHERE conversation_id = in_conversation_id
+      LIMIT in_limit OFFSET in_offset
+  ) ORDER BY created_at ASC;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_conversation_history(OUT history json, in_conversation_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
+ALTER FUNCTION public.get_conversation_history(in_conversation_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
+
+--
+-- Name: get_explore_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_explore_posts(in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT json_build_object(
+        'user_id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = client_user_id THEN reaction_code_point
+        ELSE NULL
+      END client_reaction,
+      CASE 
+        WHEN reposter_user_id = client_user_id THEN true
+        ELSE false
+      END client_reposted,
+      CASE 
+        WHEN saver_user_id = client_user_id THEN true
+        ELSE false
+      END client_saved
+    FROM "PostView"
+    ORDER BY created_at DESC
+	LIMIT in_limit OFFSET in_offset;
+	  
+	  
+END;
+$$;
+
+
+ALTER FUNCTION public.get_explore_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_feed_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -800,10 +923,10 @@ $$;
 ALTER FUNCTION public.get_feed_posts(client_user_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
 
 --
--- Name: get_mentioned_posts(integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_hashtag_posts(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_mentioned_posts(client_user_id integer) RETURNS SETOF public.ui_post_struct
+CREATE FUNCTION public.get_hashtag_posts(in_hashtag_name character varying, in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -833,14 +956,61 @@ BEGIN
         ELSE false
       END client_saved
     FROM "PostView" pv
-    INNER JOIN pc_mention ON pc_mention.post_id = pv.post_id AND pc_mention.user_id = client_user_id;
+    INNER JOIN pc_hashtag pch ON pch.post_id = pv.post_id AND pch.hashtag_name = in_hashtag_name
+	ORDER BY pv.created_at DESC
+	LIMIT in_limit OFFSET in_offset;
 	  
 	  
 END;
 $$;
 
 
-ALTER FUNCTION public.get_mentioned_posts(client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_hashtag_posts(in_hashtag_name character varying, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
+
+--
+-- Name: get_mentioned_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_mentioned_posts(in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT json_build_object(
+        'user_id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      pv.post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = client_user_id THEN reaction_code_point
+        ELSE NULL
+      END client_reaction,
+      CASE 
+        WHEN reposter_user_id = client_user_id THEN true
+        ELSE false
+      END client_reposted,
+      CASE 
+        WHEN saver_user_id = client_user_id THEN true
+        ELSE false
+      END client_saved
+    FROM "PostView" pv
+    INNER JOIN pc_mention ON pc_mention.post_id = pv.post_id AND pc_mention.user_id = client_user_id
+	ORDER BY pv.created_at DESC
+	LIMIT in_limit OFFSET in_offset;
+	  
+	  
+END;
+$$;
+
+
+ALTER FUNCTION public.get_mentioned_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_post(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -886,10 +1056,10 @@ $$;
 ALTER FUNCTION public.get_post(in_post_id integer, client_user_id integer) OWNER TO postgres;
 
 --
--- Name: get_reacted_posts(integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_reacted_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_reacted_posts(client_user_id integer) RETURNS SETOF public.ui_post_struct
+CREATE FUNCTION public.get_reacted_posts(in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -919,14 +1089,16 @@ BEGIN
         ELSE false
       END client_saved
     FROM "PostView"
-    WHERE reactor_user_id = client_user_id;
+    WHERE reactor_user_id = client_user_id
+	ORDER BY created_at DESC
+	LIMIT in_limit OFFSET in_offset;
 	  
 	  
 END;
 $$;
 
 
-ALTER FUNCTION public.get_reacted_posts(client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_reacted_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_reactors_to_comment(integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1025,10 +1197,41 @@ $$;
 ALTER FUNCTION public.get_reactors_with_reaction_to_comment(in_comment_id integer, in_reaction_code_point integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
 
 --
--- Name: get_saved_posts(integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_reactors_with_reaction_to_post(integer, integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_saved_posts(client_user_id integer) RETURNS SETOF public.ui_post_struct
+CREATE FUNCTION public.get_reactors_with_reaction_to_post(in_post_id integer, in_reaction_code_point integer, client_user_id integer, in_limit integer, in_offset integer) RETURNS TABLE(reactor_user json, client_follows boolean)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT json_build_object(
+	    'id', i9l_user.id, 
+        'profile_pic_url', i9l_user.profile_pic_url, 
+        'username', i9l_user.username, 
+        'name', i9l_user.name
+	  ) AS reactor_user,
+      CASE
+        WHEN client_follows.id IS NULL THEN false
+        ELSE true
+      END client_follows
+    FROM pc_reaction 
+    INNER JOIN i9l_user i9l_user ON pc_reaction.reactor_user_id = i9l_user.id 
+    LEFT JOIN follow client_follows ON client_follows.followee_user_id = i9l_user.id AND client_follows.follower_user_id = client_user_id
+    WHERE pc_reaction.target_post_id = in_post_id AND pc_reaction.reaction_code_point = in_reaction_code_point
+    ORDER BY pc_reaction.created_at DESC
+    LIMIT in_limit OFFSET in_offset;
+	
+	END;
+$$;
+
+
+ALTER FUNCTION public.get_reactors_with_reaction_to_post(in_post_id integer, in_reaction_code_point integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO postgres;
+
+--
+-- Name: get_saved_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_saved_posts(in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1058,14 +1261,16 @@ BEGIN
         ELSE false
       END client_saved
     FROM "PostView"
-    WHERE saver_user_id = client_user_id;
+    WHERE saver_user_id = client_user_id
+	ORDER BY created_at DESC
+	LIMIT in_limit OFFSET in_offset;
 	  
 	  
 END;
 $$;
 
 
-ALTER FUNCTION public.get_saved_posts(client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_saved_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_user(character varying); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1097,102 +1302,135 @@ ALTER FUNCTION public.get_user(OUT res_user json, unique_identifier character va
 -- Name: get_user_conversations(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_conversations(OUT user_convos json, client_user_id integer) RETURNS json
+CREATE FUNCTION public.get_user_conversations(client_user_id integer) RETURNS TABLE(conversation_id integer, partner json, unread_messages_count integer, updated_at timestamp without time zone)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(json_build_object(
-	'conversation_id', uconv.conversation_id,
-    'partner', json_build_object(
+  RETURN QUERY SELECT uconv.conversation_id,
+    json_build_object(
+		'id', par.id,
 		'username', par.username,
 		'profile_pic_url', par.profile_pic_url,
 		'connection_status', par.connection_status,
 		'last_active', par.last_active
-	),
-    'unread_messages_count', uconv.unread_messages_count,
-    'updated_at', uconv.updated_at,
-    'partner_user_id', uconv.partner_user_id
-  )) INTO user_convos
+	) AS partner,
+    uconv.unread_messages_count,
+    uconv.updated_at
   FROM user_conversation uconv
   LEFT JOIN i9l_user par ON par.id = uconv.partner_user_id
-  WHERE uconv.deleted = false;
+  WHERE uconv.user_id = client_user_id AND uconv.deleted = false;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user_conversations(OUT user_convos json, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_conversations(client_user_id integer) OWNER TO postgres;
 
 --
--- Name: get_user_followers(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_user_followers(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_followers(OUT followers_list json[], in_username character varying, client_user_id integer) RETURNS json[]
+CREATE FUNCTION public.get_user_followers(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) RETURNS TABLE(user_id integer, username character varying, bio character varying, profile_pic_url character varying, client_follows boolean)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(json_build_object(
-	  'user_id', follower_user.id, 
-      'username', follower_user.username, 
-      'bio', follower_user.bio, 
-      'profile_pic_url', follower_user.profile_pic_url,
-      'client_follows', CASE
+  RETURN QUERY SELECT follower_user.id AS user_id, 
+      follower_user.username, 
+      follower_user.bio, 
+      follower_user.profile_pic_url,
+      CASE
         WHEN client_follows.id IS NULL THEN false
         ELSE true
-      END
-  )) INTO followers_list
+      END client_follows
     FROM follow
     LEFT JOIN i9l_user follower_user ON follower_user.id = follow.follower_user_id
     LEFT JOIN i9l_user followee_user ON followee_user.id = follow.followee_user_id
-    LEFT JOIN Follow client_follows 
+    LEFT JOIN follow client_follows 
       ON client_follows.followee_user_id = followee_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE followee_user.username = in_username;
+    WHERE followee_user.username = in_username
+	ORDER BY follow.follow_on DESC
+	LIMIT in_limit OFFSET in_offset;
+	
+	
+	END;
+$$;
+
+
+ALTER FUNCTION public.get_user_followers(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
+
+--
+-- Name: get_user_following(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_user_following(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) RETURNS TABLE(user_id integer, username character varying, bio character varying, profile_pic_url character varying, client_follows boolean)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT followee_user.id AS user_id, 
+      followee_user.username, 
+      followee_user.bio, 
+      followee_user.profile_pic_url,
+      CASE
+        WHEN client_follows.id IS NULL THEN false
+        ELSE true
+      END client_follows
+    FROM follow
+    LEFT JOIN i9l_user follower_user ON follower_user.id = follow.follower_user_id
+    LEFT JOIN i9l_user followee_user ON followee_user.id = follow.followee_user_id
+    LEFT JOIN follow client_follows 
+      ON client_follows.followee_user_id = followee_user.id AND client_follows.follower_user_id = client_user_id
+    WHERE follower_user.username = in_username
+	ORDER BY follow.follow_on DESC
+	LIMIT in_limit OFFSET in_offset;
 	  
-	  
+  RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user_followers(OUT followers_list json[], in_username character varying, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_following(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
--- Name: get_user_following(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_user_notifications(integer, timestamp without time zone, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_following(OUT following_list json[], in_username character varying, client_user_id integer) RETURNS json[]
+CREATE FUNCTION public.get_user_notifications(OUT user_notifications json, client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) RETURNS json
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(json_build_object(
-	  'user_id', followee_user.id, 
-      'username', followee_user.username, 
-      'bio', followee_user.bio, 
-      'profile_pic_url', followee_user.profile_pic_url,
-      'client_follows', CASE
-        WHEN client_follows.id IS NULL THEN false
-        ELSE true
-      END
-  )) INTO following_list
-    FROM follow
-    LEFT JOIN i9l_user follower_user ON follower_user.id = follow.follower_user_id
-    LEFT JOIN i9l_user followee_user ON followee_user.id = follow.followee_user_id
-    LEFT JOIN Follow client_follows 
-      ON client_follows.followee_user_id = followee_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE follower_user.username = in_username;
-	  
-	  
+  SELECT json_agg(notif) INTO user_notifications FROM (SELECT json_strip_nulls(json_build_object(
+	  'type', n.type,
+	  'is_read', n.is_read,
+	  'sender', json_build_object(
+		  'id', sender.id,
+		  'username', sender.username,
+		  'profile_pic_url', sender.profile_pic_url
+	  ),
+	  'post_id', n.post_id,
+	  'comment_id', n.comment_id,
+	  'comment_created_id', n.comment_created_id,
+	  'reaction_code_point', n.reaction_code_point,
+	  'created_at', n.created_at
+  )) AS notif FROM notification n
+  INNER JOIN i9l_user sender ON sender.id = n.sender_user_id
+  WHERE n.receiver_user_id = client_user_id AND n.created_at >= in_from
+  ORDER BY n.created_at DESC
+  LIMIT in_limit OFFSET in_offset);
+  
+  
+  RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user_following(OUT following_list json[], in_username character varying, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_notifications(OUT user_notifications json, client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) OWNER TO postgres;
 
 --
--- Name: get_user_posts(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_user_posts(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_posts(in_username character varying, client_user_id integer) RETURNS SETOF public.ui_post_struct
+CREATE FUNCTION public.get_user_posts(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1222,14 +1460,15 @@ BEGIN
         ELSE false
       END client_saved
     FROM "PostView"
-    WHERE owner_username = in_username;
-	  
-	  
+    WHERE owner_username = in_username
+	ORDER BY created_at DESC
+	LIMIT in_limit OFFSET in_offset;
+
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user_posts(in_username character varying, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_posts(in_username character varying, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_user_profile(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1273,31 +1512,78 @@ $$;
 ALTER FUNCTION public.get_user_profile(OUT profile_data json, in_username character varying, client_user_id integer) OWNER TO postgres;
 
 --
--- Name: get_users_to_chat(text, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_users_to_chat(text, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_users_to_chat(OUT users_to_chat json, like_arg text, client_user_id integer) RETURNS json
+CREATE FUNCTION public.get_users_to_chat(in_search text, in_limit integer, in_offset integer, client_user_id integer) RETURNS TABLE(id integer, username character varying, name character varying, profile_pic_url character varying, connection_status text, conversation_id integer)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(json_build_object(
-	  'id', id,
-	  'username', username,
-	  'name', name,
-	  'profile_pic_url', profile_pic_url,
-	  'connection_status', connection_status,
-	  'conversation_id', uconv.conversation_id
-  )) INTO users_to_chat
+  RETURN QUERY SELECT i9l_user.id,
+	  i9l_user.username,
+	  i9l_user.name,
+	  i9l_user.profile_pic_url,
+	  i9l_user.connection_status,
+	  uconv.conversation_id
   FROM i9l_user
   LEFT JOIN user_conversation uconv ON uconv.user_id = i9l_user.id
-  WHERE (username LIKE like_arg OR name LIKE like_arg) AND i9l_user.id != client_user_id;
+  WHERE (i9l_user.username ILIKE in_search OR i9l_user.name ILIKE in_search) AND i9l_user.id != client_user_id
+  LIMIT in_limit OFFSET in_offset;
   
-  
+  RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_users_to_chat(OUT users_to_chat json, like_arg text, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_users_to_chat(in_search text, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
+
+--
+-- Name: search_filter_posts(text, text, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.search_filter_posts(search_text text, filter_text text, in_limit integer, in_offset integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT json_build_object(
+        'user_id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = client_user_id THEN reaction_code_point
+        ELSE NULL
+      END client_reaction,
+      CASE 
+        WHEN reposter_user_id = client_user_id THEN true
+        ELSE false
+      END client_reposted,
+      CASE 
+        WHEN saver_user_id = client_user_id THEN true
+        ELSE false
+      END client_saved
+    FROM "PostView"
+    WHERE CASE 
+	  WHEN filter_text <> 'all' THEN (to_tsvector(description) @@ to_tsquery(search_text) AND type = filter_text) 
+	  ELSE to_tsvector(description) @@ to_tsquery(search_text) 
+	END
+	ORDER BY created_at DESC
+	LIMIT in_limit OFFSET in_offset;
+	  
+	  
+END;
+$$;
+
+
+ALTER FUNCTION public.search_filter_posts(search_text text, filter_text text, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: user_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1320,46 +1606,6 @@ $$;
 
 ALTER FUNCTION public.user_exists(OUT check_res boolean, unique_identifier character varying) OWNER TO postgres;
 
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: blocked_user; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.blocked_user (
-    id integer NOT NULL,
-    blocking_user_id integer NOT NULL,
-    blocked_user_id integer NOT NULL,
-    blocked_at timestamp without time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.blocked_user OWNER TO postgres;
-
---
--- Name: BlockedUser_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."BlockedUser_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."BlockedUser_id_seq" OWNER TO postgres;
-
---
--- Name: BlockedUser_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."BlockedUser_id_seq" OWNED BY public.blocked_user.id;
-
-
 --
 -- Name: comment_; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -1377,30 +1623,6 @@ CREATE TABLE public.comment_ (
 
 
 ALTER TABLE public.comment_ OWNER TO postgres;
-
---
--- Name: i9l_user; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.i9l_user (
-    id integer NOT NULL,
-    email character varying(255) NOT NULL,
-    username character varying(255) NOT NULL,
-    password character varying NOT NULL,
-    name character varying NOT NULL,
-    birthday date NOT NULL,
-    bio character varying(300) DEFAULT 'Hey there! I"m using i9lyfe.'::character varying,
-    profile_pic_url character varying DEFAULT ''::character varying NOT NULL,
-    connection_status text DEFAULT 'online'::text NOT NULL,
-    last_active timestamp without time zone,
-    acc_deleted boolean DEFAULT false,
-    cover_pic_url text DEFAULT ''::text NOT NULL,
-    CONSTRAINT "User_check" CHECK ((((connection_status = 'offline'::text) AND (last_active IS NOT NULL)) OR ((connection_status = 'online'::text) AND (last_active IS NULL)))),
-    CONSTRAINT "User_connection_status_check" CHECK ((connection_status = ANY (ARRAY['online'::text, 'offline'::text])))
-);
-
-
-ALTER TABLE public.i9l_user OWNER TO postgres;
 
 --
 -- Name: pc_reaction; Type: TABLE; Schema: public; Owner: postgres
@@ -1446,305 +1668,6 @@ CREATE VIEW public."CommentView" AS
 
 
 ALTER VIEW public."CommentView" OWNER TO postgres;
-
---
--- Name: Comment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Comment_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Comment_id_seq" OWNER TO postgres;
-
---
--- Name: Comment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Comment_id_seq" OWNED BY public.comment_.id;
-
-
---
--- Name: ConversationHistoryView; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public."ConversationHistoryView" AS
-SELECT
-    NULL::json AS h_item,
-    NULL::timestamp without time zone AS created_at,
-    NULL::integer AS conversation_id;
-
-
-ALTER VIEW public."ConversationHistoryView" OWNER TO postgres;
-
---
--- Name: conversation; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.conversation (
-    id integer NOT NULL,
-    created_at timestamp without time zone DEFAULT now() NOT NULL,
-    initiator_user_id integer NOT NULL,
-    with_user_id integer NOT NULL
-);
-
-
-ALTER TABLE public.conversation OWNER TO postgres;
-
---
--- Name: Conversation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Conversation_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Conversation_id_seq" OWNER TO postgres;
-
---
--- Name: Conversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Conversation_id_seq" OWNED BY public.conversation.id;
-
-
---
--- Name: follow; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.follow (
-    id integer NOT NULL,
-    follower_user_id integer NOT NULL,
-    followee_user_id integer NOT NULL,
-    follow_on timestamp without time zone DEFAULT now() NOT NULL,
-    CONSTRAINT no_self_follow CHECK ((follower_user_id <> followee_user_id))
-);
-
-
-ALTER TABLE public.follow OWNER TO postgres;
-
---
--- Name: FollowAction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."FollowAction_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."FollowAction_id_seq" OWNER TO postgres;
-
---
--- Name: FollowAction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."FollowAction_id_seq" OWNED BY public.follow.id;
-
-
---
--- Name: pc_hashtag; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.pc_hashtag (
-    id integer NOT NULL,
-    post_id integer,
-    comment_id integer,
-    hashtag_name character varying(255) NOT NULL,
-    CONSTRAINT hashtag_either_in_post_or_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
-);
-
-
-ALTER TABLE public.pc_hashtag OWNER TO postgres;
-
---
--- Name: Hashtag_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Hashtag_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Hashtag_id_seq" OWNER TO postgres;
-
---
--- Name: Hashtag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Hashtag_id_seq" OWNED BY public.pc_hashtag.id;
-
-
---
--- Name: pc_mention; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.pc_mention (
-    id integer NOT NULL,
-    post_id integer,
-    comment_id integer,
-    user_id integer NOT NULL,
-    CONSTRAINT mention_either_in_post_or_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
-);
-
-
-ALTER TABLE public.pc_mention OWNER TO postgres;
-
---
--- Name: Mention_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Mention_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Mention_id_seq" OWNER TO postgres;
-
---
--- Name: Mention_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Mention_id_seq" OWNED BY public.pc_mention.id;
-
-
---
--- Name: message_reaction; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.message_reaction (
-    id integer NOT NULL,
-    message_id integer NOT NULL,
-    reactor_user_id integer NOT NULL,
-    reaction_code_point integer NOT NULL
-);
-
-
-ALTER TABLE public.message_reaction OWNER TO postgres;
-
---
--- Name: MessageReaction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."MessageReaction_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."MessageReaction_id_seq" OWNER TO postgres;
-
---
--- Name: MessageReaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."MessageReaction_id_seq" OWNED BY public.message_reaction.id;
-
-
---
--- Name: message_; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.message_ (
-    id integer NOT NULL,
-    sender_user_id integer NOT NULL,
-    conversation_id integer NOT NULL,
-    msg_content jsonb,
-    created_at timestamp without time zone DEFAULT now() NOT NULL,
-    delivery_status text DEFAULT 'sent'::text NOT NULL,
-    reply_to_id integer,
-    CONSTRAINT "Message_delivery_status_check" CHECK ((delivery_status = ANY (ARRAY['sent'::text, 'delivered'::text, 'read'::text])))
-);
-
-
-ALTER TABLE public.message_ OWNER TO postgres;
-
---
--- Name: Message_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Message_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Message_id_seq" OWNER TO postgres;
-
---
--- Name: Message_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Message_id_seq" OWNED BY public.message_.id;
-
-
---
--- Name: notification; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.notification (
-    id integer NOT NULL,
-    type character varying(255) NOT NULL,
-    is_read boolean DEFAULT false,
-    sender_user_id integer NOT NULL,
-    receiver_user_id integer NOT NULL,
-    post_id integer,
-    comment_id integer,
-    comment_created_id integer,
-    created_at timestamp without time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.notification OWNER TO postgres;
-
---
--- Name: Notification_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."Notification_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."Notification_id_seq" OWNER TO postgres;
-
---
--- Name: Notification_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."Notification_id_seq" OWNED BY public.notification.id;
-
 
 --
 -- Name: post; Type: TABLE; Schema: public; Owner: postgres
@@ -1824,10 +1747,24 @@ CREATE VIEW public."PostView" AS
 ALTER VIEW public."PostView" OWNER TO postgres;
 
 --
--- Name: Post_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: blocked_user; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."Post_id_seq"
+CREATE TABLE public.blocked_user (
+    id integer NOT NULL,
+    blocking_user_id integer NOT NULL,
+    blocked_user_id integer NOT NULL,
+    blocked_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.blocked_user OWNER TO postgres;
+
+--
+-- Name: blocked_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.blocked_user_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1836,20 +1773,20 @@ CREATE SEQUENCE public."Post_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."Post_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.blocked_user_id_seq OWNER TO postgres;
 
 --
--- Name: Post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: blocked_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."Post_id_seq" OWNED BY public.post.id;
+ALTER SEQUENCE public.blocked_user_id_seq OWNED BY public.blocked_user.id;
 
 
 --
--- Name: Reaction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: comment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."Reaction_id_seq"
+CREATE SEQUENCE public.comment_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1858,13 +1795,325 @@ CREATE SEQUENCE public."Reaction_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."Reaction_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.comment_id_seq OWNER TO postgres;
 
 --
--- Name: Reaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: comment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."Reaction_id_seq" OWNED BY public.pc_reaction.id;
+ALTER SEQUENCE public.comment_id_seq OWNED BY public.comment_.id;
+
+
+--
+-- Name: conversation; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.conversation (
+    id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    initiator_user_id integer NOT NULL,
+    with_user_id integer NOT NULL
+);
+
+
+ALTER TABLE public.conversation OWNER TO postgres;
+
+--
+-- Name: conversation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.conversation_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.conversation_id_seq OWNER TO postgres;
+
+--
+-- Name: conversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.conversation_id_seq OWNED BY public.conversation.id;
+
+
+--
+-- Name: follow; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.follow (
+    id integer NOT NULL,
+    follower_user_id integer NOT NULL,
+    followee_user_id integer NOT NULL,
+    follow_on timestamp without time zone DEFAULT now() NOT NULL,
+    CONSTRAINT no_self_follow CHECK ((follower_user_id <> followee_user_id))
+);
+
+
+ALTER TABLE public.follow OWNER TO postgres;
+
+--
+-- Name: follow_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.follow_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.follow_id_seq OWNER TO postgres;
+
+--
+-- Name: follow_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.follow_id_seq OWNED BY public.follow.id;
+
+
+--
+-- Name: i9l_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.i9l_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.i9l_user_id_seq OWNER TO postgres;
+
+--
+-- Name: i9l_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.i9l_user_id_seq OWNED BY public.i9l_user.id;
+
+
+--
+-- Name: message_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.message_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.message_id_seq OWNER TO postgres;
+
+--
+-- Name: message_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.message_id_seq OWNED BY public.message_.id;
+
+
+--
+-- Name: message_reaction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.message_reaction_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.message_reaction_id_seq OWNER TO postgres;
+
+--
+-- Name: message_reaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.message_reaction_id_seq OWNED BY public.message_reaction.id;
+
+
+--
+-- Name: notification; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notification (
+    id integer NOT NULL,
+    type character varying(255) NOT NULL,
+    is_read boolean DEFAULT false,
+    sender_user_id integer NOT NULL,
+    receiver_user_id integer NOT NULL,
+    post_id integer,
+    comment_id integer,
+    comment_created_id integer,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    reaction_code_point integer
+);
+
+
+ALTER TABLE public.notification OWNER TO postgres;
+
+--
+-- Name: notification_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.notification_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.notification_id_seq OWNER TO postgres;
+
+--
+-- Name: notification_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.notification_id_seq OWNED BY public.notification.id;
+
+
+--
+-- Name: ongoing_registration; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ongoing_registration (
+    sid character varying NOT NULL,
+    sess json NOT NULL,
+    expire timestamp(6) without time zone NOT NULL
+);
+
+
+ALTER TABLE public.ongoing_registration OWNER TO postgres;
+
+--
+-- Name: pc_hashtag; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pc_hashtag (
+    id integer NOT NULL,
+    post_id integer,
+    comment_id integer,
+    hashtag_name character varying(255) NOT NULL,
+    CONSTRAINT hashtag_either_in_post_or_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
+);
+
+
+ALTER TABLE public.pc_hashtag OWNER TO postgres;
+
+--
+-- Name: pc_hashtag_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pc_hashtag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pc_hashtag_id_seq OWNER TO postgres;
+
+--
+-- Name: pc_hashtag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pc_hashtag_id_seq OWNED BY public.pc_hashtag.id;
+
+
+--
+-- Name: pc_mention; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pc_mention (
+    id integer NOT NULL,
+    post_id integer,
+    comment_id integer,
+    user_id integer NOT NULL,
+    CONSTRAINT mention_either_in_post_or_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
+);
+
+
+ALTER TABLE public.pc_mention OWNER TO postgres;
+
+--
+-- Name: pc_mention_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pc_mention_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pc_mention_id_seq OWNER TO postgres;
+
+--
+-- Name: pc_mention_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pc_mention_id_seq OWNED BY public.pc_mention.id;
+
+
+--
+-- Name: pc_reaction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pc_reaction_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pc_reaction_id_seq OWNER TO postgres;
+
+--
+-- Name: pc_reaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pc_reaction_id_seq OWNED BY public.pc_reaction.id;
+
+
+--
+-- Name: post_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.post_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.post_id_seq OWNER TO postgres;
+
+--
+-- Name: post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.post_id_seq OWNED BY public.post.id;
 
 
 --
@@ -1884,10 +2133,10 @@ CREATE TABLE public.reported_message (
 ALTER TABLE public.reported_message OWNER TO postgres;
 
 --
--- Name: ReportedMesssage_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: reported_message_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."ReportedMesssage_id_seq"
+CREATE SEQUENCE public.reported_message_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1896,20 +2145,20 @@ CREATE SEQUENCE public."ReportedMesssage_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."ReportedMesssage_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.reported_message_id_seq OWNER TO postgres;
 
 --
--- Name: ReportedMesssage_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: reported_message_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."ReportedMesssage_id_seq" OWNED BY public.reported_message.id;
+ALTER SEQUENCE public.reported_message_id_seq OWNED BY public.reported_message.id;
 
 
 --
--- Name: Repost_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: repost_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."Repost_id_seq"
+CREATE SEQUENCE public.repost_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1918,20 +2167,20 @@ CREATE SEQUENCE public."Repost_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."Repost_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.repost_id_seq OWNER TO postgres;
 
 --
--- Name: Repost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: repost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."Repost_id_seq" OWNED BY public.repost.id;
+ALTER SEQUENCE public.repost_id_seq OWNED BY public.repost.id;
 
 
 --
--- Name: SavedPost_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: saved_post_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."SavedPost_id_seq"
+CREATE SEQUENCE public.saved_post_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1940,13 +2189,13 @@ CREATE SEQUENCE public."SavedPost_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."SavedPost_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.saved_post_id_seq OWNER TO postgres;
 
 --
--- Name: SavedPost_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: saved_post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."SavedPost_id_seq" OWNED BY public.saved_post.id;
+ALTER SEQUENCE public.saved_post_id_seq OWNED BY public.saved_post.id;
 
 
 --
@@ -1969,10 +2218,10 @@ CREATE TABLE public.user_conversation (
 ALTER TABLE public.user_conversation OWNER TO postgres;
 
 --
--- Name: UserConversation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: user_conversation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public."UserConversation_id_seq"
+CREATE SEQUENCE public.user_conversation_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1981,160 +2230,125 @@ CREATE SEQUENCE public."UserConversation_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE public."UserConversation_id_seq" OWNER TO postgres;
+ALTER SEQUENCE public.user_conversation_id_seq OWNER TO postgres;
 
 --
--- Name: UserConversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: user_conversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public."UserConversation_id_seq" OWNED BY public.user_conversation.id;
+ALTER SEQUENCE public.user_conversation_id_seq OWNED BY public.user_conversation.id;
 
-
---
--- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public."User_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public."User_id_seq" OWNER TO postgres;
-
---
--- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public."User_id_seq" OWNED BY public.i9l_user.id;
-
-
---
--- Name: ongoing_registration; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.ongoing_registration (
-    sid character varying NOT NULL,
-    sess json NOT NULL,
-    expire timestamp(6) without time zone NOT NULL
-);
-
-
-ALTER TABLE public.ongoing_registration OWNER TO postgres;
 
 --
 -- Name: blocked_user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.blocked_user ALTER COLUMN id SET DEFAULT nextval('public."BlockedUser_id_seq"'::regclass);
+ALTER TABLE ONLY public.blocked_user ALTER COLUMN id SET DEFAULT nextval('public.blocked_user_id_seq'::regclass);
 
 
 --
 -- Name: comment_ id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.comment_ ALTER COLUMN id SET DEFAULT nextval('public."Comment_id_seq"'::regclass);
+ALTER TABLE ONLY public.comment_ ALTER COLUMN id SET DEFAULT nextval('public.comment_id_seq'::regclass);
 
 
 --
 -- Name: conversation id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.conversation ALTER COLUMN id SET DEFAULT nextval('public."Conversation_id_seq"'::regclass);
+ALTER TABLE ONLY public.conversation ALTER COLUMN id SET DEFAULT nextval('public.conversation_id_seq'::regclass);
 
 
 --
 -- Name: follow id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.follow ALTER COLUMN id SET DEFAULT nextval('public."FollowAction_id_seq"'::regclass);
+ALTER TABLE ONLY public.follow ALTER COLUMN id SET DEFAULT nextval('public.follow_id_seq'::regclass);
 
 
 --
 -- Name: i9l_user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.i9l_user ALTER COLUMN id SET DEFAULT nextval('public."User_id_seq"'::regclass);
+ALTER TABLE ONLY public.i9l_user ALTER COLUMN id SET DEFAULT nextval('public.i9l_user_id_seq'::regclass);
 
 
 --
 -- Name: message_ id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.message_ ALTER COLUMN id SET DEFAULT nextval('public."Message_id_seq"'::regclass);
+ALTER TABLE ONLY public.message_ ALTER COLUMN id SET DEFAULT nextval('public.message_id_seq'::regclass);
 
 
 --
 -- Name: message_reaction id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.message_reaction ALTER COLUMN id SET DEFAULT nextval('public."MessageReaction_id_seq"'::regclass);
+ALTER TABLE ONLY public.message_reaction ALTER COLUMN id SET DEFAULT nextval('public.message_reaction_id_seq'::regclass);
 
 
 --
 -- Name: notification id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.notification ALTER COLUMN id SET DEFAULT nextval('public."Notification_id_seq"'::regclass);
+ALTER TABLE ONLY public.notification ALTER COLUMN id SET DEFAULT nextval('public.notification_id_seq'::regclass);
 
 
 --
 -- Name: pc_hashtag id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.pc_hashtag ALTER COLUMN id SET DEFAULT nextval('public."Hashtag_id_seq"'::regclass);
+ALTER TABLE ONLY public.pc_hashtag ALTER COLUMN id SET DEFAULT nextval('public.pc_hashtag_id_seq'::regclass);
 
 
 --
 -- Name: pc_mention id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.pc_mention ALTER COLUMN id SET DEFAULT nextval('public."Mention_id_seq"'::regclass);
+ALTER TABLE ONLY public.pc_mention ALTER COLUMN id SET DEFAULT nextval('public.pc_mention_id_seq'::regclass);
 
 
 --
 -- Name: pc_reaction id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.pc_reaction ALTER COLUMN id SET DEFAULT nextval('public."Reaction_id_seq"'::regclass);
+ALTER TABLE ONLY public.pc_reaction ALTER COLUMN id SET DEFAULT nextval('public.pc_reaction_id_seq'::regclass);
 
 
 --
 -- Name: post id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.post ALTER COLUMN id SET DEFAULT nextval('public."Post_id_seq"'::regclass);
+ALTER TABLE ONLY public.post ALTER COLUMN id SET DEFAULT nextval('public.post_id_seq'::regclass);
 
 
 --
 -- Name: reported_message id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.reported_message ALTER COLUMN id SET DEFAULT nextval('public."ReportedMesssage_id_seq"'::regclass);
+ALTER TABLE ONLY public.reported_message ALTER COLUMN id SET DEFAULT nextval('public.reported_message_id_seq'::regclass);
 
 
 --
 -- Name: repost id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.repost ALTER COLUMN id SET DEFAULT nextval('public."Repost_id_seq"'::regclass);
+ALTER TABLE ONLY public.repost ALTER COLUMN id SET DEFAULT nextval('public.repost_id_seq'::regclass);
 
 
 --
 -- Name: saved_post id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.saved_post ALTER COLUMN id SET DEFAULT nextval('public."SavedPost_id_seq"'::regclass);
+ALTER TABLE ONLY public.saved_post ALTER COLUMN id SET DEFAULT nextval('public.saved_post_id_seq'::regclass);
 
 
 --
 -- Name: user_conversation id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.user_conversation ALTER COLUMN id SET DEFAULT nextval('public."UserConversation_id_seq"'::regclass);
+ALTER TABLE ONLY public.user_conversation ALTER COLUMN id SET DEFAULT nextval('public.user_conversation_id_seq'::regclass);
 
 
 --
@@ -2386,26 +2600,18 @@ ALTER TABLE ONLY public.user_conversation
 
 
 --
+-- Name: message_reaction user_reacts_once; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_reaction
+    ADD CONSTRAINT user_reacts_once UNIQUE (message_id, reactor_user_id);
+
+
+--
 -- Name: IDX_session_expire; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "IDX_session_expire" ON public.ongoing_registration USING btree (expire);
-
-
---
--- Name: ConversationHistoryView _RETURN; Type: RULE; Schema: public; Owner: postgres
---
-
-CREATE OR REPLACE VIEW public."ConversationHistoryView" AS
- SELECT json_build_object('id', msg.id, 'sender', json_build_object('id', sender.id, 'username', sender.username, 'profile_pic_url', sender.profile_pic_url), 'content', msg.msg_content, 'delivery_status', msg.delivery_status, 'reactions', json_agg(json_build_object('reaction_code_point', msg_rxn.reaction_code_point, 'r_username', reactor.username, 'r_profile_pic_url', reactor.profile_pic_url))) AS h_item,
-    msg.created_at,
-    msg.conversation_id
-   FROM (((public.message_ msg
-     JOIN public.i9l_user sender ON ((sender.id = msg.sender_user_id)))
-     LEFT JOIN public.message_reaction msg_rxn ON ((msg_rxn.message_id = msg.id)))
-     JOIN public.i9l_user reactor ON ((reactor.id = msg_rxn.reactor_user_id)))
-  GROUP BY msg.id, sender.id
-  ORDER BY msg.created_at DESC;
 
 
 --
