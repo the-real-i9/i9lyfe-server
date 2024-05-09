@@ -146,13 +146,13 @@ export const getUserFollowersController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const {limit = 20, offset = 0} = req.query
+    const { limit = 50, offset = 0 } = req.query
 
     const userFollowers = await UserService.getFollowers({
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id
+      client_user_id: req.auth?.client_user_id,
     })
 
     res.status(200).send({ userFollowers })
@@ -166,13 +166,13 @@ export const getUserFollowingController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const {limit = 20, offset = 0} = req.query
+    const { limit = 50, offset = 0 } = req.query
 
     const userFollowing = await UserService.getFollowing({
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id
+      client_user_id: req.auth?.client_user_id,
     })
 
     res.status(200).send({ userFollowing })
@@ -186,13 +186,13 @@ export const getUserPostsController = async (req, res) => {
   try {
     const { username } = req.params
 
-    const {limit = 20, offset = 0} = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const userPosts = await UserService.getPosts({
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id
+      client_user_id: req.auth?.client_user_id,
     })
 
     res.status(200).send({ userPosts })
@@ -261,7 +261,7 @@ export const getUserSavedPostsController = async (req, res) => {
 
 export const getUserNotificationsController = async (req, res) => {
   try {
-    const { from, limit, offset } = req.query
+    const { from, limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
