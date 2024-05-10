@@ -24,7 +24,7 @@ export class PostCommentRealtimeService {
 
     socket.join(followeesNewPostRooms)
 
-    /* To receive metrics update for post when in view */
+    /* To start receiving metrics update for post when in view */
     socket.on(
       "subscribe to post metrics update",
       (post_id) => {
@@ -44,6 +44,7 @@ export class PostCommentRealtimeService {
       }
     )
 
+    /* To start receiving metrics update for post when in view */
     socket.on(
       "subscribe to comment metrics update",
       (comment_id) => {
@@ -53,7 +54,7 @@ export class PostCommentRealtimeService {
       }
     )
 
-    /* To stop receiving metrics update for post when out of view */
+    /* To stop receiving metrics update for comment when out of view */
     socket.on(
       "unsubscribe from comment metrics update",
       (comment_id) => {
