@@ -422,7 +422,7 @@ The last step of the signup process, requiring you to provide your account infor
 
 ### User profile [GET]
 
-+ Request (application/json)
++ Request
 
     In user public routes the `Authorization` request header is not mandatory.
 
@@ -451,7 +451,7 @@ The last step of the signup process, requiring you to provide your account infor
 
 ### User followers [GET]
 
-+ Request (application/json)
++ Request
 
     In user public routes the `Authorization` request header is not mandatory.
 
@@ -486,7 +486,7 @@ The last step of the signup process, requiring you to provide your account infor
 
 ### User following [GET]
 
-+ Request (application/json)
++ Request
 
     In user public routes the `Authorization` request header is not mandatory.
 
@@ -523,7 +523,7 @@ The last step of the signup process, requiring you to provide your account infor
 
 ### User posts [GET]
 
-+ Request (application/json)
++ Request
 
     In user public routes the `Authorization` request header is not mandatory.
 
@@ -547,3 +547,111 @@ The last step of the signup process, requiring you to provide your account infor
                     "key2": "value2"
                 }
             ]
+
+
+# Group App
+
+## Get explore posts [/api/app/explore?limit={limit}&offset={offset}]
+
++ Parameters
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Explore [GET]
+
++ Request
+
+    `Authorization` request header is not mandatory as this route is public.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data as aggreegated by the app's algorithm.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+
+
+## Search and Filter [/api/app/search?search={search}&filter={filter}&limit={limit}&offset={offset}]
+
++ Parameters
+    + search (string) - The text you want to search for within `filter`. A filter of `user` allows you to search users by username, `hashtag` allows you to search hashtags by name, while specifying one of post types or leaving the `filter` unspecified searches through the post description lexically.
+    + filter (string) - Possible values are, `user`, `hashtag`, and one of the set of post types, `photo, video, reel, strory`. If unspecified, it filters by all post types, as long as `search` text is contained lexically in the post's description.
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Search and Filter [GET]
+
++ Request
+
+    `Authorization` request header is not mandatory as this route is public.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of data as specified by `filter`.
+
+    + Body
+
+            [
+                {
+                    "id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+
+
+## Get hashtag posts [/api/app/hashtags/{hashtagName}?limit={limit}&offset={offset}]
+
++ Parameters
+    + hashtagName (string) - Name of the hashtag for which to retrieve posts.
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Hashtag posts [GET]
+
++ Request
+
+    `Authorization` request header is not mandatory as this route is public.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data including the specified hashtag.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+

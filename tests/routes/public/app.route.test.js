@@ -21,9 +21,9 @@ xtest("explore", async () => {
   const res = await axios.get(prefixPath + "/explore", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("explorePosts")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.explorePosts)
+  console.log(res.data)
 })
 
 test("explore: search & filter", async () => {
@@ -33,16 +33,16 @@ test("explore: search & filter", async () => {
   // const res = await axios.get(prefixPath + "/explore/search?search=genius&filter=hashtag")
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("results")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.results)
+  console.log(res.data)
 })
 
 xtest("get hashtag posts", async () => {
   const res = await axios.get(prefixPath + "/hashtags/genius", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("hashtagPosts")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.hashtagPosts)
+  console.log(res.data)
 })

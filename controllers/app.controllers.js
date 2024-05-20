@@ -10,7 +10,7 @@ export const getExplorePostsController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ explorePosts })
+    res.status(200).send(explorePosts)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -29,7 +29,7 @@ export const searchAndFilterController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ results })
+    res.status(200).send(results)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -49,7 +49,7 @@ export const getHashtagPostsController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ hashtagPosts })
+    res.status(200).send(hashtagPosts)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
