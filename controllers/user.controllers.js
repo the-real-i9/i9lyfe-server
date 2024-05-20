@@ -131,7 +131,7 @@ export const getUserProfileController = async (req, res) => {
       req.auth?.client_user_id
     )
 
-    res.status(200).send({ profileData })
+    res.status(200).send(profileData)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -151,7 +151,7 @@ export const getUserFollowersController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ userFollowers })
+    res.status(200).send(userFollowers)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -171,7 +171,7 @@ export const getUserFollowingController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ userFollowing })
+    res.status(200).send(userFollowing)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -191,7 +191,7 @@ export const getUserPostsController = async (req, res) => {
       client_user_id: req.auth?.client_user_id,
     })
 
-    res.status(200).send({ userPosts })
+    res.status(200).send(userPosts)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

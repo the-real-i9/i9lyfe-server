@@ -156,9 +156,9 @@ The last step of the signup process, requiring you to provide your account infor
             }
 
 
-# Group User
+# Group User {protected}
 
-## Session user [/api/user_private/session_user]
+## Getsession user [/api/user_private/session_user]
 
 ### Session user [GET]
 
@@ -413,3 +413,137 @@ The last step of the signup process, requiring you to provide your account infor
                 }
             ]
 
+# Group User {public}
+
+## Get user profile [/api/user_public/{username}]
+
++ Parameters
+    + username (string) - User's username for which to retrieve profile information
+
+### User profile [GET]
+
++ Request (application/json)
+
+    In user public routes the `Authorization` request header is not mandatory.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body contains the user's profile information, as specified by their username.
+
+    + Body
+
+            {
+                "username": "mckenney",
+                "age": 21,
+                "profile_pic_url": "https://img.jpg",
+                "key4": "value4"
+            }
+
+
+## Get user followers [/api/user_public/{username}/followers]
+
++ Parameters
+    + username (string) - User's username for which to retrieve its followers
+
+### User followers [GET]
+
++ Request (application/json)
+
+    In user public routes the `Authorization` request header is not mandatory.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body contains a collection of followers' user data belonging to the specifiy user.
+
+    + Body
+
+            [
+                {
+                    "username": "dodo",
+                    "profile_pic_url": "https://img.jpg",
+                    "client_follows": true,
+                },
+                {
+                    "username": "taiwo",
+                    "profile_pic_url": "https://img.jpg",
+                    "client_follows": false,
+                }
+            ]
+
+
+## Get user following [/api/user_public/{username}/following]
+
++ Parameters
+    + username (string) - User's username for which to retrieve the users they follow
+
+### User following [GET]
+
++ Request (application/json)
+
+    In user public routes the `Authorization` request header is not mandatory.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body contains a collection of user data followed by the specified username.
+
+    + Body
+
+            [
+                {
+                    "username": "dodo",
+                    "profile_pic_url": "https://img.jpg",
+                    "client_follows": true,
+                },
+                {
+                    "username": "taiwo",
+                    "profile_pic_url": "https://img.jpg",
+                    "client_follows": true,
+                }
+            ]
+            
+
+## Get user posts [/api/user_public/{username}/posts?limit={limit}&offset={offset}]
+
++ Parameters
+    + username (string) - User's username for which to retrieve their posts
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### User posts [GET]
+
++ Request (application/json)
+
+    In user public routes the `Authorization` request header is not mandatory.
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data belonging to the specified username.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
