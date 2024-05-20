@@ -42,11 +42,11 @@ router.post("/users/:user_id/follow", followUserController)
 
 router.delete("/users/:user_id/unfollow", unfollowUserController)
 
-router.put("/edit_my_profile", editProfileController)
+router.patch("/edit_my_profile", editProfileController)
 
 router.put("/upload_profile_picture", uploadProfilePictureController)
 
-router.put("/update_my_connection_status", updateUserConnectionStatusController)
+router.patch("/update_my_connection_status", updateUserConnectionStatusController)
 
 router.put("/read_my_notification", readUserNotificationController)
 

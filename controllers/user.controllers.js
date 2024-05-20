@@ -103,10 +103,6 @@ export const uploadProfilePictureController = async (req, res) => {
 
 /* GETs */
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const getHomeFeedController = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
@@ -119,7 +115,7 @@ export const getHomeFeedController = async (req, res) => {
       offset,
     })
 
-    res.status(200).send({ homeFeedPosts })
+    res.status(200).send(homeFeedPosts)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -214,7 +210,7 @@ export const getUserMentionedPostsController = async (req, res) => {
       client_user_id,
     })
 
-    res.status(200).send({ mentionedPosts })
+    res.status(200).send(mentionedPosts)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -233,7 +229,7 @@ export const getUserReactedPostsController = async (req, res) => {
       client_user_id,
     })
 
-    res.status(200).send({ reactedPosts })
+    res.status(200).send(reactedPosts)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -252,7 +248,7 @@ export const getUserSavedPostsController = async (req, res) => {
       client_user_id,
     })
 
-    res.status(200).send({ savedPosts })
+    res.status(200).send(savedPosts)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -272,7 +268,7 @@ export const getUserNotificationsController = async (req, res) => {
       offset,
     })
 
-    res.status(200).send({ notifications })
+    res.status(200).send(notifications)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

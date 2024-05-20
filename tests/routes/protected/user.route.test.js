@@ -47,7 +47,7 @@ xtest("unfollow user", async () => {
 xtest("edit profile", async () => {
   const reqData = { name: "Samuel Ayomide" }
 
-  const res = await axios.put(
+  const res = await axios.patch(
     prefixPath + "/edit_my_profile",
     reqData,
     axiosConfig(i9xJwt)
@@ -62,7 +62,7 @@ xtest("update connection status", async () => {
     last_active: null,
   }
 
-  const res = await axios.put(
+  const res = await axios.patch(
     prefixPath + "/update_my_connection_status",
     reqData,
     axiosConfig(i9xJwt)
@@ -75,8 +75,8 @@ xtest("get home feed posts", async () => {
   const res = await axios.get(prefixPath + "/home_feed", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("homeFeedPosts")
-  console.log(res.data.homeFeedPosts)
+  expect(res.data).toBeTruthy()
+  console.log(res.data)
 })
 
 xtest("get posts mentioned in", async () => {
@@ -86,9 +86,8 @@ xtest("get posts mentioned in", async () => {
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("mentionedPosts")
-
-  console.log(res.data.mentionedPosts)
+  expect(res.data).toBeTruthy()
+  console.log(res.data)
 })
 
 xtest("get posts reacted to", async () => {
@@ -98,7 +97,8 @@ xtest("get posts reacted to", async () => {
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("reactedPosts")
+  expect(res.data).toBeTruthy()
+  console.log(res.data)
 })
 
 xtest("get posts saved", async () => {
@@ -108,7 +108,8 @@ xtest("get posts saved", async () => {
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("savedPosts")
+  expect(res.data).toBeTruthy()
+  console.log(res.data)
 })
 
 test("get my notifications", async () => {
@@ -118,7 +119,6 @@ test("get my notifications", async () => {
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("notifications")
-
-  console.log(res.data.notifications)
+  expect(res.data).toBeTruthy()
+  console.log(res.data)
 })

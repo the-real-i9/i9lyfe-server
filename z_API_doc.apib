@@ -156,11 +156,11 @@ The last step of the signup process, requiring you to provide your account infor
             }
 
 
-# Group App
+# Group User
 
 ## Session user [/api/user_private/session_user]
 
-### Get session user [GET]
+### Session user [GET]
 
 + Request (application/json)
 
@@ -177,7 +177,10 @@ The last step of the signup process, requiring you to provide your account infor
             }
 
 
-## Follow user [/api/user_private/users/:userId/follow]
+## Follow user [/api/user_private/users/{userId}/follow]
+
++ Parameters
+    + userId: `1` (number) - User's unique id
 
 ### Follow user [POST]
 
@@ -188,4 +191,225 @@ The last step of the signup process, requiring you to provide your account infor
             Authorization: Bearer f23rwfwfff...
 
 + Response 200
+
+## Unfollow user [/api/user_private/users/{userId}/unfollow]
+
++ Parameters
+    + userId: `1` (number) - User's unique id
+
+### Unfollow user [DELETE]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Edit your profile [/api/user_private/edit_my_profile]
+
+### My profile [PATCH]
+
++ field (any, required) - The name of the field you wish to edit, with its new data
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "field": "new data"
+            }
+
++ Response 200
+
+
+## Update connection status [/api/user_private/update_my_connection_status]
+
+### Connection status [PATCH]
+
++ connection_status (string, required) - Value is either "online" or "offline".
++ last_active (Date) - The `connection_status` is "offline", then `last_active` is set, else it is unspecified or nulled.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "connection_status": "offline",
+                "last_active": "${offline time}"
+            }
+
++ Response 200
+
+
+## Get home feed posts [/api/user_private/home_feed?limit={limit}&offset={offset}]
+
++ Parameters
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Home feed [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data.
+
+    + Body
+
+            [
+                {
+                    "key1": "value1",
+                    "key2": "value2"
+                },
+                {
+                    "key1": "value1",
+                    "key2": "value2"
+                }
+            ]
+
+
+
+## Get posts mentioning client [/api/user_private/mentioned_posts?limit={limit}&offset={offset}]
+
++ Parameters
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Posts mentioning client [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+
+
+## Get posts client reacted to [/api/user_private/reacted_posts?limit={limit}&offset={offset}]
+
++ Parameters
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Posts client reacted to [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+
+
+
+## Get posts saved by client [/api/user_private/saved_posts?limit={limit}&offset={offset}]
+
++ Parameters
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### Saved posts [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of post data.
+
+    + Body
+
+            [
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                },
+                {
+                    "post_id": "idValue",
+                    "key2": "value2"
+                }
+            ]
+
+## Get client notifications [/api/user_private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
+
++ Parameters
+    + fromDate: `2024-05-01` (string) - Specify the date constraint of notifications to be retrieved.
+    + limit: `20` (number) - A maximum of 50 post cards per page
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+
+### My notifications [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body is a collection of noification data.
+
+    + Body
+
+            [
+                {
+                    "notif_id": "idValue",
+                    "read": true,
+                    "key3": "value4"
+                },
+                {
+                    "notif_id": "idValue",
+                    "read": false,
+                    "key3": "value3"
+                }
+            ]
 
