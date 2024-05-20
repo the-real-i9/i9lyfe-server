@@ -4,9 +4,9 @@ export const getSessionUserController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const clientUser = await UserService.getClientUser(client_user_id)
+    const sessionUser = await UserService.getClientUser(client_user_id)
 
-    res.status(200).send({ clientUser })
+    res.status(200).send({ sessionUser })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

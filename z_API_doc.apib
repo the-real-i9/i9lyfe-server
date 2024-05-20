@@ -1,0 +1,191 @@
+FORMAT: 1A
+
+# Design Documentation: i9lyfe server
+
+A social media application sever with a wide range of social media interactions.
+
+# Group Auth
+
+## New account [/api/auth/signup/request_new_account]
+
+### Request new account [POST]
+
+This endpoint allows you to initiate the signup process by first submitting a valid email address.
+
++ email (string) - A valid email address not already in use.
+
++ Request (application/json)
+    
+            {
+                "email": "example@gmail.com"
+            }
+
++ Response 200 (application/json)
+
+    This `Set-cookie` header is attached to maintain an ongoing signup session between independent requests. It will be attached to subsequent request/response till the signup process is done.
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "msg": "Enter the 6-digit code sent to {yourEmail}"
+            }
+
++ Response 400 (application/json)
+
+            {
+                "reason": "An account already exists with this email!"
+            }
+
+## Email verification [/api/auth/signup/verify_email]
+
+### Verify your email [POST]
+
+This endpoint is strictly the second step of the signup process, requiring you to enter the 6-digit code sent to the email address provided in the previous step. Any attempt to access it out of order will result in an error.
+
++ code (number) - 6-digit code
+
++ Request (application/json)
+
+    + Headers
+
+            Cookie: connect.sid={encoded_session_id}
+    
+    + Body
+
+            {
+                "code": "123456"
+            }
+
++ Response 200 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "msg": "Your email has been verified!"
+            }
+
++ Response 400 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "reason": "Incorrect/Expired verification code. Re-check your mail or Re-submit email."
+            }
+
+## User registration [/api/auth/signup/register_user]
+
+### Register user [POST]
+
+The last step of the signup process, requiring you to provide your account information
+
++ **username** (string, required) - Username must be unique. Minimum of 3-digits.
++ **password** (string, required) - A strong password. Minimum of 8-digts.
++ **name** (string, required) - Display name
++ **birthday** (datestring, required) - Date of birth
++ **bio** (string, optional)
+
++ Request (application/json)
+
+    + Headers
+
+            Cookie: connect.sid={encoded_session_id}
+    
+    + Body
+
+            {
+                "username": "mckenney",
+                "password": "xxxxxxxx",
+                "name": "Kehinde Ogunrinola",
+                "birthday": "2000-11-07",
+                "bio": "Something about you...",
+            }
+
++ Response 201 (application/json)
+
+            {
+                "msg": "Signup success. You're automatically logged in.",
+                "jwtToken": "${JWT_TOKEN}",
+                "user": {
+                    "username": "mckenney",
+                }
+            }
+
+## Signin [/api/auth/signin]
+
+### Signin [POST]
+
++ username (string, required)
++ password (string, required)
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "username": "mckenney",
+                "password": "xxxxxxxx"
+            }
+
++ Response 422 (application/json)
+
+            {
+                "reason": "Incorrect email or password"
+            }
+
++ Response 200 (application/json)
+
+            {
+                "msg": "Signin success!",
+                "userData": {
+                    "id": 1,
+                    "username": "mckenney"
+                },
+                "jwtToken": "${AUTH_JWT_TOKEN}"
+            }
+
+
+# Group App
+
+## Session user [/api/user_private/session_user]
+
+### Get session user [GET]
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+            {
+                "sessionUser": {
+                    "key": "value"
+                }
+            }
+
+
+## Follow user [/api/user_private/users/:userId/follow]
+
+### Follow user [POST]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+

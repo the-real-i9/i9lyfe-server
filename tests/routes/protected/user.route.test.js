@@ -21,8 +21,8 @@ xtest("get session user", async () => {
   const res = await axios.get(prefixPath + "/session_user", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("clientUser")
-  console.log(res.data.clientUser)
+  expect(res.data).toHaveProperty("sessionUser")
+  console.log(res.data.sessionUser)
 })
 
 xtest("follow user", async () => {
