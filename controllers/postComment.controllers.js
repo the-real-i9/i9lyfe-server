@@ -26,7 +26,7 @@ export const createNewPostController = async (req, res) => {
 
     // asychronously notify mentioned users with the notificationService (WebSockets)
 
-    res.status(200).send({ postData })
+    res.status(200).send(postData)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -87,7 +87,7 @@ export const commentOnPostController = async (req, res) => {
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
 
-    res.status(201).send({ commentData })
+    res.status(201).send(commentData)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -144,7 +144,7 @@ export const commentOnCommentController = async (req, res) => {
       attachment_url
     })
 
-    res.status(201).send({ commentData })
+    res.status(201).send(commentData)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -220,7 +220,7 @@ export const getPostController = async (req, res) => {
 
     const post = await Post.getDetail(post_id, client_user_id)
 
-    res.status(200).send({ post })
+    res.status(200).send(post)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -246,7 +246,7 @@ export const getCommentsOnPostController = async (req, res) => {
       offset
     })
 
-    res.status(200).send({ commentsOnPost })
+    res.status(200).send(commentsOnPost)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -265,7 +265,7 @@ export const getCommentController = async (req, res) => {
 
     const comment = await Comment.getDetail(comment_id, client_user_id)
 
-    res.status(200).send({ comment })
+    res.status(200).send(comment)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -291,7 +291,7 @@ export const getReactorsToPostController = async (req, res) => {
       offset
     })
 
-    res.status(200).send({ postReactors })
+    res.status(200).send(postReactors)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -318,7 +318,7 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
       offset
     })
 
-    res.status(200).send({ reactorsWithReaction })
+    res.status(200).send(reactorsWithReaction)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -344,7 +344,7 @@ export const getCommentsOnCommentController = async (req, res) => {
       offset
     })
 
-    res.status(200).send({ commentsOnComment })
+    res.status(200).send(commentsOnComment)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -370,7 +370,7 @@ export const getReactorsToCommentController = async (req, res) => {
       offset
     })
 
-    res.status(200).send({ commentReactors })
+    res.status(200).send(commentReactors)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -397,7 +397,7 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
       offset,
     })
 
-    res.status(200).send({ commentReactorsWithReaction })
+    res.status(200).send(commentReactorsWithReaction)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

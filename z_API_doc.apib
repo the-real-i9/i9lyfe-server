@@ -158,9 +158,9 @@ The last step of the signup process, requiring you to provide your account infor
 
 # Group User {protected}
 
-## Getsession user [/api/user_private/session_user]
+## Session user [/api/user_private/session_user]
 
-### Session user [GET]
+### Get Session user [GET]
 
 + Request (application/json)
 
@@ -177,7 +177,7 @@ The last step of the signup process, requiring you to provide your account infor
             }
 
 
-## Follow user [/api/user_private/users/{userId}/follow]
+## User [/api/user_private/users/{userId}/follow]
 
 + Parameters
     + userId: `1` (number) - User's unique id
@@ -192,7 +192,8 @@ The last step of the signup process, requiring you to provide your account infor
 
 + Response 200
 
-## Unfollow user [/api/user_private/users/{userId}/unfollow]
+
+## User [/api/user_private/users/{userId}/unfollow]
 
 + Parameters
     + userId: `1` (number) - User's unique id
@@ -208,9 +209,9 @@ The last step of the signup process, requiring you to provide your account infor
 + Response 200
 
 
-## Edit your profile [/api/user_private/edit_my_profile]
+## Client user [/api/user_private/edit_my_profile]
 
-### My profile [PATCH]
+### Edit profile [PATCH]
 
 + field (any, required) - The name of the field you wish to edit, with its new data
 
@@ -228,9 +229,9 @@ The last step of the signup process, requiring you to provide your account infor
 + Response 200
 
 
-## Update connection status [/api/user_private/update_my_connection_status]
+## Client user [/api/user_private/update_my_connection_status]
 
-### Connection status [PATCH]
+### Update Connection status [PATCH]
 
 + connection_status (string, required) - Value is either "online" or "offline".
 + last_active (Date) - The `connection_status` is "offline", then `last_active` is set, else it is unspecified or nulled.
@@ -250,13 +251,13 @@ The last step of the signup process, requiring you to provide your account infor
 + Response 200
 
 
-## Get home feed posts [/api/user_private/home_feed?limit={limit}&offset={offset}]
+## Home feed posts [/api/user_private/home_feed?limit={limit}&offset={offset}]
 
 + Parameters
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Home feed [GET]
+### Get Home feed posts [GET]
 
 + Request (application/json)
 
@@ -283,13 +284,13 @@ The last step of the signup process, requiring you to provide your account infor
 
 
 
-## Get posts mentioning client [/api/user_private/mentioned_posts?limit={limit}&offset={offset}]
+## Posts mentioning client [/api/user_private/mentioned_posts?limit={limit}&offset={offset}]
 
 + Parameters
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Posts mentioning client [GET]
+### Get posts mentioning client [GET]
 
 + Request (application/json)
 
@@ -315,13 +316,13 @@ The last step of the signup process, requiring you to provide your account infor
             ]
 
 
-## Get posts client reacted to [/api/user_private/reacted_posts?limit={limit}&offset={offset}]
+## Posts client reacted to [/api/user_private/reacted_posts?limit={limit}&offset={offset}]
 
 + Parameters
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Posts client reacted to [GET]
+### Get posts client reacted to [GET]
 
 + Request (application/json)
 
@@ -348,13 +349,13 @@ The last step of the signup process, requiring you to provide your account infor
 
 
 
-## Get posts saved by client [/api/user_private/saved_posts?limit={limit}&offset={offset}]
+## Posts saved [/api/user_private/saved_posts?limit={limit}&offset={offset}]
 
 + Parameters
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Saved posts [GET]
+### Get saved posts [GET]
 
 + Request (application/json)
 
@@ -379,14 +380,14 @@ The last step of the signup process, requiring you to provide your account infor
                 }
             ]
 
-## Get client notifications [/api/user_private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
+## Client notifications [/api/user_private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
 
 + Parameters
     + fromDate: `2024-05-01` (string) - Specify the date constraint of notifications to be retrieved.
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 notifications per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### My notifications [GET]
+### Get my notifications [GET]
 
 + Request (application/json)
 
@@ -415,12 +416,12 @@ The last step of the signup process, requiring you to provide your account infor
 
 # Group User {public}
 
-## Get user profile [/api/user_public/{username}]
+## User profile [/api/user_public/{username}]
 
 + Parameters
     + username (string) - User's username for which to retrieve profile information
 
-### User profile [GET]
+### Get user profile [GET]
 
 + Request
 
@@ -444,12 +445,12 @@ The last step of the signup process, requiring you to provide your account infor
             }
 
 
-## Get user followers [/api/user_public/{username}/followers]
+## User's followers [/api/user_public/{username}/followers]
 
 + Parameters
     + username (string) - User's username for which to retrieve its followers
 
-### User followers [GET]
+### Get user's followers [GET]
 
 + Request
 
@@ -479,12 +480,12 @@ The last step of the signup process, requiring you to provide your account infor
             ]
 
 
-## Get user following [/api/user_public/{username}/following]
+## User's following [/api/user_public/{username}/following]
 
 + Parameters
     + username (string) - User's username for which to retrieve the users they follow
 
-### User following [GET]
+### Get user's following [GET]
 
 + Request
 
@@ -514,14 +515,14 @@ The last step of the signup process, requiring you to provide your account infor
             ]
             
 
-## Get user posts [/api/user_public/{username}/posts?limit={limit}&offset={offset}]
+## User's posts [/api/user_public/{username}/posts?limit={limit}&offset={offset}]
 
 + Parameters
     + username (string) - User's username for which to retrieve their posts
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### User posts [GET]
+### Get user's posts [GET]
 
 + Request
 
@@ -551,13 +552,13 @@ The last step of the signup process, requiring you to provide your account infor
 
 # Group App
 
-## Get explore posts [/api/app/explore?limit={limit}&offset={offset}]
+## Explore posts [/api/app/explore?limit={limit}&offset={offset}]
 
 + Parameters
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Explore [GET]
+### Get explore posts [GET]
 
 + Request
 
@@ -585,13 +586,13 @@ The last step of the signup process, requiring you to provide your account infor
             ]
 
 
-## Search and Filter [/api/app/search?search={search}&filter={filter}&limit={limit}&offset={offset}]
+## App contents [/api/app/search?search={search}&filter={filter}&limit={limit}&offset={offset}]
 
 + Parameters
     + search (string) - The text you want to search for within `filter`. A filter of `user` allows you to search users by username, `hashtag` allows you to search hashtags by name, while specifying one of post types or leaving the `filter` unspecified searches through the post description lexically.
     + filter (string) - Possible values are, `user`, `hashtag`, and one of the set of post types, `photo, video, reel, strory`. If unspecified, it filters by all post types, as long as `search` text is contained lexically in the post's description.
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 data items per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
 ### Search and Filter [GET]
 
@@ -621,14 +622,14 @@ The last step of the signup process, requiring you to provide your account infor
             ]
 
 
-## Get hashtag posts [/api/app/hashtags/{hashtagName}?limit={limit}&offset={offset}]
+## Hashtagged posts [/api/app/hashtags/{hashtagName}?limit={limit}&offset={offset}]
 
 + Parameters
     + hashtagName (string) - Name of the hashtag for which to retrieve posts.
-    + limit: `20` (number) - A maximum of 50 post cards per page
-    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to navigate to pages ahead.
+    + limit: `20` (number) - A maximum of 20 posts per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Hashtag posts [GET]
+### Get posts with {hashtagName} [GET]
 
 + Request
 
@@ -654,4 +655,557 @@ The last step of the signup process, requiring you to provide your account infor
                     "key2": "value2"
                 }
             ]
+
+
+
+# Group Post
+
+## New post [/api/post_comment/new_post]
+
+### Create new post [POST]
+
++ **media_blobs** (uint8[][]) - An array of media datas in `uint8` array format. They will be uploaded cloud storage and returned as `media_urls` when requested.
++ **type** (string) - The type of post. Possible values are `photo`, `video`, `story`, or `reel`.
++ **description** (string) - The description supporting the post.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "media_blobs": [],
+                "type": "video",
+                "description": "This is a post mentioning @dollyp and hashtaging #genius."
+            }
+
++ Response 201 (application/json)
+
+    The response body contains the full details needed to render a post card UI.
+
+    + Body
+    
+            {
+                "post_id": 1,
+                "type": "video",
+                "description": "This is a post mentioning @dollyp and hashtaging #genius.",
+                "key4": "value4"
+            }
+
+
+## Post [/api/post_comment/posts/{postId}]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post.
+
+### Get post detail [GET]
+
+Get post with `postId` of `4`
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response body contains the full details needed to render a post detail UI.
+
+    + Body
+    
+            {
+                "post_id": 1,
+                "type": "video",
+                "description": "This is a post mentioning @dollyp and hashtaging #genius.",
+                "key4": "value4"
+            }
+
+### Delete post [DELETE]
+
+Delete post with `postId` of `4`
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Post [/api/post_comment/users/{userId}/posts/{postId}/react]
+
++ Parameters
+    + userId: `1` (number) - Unique id of post owner.
+    + postId: `4` (number) - Unique id of post to react to.
+
+### React to post [POST]
+
+React to post `4` belonging to user `1`
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+    
+            {
+                "reaction": 🤣,
+            }
+
++ Response 200
+
+
+## Post reactors [/api/post_comment/posts/{postId}/reactors?limit={limit}&offset={offset}]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post reacted to.
+    + limit: `20` (number) - A maximum of 20 data items per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
+
+### Get post reactors [GET]
+
+Get reactors to post with `postId` of `4`
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "user_id": 4,
+                    "username": "samuel",
+                    "reaction_code_point": 323234
+                }
+            ]
+
+
+## Reactors of {reaction} to post [/api/post_comment/posts/{postId}/reactors/{reaction}?limit={limit}&offset={offset}]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post to reacted to.
+    + reaction: `🤣` (string) - The particular reaction of interest.
+    + limit: `20` (number) - A maximum of 20 data items per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
+
+### Get reactors of {reaction} to post [GET]
+
+Get reactors of 🤣 to post with `postId` of `4`
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "user_id": 4,
+                    "username": "samuel",
+                    "reaction_code_point": 323234
+                }
+            ]
+
+
+## Post reaction [/api/post_comment/posts/{postId}/remove_reaction]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post reacted to.
+
+### Remove post reaction [DELETE]
+
+Remove my reaction on post with `postId` of `4`
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## New comment on post [/api/post_comment/users{userId}/posts/{postId}/comment]
+
++ Parameters
+    + userId: `1` (number) - Unique id of post owner.
+    + postId: `4` (number) - Unique id of post to comment on.
+
+### Write comment on post [POST]
+
++ **attachment_blob** (uint8[]) - Attachment data in `uint8` array binary format.
++ comment_text (string)
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "attachment_blob": [],
+                "comment_text": "This is another comment on this post."
+            }
+
++ Response 201 (application/json)
+
+    + Body
+    
+            {
+                "comment_id": 1,
+                "comment_text": "This is another comment on this post."
+                "attachment_url": "https://att.jpg"
+            }
+
+
+## Comments on post [/api/post_comment/posts/{postId}/comments?limit={limit}&offset={offset}]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post for which to retrieve comments.
+    + limit: `20` (number) - A maximum of 20 comment cards per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll request subsequent batches of comments.
+
+### Get comments on post [GET]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "comment_id": 1,
+                    "comment_text": "This is another comment on this post."
+                    "attachment_url": "https://att.jpg"
+                },
+                {
+                    "comment_id": 2,
+                    "comment_text": "This is another comment on this post."
+                    "attachment_url": "https://att.jpg"
+                }
+            ]
+
+
+## Comment on post [/api/post_comment/posts/{targetPostId}/comments/{commentId}]
+
++ Parameters
+    + targetPostId: `4` (number) - Unique id of target post.
+    + commentId: `4` (number) - Unique id of comment to be deleted.
+
+### Delete comment on post [DELETE]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Post [/api/post_comment/posts/{postId}/repost]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post to repost.
+
+### Repost post [POST]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Post [/api/post_comment/posts/{postId}/unrepost]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post to unrepost.
+
+### Unrepost post [DELETE]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Post [/api/post_comment/posts/{postId}/save]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post to save.
+
+### Save post [POST]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Post [/api/post_comment/posts/{postId}/unsave]
+
++ Parameters
+    + postId: `4` (number) - Unique id of post to unsave.
+
+### Unsave post [DELETE]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+# Group Comment
+
+## New comment on comment [/api/post_comment/users/{userId}/comment/{commentId}/comment]
+
+**Note:** There isn't a notion of *"reply"* in the API. The notion of *"reply"* introduces confusion in the API design, database design, precisely. Therefore, it is treated as a "comment on comment" throughout the API.
+
++ Parameters
+    + userId: `1` (number) - Unique id of post owner.
+    + commentId: `4` (number) - Unique id of comment to comment on (i.e. "reply to", in a non-technical speak).
+
+### Write comment on comment [POST]
+
++ **attachment_blob** (uint8[], optional) - Attachment data in `uint8` array binary format. This field isn't required, it is just an option to enable the use GIFs by users.
++ comment_text (string)
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "attachment_blob": [],
+                "comment_text": "This is another comment on this post."
+            }
+
++ Response 201 (application/json)
+
+    + Body
+    
+            {
+                "comment_id": 1,
+                "comment_text": "This is another comment on this post."
+                "attachment_url": "https://att.jpg"
+            }
+
+
+## Comments on comment [/api/post_comment/comments/{commentId}/comments?limit={limit}&offset={offset}]
+
++ Parameters
+    + commentId: `4` (number) - Unique id of comment for which to retrieve comments (i.e. replies).
+    + limit: `20` (number) - A maximum of 20 comment cards per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll request subsequent batches of comments.
+
+### Get comments on comment [GET]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "comment_id": 1,
+                    "comment_text": "This is another comment on this post."
+                    "attachment_url": "https://att.jpg"
+                },
+                {
+                    "comment_id": 2,
+                    "comment_text": "This is another comment on this post."
+                    "attachment_url": "https://att.jpg"
+                }
+            ]
+
+
+## Comment [/api/post_comment/comments/{commentId}]
+
++ Parameters
+    + commentId: `4` (number) - Unique id of comment.
+
+### Get comment detail [GET]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "comment_id": 4,
+                "comment_text": "This is another comment on this post."
+                "attachment_url": "https://att.jpg"
+            }
+
+
+## Comment on comment [/api/post_comment/comments/{parentCommentId}/comments/{commentId}]
+
++ Parameters
+    + parentCommentId: `4` (number) - Unique id of parent comment.
+    + commentId: `4` (number) - Unique id of comment to be deleted.
+
+### Remove comment on comment [DELETE]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+
+## Comment reaction [/api/post_comment/users/{userId}/comments/{commentId}/react]
+
++ Parameters
+    + userId: `1` (number) - Unique id of comment owner.
+    + commentId: `4` (number) - Unique id of comment to react to.
+
+### React to comment [POST]
+
+React to comment `4` belonging to user `1`
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+    
+            {
+                "reaction": "🎯",
+            }
+
++ Response 200
+
+
+## Comment reactors [/api/post_comment/comments/{commentId}/reactors?limit={limit}&offset={offset}]
+
++ Parameters
+    + commentId: `4` (number) - Unique id of comment reacted to.
+    + limit: `20` (number) - A maximum of 20 comment cards per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
+
+### Get comment reactors [GET]
+
+Get reactors to comment with `commentId` of `4`
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "user_id": 4,
+                    "username": "samuel",
+                    "reaction_code_point": 323234
+                }
+            ]
+
+
+## Reactors of {reaction} to comment [/api/post_comment/comments/{commentId}/reactors/{reaction}?limit={limit}&offset={offset}]
+
++ Parameters
+    + commentId: `4` (number) - Unique id of post comment reacted to.
+    + reaction: `🤣` (string) - The particular reaction of interest.
+    + limit: `20` (number) - A maximum of 20 comments per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
+
+### Get reactors of {reaction} to comment [GET]
+
+Get reactors of 🤣 to comment with `commentId` of `4`
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+                {
+                    "user_id": 4,
+                    "username": "samuel",
+                    "reaction_code_point": 323234
+                }
+            ]
+
+
+## Comment reaction [/api/post_comment/comments/{commentId}/remove_reaction]
+
++ Parameters
+    + commentId: `4` (number) - Unique id of comment reacted to.
+
+### Remove comment reaction [DELETE]
+
+Remove my reaction on comment with `commentId` of `4`
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
 

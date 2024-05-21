@@ -27,16 +27,16 @@ xtest("create post", async () => {
   const res = await axios.post(prefixPath + "/new_post", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("postData.post_id")
+  expect(res.data).toHaveProperty("post_id")
 })
 
 xtest("post detail", async () => {
   const res = await axios.get(prefixPath + "/posts/4", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("post.post_id")
+  expect(res.data).toHaveProperty("post_id")
 
-  console.log(res.data.post)
+  console.log(res.data)
 })
 
 xtest("delete post", async () => {
@@ -59,16 +59,15 @@ xtest("get users who reacted to post", async () => {
   const res = await axios.get(prefixPath + "/posts/4/reactors?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("postReactors")
+  expect(res.data).toBeTruthy()
 })
 
-xtest("get users with this post reaction", async () => {
+xtest("get users of certain post reaction", async () => {
   const res = await axios.get(prefixPath + "/posts/4/reactors/🤣?limit=20&offset=0", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("reactorsWithReaction")
+  expect(res.data).toBeTruthy()
 
-  // console.log(res.data.reactorsWithReaction)
 })
 
 xtest("remove post reaction", async () => {
@@ -86,9 +85,9 @@ xtest("comment on post", async () => {
   const res = await axios.post(prefixPath + "/users/1/posts/4/comment", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(201)
-  expect(res.data).toHaveProperty("commentData.comment_id")
+  expect(res.data).toHaveProperty("comment_id")
 
-  console.log(res.data.commentData)
+  console.log(res.data)
 })
 
 xtest("comment on comment", async () => {
@@ -100,36 +99,36 @@ xtest("comment on comment", async () => {
   const res = await axios.post(prefixPath + "/users/2/comments/5/comment", reqData, axiosConfig(i9xJwt))
 
   expect(res.status).toBe(201)
-  expect(res.data).toHaveProperty("commentData.comment_id")
+  expect(res.data).toHaveProperty("comment_id")
 
-  console.log(res.data.commentData)
+  console.log(res.data)
 })
 
 xtest("get comments on post", async () => {
   const res = await axios.get(prefixPath + "/posts/4/comments", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("commentsOnPost")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.commentsOnPost)
+  console.log(res.data)
 })
 
 xtest("get comments on comment", async () => {
   const res = await axios.get(prefixPath + "/comments/5/comments", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("commentsOnComment")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.commentsOnComment)
+  console.log(res.data)
 })
 
 xtest("comment detail", async () => {
   const res = await axios.get(prefixPath + "/comments/5", axiosConfig(i9xJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("comment.comment_id")
+  expect(res.data).toHaveProperty("comment_id")
 
-  console.log(res.data.comment)
+  console.log(res.data)
 })
 
 xtest("delete comment on post", async () => {
@@ -158,18 +157,18 @@ xtest("get users who reacted to comment", async () => {
   const res = await axios.get(prefixPath + "/comments/5/reactors", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("commentReactors")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.commentReactors)
+  console.log(res.data)
 })
 
 xtest("get users with this comment reaction", async () => {
   const res = await axios.get(prefixPath + "/comments/5/reactors/🎯?limit=20&offset=0", axiosConfig(dollypJwt))
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("commentReactorsWithReaction")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.commentReactorsWithReaction)
+  console.log(res.data)
 })
 
 xtest("remove comment reaction", async () => {
