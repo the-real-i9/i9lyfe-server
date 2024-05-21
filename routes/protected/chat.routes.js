@@ -23,11 +23,11 @@ router.use(
   }
 )
 
-router.get("/users_to_chat", CC.getUsersToChatController)
+router.get("/users/search", CC.searchUsersToChatController)
 
 router.post("/create_conversation", CC.createConversationController)
 
-router.get("/conversations", CC.getConversationsController)
+router.get("/my_conversations", CC.getMyConversationsController)
 
 router.delete(
   "/conversations/:conversation_id",

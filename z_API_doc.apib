@@ -1209,3 +1209,359 @@ Remove my reaction on comment with `commentId` of `4`
 
 
 
+# Group Chat
+
+## App users [/api/chat/users/search?search={search}]
+
++ Parameters
+    + search: `dol` (string) - Search query. *(Fuzzy matching is supported)*
+
+### Search users to chat [GET]
+
+The search is performed on the `username` and `name` properties of the user.
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    The response data items are in the form of a partner (user) data format
+
+    + Body
+
+            [
+                {
+                    "user_id": 2,
+                    "conversation_id": 4,
+                    "username": "dollyp",
+                    "key4": "value4",
+                },
+                {
+                    "user_id": 6,
+                    "conversation_id": 5,
+                    "username": "dolino",
+                    "key4": "value4",
+                }
+            ]
+
+
+## New conversation [/api/chat/create_conversation]
+
+### Create conversation [POST]
+
+Initating a conversation requires a conversation partner and the first message from the initiator.
+
++ **partner** (required) - The user with whom you want to engage in conversation
+    + **user_id** (number, required) - Partner's unique id.
+    + **username** (string, required) - Partner's username.
++ **init_message** (required) - The initial message that kickstarts the conversation. The format of a `message` data is quite complicated, check the `send_message` below for a detailed information.
+    + **type** (required) - The type of message.
+    + **text_content** - For the sake of the example request body below, `text_content` is required only if the type of `message` is `text`. Other types of `message` also have their own required fields.
+
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+    
+    + Body
+
+            {
+                "partner": {
+                    "user_id": 2,
+                    "username": "dollyp",
+                },
+                "init_message": {
+                    "type": "text",
+                    "text_content": "Hi! How're you?"
+                }
+            }
+
++ Response 200 (application/json)
+
+    The response data consists of the newly created conversation's `conversation_id`, and the initial message's `init_message_id`. The full data required to render a conversation snippet is sent do the partner (via WebSocket), but not to the client. The client is, therefore, expected to use optimistic UI rendering, as it has all the needed data.
+
+    + Body
+
+            {
+                "conversation_id": 4,
+                "init_message_id": 2
+            }
+                
+
+
+## Conversation [/api/chat/conversatons/{conversationId}/partner/{partnerId}/send_message]
+
++ Parameters
+    + conversationId: `1` (number) - Unique id of the target conversation in which to send message.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+
+### Send message [POST]
+
+**Message content format:** The fields indented under each type are the required fields that accompany the type of data.
+
++ **type** (required) - Type: `text`
+    + **text_content** (string) - For the sake of the example request body below, `text_content` is required only if the type of `message` is `text`. Other types of `message` also have their own required fields.
++ **type** (required) - Type: `voice`
+    + **voice_data** (uint8[]) - Voice data in `uint8` array binary format.
+    + **duration** (string) - Duration of voice record.
++ **type** (required) - Type: `image`
+    + **mime** (string) - The mime type of image e.g. `image/png`.
+    + **image_data** (uint8[]) - Image data in `uint8` array binary format.
+    + **caption** (string) - Image caption.
+    + **size** (number) - Image size in bytes.
++ **type** (required) - Type: `audio`
+    + **mime** (string) - The mime type of audio e.g. `auido/mp3`.
+    + **audio_data** (uint8[]) - Audio data in `uint8` array binary format.
+    + **caption** (string) - Audio caption.
+    + **size** (number) - Audio size in bytes.
++ **type** (required) - Type: `video`
+    + **mime** (string) - The mime type of video e.g. `video/mp4`.
+    + **video_data** (uint8[]) - Video data in `uint8` array binary format.
+    + **caption** (string) - Video caption.
+    + **size** (number) - Video size in bytes.
++ **type** (required) - Type: `file`
+    + **mime** (string) - The mime type of file e.g. `application/octet-stream`.
+    + **file_data** (uint8[]) - File data in `uint8` array binary format.
+    + **caption** (string) - File caption.
+    + **size** (number) - File size in bytes.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+    
+    + Body
+
+            {
+                "msg_content": {
+                    "type": "text",
+                    "text_content": "Hi! How're you?"
+                }
+            }
+
++ Response 200 (application/json)
+
+    The response data consists of the newly created message's `new_msg_id`. The full data required to render a message card is sent do the partner (via WebSocket), but not to the client. The client is, therefore, expected to use optimistic UI rendering, as it has all the needed data.
+
+    + Body
+
+            {
+                "new_msg_id": 2
+            }
+                
+
+## Client conversations [/api/chat/my_conversations]
+
+### Get my conversations [GET]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                {
+                    "partner": {
+                        "user_id": 2,
+                        "username": "dollyp",
+                        "profile_pic_url": "https://pfpic.jpg
+                    },
+                    "conversation_id": 4,
+                    "key4": "value4",
+                },
+                {
+                    "partner": {
+                        "user_id": 4,
+                        "username": "samuel",
+                        "profile_pic_url": "https://pfpic.jpg
+                    },
+                    "conversation_id": 5,
+                    "key4": "value4",
+                }
+            ]
+
+
+## Conversation [/api/chat/conversations/{conversationId}]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation to be deleted.
+
+### Delete conversation [DELETE]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+
+
+## Conversation history [/api/chat/conversations/{conversationId}/history?limit={limit}&offset={offset}]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation for which to get its history.
+    + limit: `20` (number) - A maximum of 20 messages per batch
+    + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
+
+### Get conversation history [GET]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                {
+                    "owner_user": {
+                        "id": 2,
+                        "username": "dollyp",
+                        "profile_pic_url": "https://pfpic.jpg
+                    },
+                    "msg_id": 6,
+                    "msg_content": {
+                        "type": "text",
+                        "text_content": "This is a message"
+                    }
+                },
+                {
+                    "owner_user": {
+                        "id": 4,
+                        "username": "samuel",
+                        "profile_pic_url": "https://pfpic.jpg
+                    },
+                    "msg_id" 7,
+                    "msg_content": {
+                        "type": "text",
+                        "text_content": "This is another message"
+                    }
+                }
+            ]
+
+
+## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/delivered]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + messageId: `4` (number) - Unique id of message for which to acknowledge delivered.
+
+### Acknowledge message delivered [PUT]
+
+Acknowledge that a message has been delivered to the client. (i.e. the client has successfully received a message). This lets the conversation partner add a double-tick on the message snippet UI. 
+
+The request body includes the *time of delivery*.
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "delivery_time": "${dateFormat}"
+            }
+
++ Response 204
+
+
+## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/read]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + messageId: `4` (number) - Unique id of message for which to acknowledge read.
+
+### Acknowledge message read [PUT]
+
+Acknowledge that a message has been read by the client. (i.e. the client has successfully received a message). This lets the conversation partner light up the double-tick on the message snippet UI. 
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 204
+
+
+## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/react]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + messageId: `4` (number) - Unique id of message to react to.
+
+### React to message [POST]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
+    + Body
+
+            {
+                "reaction": "🥰"
+            }
+
++ Response 201
+
+
+## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/remove_reaction]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + messageId: `4` (number) - Unique id of message to reacted to.
+
+### Remove reaction to message [DELETE]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+
+## Conversation message [/api/chat/conversations/{conversationId}/messages/{messageId}?delete_for={for}]
+
++ Parameters
+    + conversationId: `2` (number) - Unique id of conversation.
+    + messageId: `4` (number) - Unique id of message to reacted to.
+    + for: `me` (string) - Specify whether the message should be deleted for you (`me`) or for both you and partner (`everyone`).
+
+### Delete message [DELETE]
+
++ Request 
+
+    + Headers
+
+            Authorization: Bearer f23rwfwfff...
+
++ Response 200
+
+

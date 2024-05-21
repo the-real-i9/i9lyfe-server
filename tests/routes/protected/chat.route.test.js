@@ -17,16 +17,16 @@ const axiosConfig = (authToken) => ({
   },
 })
 
-test("get users to chat with", async () => {
+test("search users to chat with", async () => {
   const res = await axios.get(
-    prefixPath + "/users_to_chat?search=dolapo",
+    prefixPath + "/users/search?search=dolapo",
     axiosConfig(i9xJwt)
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("users")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.users)
+  console.log(res.data)
 })
 
 xtest("create conversation", async () => {
@@ -75,14 +75,14 @@ xtest("send message", async () => {
 
 xtest("get my conversations", async () => {
   const res = await axios.get(
-    prefixPath + "/conversations",
+    prefixPath + "/my_conversations",
     axiosConfig(dollypJwt)
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("conversations")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.conversations)
+  console.log(res.data)
 })
 
 xtest("delete conversation", async () => {
@@ -101,9 +101,9 @@ xtest("get conversation history", async () => {
   )
 
   expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("conversationHistory")
+  expect(res.data).toBeTruthy()
 
-  console.log(res.data.conversationHistory)
+  console.log(res.data)
 })
 
 xtest("acknowledge message delivered", async () => {

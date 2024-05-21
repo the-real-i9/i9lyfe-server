@@ -10,20 +10,20 @@ import { ChatService } from "../services/chat/chat.service.js"
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getUsersToChatController = async (req, res) => {
+export const searchUsersToChatController = async (req, res) => {
   try {
     const { search = "", limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
-    const users = await ChatService.getUsersToChat({
+    const users = await ChatService.searchUsersToChat({
       client_user_id,
       search,
       limit,
       offset,
     })
 
-    res.status(200).send({ users })
+    res.status(200).send(users)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -49,13 +49,13 @@ export const createConversationController = async (req, res) => {
   }
 }
 
-export const getConversationsController = async (req, res) => {
+export const getMyConversationsController = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
     const conversations = await ChatService.getMyConversations(client_user_id)
 
-    res.status(200).send({ conversations })
+    res.status(200).send(conversations)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -89,7 +89,7 @@ export const getConversationHistoryController = async (req, res) => {
       offset,
     })
 
-    res.status(200).send({ conversationHistory })
+    res.status(200).send(conversationHistory)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

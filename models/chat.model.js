@@ -273,7 +273,7 @@ export const createMessageDeletionLog = async ({
 /**
  * @param {string} search
  */
-export const getUsersToChat = async ({
+export const searchUsersToChat = async ({
   search,
   limit,
   offset,
