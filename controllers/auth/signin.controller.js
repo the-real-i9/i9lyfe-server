@@ -7,12 +7,12 @@ export const signinController = async (req, res) => {
     const response = await userSigninService(email, password)
 
     if (!response.ok) {
-      return res.status(response.err.code).send({ reason: response.err.reason })
+      return res.status(response.error.code).send({ msg: response.error.msg })
     }
 
     res.status(200).send({
       msg: "Signin success!",
-      userData: response.data.userData,
+      userData: response.data.user,
       jwtToken: response.data.jwtToken,
     })
   } catch (error) {
