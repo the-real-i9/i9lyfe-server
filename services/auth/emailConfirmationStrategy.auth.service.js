@@ -6,46 +6,43 @@ import {
 } from "../../utils/helpers.js"
 import sendMail from "../mail.service.js"
 
-/**
- * Stragegy pattern
- * @interface
- * @abstract
- */
+
 export class EmailConfirmationStrategy {
-  /** @param {import('express').Request} req */
-  async handleEmailSubmission(req) {
+  /**
+   * @param {string} email
+   * @returns {*} data
+   */
+  async handleEmailSubmission(email) {
     throw new Error("handleEmailSubmission must be implemented")
   }
 
-  /** @param {import('express').Request} req */
-  async handleTokenValidation(req) {
-    throw new Error("handleTokenValidation must be implemented")
+  /**
+   * @param {number} inputCode
+   * @param {*} sessionData
+   * @returns {*} data
+   */
+  async handleCodeValidation(inputCode, sessionData) {
+    throw new Error("handleCodeValidation must be implemented")
   }
 }
 
 export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
-  /** @param {import('express').Request} req */
-  async handleEmailSubmission(req) {
-    const { email } = req.body
-
+  /**
+   * @param {string} email
+   * @returns {*} data
+   */
+  async handleEmailSubmission(email) {
     if (await userExists(email))
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason: "A user with this email already exists.",
+          msg: "A user with this email already exists.",
         },
-        successMessage: null,
+        data: null,
       }
 
     const [code, codeExpires] = generateCodeWithExpiration()
-
-    req.session.email_verification_data = {
-      email,
-      verified: false,
-      verificationCode: code,
-      verificationCodeExpires: codeExpires,
-    }
 
     sendMail({
       to: email,
@@ -55,44 +52,47 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
 
     return {
       ok: true,
-      err: null,
-      successMessage: `Enter the 6-digit code sent to ${email} to verify your email`,
+      error: null,
+      data: {
+        msg: `Enter the 6-digit code sent to ${email} to verify your email`,
+        sessionData: {
+          email,
+          verified: false,
+          verificationCode: code,
+          verificationCodeExpires: codeExpires,
+        },
+      },
     }
   }
 
-  /** @param {import('express').Request} req */
-  async handleTokenValidation(req) {
-    const { email, verificationCode, verificationCodeExpires } =
-      req.session.email_verification_data
-    const { code: userInputCode } = req.body
+  /**
+   * @param {number} inputCode
+   * @param {*} sessionData
+   * @returns {*} data
+   */
+  async handleCodeValidation(inputCode, sessionData) {
+    const { email, verificationCode, verificationCodeExpires } = sessionData
 
-    if (!tokensMatch(Number(verificationCode), Number(userInputCode))) {
+    if (!tokensMatch(Number(verificationCode), Number(inputCode))) {
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason: "Incorrect verification code! Check or Re-submit your email.",
+          msg: "Incorrect verification code! Check or Re-submit your email.",
         },
-        successMessage: null,
+        data: null,
       }
     }
 
     if (!tokenLives(verificationCodeExpires)) {
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason: "Verification code expired! Re-submit your email.",
+          msg: "Verification code expired! Re-submit your email.",
         },
-        successMessage: null,
+        data: null,
       }
-    }
-
-    req.session.email_verification_data = {
-      email,
-      verified: true,
-      verificationCode: null,
-      verificationCodeExpires: null,
     }
 
     sendMail({
@@ -103,35 +103,37 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
 
     return {
       ok: true,
-      err: null,
-      successMessage: `Your email ${email} has been verified!`,
+      error: null,
+      data: {
+        msg: `Your email ${email} has been verified!`,
+        sessionData: {
+          email,
+          verified: true,
+          verificationCode: null,
+          verificationCodeExpires: null,
+        },
+      },
     }
   }
 }
 
 export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStrategy {
-  /** @param {import('express').Request} req */
-  async handleEmailSubmission(req) {
-    const { email } = req.body
-
+  /**
+   * @param {string} email
+   * @returns {*} data
+   */
+  async handleEmailSubmission(email) {
     if (!(await userExists(email)))
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason: "No user with this email exists.",
+          msg: "No user with this email exists.",
         },
-        successMessage: null,
+        data: null,
       }
 
     const [token, tokenExpires] = generateCodeWithExpiration()
-
-    req.session.password_reset_email_confirmation_data = {
-      email,
-      emailConfirmed: false,
-      passwordResetToken: token,
-      passwordResetTokenExpires: tokenExpires,
-    }
 
     sendMail({
       to: email,
@@ -142,52 +144,64 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
     return {
       ok: true,
       error: null,
-      successMessage: `Enter the 6-digit number token sent to ${email} to reset your password`,
+      data: {
+        msg: `Enter the 6-digit number token sent to ${email} to reset your password`,
+        sessionData: {
+          email,
+          emailConfirmed: false,
+          passwordResetToken: token,
+          passwordResetTokenExpires: tokenExpires,
+        },
+      },
     }
   }
 
-  /** @param {import('express').Request} req */
-  async handleTokenValidation(req) {
+  /**
+   * @param {number} inputCode
+   * @param {*} sessionData
+   * @returns {*} data
+   */
+  async handleCodeValidation(inputCode, sessionData) {
     const { email, passwordResetToken, passwordResetTokenExpires } =
-      req.session.password_reset_email_confirmation_data
-    const { token: userInputToken } = req.body
+      sessionData
+    
 
-    if (!tokensMatch(passwordResetToken, userInputToken)) {
+    if (!tokensMatch(passwordResetToken, inputCode)) {
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason:
+          msg:
             "Incorrect password reset token! Check or Re-submit your email.",
         },
-        successMessage: null,
+        data: null,
       }
     }
 
     if (!tokenLives(passwordResetTokenExpires)) {
       return {
         ok: false,
-        err: {
+        error: {
           code: 422,
-          reason: "Password reset token expired! Re-submit your email.",
+          msg: "Password reset token expired! Re-submit your email.",
         },
-        successMessage: null,
+        data: null
       }
     }
 
-    req.session.password_reset_email_confirmation_data = {
-      email,
-      emailConfirmed: true,
-      passwordResetToken: null,
-      passwordResetTokenExpires: null,
-    }
 
     return {
       ok: true,
-      err: null,
-      successMessage: `Your email ${email} has been verified!`,
+      error: null,
+      data: {
+        msg: `Your email ${email} has been verified!`,
+        sessionData: {
+          email,
+          emailConfirmed: true,
+          passwordResetToken: null,
+          passwordResetTokenExpires: null,
+        }
+      }
     }
   }
 }
-
-
