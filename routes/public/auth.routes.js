@@ -2,13 +2,18 @@ import express from "express"
 import dotenv from "dotenv"
 
 import {
+  emailVerificationValidation,
   expressSessionMiddleware,
   passwordResetProgressValidation,
-  signupProgressValidation,
+  proceedEmailConfirmation,
+  proceedEmailVerification,
+  proceedPasswordReset,
+  proceedUserRegistration,
+  userRegistrationValidation,
 } from "../../middlewares/auth.middlewares.js"
-import { signupController } from "../../controllers/auth/signup.controller.js"
 import { signinController } from "../../controllers/auth/signin.controller.js"
-import { passwordResetController } from "../../controllers/auth/passwordReset.controller.js"
+import { confirmEmailController, passwordResetController, requestPasswordResetController, resetPasswordController } from "../../controllers/auth/passwordReset.controller.js"
+import { registerUserController, requestNewAccountController, verifyEmailController } from "../../controllers/auth/signup.controller.js"
 
 dotenv.config()
 
@@ -32,10 +37,14 @@ router.use(
   )
 )
 
-router.post("/signup/:step", signupProgressValidation, signupController)
+router.post("/signup/request_new_account", requestNewAccountController)
+router.post("/signup/verify_email", proceedEmailVerification, verifyEmailController)
+router.post("/signup/register_user", proceedUserRegistration, registerUserController)
 
 router.post("/signin", signinController)
 
-router.post("/forgot_password/:step", passwordResetProgressValidation, passwordResetController)
+router.post("/forgot_password/request_password_reset", requestPasswordResetController)
+router.post("/forgot_password/confirm_email", proceedEmailConfirmation, confirmEmailController)
+router.post("/forgot_password/reset_password", proceedPasswordReset, resetPasswordController)
 
 export default router

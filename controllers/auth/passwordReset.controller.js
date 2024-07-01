@@ -1,4 +1,7 @@
-import { emailConfirmationService, passwordResetService } from "../../services/auth/auth.service.js"
+import {
+  emailConfirmationService,
+  passwordResetService,
+} from "../../services/auth/auth.service.js"
 import { PasswordResetEmailConfirmationStrategy } from "../../services/auth/emailConfirmationStrategy.auth.service.js"
 
 /**
@@ -10,33 +13,21 @@ import { PasswordResetEmailConfirmationStrategy } from "../../services/auth/emai
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const passwordResetController = async (req, res) => {
-  const { step } = req.params
 
-  const stepHandlers = {
-    request_password_reset: (req, res) => passwordResetRequestHandler(req, res),
-    confirm_email: (req, res) =>
-      passwordResetEmailConfirmationHandler(req, res),
-    reset_password: (req, res) => passwordResetHandler(req, res),
-  }
-  stepHandlers[step](req, res)
-}
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
-
-const passwordResetRequestHandler = async (req, res) => {
+export const requestPasswordResetController = async (req, res) => {
+  const { email } = req.body
   try {
     const response = await emailConfirmationService(
       new PasswordResetEmailConfirmationStrategy()
-    ).handleEmailSubmission(req)
+    ).handleEmailSubmission(email)
 
     if (!response.ok)
-      return res.status(response.err.code).send({ reason: response.err.reason })
+      return res.status(response.error.code).send({ msg: response.error.msg })
 
-    res.status(200).send({ msg: response.successMessage })
+    req.session.password_reset_email_confirmation_state =
+      response.data.sessionData
+
+    res.status(200).send({ msg: response.data.msg })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -47,17 +38,25 @@ const passwordResetRequestHandler = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-const passwordResetEmailConfirmationHandler = async (req, res) => {
+export const confirmEmailController = async (req, res) => {
+  const { code } = req.body
+
   try {
     const response = await emailConfirmationService(
       new PasswordResetEmailConfirmationStrategy()
-    ).handleTokenValidation(req)
+    ).handleCodeValidation(
+      code,
+      req.session.password_reset_email_confirmation_state
+    )
 
     if (!response.ok) {
-      return res.status(response.err.code).send({ reason: response.err.reason })
+      return res.status(response.error.code).send({ msg: response.error.msg })
     }
 
-    res.status(200).send({ msg: response.successMessage })
+    req.session.password_reset_email_confirmation_state =
+      response.data.sessionData
+
+    res.status(200).send({ msg: response.data.msg })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
@@ -68,17 +67,16 @@ const passwordResetEmailConfirmationHandler = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-const passwordResetHandler = async (req, res) => {
+export const resetPasswordController = async (req, res) => {
   try {
-    const { email: userEmail } =
-      req.session.password_reset_email_confirmation_data
+    const { email } = req.session.password_reset_email_confirmation_state
     const { newPassword } = req.body
-    const response = await passwordResetService(userEmail, newPassword)
-    if (!response.ok) {
-      res.status(response.err.code).send({ reason: response.err.reason })
-    }
 
-    res.status(200).send({ msg: "Your password has been changed successfully" })
+    const response = await passwordResetService(email, newPassword)
+
+    req.session.destroy()
+
+    res.status(200).send({ msg: response.data.msg })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

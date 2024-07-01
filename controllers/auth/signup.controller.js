@@ -1,61 +1,61 @@
-import { emailConfirmationService, userRegistrationService } from "../../services/auth/auth.service.js"
 import {
-  SignupEmailConfirmationStrategy,
-} from "../../services/auth/emailConfirmationStrategy.auth.service.js"
+  emailConfirmationService,
+  userRegistrationService,
+} from "../../services/auth/auth.service.js"
+import { SignupEmailConfirmationStrategy } from "../../services/auth/emailConfirmationStrategy.auth.service.js"
 
-export const signupController = async (req, res) => {
-  const { step } = req.params
 
-  const stepHandlers = {
-    request_new_account: (req, res) => newAccountRequestHandler(req, res),
-    verify_email: (req, res) => emailVerificationHandler(req, res),
-    register_user: (req, res) => userRegistrationHandler(req, res),
-  }
-  stepHandlers[step](req, res)
-}
 
-const newAccountRequestHandler = async (req, res) => {
+export const requestNewAccountController = async (req, res) => {
+  const { email } = req.body
+
   try {
     const response = await emailConfirmationService(
       new SignupEmailConfirmationStrategy()
-    ).handleEmailSubmission(req)
+    ).handleEmailSubmission(email)
 
     if (!response.ok)
-      return res.status(response.err.code).send({ reason: response.err.reason })
+      return res.status(response.error.code).send({ msg: response.error.msg })
 
-    res.status(200).send({ msg: response.successMessage })
+    req.session.email_verification_state = response.data.sessionData
+
+    res.status(200).send({ msg: response.data.msg })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
   }
 }
 
-const emailVerificationHandler = async (req, res) => {
+export const verifyEmailController = async (req, res) => {
+  const {code} = req.body
+
   try {
     const response = await emailConfirmationService(
       new SignupEmailConfirmationStrategy()
-    ).handleTokenValidation(req)
+    ).handleCodeValidation(code, req.session.email_verification_state)
 
     if (!response.ok) {
-      return res.status(response.err.code).send({ reason: response.err.reason })
+      return res.status(response.error.code).send({ msg: response.error.msg })
     }
 
-    res.status(200).send({ msg: response.successMessage })
+    req.session.email_verification_state = response.data.sessionData
+
+    res.status(200).send({ msg: response.data.msg })
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)
   }
 }
 
-const userRegistrationHandler = async (req, res) => {
+export const registerUserController = async (req, res) => {
   try {
-    const { email } = req.session.email_verification_data
+    const { email } = req.session.email_verification_state
     const response = await userRegistrationService({ email, ...req.body })
 
     if (!response.ok) {
       return res
         .status(response.error.code)
-        .send({ reason: response.error.reason })
+        .send({ msg: response.error.msg })
     }
 
     req.session.destroy()

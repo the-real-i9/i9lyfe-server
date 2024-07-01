@@ -2,76 +2,81 @@ import expressSession from "express-session"
 import pgSession from "connect-pg-simple"
 import { getDBPool } from "../models/db.js"
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export const signupProgressValidation = (req, res, next) => {
-  const { step } = req.params
+export const proceedEmailVerification = (req, res, next) => {
+  const signupInSession = req.session.email_verification_data
 
-  if (["email_verification", "user_registration"].includes(step))
-    confirmOngoingRegistration(res, req.session.email_verification_data)
-
-  if (step === "email_verification") rejectConfirmedEmail(res, req.session.email_verification_data.verified)
-
-  if (step === "user_registration") rejectUnconfirmedEmail(res, req.session.email_verification_data.verified)
-
-  return next()
-}
-
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export const passwordResetProgressValidation = (req, res, next) => {
-  const { step } = req.params
-
-  if (["email_confirmation", "password_reset"].includes(step))
-    confirmOngoingRegistration(res, req.session.password_reset_email_confirmation_data)
-
-  if (step === "email_confirmation") rejectConfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
-
-  if (step === "password_reset") rejectUnconfirmedEmail(res, req.session.password_reset_email_confirmation_data.emailConfirmed)
-
-  next()
-}
-
-/**
- * @param {import('express').Response} res
- * @param {Object} sessionData
- */
-const confirmOngoingRegistration = (res, sessionData) => {
-  if (!sessionData) {
+  if (!signupInSession) {
     return res.status(403).send({ errorMessage: "No ongoing registration!" })
   }
-}
 
-/**
- * @param {import('express').Response} res
- * @param {boolean} emailValidationStatus
- */
-const rejectConfirmedEmail = (res, emailValidationStatus) => {
-  if (emailValidationStatus) {
+  const emailIsVerified = req.session.email_verification_data.verified
+
+  if (emailIsVerified) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has already being verified!" })
   }
+
+  return next()
 }
 
-/**
- * @param {import('express').Response} res
- * @param {boolean} emailValidationStatus
- */
-const rejectUnconfirmedEmail = (res, emailValidationStatus) => {
-  if (!emailValidationStatus) {
+export const proceedUserRegistration = (req, res, next) => {
+  const signupInSession = req.session.email_verification_data
+
+  if (!signupInSession) {
+    return res.status(403).send({ errorMessage: "No ongoing registration!" })
+  }
+
+  const emailIsVerified = req.session.email_verification_data.verified
+
+  if (!emailIsVerified) {
     return res
       .status(403)
       .send({ errorMessage: "Your email has not been verified!" })
   }
+
+  return next()
 }
 
+export const proceedEmailConfirmation = (req, res, next) => {
+  const passwordResetInSession =
+    req.session.password_reset_email_confirmation_data
+
+  if (!passwordResetInSession) {
+    return res.status(403).send({ errorMessage: "No ongoing password reset!" })
+  }
+
+  const emailIsConfirmed =
+    req.session.password_reset_email_confirmation_data.emailConfirmed
+
+  if (emailIsConfirmed) {
+    return res
+      .status(403)
+      .send({ errorMessage: "Your email has already being confirmed!" })
+  }
+
+  return next()
+}
+
+export const proceedPasswordReset = (req, res, next) => {
+  const passwordResetInSession =
+    req.session.password_reset_email_confirmation_data
+
+  if (!passwordResetInSession) {
+    return res.status(403).send({ errorMessage: "No ongoing password reset!" })
+  }
+
+  const emailIsConfirmed =
+    req.session.password_reset_email_confirmation_data.emailConfirmed
+
+  if (!emailIsConfirmed) {
+    return res
+      .status(403)
+      .send({ errorMessage: "Your email has not been confirmed!" })
+  }
+
+  return next()
+}
 
 const PGStore = pgSession(expressSession)
 
