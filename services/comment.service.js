@@ -1,4 +1,4 @@
-import * as PCM from "../models/postComment.model.js"
+import { Comment } from "../models/comment.model.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./notification.service.js"
 import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
@@ -19,7 +19,7 @@ export class CommentService {
       comment_notif,
       mention_notifs,
       latest_comments_count,
-    } = await PCM.createCommentOnComment({
+    } = await Comment.commentOn({
       target_comment_id,
       target_comment_owner_user_id,
       client_user_id,
@@ -53,17 +53,17 @@ export class CommentService {
     })
 
     // return comment data back to client
-    const commentData = await PCM.getComment(new_comment_id, client_user_id)
+    const commentData = await Comment.find(new_comment_id, client_user_id)
 
     return commentData
   }
 
   static async getDetail(comment_id, client_user_id) {
-    return await PCM.getComment(comment_id, client_user_id)
+    return await Comment.find(comment_id, client_user_id)
   }
 
   static async getComments({ comment_id, client_user_id, limit, offset }) {
-    return await PCM.getCommentsOnComment({
+    return await Comment.getComments({
       comment_id,
       client_user_id,
       limit,
@@ -72,7 +72,7 @@ export class CommentService {
   }
 
   static async removeComment({ parent_comment_id, comment_id, client_user_id }) {
-    const { latest_comments_count } = await PCM.deleteCommentOnComment({
+    const { latest_comments_count } = await Comment.removeChildComment({
       parent_comment_id,
       comment_id,
       client_user_id,
@@ -91,7 +91,7 @@ export class CommentService {
     reaction_code_point,
   }) {
     const { reaction_notif, latest_reactions_count } =
-      PCM.createReactionToComment({
+      Comment.reactTo({
         client_user_id,
         target_comment_id,
         target_comment_owner_user_id,
@@ -114,7 +114,7 @@ export class CommentService {
   }
 
   static async getReactors({ comment_id, client_user_id, limit, offset }) {
-    return await PCM.getReactorsToComment({
+    return await Comment.getReactors({
       comment_id,
       client_user_id,
       limit,
@@ -129,7 +129,7 @@ export class CommentService {
     limit,
     offset,
   }) {
-    return await PCM.getReactorsWithReactionToComment({
+    return await Comment.getReactorsWithReaction({
       comment_id,
       reaction_code_point,
       client_user_id,
@@ -139,7 +139,7 @@ export class CommentService {
   }
 
   static async removeReaction(target_comment_id, client_user_id) {
-    const { latest_reactions_count } = await PCM.removeReactionToComment(
+    const { latest_reactions_count } = await Comment.removeReaction(
       target_comment_id,
       client_user_id
     )

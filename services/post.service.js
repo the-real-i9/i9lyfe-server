@@ -1,7 +1,8 @@
-import * as PCM from "../models/postComment.model.js"
 import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./notification.service.js"
+import { Post } from "../models/post.model.js"
+import { Comment } from "../models/comment.model.js"
 
 export class PostService {
   /**
@@ -15,7 +16,7 @@ export class PostService {
     const hashtags = extractHashtags(description)
     const mentions = extractMentions(description)
 
-    const { new_post_id, mention_notifs } = await PCM.createNewPost({
+    const { new_post_id, mention_notifs } = await Post.create({
       client_user_id,
       media_urls,
       type,
@@ -24,7 +25,7 @@ export class PostService {
       hashtags,
     })
 
-    const postData = await PCM.getPost(new_post_id, client_user_id)
+    const postData = await Post.find(new_post_id, client_user_id)
 
     /* Realtime new post */
     PostCommentRealtimeService.sendNewPost(client_user_id, postData)
@@ -41,7 +42,7 @@ export class PostService {
   }
 
   static async getDetail(post_id, client_user_id) {
-    return await PCM.getPost(post_id, client_user_id)
+    return await Post.find(post_id, client_user_id)
   }
 
   static async commentOn({
@@ -59,7 +60,7 @@ export class PostService {
       comment_notif,
       mention_notifs,
       latest_comments_count,
-    } = await PCM.createCommentOnPost({
+    } = await Post.commentOn({
       target_post_id,
       target_post_owner_user_id,
       client_user_id,
@@ -93,13 +94,13 @@ export class PostService {
     })
 
     // return comment data back to client
-    const commentData = await PCM.getComment(new_comment_id, client_user_id)
+    const commentData = await Comment.find(new_comment_id, client_user_id)
 
     return commentData
   }
 
   static async getComments({ post_id, client_user_id, limit, offset }) {
-    return await PCM.getCommentsOnPost({
+    return await Post.getComments({
       post_id,
       client_user_id,
       limit,
@@ -108,7 +109,7 @@ export class PostService {
   }
 
   static async removeComment({ post_id, comment_id, client_user_id }) {
-    const { latest_comments_count } = await PCM.deleteCommentOnPost({
+    const { latest_comments_count } = await Post.removeComment({
       post_id,
       comment_id,
       client_user_id,
@@ -126,7 +127,7 @@ export class PostService {
     target_post_owner_user_id,
     reaction_code_point,
   }) {
-    const { reaction_notif, latest_reactions_count } = PCM.createReactionToPost(
+    const { reaction_notif, latest_reactions_count } = Post.reactTo(
       {
         client_user_id,
         target_post_id,
@@ -151,7 +152,7 @@ export class PostService {
   }
 
   static async getReactors({ post_id, client_user_id, limit, offset }) {
-    return await PCM.getReactorsToPost({
+    return await Post.getReactors({
       post_id,
       client_user_id,
       limit,
@@ -166,7 +167,7 @@ export class PostService {
     limit,
     offset,
   }) {
-    return await PCM.getReactorsWithReactionToPost({
+    return await Post.getReactorsWithReaction({
       post_id,
       reaction_code_point,
       client_user_id,
@@ -176,7 +177,7 @@ export class PostService {
   }
 
   static async removeReaction(target_post_id, client_user_id) {
-    const { latest_reactions_count } = await PCM.removeReactionToPost(
+    const { latest_reactions_count } = await Post.removeReaction(
       target_post_id,
       client_user_id
     )
@@ -188,7 +189,7 @@ export class PostService {
   }
 
   static async save(post_id, client_user_id) {
-    const { latest_saves_count } = await PCM.savePost(post_id, client_user_id)
+    const { latest_saves_count } = await Post.save(post_id, client_user_id)
 
     /* Realtime: currentSavesCount */
     PostCommentRealtimeService.sendPostMetricsUpdate(post_id, {
@@ -198,7 +199,7 @@ export class PostService {
   }
 
   static async unsave(post_id, client_user_id) {
-    const { latest_saves_count } = await PCM.unsavePost(post_id, client_user_id)
+    const { latest_saves_count } = await Post.unsave(post_id, client_user_id)
 
     /* Realtime: currentSavesCount */
     PostCommentRealtimeService.sendPostMetricsUpdate(post_id, {
@@ -208,14 +209,14 @@ export class PostService {
   }
 
   static async repost(post_id, client_user_id) {
-    await PCM.createRepost(post_id, client_user_id)
+    await Post.repost(post_id, client_user_id)
   }
 
   static async delete(post_id, client_user_id) {
-    await PCM.deletePost(post_id, client_user_id)
+    await Post.delete(post_id, client_user_id)
   }
 
   static async unrepost(post_id, client_user_id) {
-    await PCM.deleteRepost(post_id, client_user_id)
+    await Post.unrepost(post_id, client_user_id)
   }
 }
