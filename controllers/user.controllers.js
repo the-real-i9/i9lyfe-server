@@ -261,7 +261,7 @@ export const getUserNotificationsController = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const notifications = await UserService.getUserNotifications({
+    const notifications = await UserService.getNotifications({
       client_user_id,
       from,
       limit,

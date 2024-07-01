@@ -1,4 +1,5 @@
-import { getUnreadNotificationsCount } from "../models/user.model.js"
+import { User } from "../models/user.model"
+
 
 
 export class NotificationService {
@@ -37,7 +38,7 @@ export class NotificationService {
   }
 
   async notifyUnreadNotifications() {
-    const count = await getUnreadNotificationsCount(this.receiver_user_id)
+    const count = await User.getUnreadNotificationsCount(this.receiver_user_id)
     if (!Number(count)) return
     NotificationService.sockClients
       .get(this.receiver_user_id)
