@@ -5,6 +5,7 @@ import {
   getExplorePostsController,
   getHashtagPostsController,
   searchAndFilterController,
+  searchUsersToChatController,
 } from "../../controllers/app.controllers.js"
 
 dotenv.config()
@@ -25,6 +26,8 @@ router.use(
     }
   }
 )
+
+router.get("/users/search", searchUsersToChatController)
 
 router.get("/explore", getExplorePostsController)
 

@@ -17,17 +17,6 @@ const axiosConfig = (authToken) => ({
   },
 })
 
-test("search users to chat with", async () => {
-  const res = await axios.get(
-    prefixPath + "/users/search?search=dolapo",
-    axiosConfig(i9xJwt)
-  )
-
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-
-  console.log(res.data)
-})
 
 xtest("create conversation", async () => {
   const reqData = {

@@ -1,15 +1,8 @@
-import * as ChatModel from "../../models/chat.model.js"
+import { Conversation, Message } from "../../models/chat.model.js"
 import { ChatRealtimeService } from "../realtime/chat.realtime.service.js"
 
 export class ChatService {
-  static async searchUsersToChat({ client_user_id, search, limit, offset }) {
-    return await ChatModel.searchUsersToChat({
-      search,
-      limit,
-      offset,
-      client_user_id,
-    })
-  }
+  
 
   /**
    * @param {object} client
@@ -21,7 +14,7 @@ export class ChatService {
    * @returns The data needed to display the DM chat page for the client
    */
   static async createConversation(client, partner, init_message) {
-    const { client_res, partner_res } = await ChatModel.createConversation(
+    const { client_res, partner_res } = await Conversation.create(
       client,
       partner.user_id,
       init_message
@@ -33,15 +26,15 @@ export class ChatService {
   }
 
   static async getMyConversations(client_user_id) {
-    return await ChatModel.getUserConversations(client_user_id)
+    return await Conversation.getAll(client_user_id)
   }
 
   static async deleteMyConversation(client_user_id, conversation_id) {
-    await ChatModel.deleteUserConversation(client_user_id, conversation_id)
+    await Conversation.delete(client_user_id, conversation_id)
   }
 
   static async getConversationHistory({ conversation_id, limit, offset }) {
-    return await ChatModel.getConversationHistory({
+    return await Conversation.getHistory({
       conversation_id,
       limit,
       offset,
@@ -54,7 +47,7 @@ export class ChatService {
     conversation_id,
     msg_content,
   }) {
-    const { client_res, partner_res } = await ChatModel.createMessage({
+    const { client_res, partner_res } = await Conversation.sendMessage({
       client_user_id,
       conversation_id,
       msg_content,
@@ -72,7 +65,7 @@ export class ChatService {
     message_id,
     delivery_time,
   }) {
-    await ChatModel.acknowledgeMessageDelivered({
+    await Message.isDelivered({
       client_user_id,
       conversation_id,
       message_id,
@@ -91,7 +84,7 @@ export class ChatService {
     partner_user_id,
     message_id,
   }) {
-    await ChatModel.acknowledgeMessageRead({
+    await Message.isRead({
       client_user_id,
       conversation_id,
       message_id,
@@ -116,7 +109,7 @@ export class ChatService {
     message_id,
     reaction_code_point,
   }) {
-    await ChatModel.createMessageReaction({
+    await Message.reactTo({
       reactor_user_id: reactor.user_id,
       message_id,
       reaction_code_point,
@@ -142,7 +135,7 @@ export class ChatService {
     partner_user_id,
     message_id,
   }) {
-    await ChatModel.deleteMessageReaction(message_id, reactor.user_id)
+    await Message.removeReaction(message_id, reactor.user_id)
 
     /* Realtime actions */
     // remove message reaction for other participants
@@ -166,7 +159,7 @@ export class ChatService {
     message_id,
     delete_for,
   }) {
-    await ChatModel.createMessageDeletionLog({
+    await Message.delete({
       deleter_user_id: deleter.user_id,
       message_id,
       deleted_for: delete_for,

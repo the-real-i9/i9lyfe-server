@@ -23,8 +23,6 @@ router.use(
   }
 )
 
-router.get("/users/search", CC.searchUsersToChatController)
-
 router.post("/create_conversation", CC.createConversationController)
 
 router.get("/my_conversations", CC.getMyConversationsController)

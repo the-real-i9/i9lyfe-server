@@ -5,30 +5,6 @@
 
 import { ChatService } from "../services/chat/chat.service.js"
 
-/**
- *
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
-export const searchUsersToChatController = async (req, res) => {
-  try {
-    const { search = "", limit = 20, offset = 0 } = req.query
-
-    const { client_user_id } = req.auth
-
-    const users = await ChatService.searchUsersToChat({
-      client_user_id,
-      search,
-      limit,
-      offset,
-    })
-
-    res.status(200).send(users)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}
 
 export const createConversationController = async (req, res) => {
   try {
