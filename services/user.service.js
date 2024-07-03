@@ -93,7 +93,7 @@ export class UserService {
     })
   }
 
-  static async unfollow(client_user_id, followee_user_id) {
-    await User.unfollowUser(client_user_id, followee_user_id)
+  static async unfollow(client_user_id, to_unfollow_user_id) {
+    await User.unfollowUser(client_user_id, to_unfollow_user_id)
   }
 }

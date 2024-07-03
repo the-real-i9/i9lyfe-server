@@ -1,4 +1,4 @@
-import { userExists } from "../../models/user.model.js"
+import { User } from "../../models/user.model.js"
 import {
   generateCodeWithExpiration,
   tokenLives,
@@ -32,7 +32,7 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
    * @returns {*} data
    */
   async handleEmailSubmission(email) {
-    if (await userExists(email))
+    if (await User.exists(email))
       return {
         ok: false,
         error: {
@@ -123,7 +123,7 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
    * @returns {*} data
    */
   async handleEmailSubmission(email) {
-    if (!(await userExists(email)))
+    if (!(await User.exists(email)))
       return {
         ok: false,
         error: {

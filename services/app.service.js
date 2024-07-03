@@ -1,4 +1,4 @@
-import { App } from "../models/app.model"
+import { App } from "../models/app.model.js"
 
 
 export class AppService {

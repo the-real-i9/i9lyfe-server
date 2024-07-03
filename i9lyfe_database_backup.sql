@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3 (Ubuntu 16.3-1.pgdg22.04+1)
+-- Dumped by pg_dump version 16.3 (Ubuntu 16.3-1.pgdg22.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -15,6 +15,22 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: i9l_user_t; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.i9l_user_t AS (
+	id integer,
+	email character varying,
+	username character varying,
+	name character varying,
+	profile_pic_url character varying,
+	connection_status character varying
+);
+
+
+ALTER TYPE public.i9l_user_t OWNER TO postgres;
 
 --
 -- Name: ui_comment_struct; Type: TYPE; Schema: public; Owner: postgres
@@ -541,27 +557,21 @@ ALTER FUNCTION public.create_reaction_to_post(OUT reaction_notif json, OUT lates
 -- Name: create_user(character varying, character varying, character varying, character varying, timestamp without time zone, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.create_user(OUT new_user json, in_email character varying, in_username character varying, in_password character varying, in_name character varying, in_birthday timestamp without time zone, in_bio character varying) RETURNS json
+CREATE FUNCTION public.create_user(in_email character varying, in_username character varying, in_password character varying, in_name character varying, in_birthday timestamp without time zone, in_bio character varying) RETURNS SETOF public.i9l_user_t
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  INSERT INTO i9l_user(email, username, password, name, birthday, bio)
-  VALUES(in_email, in_username, in_password, in_name, in_birthday, in_bio) 
-  RETURNING json_build_object(
-	  'id', id, 
-	  'email', email, 
-	  'username', username, 
-	  'name', name, 
-	  'profile_pic_url', profile_pic_url,
-	  'connection_status', connection_status
-  ) INTO new_user;
+  RETURN QUERY 
+	INSERT INTO i9l_user(email, username, password, name, birthday, bio)
+    VALUES(in_email, in_username, in_password, in_name, in_birthday, in_bio) 
+    RETURNING id, email, username, name, profile_pic_url, connection_status;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.create_user(OUT new_user json, in_email character varying, in_username character varying, in_password character varying, in_name character varying, in_birthday timestamp without time zone, in_bio character varying) OWNER TO postgres;
+ALTER FUNCTION public.create_user(in_email character varying, in_username character varying, in_password character varying, in_name character varying, in_birthday timestamp without time zone, in_bio character varying) OWNER TO postgres;
 
 --
 -- Name: edit_user(integer, character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1276,27 +1286,20 @@ ALTER FUNCTION public.get_saved_posts(in_limit integer, in_offset integer, clien
 -- Name: get_user(character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user(OUT res_user json, unique_identifier character varying) RETURNS json
+CREATE FUNCTION public.get_user(unique_identifier character varying) RETURNS SETOF public.i9l_user_t
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_build_object(
-	  'id', id, 
-	  'email', email, 
-	  'username', username, 
-	  'name', name, 
-	  'profile_pic_url', profile_pic_url,
-	  'connection_status', connection_status,
-	  'password', password
-  ) INTO res_user FROM i9l_user
-  WHERE unique_identifier = ANY(ARRAY[id::varchar, email, username]);
+  RETURN QUERY
+	SELECT id, email, username, name, profile_pic_url, connection_status
+    WHERE unique_identifier = ANY(ARRAY[id::varchar, email, username]);
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user(OUT res_user json, unique_identifier character varying) OWNER TO postgres;
+ALTER FUNCTION public.get_user(unique_identifier character varying) OWNER TO postgres;
 
 --
 -- Name: get_user_conversations(integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1474,23 +1477,18 @@ ALTER FUNCTION public.get_user_posts(in_username character varying, in_limit int
 -- Name: get_user_profile(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_profile(OUT profile_data json, in_username character varying, client_user_id integer) RETURNS json
+CREATE FUNCTION public.get_user_profile(in_username character varying, client_user_id integer) RETURNS TABLE(user_id integer, username character varying, name character varying, bio character varying, profile_pic_url character varying, followers_count integer, following_count integer, client_follows boolean)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_build_object(
-	  'user_id', i9l_user.id,
-      'name', name,
-      'username', username,
-      'bio', bio,
-      'profile_pic_url', profile_pic_url, 
-      'followers_count', COUNT(followee.id), 
-      'following_count', COUNT(follower.id),
-      'client_follows', CASE
+  RETURN QUERY 
+	SELECT i9l_user.id, i9l_user.username, i9l_user.name, i9l_user.bio, i9l_user.profile_pic_url, 
+      COUNT(followee.id), 
+      COUNT(follower.id),
+      CASE
         WHEN client_follows.id IS NULL THEN false
         ELSE true
       END
-  ) INTO profile_data
     FROM i9l_user
     LEFT JOIN follow followee ON followee.followee_user_id = i9l_user.id
     LEFT JOIN follow follower ON follower.follower_user_id = i9l_user.id
@@ -1509,7 +1507,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user_profile(OUT profile_data json, in_username character varying, client_user_id integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_profile(in_username character varying, client_user_id integer) OWNER TO postgres;
 
 --
 -- Name: get_users_to_chat(text, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1584,6 +1582,25 @@ $$;
 
 
 ALTER FUNCTION public.search_filter_posts(search_text text, filter_text text, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
+
+--
+-- Name: sign_in(character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sign_in(email_or_username character varying, in_password character varying) RETURNS SETOF public.i9l_user_t
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY
+	SELECT id, email, username, name, profile_pic_url, connection_status
+    WHERE email_or_username = ANY(ARRAY[email, username]) AND in_password = password;
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.sign_in(email_or_username character varying, in_password character varying) OWNER TO postgres;
 
 --
 -- Name: user_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres

@@ -2,17 +2,14 @@ import express from "express"
 import dotenv from "dotenv"
 
 import {
-  emailVerificationValidation,
   expressSessionMiddleware,
-  passwordResetProgressValidation,
   proceedEmailConfirmation,
   proceedEmailVerification,
   proceedPasswordReset,
   proceedUserRegistration,
-  userRegistrationValidation,
 } from "../../middlewares/auth.middlewares.js"
 import { signinController } from "../../controllers/auth/signin.controller.js"
-import { confirmEmailController, passwordResetController, requestPasswordResetController, resetPasswordController } from "../../controllers/auth/passwordReset.controller.js"
+import { confirmEmailController, requestPasswordResetController, resetPasswordController } from "../../controllers/auth/passwordReset.controller.js"
 import { registerUserController, requestNewAccountController, verifyEmailController } from "../../controllers/auth/signup.controller.js"
 
 dotenv.config()

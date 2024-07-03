@@ -1,6 +1,6 @@
 import expressSession from "express-session"
 import pgSession from "connect-pg-simple"
-import { getDBPool } from "../models/db.js"
+import { getDBPool } from "../db/db.js"
 
 export const proceedEmailVerification = (req, res, next) => {
   const signupInSession = req.session.email_verification_data

@@ -1,12 +1,7 @@
 import bcrypt from "bcrypt"
 import { generateJwtToken } from "../../utils/helpers.js"
 import sendMail from "../mail.service.js"
-import {
-  changeUserPassword,
-  createUser,
-  signIn,
-  userExists,
-} from "../../models/user.model.js"
+import { User } from "../../models/user.model.js"
 
 /** @param {string} password */
 const hashPassword = async (password) => {
@@ -23,7 +18,7 @@ const hashPassword = async (password) => {
  * @param {string} info.bio
  */
 export const userRegistrationService = async (info) => {
-  if (await userExists(info.username)) {
+  if (await User.exists(info.username)) {
     return {
       ok: false,
       error: {
@@ -36,7 +31,7 @@ export const userRegistrationService = async (info) => {
 
   const passwordHash = await hashPassword(info.password)
 
-  const userData = await createUser({
+  const userData = await User.create({
     ...info,
     password: passwordHash,
     birthday: new Date(info.birthday),
@@ -61,7 +56,7 @@ export const userRegistrationService = async (info) => {
 export const userSigninService = async (emailOrUsername, passwordInput) => {
   const passwordInputHash = await hashPassword(passwordInput)
 
-  const user = await signIn(emailOrUsername, passwordInputHash)
+  const user = await User.signIn(emailOrUsername, passwordInputHash)
 
   if (!user) {
     return {
@@ -89,7 +84,7 @@ export const userSigninService = async (emailOrUsername, passwordInput) => {
 export const passwordResetService = async (userEmail, newPassword) => {
   const passwordHash = await hashPassword(newPassword)
 
-  await changeUserPassword(userEmail, passwordHash)
+  await User.changePassword(userEmail, passwordHash)
 
   sendMail({
     to: userEmail,
