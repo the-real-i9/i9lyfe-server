@@ -1,4 +1,4 @@
-import { dbQuery } from "../db/db.js"
+import { dbQuery } from "./db.js"
 
 export class App {
   static async getExplorePosts({ limit, offset, client_user_id }) {

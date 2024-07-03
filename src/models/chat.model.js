@@ -2,7 +2,7 @@
  * @typedef {import("pg").QueryConfig} PgQueryConfig
  */
 
-import { dbQuery } from "../db/db.js"
+import { dbQuery } from "./db.js"
 
 export class Conversation {
   /**

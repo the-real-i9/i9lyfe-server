@@ -1,4 +1,4 @@
-import { dbQuery } from "../db/db.js"
+import { dbQuery } from "./db.js"
 
 /** @typedef {import("pg").QueryConfig} PgQueryConfig */
 
