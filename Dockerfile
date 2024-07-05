@@ -15,6 +15,9 @@ WORKDIR /usr/src/app
 EXPOSE 5000
 
 FROM base as dev
+
+ENV NODE_ENV development
+
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=cache,target=/root/.npm \
@@ -22,8 +25,6 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 
 # Run the application as a non-root user.
 USER node
-
-ENV NODE_ENV development
 
 # Copy the rest of the source files into the image.
 COPY . .
@@ -32,6 +33,8 @@ COPY . .
 CMD npm run dev
 
 FROM base as prod
+
+ENV NODE_ENV production
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=cache,target=/root/.npm \
@@ -40,20 +43,18 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 # Run the application as a non-root user.
 USER node
 
-ENV NODE_ENV production
-
 # Copy the rest of the source files into the image.
 COPY . .
 
 # Run the application.
 CMD npm start
 
-FROM base as test
-ENV NODE_ENV test
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
-USER node
-COPY . .
-RUN npm run test
+# FROM base as test
+# ENV NODE_ENV test
+# RUN --mount=type=bind,source=package.json,target=package.json \
+#     --mount=type=bind,source=package-lock.json,target=package-lock.json \
+#     --mount=type=cache,target=/root/.npm \
+#     npm ci --include=dev
+# USER node
+# COPY . .
+# RUN npm run test

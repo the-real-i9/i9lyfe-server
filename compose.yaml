@@ -11,36 +11,39 @@ services:
   server:
     build:
       context: .
-      target: dev
+      target: prod
+    environment:
+      - PGHOST=db
     env_file: .env
     ports:
       - 5000:5000
-    # depends_on:
-    #   db:
-    #     condition: service_healthy
-    # secrets:
-    #   - db-password
+      - 9229:9229
+    depends_on:
+      db:
+        condition: service_healthy
+    secrets:
+      - db-password
     volumes:
       - ./src:/usr/src/app/src
-#   db:
-#     image: postgres
-#     restart: always
-#     user: postgres
-#     secrets:
-#       - db-password
-#     volumes:
-#       - db-data:/var/lib/postgresql/data
-#     env_file: .env
-#     expose:
-#       - 5432
-#     healthcheck:
-#       test: [ "CMD", "pg_isready" ]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-# volumes:
-#   db-data:
-# secrets:
-#   db-password:
-#     file: db/password.txt
+  db:
+    image: postgres
+    restart: always
+    user: postgres
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file: .env
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:
+secrets:
+  db-password:
+    file: db/password.txt
 
