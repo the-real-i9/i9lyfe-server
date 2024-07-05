@@ -2,9 +2,9 @@ import { userSigninService } from "../../services/auth/auth.service.js"
 
 export const signinController = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { emailOrUsername, password } = req.body
 
-    const response = await userSigninService(email, password)
+    const response = await userSigninService(emailOrUsername, password)
 
     if (!response.ok) {
       return res.status(response.error.code).send({ msg: response.error.msg })

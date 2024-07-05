@@ -32,7 +32,7 @@ export class User {
   /**
    * @param {number | string} uniqueIdentifier
    */
-  static async find(uniqueIdentifier) {
+  static async findOne(uniqueIdentifier) {
     /** @type {PgQueryConfig} */
     const query = {
       text: `SELECT * FROM get_user($1)`,
@@ -44,13 +44,12 @@ export class User {
 
   /**
    * @param {string} emailOrUsername
-   * @param {string} password
    */
-  static async signIn(emailOrUsername, password) {
+  static async findOneForAuth(emailOrUsername) {
     /** @type {PgQueryConfig} */
     const query = {
-      text: `SELECT * FROM sign_in($1, $2)`,
-      values: [emailOrUsername, password],
+      text: `SELECT * FROM get_user($1), get_user_password($1)`,
+      values: [emailOrUsername],
     }
 
     return (await dbQuery(query)).rows[0]

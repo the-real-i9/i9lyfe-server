@@ -21,7 +21,7 @@ export const requestNewAccountController = async (req, res) => {
 
     res.status(200).send({ msg: response.data.msg })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

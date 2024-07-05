@@ -2,7 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import cors from "cors"
 import path, { dirname } from "path"
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url"
 
 import AuthRoutes from "./routes/public/auth.routes.js"
 import PostCommentRoutes from "./routes/protected/postComment.routes.js"
@@ -11,21 +11,16 @@ import ChatRoutes from "./routes/protected/chat.routes.js"
 import UserPublicRoutes from "./routes/public/user.public.routes.js"
 import AppRoutes from "./routes/public/app.routes.js"
 
-
 dotenv.config()
 
 const app = express()
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}))
+app.use(cors())
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 app.use(express.static(path.join(__dirname, "static")))
 
 app.use(express.json({ limit: "10mb" }))
-
 
 app.use("/api/auth", AuthRoutes)
 

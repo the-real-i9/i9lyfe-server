@@ -4,7 +4,7 @@ import { NotificationService } from "./notification.service.js"
 
 export class UserService {
   static async getClientUser(client_user_id) {
-    return await User.find(client_user_id)
+    return await User.findOne(client_user_id)
   }
 
   static async follow(client_user_id, to_follow_user_id) {

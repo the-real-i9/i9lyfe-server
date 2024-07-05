@@ -1,70 +1,77 @@
 import { test, xtest, expect } from "@jest/globals"
 import axios from "axios"
 import dotenv from "dotenv"
+import { dbQuery } from "../../../src/models/db.js"
 
 dotenv.config()
 
-const email = "ogunrinola.kehinde@yahoo.com"
 const prefixPath = "http://localhost:5000/api/auth"
-const signupCookie =
-  "connect.sid=s%3AnXZ6Bt7lkIPx77CESXjgBPtwKasZz0Nw.JsZgFutixH6l%2BKEB9sDCNswKoA4BuNsb9ogjzgU5pq4; Path=/api/auth/signup; Expires=Tue, 07 May 2024 22:18:18 GMT; HttpOnly"
 
-xtest("signup: request new account", async () => {
-  const reqData = { email }
-  const res = await axios.post(
+test("signup", async () => {
+  const email = "oluwarinolasam@gmail.com"
+  // step 1
+  const step1Body = { email }
+  const step1Res = await axios.post(
     prefixPath + "/signup/request_new_account",
-    reqData
+    step1Body
   )
 
-  if (res.status === 200) {
-    console.log(res.headers["set-cookie"])
-  }
-
-  expect(res.status).toBe(200)
-  expect(res.data.msg).toBe(
+  expect(step1Res.status).toBe(200)
+  expect(step1Res.data.msg).toBe(
     `Enter the 6-digit code sent to ${email} to verify your email`
   )
-})
 
-xtest("signup: verify email", async () => {
-  const reqData = { code: 310718 }
-  const res = await axios.post(prefixPath + "/signup/verify_email", reqData, {
+  // step 2
+  const signupCookie = step1Res.headers["set-cookie"]
+  const vcode = (
+    await dbQuery({
+      text: `
+      SELECT sess -> 'email_verification_state' -> 'verificationCode' AS vcode
+      FROM ongoing_registration 
+      WHERE sess -> 'email_verification_state' ->> 'email' = $1`,
+      values: [email],
+    })
+  ).rows[0].vcode
+
+  const step2Body = { code: vcode }
+  const step2Res = await axios.post(prefixPath + "/signup/verify_email", step2Body, {
     headers: {
       Cookie: signupCookie,
     },
   })
+  
+  expect(step2Res.status).toBe(200)
+  expect(step2Res.data.msg).toBe(`Your email ${email} has been verified!`)
 
-  expect(res.status).toBe(200)
-  expect(res.data.msg).toBe(`Your email ${email} has been verified!`)
-})
-
-xtest("signup: register user", async () => {
-  const reqData = {
-    username: "dollyp",
+  // step3
+  const step3Body = {
+    username: "i9",
     password: "fhunmytor",
-    name: "Dolapo Olaleye",
-    birthday: new Date(1999, 10, 7),
-    bio: "Nerdy!",
+    name: "Samuel Oluwarinola",
+    birthday: new Date(2000, 11, 7),
+    bio: "#nerdIsLife",
   }
 
-  const res = await axios.post(prefixPath + "/signup/register_user", reqData, {
+  const step3Res = await axios.post(prefixPath + "/signup/register_user", step3Body, {
     headers: {
       Cookie: signupCookie,
     },
   })
 
-  if (res.status === 201) {
-    console.log(res.data)
-  }
-
-  expect(res.status).toBe(201)
-  expect(res.data.msg).toBe(
+  expect(step3Res.status).toBe(201)
+  expect(step3Res.data.msg).toBe(
     "Registration success! You're automatically logged in."
   )
 })
 
+
 xtest("signin", async () => {
-  const reqData = { email: "ogunrinola.kehinde@yahoo.com", password: "fhunmytor" }
+  const email = "oluwarinolasam@gmail.com"
+
+  const reqData = {
+    email,
+    password: "fhunmytor",
+  }
   const res = await axios.post(prefixPath + "/signin", reqData)
 
   if (res.status === 200) {

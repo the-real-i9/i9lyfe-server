@@ -3,13 +3,13 @@ import pgSession from "connect-pg-simple"
 import { getDBPool } from "../models/db.js"
 
 export const proceedEmailVerification = (req, res, next) => {
-  const signupInSession = req.session.email_verification_data
+  const signupInSession = req.session.email_verification_state
 
   if (!signupInSession) {
     return res.status(403).send({ errorMessage: "No ongoing registration!" })
   }
 
-  const emailIsVerified = req.session.email_verification_data.verified
+  const emailIsVerified = req.session.email_verification_state.verified
 
   if (emailIsVerified) {
     return res
@@ -21,13 +21,13 @@ export const proceedEmailVerification = (req, res, next) => {
 }
 
 export const proceedUserRegistration = (req, res, next) => {
-  const signupInSession = req.session.email_verification_data
+  const signupInSession = req.session.email_verification_state
 
   if (!signupInSession) {
     return res.status(403).send({ errorMessage: "No ongoing registration!" })
   }
 
-  const emailIsVerified = req.session.email_verification_data.verified
+  const emailIsVerified = req.session.email_verification_state.verified
 
   if (!emailIsVerified) {
     return res
@@ -40,14 +40,14 @@ export const proceedUserRegistration = (req, res, next) => {
 
 export const proceedEmailConfirmation = (req, res, next) => {
   const passwordResetInSession =
-    req.session.password_reset_email_confirmation_data
+    req.session.password_reset_email_confirmation_state
 
   if (!passwordResetInSession) {
     return res.status(403).send({ errorMessage: "No ongoing password reset!" })
   }
 
   const emailIsConfirmed =
-    req.session.password_reset_email_confirmation_data.emailConfirmed
+    req.session.password_reset_email_confirmation_state.emailConfirmed
 
   if (emailIsConfirmed) {
     return res
@@ -60,14 +60,14 @@ export const proceedEmailConfirmation = (req, res, next) => {
 
 export const proceedPasswordReset = (req, res, next) => {
   const passwordResetInSession =
-    req.session.password_reset_email_confirmation_data
+    req.session.password_reset_email_confirmation_state
 
   if (!passwordResetInSession) {
     return res.status(403).send({ errorMessage: "No ongoing password reset!" })
   }
 
   const emailIsConfirmed =
-    req.session.password_reset_email_confirmation_data.emailConfirmed
+    req.session.password_reset_email_confirmation_state.emailConfirmed
 
   if (!emailIsConfirmed) {
     return res

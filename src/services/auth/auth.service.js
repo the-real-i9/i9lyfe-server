@@ -5,7 +5,7 @@ import { User } from "../../models/user.model.js"
 
 /** @param {string} password */
 const hashPassword = async (password) => {
-  return await bcrypt.hash(password, process.env.HASH_SALT || 10)
+  return await bcrypt.hash(password, 10)
 }
 
 /**
@@ -23,7 +23,7 @@ export const userRegistrationService = async (info) => {
       ok: false,
       error: {
         code: 422,
-        msg: "Username already taken. Try another."
+        msg: "Username already taken. Try another.",
       },
       data: null,
     }
@@ -54,11 +54,19 @@ export const userRegistrationService = async (info) => {
  * @param {string} passwordInput
  */
 export const userSigninService = async (emailOrUsername, passwordInput) => {
-  const passwordInputHash = await hashPassword(passwordInput)
+  const userData = await User.findOneForAuth(emailOrUsername)
 
-  const user = await User.signIn(emailOrUsername, passwordInputHash)
+  if (!userData) {
+    return {
+      ok: false,
+      error: { code: 422, msg: "Incorrect email or password" },
+      data: null,
+    }
+  }
 
-  if (!user) {
+  const { pswd: storedPswd, ...user } = userData
+
+  if (!(await bcrypt.compare(passwordInput, storedPswd))) {
     return {
       ok: false,
       error: { code: 422, msg: "Incorrect email or password" },
@@ -96,7 +104,7 @@ export const passwordResetService = async (userEmail, newPassword) => {
     ok: true,
     err: null,
     data: {
-      msg: "Your password has been changed successfully"
+      msg: "Your password has been changed successfully",
     },
   }
 }
