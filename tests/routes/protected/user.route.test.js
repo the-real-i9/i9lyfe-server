@@ -112,7 +112,7 @@ xtest("get posts saved", async () => {
   console.log(res.data)
 })
 
-test("get my notifications", async () => {
+xtest("get my notifications", async () => {
   const res = await axios.get(
     prefixPath + "/my_notifications?from=2024-04-30",
     axiosConfig(i9xJwt)

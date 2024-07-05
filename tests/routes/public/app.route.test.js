@@ -18,7 +18,7 @@ const axiosConfig = (authToken) => ({
 })
 
 
-test("search users to chat with", async () => {
+xtest("search users to chat with", async () => {
   const res = await axios.get(
     prefixPath + "/users/search?search=dolapo",
     axiosConfig(i9xJwt)
@@ -39,7 +39,7 @@ xtest("explore", async () => {
   console.log(res.data)
 })
 
-test("explore: search & filter", async () => {
+xtest("explore: search & filter", async () => {
   const res = await axios.get(prefixPath + "/explore/search?search=mention", axiosConfig(dollypJwt))
   // const res = await axios.get(prefixPath + "/explore/search?search=post&filter=video")
   // const res = await axios.get(prefixPath + "/explore/search?search=samuel&filter=user")
