@@ -31,21 +31,25 @@ export const userRegistrationService = async (info) => {
 
   const passwordHash = await hashPassword(info.password)
 
-  const userData = await User.create({
+  const user = await User.create({
     ...info,
     password: passwordHash,
     birthday: new Date(info.birthday),
   })
 
-  const jwtToken = generateJwtToken({
-    client_user_id: userData.id,
-    client_username: userData.username,
+  const jwt = generateJwtToken({
+    client_user_id: user.id,
+    client_username: user.username,
   })
 
   return {
     ok: true,
     error: null,
-    data: { msg: "Signup success!", userData, jwtToken },
+    data: {
+      msg: "Registration success! You're automatically logged in.",
+      user,
+      jwt,
+    },
   }
 }
 
@@ -74,7 +78,7 @@ export const userSigninService = async (emailOrUsername, passwordInput) => {
     }
   }
 
-  const jwtToken = generateJwtToken({
+  const jwt = generateJwtToken({
     client_user_id: user.id,
     client_username: user.username,
   })
@@ -83,8 +87,9 @@ export const userSigninService = async (emailOrUsername, passwordInput) => {
     ok: true,
     error: null,
     data: {
-      user, // observe that password has been excluded above
-      jwtToken,
+      msg: "Signin success!",
+      user,
+      jwt,
     },
   }
 }

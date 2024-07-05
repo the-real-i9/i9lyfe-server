@@ -60,11 +60,7 @@ export const registerUserController = async (req, res) => {
 
     req.session.destroy()
 
-    res.status(201).send({
-      msg: "Registration success! You're automatically logged in.",
-      userData: response.data.userData,
-      jwtToken: response.data.jwtToken,
-    })
+    res.status(201).send(response.data)
   } catch (error) {
     // console.error(error)
     res.sendStatus(500)

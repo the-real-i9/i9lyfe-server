@@ -26,7 +26,7 @@ CREATE TYPE public.i9l_user_t AS (
 	username character varying,
 	name character varying,
 	profile_pic_url character varying,
-	connection_status character varying
+	connection_status text
 );
 
 
@@ -1292,6 +1292,7 @@ CREATE FUNCTION public.get_user(unique_identifier character varying) RETURNS SET
 BEGIN
   RETURN QUERY
 	SELECT id, email, username, name, profile_pic_url, connection_status
+	FROM i9l_user
     WHERE unique_identifier = ANY(ARRAY[id::varchar, email, username]);
   
   RETURN;
@@ -1428,6 +1429,25 @@ $$;
 
 
 ALTER FUNCTION public.get_user_notifications(OUT user_notifications json, client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) OWNER TO postgres;
+
+--
+-- Name: get_user_password(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_user_password(OUT pswd character varying, unique_identifier character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    SELECT password FROM i9l_user
+	WHERE unique_identifier = ANY(ARRAY[id::varchar, email, username])
+	INTO pswd;
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_password(OUT pswd character varying, unique_identifier character varying) OWNER TO postgres;
 
 --
 -- Name: get_user_posts(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1582,25 +1602,6 @@ $$;
 
 
 ALTER FUNCTION public.search_filter_posts(search_text text, filter_text text, in_limit integer, in_offset integer, client_user_id integer) OWNER TO postgres;
-
---
--- Name: sign_in(character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.sign_in(email_or_username character varying, in_password character varying) RETURNS SETOF public.i9l_user_t
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  RETURN QUERY
-	SELECT id, email, username, name, profile_pic_url, connection_status
-    WHERE email_or_username = ANY(ARRAY[email, username]) AND in_password = password;
-  
-  RETURN;
-END;
-$$;
-
-
-ALTER FUNCTION public.sign_in(email_or_username character varying, in_password character varying) OWNER TO postgres;
 
 --
 -- Name: user_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres

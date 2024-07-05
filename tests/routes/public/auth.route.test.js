@@ -9,61 +9,74 @@ const prefixPath = "http://localhost:5000/api/auth"
 
 test("signup", async () => {
   const email = "oluwarinolasam@gmail.com"
-  // step 1
-  const step1Body = { email }
-  const step1Res = await axios.post(
-    prefixPath + "/signup/request_new_account",
-    step1Body
-  )
+  try {
+    // step 1
+    const step1Body = { email }
+    const step1Res = await axios.post(
+      prefixPath + "/signup/request_new_account",
+      step1Body
+    )
 
-  expect(step1Res.status).toBe(200)
-  expect(step1Res.data.msg).toBe(
-    `Enter the 6-digit code sent to ${email} to verify your email`
-  )
+    expect(step1Res.status).toBe(200)
+    expect(step1Res.data.msg).toBe(
+      `Enter the 6-digit code sent to ${email} to verify your email`
+    )
 
-  // step 2
-  const signupCookie = step1Res.headers["set-cookie"]
-  const vcode = (
-    await dbQuery({
-      text: `
+    // step 2
+    const signupCookie = step1Res.headers["set-cookie"]
+    const vcode = (
+      await dbQuery({
+        text: `
       SELECT sess -> 'email_verification_state' -> 'verificationCode' AS vcode
       FROM ongoing_registration 
       WHERE sess -> 'email_verification_state' ->> 'email' = $1`,
+        values: [email],
+      })
+    ).rows[0].vcode
+
+    const step2Body = { code: vcode }
+    const step2Res = await axios.post(
+      prefixPath + "/signup/verify_email",
+      step2Body,
+      {
+        headers: {
+          Cookie: signupCookie,
+        },
+      }
+    )
+
+    expect(step2Res.status).toBe(200)
+    expect(step2Res.data.msg).toBe(`Your email ${email} has been verified!`)
+
+    // step3
+    const step3Body = {
+      username: "i9",
+      password: "fhunmytor",
+      name: "Samuel Oluwarinola",
+      birthday: new Date(2000, 11, 7),
+      bio: "#nerdIsLife",
+    }
+
+    const step3Res = await axios.post(
+      prefixPath + "/signup/register_user",
+      step3Body,
+      {
+        headers: {
+          Cookie: signupCookie,
+        },
+      }
+    )
+
+    expect(step3Res.status).toBe(201)
+    expect(step3Res.data).toHaveProperty("jwt")
+  } finally {
+    // cleanup
+    dbQuery({
+      text: `DELETE FROM i9l_user WHERE email = $1`,
       values: [email],
     })
-  ).rows[0].vcode
-
-  const step2Body = { code: vcode }
-  const step2Res = await axios.post(prefixPath + "/signup/verify_email", step2Body, {
-    headers: {
-      Cookie: signupCookie,
-    },
-  })
-  
-  expect(step2Res.status).toBe(200)
-  expect(step2Res.data.msg).toBe(`Your email ${email} has been verified!`)
-
-  // step3
-  const step3Body = {
-    username: "i9",
-    password: "fhunmytor",
-    name: "Samuel Oluwarinola",
-    birthday: new Date(2000, 11, 7),
-    bio: "#nerdIsLife",
   }
-
-  const step3Res = await axios.post(prefixPath + "/signup/register_user", step3Body, {
-    headers: {
-      Cookie: signupCookie,
-    },
-  })
-
-  expect(step3Res.status).toBe(201)
-  expect(step3Res.data.msg).toBe(
-    "Registration success! You're automatically logged in."
-  )
 })
-
 
 xtest("signin", async () => {
   const email = "oluwarinolasam@gmail.com"
@@ -74,10 +87,6 @@ xtest("signin", async () => {
   }
   const res = await axios.post(prefixPath + "/signin", reqData)
 
-  if (res.status === 200) {
-    console.log(res.data)
-  }
-
   expect(res.status).toBe(200)
-  expect(res.data.msg).toBe("Signin success!")
+  expect(res.data).toHaveProperty("jwt")
 })
