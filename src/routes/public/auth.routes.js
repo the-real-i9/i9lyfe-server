@@ -11,7 +11,7 @@ import {
 import signinController from "../../controllers/auth/signin.controller.js"
 import * as passwordResetController from "../../controllers/auth/passwordReset.controller.js"
 import * as signupController from "../../controllers/auth/signup.controller.js"
-import * as authInputValidators from "../../middlewares/routeInputValidators/auth.inputValidators.js"
+import * as authInputValidators from "../../middlewares/inputValidators/auth.validators.js"
 
 dotenv.config()
 
