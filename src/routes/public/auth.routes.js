@@ -8,9 +8,10 @@ import {
   proceedPasswordReset,
   proceedUserRegistration,
 } from "../../middlewares/auth.middlewares.js"
-import { signinController } from "../../controllers/auth/signin.controller.js"
-import { confirmEmailController, requestPasswordResetController, resetPasswordController } from "../../controllers/auth/passwordReset.controller.js"
-import { registerUserController, requestNewAccountController, verifyEmailController } from "../../controllers/auth/signup.controller.js"
+import signinController from "../../controllers/auth/signin.controller.js"
+import * as passwordResetController from "../../controllers/auth/passwordReset.controller.js"
+import * as signupController from "../../controllers/auth/signup.controller.js"
+import * as authInputValidators from "../../middlewares/routeInputValidators/auth.inputValidators.js"
 
 dotenv.config()
 
@@ -34,14 +35,14 @@ router.use(
   )
 )
 
-router.post("/signup/request_new_account", requestNewAccountController)
-router.post("/signup/verify_email", proceedEmailVerification, verifyEmailController)
-router.post("/signup/register_user", proceedUserRegistration, registerUserController)
+router.post("/signup/request_new_account", authInputValidators.requestNewAccount, signupController.requestNewAccount)
+router.post("/signup/verify_email", authInputValidators.verifyEmail, proceedEmailVerification, signupController.verifyEmail)
+router.post("/signup/register_user", authInputValidators.registerUser, proceedUserRegistration, signupController.registerUser)
 
-router.post("/signin", signinController)
+router.post("/signin", authInputValidators.signin, signinController)
 
-router.post("/forgot_password/request_password_reset", requestPasswordResetController)
-router.post("/forgot_password/confirm_email", proceedEmailConfirmation, confirmEmailController)
-router.post("/forgot_password/reset_password", proceedPasswordReset, resetPasswordController)
+router.post("/forgot_password/request_password_reset", passwordResetController.requestPasswordReset)
+router.post("/forgot_password/confirm_email", proceedEmailConfirmation, passwordResetController.confirmEmail)
+router.post("/forgot_password/reset_password", proceedPasswordReset, passwordResetController.resetPassword)
 
 export default router

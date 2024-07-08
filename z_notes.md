@@ -3,7 +3,7 @@
 ## Production ToDos: Docker
 
 - Set all secrets in Github action secrets
-- At the right step of the job, write the necessary secrets into .env file
+- Just before the step that starts the server, write the necessary secrets into a .env file
 
 ## Pending Implementations
 

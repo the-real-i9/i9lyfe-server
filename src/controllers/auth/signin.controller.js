@@ -1,6 +1,6 @@
 import { userSigninService } from "../../services/auth/auth.service.js"
 
-export const signinController = async (req, res) => {
+const signinController = async (req, res) => {
   try {
     const { emailOrUsername, password } = req.body
 
@@ -16,3 +16,5 @@ export const signinController = async (req, res) => {
     res.sendStatus(500)
   }
 }
+
+export default signinController

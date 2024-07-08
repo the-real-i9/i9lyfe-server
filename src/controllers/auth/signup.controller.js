@@ -6,7 +6,7 @@ import { SignupEmailConfirmationStrategy } from "../../services/auth/emailConfir
 
 
 
-export const requestNewAccountController = async (req, res) => {
+export const requestNewAccount = async (req, res) => {
   const { email } = req.body
 
   try {
@@ -26,7 +26,7 @@ export const requestNewAccountController = async (req, res) => {
   }
 }
 
-export const verifyEmailController = async (req, res) => {
+export const verifyEmail = async (req, res) => {
   const {code} = req.body
 
   try {
@@ -47,7 +47,7 @@ export const verifyEmailController = async (req, res) => {
   }
 }
 
-export const registerUserController = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
     const { email } = req.session.email_verification_state
     const response = await userRegistrationService({ email, ...req.body })

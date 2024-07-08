@@ -14,7 +14,7 @@ import { PasswordResetEmailConfirmationStrategy } from "../../services/auth/emai
  * @param {ExpressResponse} res
  */
 
-export const requestPasswordResetController = async (req, res) => {
+export const requestPasswordReset = async (req, res) => {
   const { email } = req.body
   try {
     const response = await emailConfirmationService(
@@ -38,7 +38,7 @@ export const requestPasswordResetController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const confirmEmailController = async (req, res) => {
+export const confirmEmail = async (req, res) => {
   const { code } = req.body
 
   try {
@@ -67,7 +67,7 @@ export const confirmEmailController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const resetPasswordController = async (req, res) => {
+export const resetPassword = async (req, res) => {
   try {
     const { email } = req.session.password_reset_email_confirmation_state
     const { newPassword } = req.body
