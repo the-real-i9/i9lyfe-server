@@ -2,20 +2,8 @@ import express from "express"
 import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 
-import {
-  followUserController,
-  getSessionUserController,
-  getUserMentionedPostsController,
-  getUserNotificationsController,
-  getUserReactedPostsController,
-  getUserSavedPostsController,
-  readUserNotificationController,
-  unfollowUserController,
-  updateUserConnectionStatusController,
-  uploadProfilePictureController,
-  editProfileController,
-  getHomeFeedController,
-} from "../../controllers/user.controllers.js"
+import * as userControllers from "../../controllers/user.controllers.js"
+import * as userValidators from "../../middlewares/inputValidators/user.validators.js"
 
 dotenv.config()
 
@@ -34,32 +22,34 @@ router.use(
     }
   }
 )
-router.get("/home_feed", getHomeFeedController)
 
-router.get("/session_user", getSessionUserController)
 
-router.post("/users/:user_id/follow", followUserController)
+router.get("/home_feed", userControllers.getHomeFeed)
 
-router.delete("/users/:user_id/unfollow", unfollowUserController)
+router.get("/session_user", userControllers.getSessionUser)
 
-router.patch("/edit_my_profile", editProfileController)
+router.post("/users/:user_id/follow", userControllers.followUser)
 
-router.put("/upload_profile_picture", uploadProfilePictureController)
+router.delete("/users/:user_id/unfollow", userControllers.unfollowUser)
 
-router.patch("/update_my_connection_status", updateUserConnectionStatusController)
+router.patch("/edit_profile", userValidators.editProfile, userControllers.editProfile)
 
-router.put("/read_my_notification", readUserNotificationController)
+router.put("/upload_profile_picture", userControllers.uploadProfilePicture)
+
+router.patch("/update_connection_status", userValidators.updateConnectionStatus, userControllers.updateConnectionStatus)
+
+router.put("/my_notifications/:notification_id/read", userControllers.readNotification)
 
 // GET posts user has been mentioned in
-router.get("/mentioned_posts", getUserMentionedPostsController)
+router.get("/mentioned_posts", userControllers.getMentionedPosts)
 
 // GET posts reacted to by user
-router.get("/reacted_posts", getUserReactedPostsController)
+router.get("/reacted_posts", userControllers.getReactedPosts)
 
 // GET posts saved by this user
-router.get("/saved_posts", getUserSavedPostsController)
+router.get("/saved_posts", userControllers.getSavedPosts)
 
 // GET user notifications
-router.get("/my_notifications", getUserNotificationsController)
+router.get("/my_notifications", userControllers.getNotifications)
 
 export default router
