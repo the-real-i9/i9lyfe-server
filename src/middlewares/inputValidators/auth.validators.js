@@ -38,7 +38,6 @@ export function registerUser(req, res, next) {
   }
 
   v = new Input("name", name).notEmpty().min(1)
-
   if (v.error) {
     return res.status(422).send({ error: v.error })
   }
@@ -57,9 +56,9 @@ export function registerUser(req, res, next) {
 }
 
 export function signin(req, res, next) {
-  const { emailOrUsername, password } = req.body
+  const { email_or_username, password } = req.body
 
-  let v = new Input("emailOrUsername", emailOrUsername).notEmpty()
+  let v = new Input("email_or_username", email_or_username).notEmpty()
 
   if (v.error) {
     return res.status(422).send({ error: v.error })
@@ -75,7 +74,7 @@ export function signin(req, res, next) {
 
     if (v.error) {
       // is not a valid username either
-      v.error.msg = "invalid emailOrUsername value"
+      v.error.msg = "invalid email_or_username value"
       return res.status(422).send({ error: v.error })
     }
   }
@@ -116,13 +115,13 @@ export function confirmEmail(req, res, next) {
  * @param {NextFunction} next
  */
 export function resetPassword(req, res, next) {
-  const { newPassword, confirmNewPassword } = req.body
+  const { new_password, confirm_new_password } = req.body
 
-  if (newPassword !== confirmNewPassword) {
-    return res.status(422).send({ error: { field: "cofirmNewPassword", msg: "password mismatch" } })
+  if (new_password !== confirm_new_password) {
+    return res.status(422).send({ error: { field: "confirm_new_password", msg: "password mismatch" } })
   }
 
-  const v = new Input("newPassword").notEmpty().min(8)
+  const v = new Input("new_password").notEmpty().min(8)
 
   if (v.error) {
     return res.status(422).send({ error: v.error })
