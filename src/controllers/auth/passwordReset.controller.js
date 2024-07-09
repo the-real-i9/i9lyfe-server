@@ -29,7 +29,7 @@ export const requestPasswordReset = async (req, res) => {
 
     res.status(200).send({ msg: response.data.msg })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -58,7 +58,7 @@ export const confirmEmail = async (req, res) => {
 
     res.status(200).send({ msg: response.data.msg })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -78,7 +78,7 @@ export const resetPassword = async (req, res) => {
 
     res.status(200).send({ msg: response.data.msg })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

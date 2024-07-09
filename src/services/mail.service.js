@@ -25,7 +25,7 @@ export const sendMail = ({ to, subject, html }) => {
       html,
     })
   } catch (error) {
-    // console.error("sendMail Error", error)
+    console.error("sendMail Error", error)
   }
 }
 

@@ -42,7 +42,7 @@ export const verifyEmail = async (req, res) => {
 
     res.status(200).send({ msg: response.data.msg })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -62,7 +62,7 @@ export const registerUser = async (req, res) => {
 
     res.status(201).send(response.data)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

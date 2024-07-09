@@ -54,7 +54,7 @@ export const searchAndFilterController = async (req, res) => {
 
     res.status(200).send(results)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

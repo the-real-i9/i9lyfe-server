@@ -12,7 +12,7 @@ const signinController = async (req, res) => {
 
     res.status(200).send(response.data)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

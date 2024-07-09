@@ -1,6 +1,6 @@
 import { UserService } from "../services/user.service.js"
 
-export const getSessionUserController = async (req, res) => {
+export const getSessionUser = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
@@ -8,12 +8,12 @@ export const getSessionUserController = async (req, res) => {
 
     res.status(200).send({ sessionUser })
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const followUserController = async (req, res) => {
+export const followUser = async (req, res) => {
   try {
     const { user_id: to_follow_user_id } = req.params
 
@@ -28,7 +28,7 @@ export const followUserController = async (req, res) => {
   }
 }
 
-export const unfollowUserController = async (req, res) => {
+export const unfollowUser = async (req, res) => {
   try {
     const { user_id: followee_user_id } = req.params
 
@@ -38,12 +38,12 @@ export const unfollowUserController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const editProfileController = async (req, res) => {
+export const editProfile = async (req, res) => {
   try {
     const updateDict = req.body
 
@@ -58,7 +58,7 @@ export const editProfileController = async (req, res) => {
   }
 }
 
-export const updateUserConnectionStatusController = async (req, res) => {
+export const updateConnectionStatus = async (req, res) => {
   try {
     const { connection_status, last_active = null } = req.body
 
@@ -72,14 +72,14 @@ export const updateUserConnectionStatusController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const readUserNotificationController = async (req, res) => {
+export const readNotification = async (req, res) => {
   try {
-    const { notification_id } = req.body
+    const { notification_id } = req.params
 
     const { client_user_id } = req.auth
 
@@ -87,23 +87,24 @@ export const readUserNotificationController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const uploadProfilePictureController = async (req, res) => {
+export const uploadProfilePicture = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
+    res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
 /* GETs */
 
-export const getHomeFeedController = async (req, res) => {
+export const getHomeFeed = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
@@ -117,12 +118,12 @@ export const getHomeFeedController = async (req, res) => {
 
     res.status(200).send(homeFeedPosts)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserProfileController = async (req, res) => {
+export const getProfile = async (req, res) => {
   try {
     const { username } = req.params
 
@@ -133,12 +134,12 @@ export const getUserProfileController = async (req, res) => {
 
     res.status(200).send(profileData)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserFollowersController = async (req, res) => {
+export const getFollowers = async (req, res) => {
   try {
     const { username } = req.params
 
@@ -153,12 +154,12 @@ export const getUserFollowersController = async (req, res) => {
 
     res.status(200).send(userFollowers)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserFollowingController = async (req, res) => {
+export const getFollowing = async (req, res) => {
   try {
     const { username } = req.params
 
@@ -173,12 +174,12 @@ export const getUserFollowingController = async (req, res) => {
 
     res.status(200).send(userFollowing)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserPostsController = async (req, res) => {
+export const getPosts = async (req, res) => {
   try {
     const { username } = req.params
 
@@ -193,12 +194,12 @@ export const getUserPostsController = async (req, res) => {
 
     res.status(200).send(userPosts)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserMentionedPostsController = async (req, res) => {
+export const getMentionedPosts = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
@@ -212,12 +213,12 @@ export const getUserMentionedPostsController = async (req, res) => {
 
     res.status(200).send(mentionedPosts)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserReactedPostsController = async (req, res) => {
+export const getReactedPosts = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
@@ -231,12 +232,12 @@ export const getUserReactedPostsController = async (req, res) => {
 
     res.status(200).send(reactedPosts)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserSavedPostsController = async (req, res) => {
+export const getSavedPosts = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
@@ -250,12 +251,12 @@ export const getUserSavedPostsController = async (req, res) => {
 
     res.status(200).send(savedPosts)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const getUserNotificationsController = async (req, res) => {
+export const getNotifications = async (req, res) => {
   try {
     const { from, limit = 20, offset = 0 } = req.query
 

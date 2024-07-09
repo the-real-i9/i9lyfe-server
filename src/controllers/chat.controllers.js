@@ -20,7 +20,7 @@ export const createConversationController = async (req, res) => {
 
     res.status(201).send(client_res)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -33,7 +33,7 @@ export const getMyConversationsController = async (req, res) => {
 
     res.status(200).send(conversations)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -48,7 +48,7 @@ export const deleteConversationController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -67,7 +67,7 @@ export const getConversationHistoryController = async (req, res) => {
 
     res.status(200).send(conversationHistory)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -115,7 +115,7 @@ export const ackMessageDeliveredController = async (req, res) => {
 
     res.sendStatus(204)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -135,7 +135,7 @@ export const ackMessageReadController = async (req, res) => {
 
     res.sendStatus(204)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -160,7 +160,7 @@ export const reactToMessageController = async (req, res) => {
 
     res.sendStatus(201)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -209,7 +209,7 @@ export const deleteMessageController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }

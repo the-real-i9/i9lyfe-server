@@ -28,7 +28,7 @@ export const createNewPostController = async (req, res) => {
 
     res.status(200).send(postData)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -57,7 +57,7 @@ export const reactToPostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -116,7 +116,7 @@ export const reactToCommentController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -146,7 +146,7 @@ export const commentOnCommentController = async (req, res) => {
 
     res.status(201).send(commentData)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -164,7 +164,7 @@ export const createRepostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -183,7 +183,7 @@ export const postSaveController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -201,7 +201,7 @@ export const postUnsaveController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -222,7 +222,7 @@ export const getPostController = async (req, res) => {
 
     res.status(200).send(post)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -248,7 +248,7 @@ export const getCommentsOnPostController = async (req, res) => {
 
     res.status(200).send(commentsOnPost)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -267,7 +267,7 @@ export const getCommentController = async (req, res) => {
 
     res.status(200).send(comment)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -293,7 +293,7 @@ export const getReactorsToPostController = async (req, res) => {
 
     res.status(200).send(postReactors)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -320,7 +320,7 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
 
     res.status(200).send(reactorsWithReaction)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -346,7 +346,7 @@ export const getCommentsOnCommentController = async (req, res) => {
 
     res.status(200).send(commentsOnComment)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -372,7 +372,7 @@ export const getReactorsToCommentController = async (req, res) => {
 
     res.status(200).send(commentReactors)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -399,7 +399,7 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
 
     res.status(200).send(commentReactorsWithReaction)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -419,7 +419,7 @@ export const deletePostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -437,7 +437,7 @@ export const removeReactionToPostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -459,7 +459,7 @@ export const removeCommentOnPostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -481,7 +481,7 @@ export const removeCommentOnCommentController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -499,7 +499,7 @@ export const removeReactionToCommentController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
@@ -517,7 +517,7 @@ export const deleteRepostController = async (req, res) => {
 
     res.sendStatus(200)
   } catch (error) {
-    // console.error(error)
+    console.error(error)
     res.sendStatus(500)
   }
 }
