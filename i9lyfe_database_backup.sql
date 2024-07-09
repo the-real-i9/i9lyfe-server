@@ -586,7 +586,7 @@ DECLARE
 BEGIN
   FOREACH col_name_val SLICE 1 IN ARRAY col_updates
   LOOP
-    IF col_name_val[1] NOT IN ('username', 'password', 'email', 'name', 'profile_picture', 'birthday', 'bio') THEN
+    IF col_name_val[1] NOT IN ('name', 'birthday', 'bio') THEN
 	  RAISE EXCEPTION '"%" is either an invalid or a non-editable column', col_name_val[1] 
 	  USING HINT = 'Validate column name or set column from the proper routine';
 	END IF;
