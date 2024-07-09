@@ -16,7 +16,7 @@ router.use(
   }),
   (err, req, res, next) => {
     if (err) {
-      res.status(err.status).send({ error: err.inner.message })
+      res.status(err.status).send({ msg: err.inner.message })
     } else {
       next(err)
     }
