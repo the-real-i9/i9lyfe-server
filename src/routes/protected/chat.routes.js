@@ -23,49 +23,49 @@ router.use(
   }
 )
 
-router.post("/create_conversation", CC.createConversationController)
+router.post("/create_conversation", CC.createConversation)
 
-router.get("/my_conversations", CC.getMyConversationsController)
+router.get("/my_conversations", CC.getMyConversations)
 
 router.delete(
   "/conversations/:conversation_id",
-  CC.deleteConversationController
+  CC.deleteConversation
 )
 
 router.get(
   "/conversations/:conversation_id/history",
-  CC.getConversationHistoryController
+  CC.getConversationHistory
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/send_message",
   uploadMessageFiles,
-  CC.sendMessageController
+  CC.sendMessage
 )
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/delivered",
-  CC.ackMessageDeliveredController
+  CC.ackMessageDelivered
 )
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/read",
-  CC.ackMessageReadController
+  CC.ackMessageRead
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/react",
-  CC.reactToMessageController
+  CC.reactToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/remove_reaction",
-  CC.removeReactionToMessageController
+  CC.removeReactionToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id",
-  CC.deleteMessageController
+  CC.deleteMessage
 )
 
 export default router

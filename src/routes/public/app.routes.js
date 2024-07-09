@@ -1,8 +1,8 @@
 import express from "express"
 import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
-import * as appControllers from "../../controllers/app.controllers.js"
-import * as appValidators from "../../middlewares/inputValidators/app.validators.js"
+import * as AC from "../../controllers/app.controllers.js"
+import * as AV from "../../middlewares/validators/app.validators.js"
 
 dotenv.config()
 
@@ -23,12 +23,12 @@ router.use(
   }
 )
 
-router.get("/users/search", appControllers.searchUsersToChat)
+router.get("/users/search", AC.searchUsersToChat)
 
-router.get("/explore", appControllers.getExplorePosts)
+router.get("/explore", AC.getExplorePosts)
 
-router.get("/explore/search", appValidators.searchAndFilter, appControllers.searchAndFilter)
+router.get("/explore/search", AV.searchAndFilter, AC.searchAndFilter)
 
-router.get("/hashtags/:hashtag_name", appControllers.getHashtagPosts)
+router.get("/hashtags/:hashtag_name", AC.getHashtagPosts)
 
 export default router

@@ -2,7 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 
-import * as userControllers from "../../controllers/user.controllers.js"
+import * as UC from "../../controllers/user.controllers.js"
 
 const router = express.Router()
 
@@ -25,15 +25,15 @@ router.use(
 
 /* Users */
 // GET a specific user's profile data
-router.get("/:username", userControllers.getProfile)
+router.get("/:username", UC.getProfile)
 
 // GET user followers
-router.get("/:username/followers", userControllers.getFollowers)
+router.get("/:username/followers", UC.getFollowers)
 
 // GET user followings
-router.get("/:username/following", userControllers.getFollowing)
+router.get("/:username/following", UC.getFollowing)
 
 // GET user posts
-router.get("/:username/posts", userControllers.getPosts)
+router.get("/:username/posts", UC.getPosts)
 
 export default router

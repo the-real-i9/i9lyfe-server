@@ -4,7 +4,7 @@
  * @typedef {import("express").NextFunction} NextFunction
  */
 
-import Input from "./Input"
+import Input from "./Input.js"
 
 /**
  * @param {ExpressRequest} req

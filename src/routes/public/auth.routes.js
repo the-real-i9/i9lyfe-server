@@ -9,9 +9,9 @@ import {
   proceedUserRegistration,
 } from "../../middlewares/auth.middlewares.js"
 import signinController from "../../controllers/auth/signin.controller.js"
-import * as passwordResetController from "../../controllers/auth/passwordReset.controller.js"
-import * as signupController from "../../controllers/auth/signup.controller.js"
-import * as authInputValidators from "../../middlewares/inputValidators/auth.validators.js"
+import * as PRC from "../../controllers/auth/passwordReset.controller.js"
+import * as SC from "../../controllers/auth/signup.controller.js"
+import * as AV from "../../middlewares/validators/auth.validators.js"
 
 dotenv.config()
 
@@ -35,14 +35,14 @@ router.use(
   )
 )
 
-router.post("/signup/request_new_account", authInputValidators.requestNewAccount, signupController.requestNewAccount)
-router.post("/signup/verify_email", authInputValidators.verifyEmail, proceedEmailVerification, signupController.verifyEmail)
-router.post("/signup/register_user", authInputValidators.registerUser, proceedUserRegistration, signupController.registerUser)
+router.post("/signup/request_new_account", AV.requestNewAccount, SC.requestNewAccount)
+router.post("/signup/verify_email", AV.verifyEmail, proceedEmailVerification, SC.verifyEmail)
+router.post("/signup/register_user", AV.registerUser, proceedUserRegistration, SC.registerUser)
 
-router.post("/signin", authInputValidators.signin, signinController)
+router.post("/signin", AV.signin, signinController)
 
-router.post("/forgot_password/request_password_reset", authInputValidators.requestPasswordReset, passwordResetController.requestPasswordReset)
-router.post("/forgot_password/confirm_email", proceedEmailConfirmation, authInputValidators.confirmEmail, passwordResetController.confirmEmail)
-router.post("/forgot_password/reset_password", proceedPasswordReset, authInputValidators.resetPassword, passwordResetController.resetPassword)
+router.post("/forgot_password/request_password_reset", AV.requestPasswordReset, PRC.requestPasswordReset)
+router.post("/forgot_password/confirm_email", proceedEmailConfirmation, AV.confirmEmail, PRC.confirmEmail)
+router.post("/forgot_password/reset_password", proceedPasswordReset, AV.resetPassword, PRC.resetPassword)
 
 export default router

@@ -6,7 +6,7 @@
 import { ChatService } from "../services/chat/chat.service.js"
 
 
-export const createConversationController = async (req, res) => {
+export const createConversation = async (req, res) => {
   try {
     const { partner, init_message } = req.body
 
@@ -25,7 +25,7 @@ export const createConversationController = async (req, res) => {
   }
 }
 
-export const getMyConversationsController = async (req, res) => {
+export const getMyConversations = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
@@ -38,7 +38,7 @@ export const getMyConversationsController = async (req, res) => {
   }
 }
 
-export const deleteConversationController = async (req, res) => {
+export const deleteConversation = async (req, res) => {
   try {
     const { conversation_id } = req.params
 
@@ -53,7 +53,7 @@ export const deleteConversationController = async (req, res) => {
   }
 }
 
-export const getConversationHistoryController = async (req, res) => {
+export const getConversationHistory = async (req, res) => {
   try {
     const { conversation_id } = req.params
 
@@ -76,7 +76,7 @@ export const getConversationHistoryController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const sendMessageController = async (req, res) => {
+export const sendMessage = async (req, res) => {
   try {
     const { conversation_id, partner_user_id } = req.params
     const { msg_content } = req.body
@@ -97,7 +97,7 @@ export const sendMessageController = async (req, res) => {
   }
 }
 
-export const ackMessageDeliveredController = async (req, res) => {
+export const ackMessageDelivered = async (req, res) => {
   try {
     const { conversation_id, partner_user_id, message_id } = req.params
 
@@ -120,7 +120,7 @@ export const ackMessageDeliveredController = async (req, res) => {
   }
 }
 
-export const ackMessageReadController = async (req, res) => {
+export const ackMessageRead = async (req, res) => {
   try {
     const { conversation_id, partner_user_id, message_id } = req.params
 
@@ -140,7 +140,7 @@ export const ackMessageReadController = async (req, res) => {
   }
 }
 
-export const reactToMessageController = async (req, res) => {
+export const reactToMessage = async (req, res) => {
   try {
     const { conversation_id, partner_user_id, message_id } = req.params
     const { reaction } = req.body
@@ -165,7 +165,7 @@ export const reactToMessageController = async (req, res) => {
   }
 }
 
-export const removeReactionToMessageController = async (req, res) => {
+export const removeReactionToMessage = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
 
@@ -188,7 +188,7 @@ export const removeReactionToMessageController = async (req, res) => {
   }
 }
 
-export const deleteMessageController = async (req, res) => {
+export const deleteMessage = async (req, res) => {
   try {
     const { conversation_id, partner_user_id, message_id } = req.params
 
