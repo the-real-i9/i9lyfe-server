@@ -41,8 +41,8 @@ router.post("/signup/register_user", authInputValidators.registerUser, proceedUs
 
 router.post("/signin", authInputValidators.signin, signinController)
 
-router.post("/forgot_password/request_password_reset", passwordResetController.requestPasswordReset)
-router.post("/forgot_password/confirm_email", proceedEmailConfirmation, passwordResetController.confirmEmail)
-router.post("/forgot_password/reset_password", proceedPasswordReset, passwordResetController.resetPassword)
+router.post("/forgot_password/request_password_reset", authInputValidators.requestPasswordReset, passwordResetController.requestPasswordReset)
+router.post("/forgot_password/confirm_email", proceedEmailConfirmation, authInputValidators.confirmEmail, passwordResetController.confirmEmail)
+router.post("/forgot_password/reset_password", proceedPasswordReset, authInputValidators.resetPassword, passwordResetController.resetPassword)
 
 export default router
