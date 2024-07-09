@@ -1,11 +1,6 @@
 import { AppService } from "../services/app.service.js"
 
-/**
- *
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
-export const searchUsersToChatController = async (req, res) => {
+export const searchUsersToChat = async (req, res) => {
   try {
     const { search = "", limit = 20, offset = 0 } = req.query
 
@@ -23,7 +18,7 @@ export const searchUsersToChatController = async (req, res) => {
   }
 }
 
-export const getExplorePostsController = async (req, res) => {
+export const getExplorePosts = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
@@ -40,7 +35,7 @@ export const getExplorePostsController = async (req, res) => {
   }
 }
 
-export const searchAndFilterController = async (req, res) => {
+export const searchAndFilter = async (req, res) => {
   try {
     const { search = "", filter = "all", limit = 20, offset = 0 } = req.query
 
@@ -59,7 +54,7 @@ export const searchAndFilterController = async (req, res) => {
   }
 }
 
-export const getHashtagPostsController = async (req, res) => {
+export const getHashtagPosts = async (req, res) => {
   try {
     const { hashtag_name } = req.params
 

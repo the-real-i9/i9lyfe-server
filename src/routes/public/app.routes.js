@@ -1,12 +1,8 @@
 import express from "express"
 import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
-import {
-  getExplorePostsController,
-  getHashtagPostsController,
-  searchAndFilterController,
-  searchUsersToChatController,
-} from "../../controllers/app.controllers.js"
+import * as appControllers from "../../controllers/app.controllers.js"
+import * as appValidators from "../../middlewares/inputValidators/app.validators.js"
 
 dotenv.config()
 
@@ -20,19 +16,19 @@ router.use(
   }),
   (err, req, res, next) => {
     if (err) {
-      res.status(err.status).send({ error: err.inner.message })
+      res.status(err.status).send({ msg: err.inner.message })
     } else {
       next(err)
     }
   }
 )
 
-router.get("/users/search", searchUsersToChatController)
+router.get("/users/search", appControllers.searchUsersToChat)
 
-router.get("/explore", getExplorePostsController)
+router.get("/explore", appControllers.getExplorePosts)
 
-router.get("/explore/search", searchAndFilterController)
+router.get("/explore/search", appValidators.searchAndFilter, appControllers.searchAndFilter)
 
-router.get("/hashtags/:hashtag_name", getHashtagPostsController)
+router.get("/hashtags/:hashtag_name", appControllers.getHashtagPosts)
 
 export default router
