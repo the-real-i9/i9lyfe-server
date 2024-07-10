@@ -11,7 +11,7 @@ import {
 import signinController from "../../controllers/auth/signin.controller.js"
 import * as PRC from "../../controllers/auth/passwordReset.controller.js"
 import * as SC from "../../controllers/auth/signup.controller.js"
-import * as AV from "../../middlewares/validators/auth.validators.js"
+import * as authValidators from "../../middlewares/validators/auth.validators.js"
 
 dotenv.config()
 
@@ -35,14 +35,14 @@ router.use(
   )
 )
 
-router.post("/signup/request_new_account", AV.requestNewAccount, SC.requestNewAccount)
-router.post("/signup/verify_email", AV.verifyEmail, proceedEmailVerification, SC.verifyEmail)
-router.post("/signup/register_user", AV.registerUser, proceedUserRegistration, SC.registerUser)
+router.post("/signup/request_new_account", ...authValidators.requestNewAccount, SC.requestNewAccount)
+router.post("/signup/verify_email", ...authValidators.verifyEmail, proceedEmailVerification, SC.verifyEmail)
+router.post("/signup/register_user", ...authValidators.registerUser, proceedUserRegistration, SC.registerUser)
 
-router.post("/signin", AV.signin, signinController)
+router.post("/signin", authValidators.signin, signinController)
 
-router.post("/forgot_password/request_password_reset", AV.requestPasswordReset, PRC.requestPasswordReset)
-router.post("/forgot_password/confirm_email", proceedEmailConfirmation, AV.confirmEmail, PRC.confirmEmail)
-router.post("/forgot_password/reset_password", proceedPasswordReset, AV.resetPassword, PRC.resetPassword)
+router.post("/forgot_password/request_password_reset", authValidators.requestPasswordReset, PRC.requestPasswordReset)
+router.post("/forgot_password/confirm_email", proceedEmailConfirmation, authValidators.confirmEmail, PRC.confirmEmail)
+router.post("/forgot_password/reset_password", proceedPasswordReset, authValidators.resetPassword, PRC.resetPassword)
 
 export default router

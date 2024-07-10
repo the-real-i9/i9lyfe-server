@@ -3,7 +3,7 @@ import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import * as CC from "../../controllers/chat.controllers.js"
-import * as CV from "../../middlewares/validators/chat.validators.js"
+import * as chatValidators from "../../middlewares/validators/chat.validators.js"
 import { uploadMessageFiles } from "../../middlewares/app.middlewares.js"
 
 dotenv.config()
@@ -30,50 +30,50 @@ router.get("/my_conversations", CC.getMyConversations)
 
 router.delete(
   "/conversations/:conversation_id",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.deleteConversation
 )
 
 router.get(
   "/conversations/:conversation_id/history",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.getConversationHistory
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/send_message",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   uploadMessageFiles,
   CC.sendMessage
 )
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/delivered",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.ackMessageDelivered
 )
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/read",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.ackMessageRead
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/react",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.reactToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/remove_reaction",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.removeReactionToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id",
-  CV.validateIdParams,
+  ...chatValidators.validateIdParams,
   CC.deleteMessage
 )
 

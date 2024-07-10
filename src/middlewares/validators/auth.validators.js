@@ -1,131 +1,162 @@
-import Input from "./Input.js"
+import { body, checkExact, checkSchema, oneOf } from "express-validator"
+import { errHandler } from "./errorHandler"
 
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- * @typedef {import("express").NextFunction} NextFunction
- */
+export const requestNewAccount = [
+  checkExact(
+    checkSchema(
+      {
+        email: { isEmail: { errorMessage: "invalid email" } },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-export function requestNewAccount(req, res, next) {
-  const { email } = req.body
+export const verifyEmail = [
+  checkExact(
+    checkSchema(
+      {
+        code: {
+          isNumeric: {
+            options: { no_symbols: true },
+            errorMessage: "invalid non-numeric code value",
+          },
+          isLength: {
+            options: { min: 6, max: 6 },
+            errorMessage: "code must be 6 digits",
+          },
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-  const v = new Input("email", email).notEmpty().isEmail()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
+export const registerUser = [
+  checkExact(
+    checkSchema(
+      {
+        username: {
+          matches: {
+            options: /^[\w-]{3,}$/,
+            errorMessage: "invalid username format",
+          },
+        },
+        password: {
+          isLength: {
+            options: { min: 8 },
+            errorMessage: "password too short",
+          },
+        },
+        name: {
+          notEmpty: {
+            errorMessage: "name value cannot be empty",
+          },
+        },
+        birthday: {
+          isDate: {
+            errorMessage: "invalid date string format",
+          },
+        },
+        bio: {
+          optional: true,
+          isLength: { options: { max: 150 } },
+          errorMessage: "too many characters (max is 150)",
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-  return next()
-}
+export const signin = [
+  oneOf(
+    [
+      body("email_or_username").isEmail(),
+      body("email_or_username").matches(/^[\w-]{3,}$/),
+    ],
+    { message: "invalid email or username pattern", errorType: "least_errored" }
+  ),
+  checkExact(
+    checkSchema(
+      {
+        email_or_username: {
+          notEmpty: { errorMessage: "email or username is required" },
+        },
+        password: {
+          notEmpty: {
+            errorMessage: "password is required",
+          },
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-export function verifyEmail(req, res, next) {
-  const { code } = req.body
+export const requestPasswordReset = [
+  checkExact(
+    checkSchema(
+      {
+        email: { isEmail: { errorMessage: "invalid email" } },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-  const v = new Input("code", code).notEmpty().isNumeric()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
+export const confirmEmail = [
+  checkExact(
+    checkSchema(
+      {
+        code: {
+          isNumeric: {
+            options: { no_symbols: true },
+            errorMessage: "invalid non-numeric code value",
+          },
+          isLength: {
+            options: { min: 6, max: 6 },
+            errorMessage: "code must be 6 digits",
+          },
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
 
-  return next()
-}
-
-export function registerUser(req, res, next) {
-  const { username, name, password, birthday } = req.body
-
-  let v = new Input("username", username).notEmpty().isValidUsername()
-
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  v = new Input("name", name).notEmpty().min(1)
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  v = new Input("password", password).notEmpty().min(8)
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  v = new Input("birthday", birthday).notEmpty().isDate()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  return next()
-}
-
-export function signin(req, res, next) {
-  const { email_or_username, password } = req.body
-
-  let v = new Input("email_or_username", email_or_username).notEmpty()
-
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  v.isEmail()
-
-  if (v.error) {
-    // is not email, but it could be a valid username
-    v.error = null // reset error value
-
-    v.isValidUsername()
-
-    if (v.error) {
-      // is not a valid username either
-      v.error.msg = "invalid email_or_username value"
-      return res.status(422).send({ error: v.error })
-    }
-  }
-
-  v = new Input("password", password).notEmpty()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  return next()
-}
-
-export function requestPasswordReset(req, res, next) {
-  const { email } = req.body
-
-  const v = new Input("email", email).notEmpty().isEmail()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  return next()
-}
-
-export function confirmEmail(req, res, next) {
-  const { code } = req.body
-
-  const v = new Input("code", code).notEmpty().isNumeric()
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  return next()
-}
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- * @param {NextFunction} next
- */
-export function resetPassword(req, res, next) {
-  const { new_password, confirm_new_password } = req.body
-
-  if (new_password !== confirm_new_password) {
-    return res.status(422).send({ error: { field: "confirm_new_password", msg: "password mismatch" } })
-  }
-
-  const v = new Input("new_password").notEmpty().min(8)
-
-  if (v.error) {
-    return res.status(422).send({ error: v.error })
-  }
-
-  return next()
-}
+export const resetPassword = [
+  checkExact(
+    checkSchema(
+      {
+        new_password: {
+          isLength: {
+            options: { min: 8 },
+            errorMessage: "password too short",
+          },
+        },
+        confirm_new_password: {
+          custom: {
+            options: (value, { req }) => value === req.body.new_password,
+            errorMessage: "password mismatch",
+          },
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
