@@ -28,9 +28,9 @@ router.get("/home_feed", UC.getHomeFeed)
 
 router.get("/session_user", UC.getSessionUser)
 
-router.post("/users/:user_id/follow", UC.followUser)
+router.post("/users/:user_id/follow", UV.validateIdParams, UC.followUser)
 
-router.delete("/users/:user_id/unfollow", UC.unfollowUser)
+router.delete("/users/:user_id/unfollow", UV.validateIdParams, UC.unfollowUser)
 
 router.patch("/edit_profile", UV.editProfile, UC.editProfile)
 
@@ -38,7 +38,7 @@ router.put("/upload_profile_picture", UC.uploadProfilePicture)
 
 router.patch("/update_connection_status", UV.updateConnectionStatus, UC.updateConnectionStatus)
 
-router.put("/my_notifications/:notification_id/read", UC.readNotification)
+router.put("/my_notifications/:notification_id/read", UV.validateIdParams, UC.readNotification)
 
 // GET posts user has been mentioned in
 router.get("/mentioned_posts", UC.getMentionedPosts)

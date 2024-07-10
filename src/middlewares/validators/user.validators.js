@@ -6,6 +6,20 @@
 
 import Input from "./Input.js"
 
+export function validateIdParams(req, res, next) {
+  const params = Object.keys(req.params)
+
+  for (const param of params) {
+    const v = new Input(param, req.params[param]).isNumeric()
+
+    if (v.error) {
+      return res.status(422).send({error: v.error})
+    }
+  }
+
+  return next()
+}
+
 /**
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
