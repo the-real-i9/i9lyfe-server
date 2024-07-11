@@ -24,7 +24,7 @@ router.use(
   }
 )
 
-router.post("/create_conversation", CC.createConversation)
+router.post("/create_conversation", ...chatValidators.createConversation, CC.createConversation)
 
 router.get("/my_conversations", CC.getMyConversations)
 
@@ -43,6 +43,7 @@ router.get(
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/send_message",
   ...chatValidators.validateIdParams,
+  ...chatValidators.sendMessage,
   uploadMessageFiles,
   CC.sendMessage
 )
@@ -50,6 +51,7 @@ router.post(
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/delivered",
   ...chatValidators.validateIdParams,
+  ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered
 )
 
@@ -62,6 +64,7 @@ router.put(
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/react",
   ...chatValidators.validateIdParams,
+  ...chatValidators.reactToMessage,
   CC.reactToMessage
 )
 

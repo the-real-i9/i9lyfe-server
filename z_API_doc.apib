@@ -1277,7 +1277,9 @@ Initating a conversation requires a conversation partner and the first message f
                 },
                 "init_message": {
                     "type": "text",
-                    "text_content": "Hi! How're you?"
+                    "props": {
+                        "textContent": "Hi! How're you?"
+                    }
                 }
             }
 
@@ -1302,33 +1304,34 @@ Initating a conversation requires a conversation partner and the first message f
 
 ### Send message [POST]
 
-**Message content format:** The fields indented under each type are the required fields that accompany the type of data.
+**Message content format:** Indented under each type are the properties associated with the message type
 
 + **type** (required) - Type: `text`
-    + **text_content** (string) - For the sake of the example request body below, `text_content` is required only if the type of `message` is `text`. Other types of `message` also have their own required fields.
+    + **textContent** (string) - For the sake of the example request body below, `text_content` is required only if the type of `message` is `text`. Other types of `message` also have their own required fields.
 + **type** (required) - Type: `voice`
-    + **voice_data** (uint8[]) - Voice data in `uint8` array binary format.
-    + **duration** (string) - Duration of voice record.
+    + **data** (uint8[]) - Voice data in `uint8` array binary format.
+    + **duration** (number) - Duration of voice record in seconds.
 + **type** (required) - Type: `image`
-    + **mime** (string) - The mime type of image e.g. `image/png`.
-    + **image_data** (uint8[]) - Image data in `uint8` array binary format.
+    + **data** (uint8[]) - Image data in `uint8` array binary format.
+    + **mimeType** (string) - The mime type of image e.g. `image/png`.
     + **caption** (string) - Image caption.
     + **size** (number) - Image size in bytes.
 + **type** (required) - Type: `audio`
-    + **mime** (string) - The mime type of audio e.g. `auido/mp3`.
-    + **audio_data** (uint8[]) - Audio data in `uint8` array binary format.
+    + **data** (uint8[]) - Audio data in `uint8` array binary format.
+    + **mimeType** (string) - The mime type of audio e.g. `auido/mp3`.
     + **caption** (string) - Audio caption.
     + **size** (number) - Audio size in bytes.
 + **type** (required) - Type: `video`
-    + **mime** (string) - The mime type of video e.g. `video/mp4`.
-    + **video_data** (uint8[]) - Video data in `uint8` array binary format.
+    + **data** (uint8[]) - Video data in `uint8` array binary format.
+    + **mimeType** (string) - The mime type of video e.g. `video/mp4`.
     + **caption** (string) - Video caption.
     + **size** (number) - Video size in bytes.
 + **type** (required) - Type: `file`
-    + **mime** (string) - The mime type of file e.g. `application/octet-stream`.
-    + **file_data** (uint8[]) - File data in `uint8` array binary format.
+    + **data** (uint8[]) - File data in `uint8` array binary format.
+    + **mimeType** (string) - The mime type of file e.g. `application/octet-stream`.
     + **caption** (string) - File caption.
     + **size** (number) - File size in bytes.
+    + **extension** (string) - File extension e.g. `.txt`
 
 + Request (application/json)
 
@@ -1341,7 +1344,9 @@ Initating a conversation requires a conversation partner and the first message f
             {
                 "msg_content": {
                     "type": "text",
-                    "text_content": "Hi! How're you?"
+                    "props" {
+                        "textContent": "Hi! How're you?"
+                    }
                 }
             }
 
