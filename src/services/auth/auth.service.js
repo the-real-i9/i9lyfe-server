@@ -59,7 +59,7 @@ export const userRegistrationService = async (info) => {
  */
 export const userSigninService = async (emailOrUsername, passwordInput) => {
   const userData = await User.findOneForAuth(emailOrUsername)
-
+  
   if (!userData) {
     return {
       ok: false,

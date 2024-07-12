@@ -1,4 +1,4 @@
-import { body, checkExact, checkSchema } from "express-validator"
+import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs"
 
 export const requestNewAccount = [
@@ -62,8 +62,10 @@ export const registerUser = [
           },
         },
         birthday: {
-          isDate: {
-            errorMessage: "invalid date string format",
+          notEmpty: true,
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date",
           },
         },
         bio: {

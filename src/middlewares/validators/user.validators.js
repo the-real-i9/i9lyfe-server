@@ -5,22 +5,31 @@ export const editProfile = [
   checkExact(
     checkSchema(
       {
+        "": {
+          custom: {
+            options: (value) => !Object.keys(value).length,
+            errorMessage: "must contain at least one field to update",
+          },
+        },
         name: {
           optional: true,
-          notEmpty: {
-            errorMessage: "name value cannot be empty",
-          },
+          notEmpty: true,
         },
         birthday: {
           optional: true,
-          isDate: {
-            errorMessage: "invalid date string format",
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date",
+            bail: true,
           },
         },
         bio: {
           optional: true,
-          isLength: { options: { max: 150 } },
-          errorMessage: "too many characters (max is 150)",
+          notEmpty: true,
+          isLength: {
+            options: { max: 150 },
+            errorMessage: "too many characters (max is 150)",
+          },
         },
       },
       ["body"]
@@ -47,8 +56,11 @@ export const updateConnectionStatus = [
             errorMessage: "should only be set if connection status is offline",
             bail: true,
           },
-          isDate: {
-            errorMessage: "invalid date string format",
+          // eslint-disable-next-line no-dupe-keys
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date",
+            bail: true,
           },
         },
       },
