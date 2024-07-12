@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 
 import * as UC from "../../controllers/user.controllers.js"
+import { validateLimitOffset } from "../../middlewares/validators/user.validators.js"
 
 const router = express.Router()
 
@@ -28,12 +29,12 @@ router.use(
 router.get("/:username", UC.getProfile)
 
 // GET user followers
-router.get("/:username/followers", UC.getFollowers)
+router.get("/:username/followers", ...validateLimitOffset, UC.getFollowers)
 
 // GET user followings
-router.get("/:username/following", UC.getFollowing)
+router.get("/:username/following", ...validateLimitOffset, UC.getFollowing)
 
 // GET user posts
-router.get("/:username/posts", UC.getPosts)
+router.get("/:username/posts", ...validateLimitOffset, UC.getPosts)
 
 export default router

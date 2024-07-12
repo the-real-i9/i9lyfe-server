@@ -1,8 +1,21 @@
 import { checkExact, checkSchema, param } from "express-validator"
-import { errHandler } from "./errorHandler.js"
+import { errHandler, limitOffsetSchema } from "./miscs.js"
 
 export const validateIdParams = [
   param("**").isInt().withMessage("non-integer value"),
+  errHandler,
+]
+
+export const validateLimitOffset = [
+  checkExact(
+    checkSchema(
+      {
+        ...limitOffsetSchema
+      },
+      ["query"]
+    ),
+    { message: "request query parameters contains invalid fields" }
+  ),
   errHandler,
 ]
 
@@ -58,6 +71,31 @@ export const updateConnectionStatus = [
         },
       },
       ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
+
+export const getNotifications = [
+  checkExact(
+    checkSchema(
+      {
+        from: {
+          notEmpty: true,
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date",
+            bail: true,
+          },
+          isBefore: {
+            options: new Date(),
+            errorMessage: "invalid time period",
+          },
+        },
+        ...limitOffsetSchema
+      },
+      ["query"]
     ),
     { message: "request body contains invalid fields" }
   ),

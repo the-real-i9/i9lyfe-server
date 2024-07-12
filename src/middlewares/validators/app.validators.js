@@ -1,16 +1,56 @@
-export function searchAndFilter(req, res, next) {
-  const { filter } = req.query
+import { checkExact, checkSchema } from "express-validator"
+import { errHandler, limitOffsetSchema } from "./miscs.js"
 
-  const validFilters = ["user", "photo", "video", "reel", "story", "hashtag"]
-  if (filter && !validFilters.includes(filter)) {
-    res.status(422).send({
-      error: {
-        queryParam: "filter",
-        msg: "invalid filter value",
-        validFilters,
+export const validateLimitOffset = [
+  checkExact(
+    checkSchema(
+      {
+        ...limitOffsetSchema,
       },
-    })
-  }
+      ["query"]
+    ),
+    { message: "request query parameters contains invalid fields" }
+  ),
+  errHandler,
+]
 
-  return next()
-}
+export const searchUsersToChat = [
+  checkExact(
+    checkSchema(
+      {
+        search: {
+          matches: {
+            options: /^[\w-]{3,}$/,
+            errorMessage: "invalid username format",
+          },
+        },
+        ...limitOffsetSchema,
+      },
+      ["query"]
+    ),
+    { message: "request query parameters contains invalid fields" }
+  ),
+  errHandler,
+]
+
+export const searchAndFilter = [
+  checkExact(
+    checkSchema(
+      {
+        search: {
+          optional: true,
+        },
+        filter: {
+          isIn: {
+            options: ["user", "photo", "video", "reel", "story", "hashtag"],
+            errorMessage: "invalid filter value",
+          },
+        },
+        ...limitOffsetSchema,
+      },
+      ["query"]
+    ),
+    { message: "request query parameters contains invalid fields" }
+  ),
+  errHandler,
+]

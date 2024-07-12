@@ -24,7 +24,7 @@ router.use(
 )
 
 
-router.get("/home_feed", UC.getHomeFeed)
+router.get("/home_feed", ...userValidators.validateLimitOffset, UC.getHomeFeed)
 
 router.get("/session_user", UC.getSessionUser)
 
@@ -41,15 +41,15 @@ router.patch("/update_connection_status", ...userValidators.updateConnectionStat
 router.put("/my_notifications/:notification_id/read", ...userValidators.validateIdParams, UC.readNotification)
 
 // GET posts user has been mentioned in
-router.get("/mentioned_posts", UC.getMentionedPosts)
+router.get("/mentioned_posts", ...userValidators.validateLimitOffset, UC.getMentionedPosts)
 
 // GET posts reacted to by user
-router.get("/reacted_posts", UC.getReactedPosts)
+router.get("/reacted_posts", ...userValidators.validateLimitOffset, UC.getReactedPosts)
 
 // GET posts saved by this user
-router.get("/saved_posts", UC.getSavedPosts)
+router.get("/saved_posts", ...userValidators.validateLimitOffset, UC.getSavedPosts)
 
 // GET user notifications
-router.get("/my_notifications", UC.getNotifications)
+router.get("/my_notifications", ...userValidators.getNotifications, UC.getNotifications)
 
 export default router

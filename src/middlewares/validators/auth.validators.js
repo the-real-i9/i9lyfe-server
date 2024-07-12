@@ -1,5 +1,5 @@
 import { body, checkExact, checkSchema, oneOf } from "express-validator"
-import { errHandler } from "./errorHandler"
+import { errHandler } from "./miscs"
 
 export const requestNewAccount = [
   checkExact(

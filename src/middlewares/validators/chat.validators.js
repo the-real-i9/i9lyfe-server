@@ -1,5 +1,5 @@
 import { checkExact, checkSchema, param } from "express-validator"
-import { errHandler } from "./errorHandler.js"
+import { errHandler } from "./miscs.js"
 
 export const validateIdParams = [
   param("**").isInt().withMessage("expected integer value"),
