@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 import * as AC from "../../controllers/app.controllers.js"
 import * as appValidators from "../../middlewares/validators/app.validators.js"
+import { validateLimitOffset } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()
 
@@ -29,7 +30,7 @@ router.get(
   AC.searchUsersToChat
 )
 
-router.get("/explore", ...appValidators.validateLimitOffset, AC.getExplorePosts)
+router.get("/explore", ...validateLimitOffset, AC.getExplorePosts)
 
 router.get(
   "/explore/search",
@@ -39,7 +40,7 @@ router.get(
 
 router.get(
   "/hashtags/:hashtag_name",
-  ...appValidators.validateLimitOffset,
+  ...validateLimitOffset,
   AC.getHashtagPosts
 )
 

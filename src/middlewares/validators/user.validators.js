@@ -1,23 +1,5 @@
-import { checkExact, checkSchema, param } from "express-validator"
+import { checkExact, checkSchema } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
-
-export const validateIdParams = [
-  param("*").isInt().withMessage("non-integer value"),
-  errHandler,
-]
-
-export const validateLimitOffset = [
-  checkExact(
-    checkSchema(
-      {
-        ...limitOffsetSchema
-      },
-      ["query"]
-    ),
-    { message: "request query parameters contains invalid fields" }
-  ),
-  errHandler,
-]
 
 export const editProfile = [
   checkExact(
@@ -93,11 +75,11 @@ export const getNotifications = [
             errorMessage: "invalid time period",
           },
         },
-        ...limitOffsetSchema
+        ...limitOffsetSchema,
       },
       ["query"]
     ),
-    { message: "request body contains invalid fields" }
+    { message: "request query parameters contains invalid fields" }
   ),
   errHandler,
 ]

@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 
 import * as UC from "../../controllers/user.controllers.js"
-import { validateLimitOffset } from "../../middlewares/validators/user.validators.js"
+import { validateLimitOffset } from "../../middlewares/validators/miscs.js"
 
 const router = express.Router()
 

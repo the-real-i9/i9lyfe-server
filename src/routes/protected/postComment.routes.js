@@ -8,6 +8,7 @@ import {
   uploadCommentFiles,
   uploadPostFiles,
 } from "../../middlewares/app.middlewares.js"
+import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()
 
@@ -29,30 +30,30 @@ router.use(
 
 /* ====== POST ====== */
 router.post("/new_post", ...PCV.createNewPost, uploadPostFiles, PCC.createNewPost)
-router.get("/posts/:post_id", ...PCV.validateIdParams, PCC.getPost)
-router.delete("/posts/:post_id", ...PCV.validateIdParams, PCC.deletePost)
+router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)
+router.delete("/posts/:post_id", ...validateIdParams, PCC.deletePost)
 
 /* ====== POST'S REACTION ====== */
 
 router.post(
   "/users/:target_post_owner_user_id/posts/:target_post_id/react",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToPost
 )
 router.get(
   "/posts/:post_id/reactors",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getReactorsToPost
 )
 router.get(
   "/posts/:post_id/reactors/:reaction",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getReactorsWithReactionToPost
 )
 router.delete(
   "/posts/:target_post_id/remove_reaction",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.removeReactionToPost
 )
 
@@ -60,14 +61,14 @@ router.delete(
 
 router.post(
   "/users/:target_post_owner_user_id/posts/:target_post_id/comment",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   ...PCV.commentOn,
   uploadCommentFiles,
   PCC.commentOnPost
 )
 router.post(
   "/users/:target_comment_owner_user_id/comments/:target_comment_id/comment",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   ...PCV.commentOn,
   uploadCommentFiles,
   PCC.commentOnComment
@@ -75,24 +76,24 @@ router.post(
 
 router.get(
   "/posts/:post_id/comments",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getCommentsOnPost
 )
 router.get(
   "/comments/:comment_id/comments",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getCommentsOnComment
 )
-router.get("/comments/:comment_id", ...PCV.validateIdParams, PCC.getComment)
+router.get("/comments/:comment_id", ...validateIdParams, PCC.getComment)
 
 router.delete(
   "/posts/:post_id/comments/:comment_id",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.removeCommentOnPost
 )
 router.delete(
   "/comments/:parent_comment_id/comments/:comment_id",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.removeCommentOnComment
 )
 
@@ -100,39 +101,39 @@ router.delete(
 
 router.post(
   "/users/:target_comment_owner_user_id/comments/:target_comment_id/react",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToComment
 )
 router.get(
   "/comments/:comment_id/reactors",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getReactorsToComment
 )
 router.get(
   "/comments/:comment_id/reactors/:reaction",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.getReactorsWithReactionToComment
 )
 router.delete(
   "/comments/:target_comment_id/remove_reaction",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.removeReactionToComment
 )
 
 /* ====== REPOST ====== */
 
-router.post("/posts/:post_id/repost", ...PCV.validateIdParams, PCC.createRepost)
+router.post("/posts/:post_id/repost", ...validateIdParams, PCC.createRepost)
 router.delete(
   "/posts/:post_id/unrepost",
-  ...PCV.validateIdParams,
+  ...validateIdParams,
   PCC.deleteRepost
 )
 
 /* ====== POST SAVE ====== */
 
-router.post("/posts/:post_id/save", ...PCV.validateIdParams, PCC.postSave)
-router.delete("/posts/:post_id/unsave", ...PCV.validateIdParams, PCC.postUnsave)
+router.post("/posts/:post_id/save", ...validateIdParams, PCC.postSave)
+router.delete("/posts/:post_id/unsave", ...validateIdParams, PCC.postUnsave)
 
 // GET insight data for a specific post
 

@@ -1,4 +1,4 @@
-import { body, checkExact, checkSchema, oneOf } from "express-validator"
+import { body, checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs"
 
 export const requestNewAccount = [
@@ -41,9 +41,13 @@ export const registerUser = [
     checkSchema(
       {
         username: {
+          isLength: {
+            options: { min: 3 },
+            errorMessage: "username too short"
+          },
           matches: {
-            options: /^[\w-]{3,}$/,
-            errorMessage: "invalid username format",
+            options: /^[a-zA-Z0-9][\w-]+[a-zA-Z0-9]$/,
+            errorMessage: "invalid username pattern",
           },
         },
         password: {
@@ -76,18 +80,20 @@ export const registerUser = [
 ]
 
 export const signin = [
-  oneOf(
-    [
-      body("email_or_username").isEmail(),
-      body("email_or_username").matches(/^[\w-]{3,}$/),
-    ],
-    { message: "invalid email or username pattern", errorType: "least_errored" }
-  ),
   checkExact(
     checkSchema(
       {
         email_or_username: {
           notEmpty: { errorMessage: "email or username is required" },
+          isEmail: {
+            if: (value) => value.includes("@"),
+            errorMessage: "invalid email"
+          },
+          matches: {
+            if: (value) => !value.includes("@"),
+            options: /^[a-zA-Z0-9][\w-]+[a-zA-Z0-9]$/,
+            errorMessage: "invalid username pattern"
+          }
         },
         password: {
           notEmpty: {

@@ -5,6 +5,7 @@ import dotenv from "dotenv"
 import * as CC from "../../controllers/chat.controllers.js"
 import * as chatValidators from "../../middlewares/validators/chat.validators.js"
 import { uploadMessageFiles } from "../../middlewares/app.middlewares.js"
+import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()
 
@@ -30,19 +31,19 @@ router.get("/my_conversations", CC.getMyConversations)
 
 router.delete(
   "/conversations/:conversation_id",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   CC.deleteConversation
 )
 
 router.get(
   "/conversations/:conversation_id/history",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   CC.getConversationHistory
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/send_message",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   ...chatValidators.sendMessage,
   uploadMessageFiles,
   CC.sendMessage
@@ -50,33 +51,33 @@ router.post(
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/delivered",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered
 )
 
 router.put(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/read",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   CC.ackMessageRead
 )
 
 router.post(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/react",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   ...chatValidators.reactToMessage,
   CC.reactToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id/remove_reaction",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   CC.removeReactionToMessage
 )
 
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id",
-  ...chatValidators.validateIdParams,
+  ...validateIdParams,
   CC.deleteMessage
 )
 

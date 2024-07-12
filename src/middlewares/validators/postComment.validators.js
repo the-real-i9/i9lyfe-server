@@ -1,10 +1,6 @@
-import { checkExact, checkSchema, param } from "express-validator"
+import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
-export const validateIdParams = [
-  param("*").isInt().withMessage("expected integer value"),
-  errHandler,
-]
 
 export const createNewPost = [
   checkExact(
@@ -73,7 +69,7 @@ export const reactTo = [
           notEmpty: true,
           custom: {
             options: (value) => value.codePointAt() >= 0x1f600 && value.codePointAt() <= 0x1faff,
-            errorMessage: "invalid emoji"
+            errorMessage: "invalid reaction"
           }
         },
       },

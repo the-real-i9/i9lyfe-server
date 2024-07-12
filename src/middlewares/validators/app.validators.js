@@ -1,27 +1,14 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
 
-export const validateLimitOffset = [
-  checkExact(
-    checkSchema(
-      {
-        ...limitOffsetSchema,
-      },
-      ["query"]
-    ),
-    { message: "request query parameters contains invalid fields" }
-  ),
-  errHandler,
-]
-
 export const searchUsersToChat = [
   checkExact(
     checkSchema(
       {
         search: {
           matches: {
-            options: /^[\w-]{3,}$/,
-            errorMessage: "invalid username format",
+            options: /^[a-zA-Z0-9][\w-]+[a-zA-Z0-9]$/,
+            errorMessage: "invalid username pattern",
           },
         },
         ...limitOffsetSchema,
