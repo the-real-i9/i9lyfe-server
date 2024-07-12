@@ -1,22 +1,24 @@
-import { test, xtest, expect } from "@jest/globals"
+import { it, xtest, expect } from "@jest/globals"
 import axios from "axios"
 import dotenv from "dotenv"
 
 dotenv.config()
 
-const prefixPath = "http://localhost:5000/api/user_public"
+import app from "../../../src/app.js"
+import supertest from "supertest"
 
-xtest("get user profile", async () => {
-  const res = await axios.get(prefixPath + "/dollyp")
+const prefixPath = "/api/user_public"
 
-  expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("user_id")
+it("should return user profile data", async () => {
+  const res = await supertest(app)
+  .get(prefixPath + "/johnny")
+  
+  expect(res.body).toHaveProperty("user_id")
 
-  console.log(res.data)
-})
+}, 5000)
 
-xtest("get user followers", async () => {
-  const res = await axios.get(prefixPath + "/dollyp/followers")
+xtest("should return user followers", async () => {
+  const res = await axios.get(prefixPath + "/johnny/followers")
 
   expect(res.status).toBe(200)
   expect(res.data).toBeTruthy()

@@ -17,6 +17,24 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: i9l_user_profile_t; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.i9l_user_profile_t AS (
+	user_id integer,
+	username character varying,
+	name character varying,
+	bio character varying,
+	profile_pic_url character varying,
+	followers_count integer,
+	following_count integer,
+	client_follows boolean
+);
+
+
+ALTER TYPE public.i9l_user_profile_t OWNER TO postgres;
+
+--
 -- Name: i9l_user_t; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -1497,14 +1515,14 @@ ALTER FUNCTION public.get_user_posts(in_username character varying, in_limit int
 -- Name: get_user_profile(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_profile(in_username character varying, client_user_id integer) RETURNS TABLE(user_id integer, username character varying, name character varying, bio character varying, profile_pic_url character varying, followers_count integer, following_count integer, client_follows boolean)
+CREATE FUNCTION public.get_user_profile(in_username character varying, client_user_id integer) RETURNS SETOF public.i9l_user_profile_t
     LANGUAGE plpgsql
     AS $$
 BEGIN
   RETURN QUERY 
-	SELECT i9l_user.id, i9l_user.username, i9l_user.name, i9l_user.bio, i9l_user.profile_pic_url, 
-      COUNT(followee.id), 
-      COUNT(follower.id),
+	SELECT i9l_user.id, username, name, bio, profile_pic_url, 
+      COUNT(followee.id)::int, 
+      COUNT(follower.id)::int,
       CASE
         WHEN client_follows.id IS NULL THEN false
         ELSE true
