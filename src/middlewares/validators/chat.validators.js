@@ -2,7 +2,7 @@ import { checkExact, checkSchema, param } from "express-validator"
 import { errHandler } from "./miscs.js"
 
 export const validateIdParams = [
-  param("**").isInt().withMessage("expected integer value"),
+  param("*").isInt().withMessage("expected integer value"),
   errHandler,
 ]
 
@@ -54,7 +54,11 @@ export const createConversation = [
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isArray: { options: { min: 1 } },
+          isArray: {
+            options: { min: 1, max: 10 * 1024 ** 2 },
+            errorMessage:
+              "value must me an array of uint8 integers with a maximum of 10mb",
+          },
         },
         "init_message.props.duration": {
           custom: {
@@ -144,7 +148,11 @@ export const sendMessage = [
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isArray: { options: { min: 1 } },
+          isArray: {
+            options: { min: 1, max: 10 * 1024 ** 2 },
+            errorMessage:
+              "value must me an array of uint8 integers with a maximum of 10mb",
+          },
         },
         "msg_content.props.duration": {
           custom: {
@@ -223,7 +231,10 @@ export const reactToMessage = [
       {
         reaction: {
           notEmpty: true,
-          isString: true,
+          custom: {
+            options: (value) => value.codePointAt() >= 0x1f600 && value.codePointAt() <= 0x1faff,
+            errorMessage: "invalid emoji"
+          }
         },
       },
       ["body"]

@@ -39,8 +39,12 @@ export const searchAndFilter = [
       {
         search: {
           optional: true,
+          notEmpty: {
+            errorMessage: "what do you wanna search"
+          },
         },
         filter: {
+          optional: true,
           isIn: {
             options: ["user", "photo", "video", "reel", "story", "hashtag"],
             errorMessage: "invalid filter value",

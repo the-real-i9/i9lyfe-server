@@ -2,7 +2,7 @@ import { checkExact, checkSchema, param } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
 
 export const validateIdParams = [
-  param("**").isInt().withMessage("non-integer value"),
+  param("*").isInt().withMessage("non-integer value"),
   errHandler,
 ]
 

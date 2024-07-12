@@ -10,7 +10,7 @@ import { CommentService as Comment } from "../services/comment.service.js"
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const createNewPostController = async (req, res) => {
+export const createNewPost = async (req, res) => {
   // Note: You have to accept binary data(s) in the request body, upload them to a CDN, and receive their corresponding URLS in order
   try {
     const { media_urls, type, description } = req.body
@@ -37,7 +37,7 @@ export const createNewPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const reactToPostController = async (req, res) => {
+export const reactToPost = async (req, res) => {
   try {
     const { target_post_id, target_post_owner_user_id } = req.params
     const { reaction } = req.body
@@ -66,7 +66,7 @@ export const reactToPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const commentOnPostController = async (req, res) => {
+export const commentOnPost = async (req, res) => {
   try {
     const { target_post_id, target_post_owner_user_id } = req.params
     const {
@@ -98,7 +98,7 @@ export const commentOnPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const reactToCommentController = async (req, res) => {
+export const reactToComment = async (req, res) => {
   try {
     const { target_comment_id, target_comment_owner_user_id } = req.params
     const { reaction } = req.body
@@ -125,7 +125,7 @@ export const reactToCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const commentOnCommentController = async (req, res) => {
+export const commentOnComment = async (req, res) => {
   try {
     const { target_comment_id, target_comment_owner_user_id } = req.params
     const {
@@ -155,7 +155,7 @@ export const commentOnCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const createRepostController = async (req, res) => {
+export const createRepost = async (req, res) => {
   try {
     const { post_id } = req.params
     const { client_user_id } = req.auth
@@ -173,7 +173,7 @@ export const createRepostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const postSaveController = async (req, res) => {
+export const postSave = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -192,7 +192,7 @@ export const postSaveController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const postUnsaveController = async (req, res) => {
+export const postUnsave = async (req, res) => {
   try {
     const { post_id } = req.params
     const { client_user_id } = req.auth
@@ -212,7 +212,7 @@ export const postUnsaveController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getPostController = async (req, res) => {
+export const getPost = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -231,7 +231,7 @@ export const getPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getCommentsOnPostController = async (req, res) => {
+export const getCommentsOnPost = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -257,7 +257,7 @@ export const getCommentsOnPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getCommentController = async (req, res) => {
+export const getComment = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -276,7 +276,7 @@ export const getCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReactorsToPostController = async (req, res) => {
+export const getReactorsToPost = async (req, res) => {
   try {
     const { post_id } = req.params
 
@@ -302,7 +302,7 @@ export const getReactorsToPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReactorsWithReactionToPostController = async (req, res) => {
+export const getReactorsWithReactionToPost = async (req, res) => {
   try {
     const { post_id, reaction } = req.params
 
@@ -329,7 +329,7 @@ export const getReactorsWithReactionToPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getCommentsOnCommentController = async (req, res) => {
+export const getCommentsOnComment = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -355,7 +355,7 @@ export const getCommentsOnCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReactorsToCommentController = async (req, res) => {
+export const getReactorsToComment = async (req, res) => {
   try {
     const { comment_id } = req.params
 
@@ -381,7 +381,7 @@ export const getReactorsToCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const getReactorsWithReactionToCommentController = async (req, res) => {
+export const getReactorsWithReactionToComment = async (req, res) => {
   try {
     const { comment_id, reaction } = req.params
 
@@ -410,7 +410,7 @@ export const getReactorsWithReactionToCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const deletePostController = async (req, res) => {
+export const deletePost = async (req, res) => {
   try {
     const { post_id } = req.params
     const { client_user_id } = req.auth
@@ -428,7 +428,7 @@ export const deletePostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const removeReactionToPostController = async (req, res) => {
+export const removeReactionToPost = async (req, res) => {
   try {
     const { target_post_id } = req.params
     const { client_user_id } = req.auth
@@ -446,7 +446,7 @@ export const removeReactionToPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const removeCommentOnPostController = async (req, res) => {
+export const removeCommentOnPost = async (req, res) => {
   try {
     const { post_id, comment_id } = req.params
     const { client_user_id } = req.auth
@@ -468,7 +468,7 @@ export const removeCommentOnPostController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const removeCommentOnCommentController = async (req, res) => {
+export const removeCommentOnComment = async (req, res) => {
   try {
     const { parent_comment_id, comment_id } = req.params
     const { client_user_id } = req.auth
@@ -490,7 +490,7 @@ export const removeCommentOnCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const removeReactionToCommentController = async (req, res) => {
+export const removeReactionToComment = async (req, res) => {
   try {
     const { target_comment_id } = req.params
     const { client_user_id } = req.auth
@@ -508,7 +508,7 @@ export const removeReactionToCommentController = async (req, res) => {
  * @param {ExpressRequest} req
  * @param {ExpressResponse} res
  */
-export const deleteRepostController = async (req, res) => {
+export const deleteRepost = async (req, res) => {
   try {
     const { post_id } = req.params
     const { client_user_id } = req.auth
