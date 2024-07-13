@@ -252,11 +252,11 @@ export class User {
    */
   static async getNotifications({ client_user_id, from, limit, offset }) {
     const query = {
-      text: "SELECT user_notifications FROM get_user_notifications($1, $2, $3, $4)",
+      text: "SELECT * FROM get_user_notifications($1, $2, $3, $4)",
       values: [client_user_id, from, limit, offset],
     }
 
-    return (await dbQuery(query)).rows[0].user_notifications
+    return (await dbQuery(query)).rows
   }
 
   static async getUnreadNotificationsCount(client_user_id) {

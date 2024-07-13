@@ -1,5 +1,4 @@
-import { beforeAll, it, xtest, expect } from "@jest/globals"
-import axios from "axios"
+import { beforeAll, it, expect } from "@jest/globals"
 import dotenv from "dotenv"
 import supertest from "supertest"
 
@@ -32,7 +31,7 @@ beforeAll(async () => {
   await signUserIn("butcher@gmail.com")
 })
 
-it("should get session user", async () => {
+it("should get the user session info via session jwt", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/session_user")
     .set("Authorization", getJwt("johnny"))
@@ -40,7 +39,7 @@ it("should get session user", async () => {
   expect(res.body).toHaveProperty("sessionUser")
 })
 
-it("should follow user", async () => {
+it("should make client follow the user", async () => {
   const res = await supertest(app)
     .post(prefixPath + "/users/12/follow")
     .set("Authorization", getJwt("johnny"))
@@ -48,7 +47,7 @@ it("should follow user", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should unfollow user", async () => {
+it("should make client unfollow the user", async () => {
   const res = await supertest(app)
     .delete(prefixPath + "/users/12/unfollow")
     .set("Authorization", getJwt("johnny"))
@@ -56,7 +55,7 @@ it("should unfollow user", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should edit user profile", async () => {
+it("should edit client's profile", async () => {
   const data = { name: "Samuel Ayomide" }
 
   const res = await supertest(app)
@@ -67,7 +66,7 @@ it("should edit user profile", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("update connection status", async () => {
+it("should update client's connection status", async () => {
   const data = {
     connection_status: "offline",
     last_active: new Date(),
@@ -81,55 +80,42 @@ it("update connection status", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should get home feed posts", async () => {
+it("should return client's home feed posts", async () => {
   const res = await supertest(app)
-  .get(prefixPath + "/home_feed")
-  .set("Authorization", getJwt("johnny"))
+    .get(prefixPath + "/home_feed")
+    .set("Authorization", getJwt("johnny"))
 
-  expect(res.data).toBeTruthy()
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })
 
-xtest("get posts mentioned in", async () => {
-  const res = await axios.get(
-    prefixPath + "/mentioned_posts",
-    axiosConfig(dollypJwt)
-  )
+it("should return posts client is mentioned in", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/mentioned_posts")
+    .set("Authorization", getJwt("johnny"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })
 
-xtest("get posts reacted to", async () => {
-  const res = await axios.get(
-    prefixPath + "/reacted_posts",
-    axiosConfig(dollypJwt)
-  )
+it("should return posts client reacted to", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/reacted_posts")
+    .set("Authorization", getJwt("johnny"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })
 
-xtest("get posts saved", async () => {
-  const res = await axios.get(
-    prefixPath + "/saved_posts",
-    axiosConfig(dollypJwt)
-  )
+it("should return posts saved by client", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/saved_posts")
+    .set("Authorization", getJwt("johnny"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })
 
-xtest("get my notifications", async () => {
-  const res = await axios.get(
-    prefixPath + "/my_notifications?from=2024-04-30",
-    axiosConfig(i9xJwt)
-  )
+it("should return client's notifications", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/my_notifications?from=2024-04-30")
+    .set("Authorization", getJwt("johnny"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })

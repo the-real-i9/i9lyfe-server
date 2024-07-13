@@ -73,8 +73,8 @@ export const getNotifications = [
               "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
             bail: true,
           },
-          isBefore: {
-            options: new Date(),
+          custom: {
+            options: (value) => new Date(value) <= new Date(),
             errorMessage: "invalid time period",
           },
         },
