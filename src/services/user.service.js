@@ -87,7 +87,7 @@ export class UserService {
   static async getNotifications({ client_user_id, from, limit, offset }) {
     return await User.getNotifications({
       client_user_id,
-      from,
+      from: new Date(from),
       limit,
       offset,
     })

@@ -55,7 +55,7 @@ export const reactToPost = async (req, res) => {
 
     // asynchronously send a reaction notification with the NotificationService via WebSockets
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -114,7 +114,7 @@ export const reactToComment = async (req, res) => {
       reaction_code_point,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -162,7 +162,7 @@ export const createRepost = async (req, res) => {
 
     await Post.repost(post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -181,7 +181,7 @@ export const postSave = async (req, res) => {
 
     await Post.save(post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -199,7 +199,7 @@ export const postUnsave = async (req, res) => {
 
     await Post.unsave(post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -417,7 +417,7 @@ export const deletePost = async (req, res) => {
 
     await Post.delete(post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -435,7 +435,7 @@ export const removeReactionToPost = async (req, res) => {
 
     await Post.removeReaction(target_post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -457,7 +457,7 @@ export const removeCommentOnPost = async (req, res) => {
       client_user_id,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -479,7 +479,7 @@ export const removeCommentOnComment = async (req, res) => {
       client_user_id,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -497,7 +497,7 @@ export const removeReactionToComment = async (req, res) => {
 
     await Comment.removeReaction(target_comment_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -515,7 +515,7 @@ export const deleteRepost = async (req, res) => {
 
     await Post.unrepost(post_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

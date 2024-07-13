@@ -46,7 +46,7 @@ export const deleteConversation = async (req, res) => {
 
     await ChatService.deleteMyConversation(client_user_id, conversation_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -181,7 +181,7 @@ export const removeReactionToMessage = async (req, res) => {
       message_id,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -207,7 +207,7 @@ export const deleteMessage = async (req, res) => {
       delete_for,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

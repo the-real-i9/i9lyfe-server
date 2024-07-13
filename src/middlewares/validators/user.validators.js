@@ -1,16 +1,13 @@
-import { checkExact, checkSchema } from "express-validator"
+import { body, checkExact, checkSchema } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
 
 export const editProfile = [
+  body()
+    .custom((value) => Object.keys(value).length > 0)
+    .withMessage("must contain at least one field to update"),
   checkExact(
     checkSchema(
       {
-        "": {
-          custom: {
-            options: (value) => !!Object.keys(value).length,
-            errorMessage: "must contain at least one field to update",
-          },
-        },
         name: {
           optional: true,
           notEmpty: true,
@@ -20,7 +17,6 @@ export const editProfile = [
           isDate: {
             errorMessage:
               "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
-            bail: true,
           },
         },
         bio: {
@@ -52,13 +48,10 @@ export const updateConnectionStatus = [
         last_active: {
           custom: {
             options: (value, { req }) =>
-              req.body.connection_status === "offline",
-            errorMessage: "should only be set if connection status is offline",
-            bail: true,
-          },
-          isDate: {
+              req.body.connection_status === "offline" &&
+              !isNaN(Date.parse(value)),
             errorMessage:
-              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
+              "a valid datetime that should only be set if connection status is 'offline'",
           },
         },
       },

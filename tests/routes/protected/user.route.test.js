@@ -1,12 +1,9 @@
-import { it, xtest, expect } from "@jest/globals"
-import fs from "fs"
+import { beforeAll, it, xtest, expect } from "@jest/globals"
 import axios from "axios"
 import dotenv from "dotenv"
 import supertest from "supertest"
 
 import app from "../../../src/app.js"
-import os from "os"
-import path from "path"
 
 dotenv.config()
 
@@ -15,16 +12,25 @@ const prefixPath = "/api/user_private"
 const userJwts = {}
 
 function getJwt(username) {
-  if (!userJwts[username]) {
-    userJwts[username] =
-      "Bearer " +
-      fs.readFileSync(path.join(os.tmpdir(), "i9lyfe", `${username}.txt`), {
-        encoding: "utf8",
-      })
+  return "Bearer " + userJwts[username]
+}
+
+beforeAll(async () => {
+  async function signUserIn(email_or_username) {
+    const body = {
+      email_or_username,
+      password: "fhunmytor",
+    }
+    const res = await supertest(app).post("/api/auth/signin").send(body)
+
+    expect(res.body).toHaveProperty("jwt")
+
+    userJwts[res.body.user.username] = res.body.jwt
   }
 
-  return userJwts[username]
-}
+  await signUserIn("johnny@gmail.com")
+  await signUserIn("butcher@gmail.com")
+})
 
 it("should get session user", async () => {
   const res = await supertest(app)
@@ -39,7 +45,7 @@ it("should follow user", async () => {
     .post(prefixPath + "/users/12/follow")
     .set("Authorization", getJwt("johnny"))
 
-    expect(res.body).not.toHaveProperty("error")
+  expect(res.body).toHaveProperty("msg")
 })
 
 it("should unfollow user", async () => {
@@ -47,10 +53,10 @@ it("should unfollow user", async () => {
     .delete(prefixPath + "/users/12/unfollow")
     .set("Authorization", getJwt("johnny"))
 
-    expect(res.body).not.toHaveProperty("error")
+  expect(res.body).toHaveProperty("msg")
 })
 
-it("should edit profile", async () => {
+it("should edit user profile", async () => {
   const data = { name: "Samuel Ayomide" }
 
   const res = await supertest(app)
@@ -58,7 +64,7 @@ it("should edit profile", async () => {
     .set("Authorization", getJwt("johnny"))
     .send(data)
 
-  expect(res.body).not.toHaveProperty("error")
+  expect(res.body).toHaveProperty("msg")
 })
 
 it("update connection status", async () => {
@@ -72,13 +78,14 @@ it("update connection status", async () => {
     .set("Authorization", getJwt("johnny"))
     .send(data)
 
-    expect(res.body).not.toHaveProperty("error")
+  expect(res.body).toHaveProperty("msg")
 })
 
-xtest("get home feed posts", async () => {
-  const res = await axios.get(prefixPath + "/home_feed", axiosConfig(i9xJwt))
+it("should get home feed posts", async () => {
+  const res = await supertest(app)
+  .get(prefixPath + "/home_feed")
+  .set("Authorization", getJwt("johnny"))
 
-  expect(res.status).toBe(200)
   expect(res.data).toBeTruthy()
   console.log(res.data)
 })

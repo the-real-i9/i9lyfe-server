@@ -1,4 +1,4 @@
-import { test, xtest, expect } from "@jest/globals"
+import { xtest, expect } from "@jest/globals"
 import axios from "axios"
 import dotenv from "dotenv"
 

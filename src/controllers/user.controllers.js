@@ -21,7 +21,7 @@ export const followUser = async (req, res) => {
 
     await UserService.follow(client_user_id, to_follow_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -36,7 +36,7 @@ export const unfollowUser = async (req, res) => {
 
     await UserService.unfollow(client_user_id, followee_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -51,7 +51,7 @@ export const editProfile = async (req, res) => {
 
     await UserService.editProfile(client_user_id, Object.entries(updateDict))
 
-    res.status(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -70,7 +70,7 @@ export const updateConnectionStatus = async (req, res) => {
       last_active,
     })
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -85,7 +85,7 @@ export const readNotification = async (req, res) => {
 
     await UserService.readNotification(notification_id, client_user_id)
 
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -95,7 +95,7 @@ export const readNotification = async (req, res) => {
 export const uploadProfilePicture = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
-    res.sendStatus(200)
+    res.status(200).send({ msg: "operation successful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -264,7 +264,7 @@ export const getNotifications = async (req, res) => {
 
     const notifications = await UserService.getNotifications({
       client_user_id,
-      from: new Date(from),
+      from,
       limit,
       offset,
     })

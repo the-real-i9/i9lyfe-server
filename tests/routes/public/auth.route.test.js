@@ -1,7 +1,4 @@
 import { it, expect } from "@jest/globals"
-import path from "path"
-import fs from "fs"
-import os from "os"
 import dotenv from "dotenv"
 import supertest from "supertest"
 
@@ -56,7 +53,7 @@ it("should signup user", async () => {
       username: "i9x",
       password: "fhunmytor",
       name: "Samuel Oluwarinola",
-      birthday: new Date(2000, 10, 7),
+      birthday: "2000-10-07",
       bio: "#nerdIsLife",
     }
 
@@ -72,8 +69,14 @@ it("should signup user", async () => {
       text: `DELETE FROM i9l_user WHERE email = $1`,
       values: [email],
     })
+    dbQuery({
+      text: `
+    DELETE FROM ongoing_registration 
+    WHERE sess -> 'email_verification_state' ->> 'email' = $1`,
+      values: [email],
+    })
   }
-}, 5000)
+})
 
 it("should signin user", async () => {
   const email_or_username = "butcher@gmail.com"
@@ -87,10 +90,4 @@ it("should signin user", async () => {
     .send(body)
 
   expect(res.body).toHaveProperty("jwt")
-
-  fs.mkdirSync(path.join(os.tmpdir(), "i9lyfe"), { recursive: true })
-  fs.writeFileSync(
-    path.join(os.tmpdir(), "i9lyfe", `${res.body.user.username}.txt`),
-    res.body.jwt
-  )
-}, 5000)
+})
