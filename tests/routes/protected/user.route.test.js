@@ -1,74 +1,78 @@
-import { test, xtest, expect } from "@jest/globals"
+import { it, xtest, expect } from "@jest/globals"
+import fs from "fs"
 import axios from "axios"
 import dotenv from "dotenv"
+import supertest from "supertest"
+
+import app from "../../../src/app.js"
+import os from "os"
+import path from "path"
 
 dotenv.config()
 
-const prefixPath = "http://localhost:5000/api/user_private"
-const i9xJwt =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MSwiY2xpZW50X3VzZXJuYW1lIjoiaTl4IiwiaWF0IjoxNzE1MTE5NTM3fQ.SgMAU2aK2A1FABBxOZDkJtTTiDGKSyhHb9516Fo0PsY"
+const prefixPath = "/api/user_private"
 
-const dollypJwt =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfdXNlcl9pZCI6MiwiY2xpZW50X3VzZXJuYW1lIjoiZG9sbHlwIiwiaWF0IjoxNzE1MTE5NjAzfQ.3UGpL3sDN5akB-zqpHfsq5qNJrY2snVxtRItESaADrc"
+const userJwts = {}
 
-const axiosConfig = (authToken) => ({
-  headers: {
-    Authorization: `Bearer ${authToken}`,
-  },
-})
-
-xtest("get session user", async () => {
-  const res = await axios.get(prefixPath + "/session_user", axiosConfig(i9xJwt))
-
-  expect(res.status).toBe(200)
-  expect(res.data).toHaveProperty("sessionUser")
-  console.log(res.data.sessionUser)
-})
-
-xtest("follow user", async () => {
-  const res = await axios.post(
-    prefixPath + "/users/2/follow",
-    null,
-    axiosConfig(i9xJwt)
-  )
-
-  expect(res.status).toBe(200)
-})
-
-xtest("unfollow user", async () => {
-  const res = await axios.delete(
-    prefixPath + "/users/1/unfollow",
-    axiosConfig(dollypJwt)
-  )
-
-  expect(res.status).toBe(200)
-})
-
-xtest("edit profile", async () => {
-  const reqData = { name: "Samuel Ayomide" }
-
-  const res = await axios.patch(
-    prefixPath + "/edit_my_profile",
-    reqData,
-    axiosConfig(i9xJwt)
-  )
-
-  expect(res.status).toBe(200)
-})
-
-xtest("update connection status", async () => {
-  const reqData = {
-    connection_status: "online",
-    last_active: null,
+function getJwt(username) {
+  if (!userJwts[username]) {
+    userJwts[username] =
+      "Bearer " +
+      fs.readFileSync(path.join(os.tmpdir(), "i9lyfe", `${username}.txt`), {
+        encoding: "utf8",
+      })
   }
 
-  const res = await axios.patch(
-    prefixPath + "/update_my_connection_status",
-    reqData,
-    axiosConfig(i9xJwt)
-  )
+  return userJwts[username]
+}
 
-  expect(res.status).toBe(200)
+it("should get session user", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/session_user")
+    .set("Authorization", getJwt("johnny"))
+
+  expect(res.body).toHaveProperty("sessionUser")
+})
+
+it("should follow user", async () => {
+  const res = await supertest(app)
+    .post(prefixPath + "/users/12/follow")
+    .set("Authorization", getJwt("johnny"))
+
+    expect(res.body).not.toHaveProperty("error")
+})
+
+it("should unfollow user", async () => {
+  const res = await supertest(app)
+    .delete(prefixPath + "/users/12/unfollow")
+    .set("Authorization", getJwt("johnny"))
+
+    expect(res.body).not.toHaveProperty("error")
+})
+
+it("should edit profile", async () => {
+  const data = { name: "Samuel Ayomide" }
+
+  const res = await supertest(app)
+    .patch(prefixPath + "/edit_profile")
+    .set("Authorization", getJwt("johnny"))
+    .send(data)
+
+  expect(res.body).not.toHaveProperty("error")
+})
+
+it("update connection status", async () => {
+  const data = {
+    connection_status: "offline",
+    last_active: new Date(),
+  }
+
+  const res = await supertest(app)
+    .patch(prefixPath + "/update_connection_status")
+    .set("Authorization", getJwt("johnny"))
+    .send(data)
+
+    expect(res.body).not.toHaveProperty("error")
 })
 
 xtest("get home feed posts", async () => {

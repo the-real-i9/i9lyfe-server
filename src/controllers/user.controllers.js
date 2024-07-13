@@ -264,7 +264,7 @@ export const getNotifications = async (req, res) => {
 
     const notifications = await UserService.getNotifications({
       client_user_id,
-      from,
+      from: new Date(from),
       limit,
       offset,
     })

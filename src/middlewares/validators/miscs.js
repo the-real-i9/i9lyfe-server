@@ -18,10 +18,13 @@ export const validateIdParams = [
           options: { min: 0 },
           errorMessage: "expected an integer value greater than -1",
         },
-        custom: {
+        isLength: {
           if: (value, { path }) => path === "reaction",
-          options: (value) =>
-            value.codePointAt() >= 0x1f600 && value.codePointAt() <= 0x1faff,
+          options: { min: 2, max: 2 },
+          errorMessage: "invalid reaction",
+        },
+        isSurrogatePair: {
+          if: (value, { path }) => path === "reaction",
           errorMessage: "invalid reaction",
         },
       },
@@ -52,7 +55,7 @@ export const validateLimitOffset = [
   checkExact(
     checkSchema(
       {
-        ...limitOffsetSchema
+        ...limitOffsetSchema,
       },
       ["query"]
     ),

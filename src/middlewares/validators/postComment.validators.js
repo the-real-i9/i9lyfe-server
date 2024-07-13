@@ -1,7 +1,6 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
-
 export const createNewPost = [
   checkExact(
     checkSchema(
@@ -22,7 +21,7 @@ export const createNewPost = [
         type: {
           notEmpty: true,
           isIn: {
-            options: ["photo", "video", "reel", "story"],
+            options: [["photo", "video", "reel", "story"]],
             errorMessage: "invalid post type",
           },
         },
@@ -67,10 +66,13 @@ export const reactTo = [
       {
         reaction: {
           notEmpty: true,
-          custom: {
-            options: (value) => value.codePointAt() >= 0x1f600 && value.codePointAt() <= 0x1faff,
-            errorMessage: "invalid reaction"
-          }
+          isLength: {
+            options: { min: 2, max: 2 },
+            errorMessage: "invalid reaction",
+          },
+          isSurrogatePair: {
+            errorMessage: "invalid reaction",
+          },
         },
       },
       ["body"]

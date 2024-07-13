@@ -1,7 +1,6 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
-
 export const createConversation = [
   checkExact(
     checkSchema(
@@ -26,7 +25,7 @@ export const createConversation = [
         },
         "init_message.type": {
           isIn: {
-            options: ["text", "voice", "image", "audio", "video", "file"],
+            options: [["text", "voice", "image", "audio", "video", "file"]],
             errorMessage: "invalid message type",
           },
         },
@@ -120,7 +119,7 @@ export const sendMessage = [
         },
         "msg_content.type": {
           isIn: {
-            options: ["text", "voice", "image", "audio", "video", "file"],
+            options: [["text", "voice", "image", "audio", "video", "file"]],
             errorMessage: "invalid message type",
           },
         },
@@ -208,9 +207,9 @@ export const ackMessageDelivered = [
       {
         delivery_time: {
           notEmpty: true,
-          custom: {
-            options: (value) => !isNaN(Date.parse(value)),
-            errorMessage: "invalid date",
+          isDate: {
+            errorMessage:
+              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
           },
         },
       },
@@ -227,10 +226,13 @@ export const reactToMessage = [
       {
         reaction: {
           notEmpty: true,
-          custom: {
-            options: (value) => value.codePointAt() >= 0x1f600 && value.codePointAt() <= 0x1faff,
-            errorMessage: "invalid reaction"
-          }
+          isLength: {
+            options: { min: 2, max: 2 },
+            errorMessage: "invalid reaction",
+          },
+          isSurrogatePair: {
+            errorMessage: "invalid reaction",
+          },
         },
       },
       ["body"]

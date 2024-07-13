@@ -7,7 +7,7 @@ export const editProfile = [
       {
         "": {
           custom: {
-            options: (value) => !Object.keys(value).length,
+            options: (value) => !!Object.keys(value).length,
             errorMessage: "must contain at least one field to update",
           },
         },
@@ -17,9 +17,9 @@ export const editProfile = [
         },
         birthday: {
           optional: true,
-          custom: {
-            options: (value) => !isNaN(Date.parse(value)),
-            errorMessage: "invalid date",
+          isDate: {
+            errorMessage:
+              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
             bail: true,
           },
         },
@@ -45,7 +45,7 @@ export const updateConnectionStatus = [
       {
         connection_status: {
           isIn: {
-            options: ["online", "offline"],
+            options: [["online", "offline"]],
             errorMessage: "value must be either 'online' or 'offline'",
           },
         },
@@ -56,11 +56,9 @@ export const updateConnectionStatus = [
             errorMessage: "should only be set if connection status is offline",
             bail: true,
           },
-          // eslint-disable-next-line no-dupe-keys
-          custom: {
-            options: (value) => !isNaN(Date.parse(value)),
-            errorMessage: "invalid date",
-            bail: true,
+          isDate: {
+            errorMessage:
+              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
           },
         },
       },
@@ -77,9 +75,9 @@ export const getNotifications = [
       {
         from: {
           notEmpty: true,
-          custom: {
-            options: (value) => !isNaN(Date.parse(value)),
-            errorMessage: "invalid date",
+          isDate: {
+            errorMessage:
+              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
             bail: true,
           },
           isBefore: {

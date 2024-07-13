@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "type": "module",
   "scripts": {
-    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules npx jest --testTimeout=5000 --detectOpenHandles",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules npx jest --detectOpenHandles",
     "start": "node ./src/index.js",
     "dev": "nodemon ./src/index.js"
   },

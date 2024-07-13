@@ -33,7 +33,7 @@ export const searchAndFilter = [
         filter: {
           optional: true,
           isIn: {
-            options: ["user", "photo", "video", "reel", "story", "hashtag"],
+            options: [["user", "photo", "video", "reel", "story", "hashtag"]],
             errorMessage: "invalid filter value",
           },
         },

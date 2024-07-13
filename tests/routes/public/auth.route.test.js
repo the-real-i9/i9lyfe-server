@@ -1,11 +1,14 @@
 import { it, expect } from "@jest/globals"
+import path from "path"
+import fs from "fs"
+import os from "os"
 import dotenv from "dotenv"
-import { dbQuery } from "../../../src/models/db.js"
 import supertest from "supertest"
 
-dotenv.config()
-
+import { dbQuery } from "../../../src/models/db.js"
 import app from "../../../src/app.js"
+
+dotenv.config()
 
 const prefixPath = "/api/auth"
 
@@ -43,7 +46,10 @@ it("should signup user", async () => {
       .set("Cookie", [signupCookie])
       .send(step2Body)
 
-    expect(step2Res.body).toHaveProperty("msg", `Your email ${email} has been verified!`)
+    expect(step2Res.body).toHaveProperty(
+      "msg",
+      `Your email ${email} has been verified!`
+    )
 
     // step3
     const step3Body = {
@@ -70,15 +76,21 @@ it("should signup user", async () => {
 }, 5000)
 
 it("should signin user", async () => {
-  const email_or_username = "johnny@gmail.com"
+  const email_or_username = "butcher@gmail.com"
 
   const body = {
     email_or_username,
     password: "fhunmytor",
   }
   const res = await supertest(app)
-  .post(prefixPath + "/signin")
-  .send(body)
+    .post(prefixPath + "/signin")
+    .send(body)
 
   expect(res.body).toHaveProperty("jwt")
+
+  fs.mkdirSync(path.join(os.tmpdir(), "i9lyfe"), { recursive: true })
+  fs.writeFileSync(
+    path.join(os.tmpdir(), "i9lyfe", `${res.body.user.username}.txt`),
+    res.body.jwt
+  )
 }, 5000)

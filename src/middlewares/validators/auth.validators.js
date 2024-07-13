@@ -63,9 +63,8 @@ export const registerUser = [
         },
         birthday: {
           notEmpty: true,
-          custom: {
-            options: (value) => !isNaN(Date.parse(value)),
-            errorMessage: "invalid date",
+          isDate: {
+            errorMessage: "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
           },
         },
         bio: {
