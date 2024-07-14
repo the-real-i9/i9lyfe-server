@@ -1,13 +1,17 @@
 import { checkExact, checkSchema, validationResult } from "express-validator"
 
 export const errHandler = (req, res, next) => {
-  const result = validationResult(req)
-  if (!result.isEmpty()) {
-    console.log(result.array)
-    return res.status(422).send({ error: result.mapped() })
-  }
+  try {
+    const result = validationResult(req)
+    if (!result.isEmpty()) {
+      return res.status(422).send({ error: result.mapped() })
+    }
 
-  return next()
+    return next()
+  } catch (error) {
+    console.error(error)
+    return res.sendStatus(500)
+  }
 }
 
 export const validateIdParams = [

@@ -16,11 +16,11 @@ function getJwt(username) {
 
 beforeAll(async () => {
   async function signUserIn(email_or_username) {
-    const body = {
+    const data = {
       email_or_username,
       password: "fhunmytor",
     }
-    const res = await supertest(app).post("/api/auth/signin").send(body)
+    const res = await supertest(app).post("/api/auth/signin").send(data)
 
     expect(res.body).toHaveProperty("jwt")
 
@@ -28,9 +28,9 @@ beforeAll(async () => {
   }
 
   await signUserIn("johnny@gmail.com")
-  await signUserIn("butcher@gmail.com")
+  /* await signUserIn("butcher@gmail.com")
   await signUserIn("annak@gmail.com")
-  await signUserIn("annie_star@gmail.com")
+  await signUserIn("annie_star@gmail.com") */
 })
 
 it("should get the user session info via session jwt", async () => {

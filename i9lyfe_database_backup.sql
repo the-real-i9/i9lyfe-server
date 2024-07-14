@@ -452,7 +452,10 @@ BEGIN
   FOREACH mention_username IN ARRAY mentions
   LOOP
 	SELECT id INTO ment_user_id FROM i9l_user WHERE username = mention_username;
-	
+
+    -- skip if mentioned user is not found
+	CONTINUE WHEN ment_user_id is null;
+
 	-- create mentions
     INSERT INTO pc_mention (post_id, user_id)
 	VALUES (ret_post_id, ment_user_id);
@@ -472,12 +475,15 @@ BEGIN
 	));
   END LOOP;
   
+  
   -- create hashtags
+  
   FOREACH hashtag_n IN ARRAY hashtags
   LOOP
     INSERT INTO pc_hashtag (post_id, hashtag_name)
 	VALUES (ret_post_id, hashtag_n);
   END LOOP;
+  
   
   
   new_post_id := ret_post_id;

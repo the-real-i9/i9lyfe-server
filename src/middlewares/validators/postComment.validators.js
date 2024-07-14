@@ -8,14 +8,14 @@ export const createNewPost = [
         media_blobs: {
           isArray: {
             options: { min: 1 },
-            errorMessage: "value must me an array of at least one item",
+            errorMessage: "value must be an array of at least one item",
           },
         },
         "media_blobs.*": {
           isArray: {
             options: { min: 1, max: 10 * 1024 ** 2 },
             errorMessage:
-              "item must me an array of uint8 integers with a maximum of 10mb",
+              "item must be an array of uint8 integers containing a maximum of 10mb",
           },
         },
         type: {
