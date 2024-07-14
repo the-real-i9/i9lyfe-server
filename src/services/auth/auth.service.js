@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt"
-import { generateJwtToken } from "../../utils/helpers.js"
+import { generateJwt } from "../../utils/helpers.js"
 import sendMail from "../mail.service.js"
 import { User } from "../../models/user.model.js"
 
@@ -37,7 +37,7 @@ export const userRegistrationService = async (info) => {
     birthday: new Date(info.birthday),
   })
 
-  const jwt = generateJwtToken({
+  const jwt = generateJwt({
     client_user_id: user.id,
     client_username: user.username,
   })
@@ -78,7 +78,7 @@ export const userSigninService = async (emailOrUsername, passwordInput) => {
     }
   }
 
-  const jwt = generateJwtToken({
+  const jwt = generateJwt({
     client_user_id: user.id,
     client_username: user.username,
   })
@@ -145,7 +145,7 @@ export const emailConfirmationService = (emailConfirmationStrategy) => {
 export const renewJwtToken = (socket) => {
   const { client_user_id, client_username } = socket.jwt_payload
 
-  const newJwtToken = generateJwtToken({ client_user_id, client_username })
+  const newJwtToken = generateJwt({ client_user_id, client_username })
 
   socket.emit("renewed jwt", newJwtToken)
 }

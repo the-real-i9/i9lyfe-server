@@ -2,7 +2,6 @@ import { User } from "../../models/user.model.js"
 import {
   generateCodeWithExpiration,
   tokenLives,
-  tokensMatch,
 } from "../../utils/helpers.js"
 import sendMail from "../mail.service.js"
 
@@ -73,7 +72,7 @@ export class SignupEmailConfirmationStrategy extends EmailConfirmationStrategy {
   async handleCodeValidation(inputCode, sessionData) {
     const { email, verificationCode, verificationCodeExpires } = sessionData
 
-    if (!tokensMatch(Number(verificationCode), Number(inputCode))) {
+    if (Number(verificationCode) !== Number(inputCode)) {
       return {
         ok: false,
         error: {
@@ -166,7 +165,7 @@ export class PasswordResetEmailConfirmationStrategy extends EmailConfirmationStr
       sessionData
     
 
-    if (!tokensMatch(passwordResetToken, inputCode)) {
+    if (passwordResetToken !== inputCode) {
       return {
         ok: false,
         error: {
