@@ -1,5 +1,4 @@
-import { it, xtest, expect } from "@jest/globals"
-import axios from "axios"
+import { beforeAll, it, expect } from "@jest/globals"
 import dotenv from "dotenv"
 import supertest from "supertest"
 
@@ -9,35 +8,56 @@ dotenv.config()
 
 const prefixPath = "/api/user_public"
 
-it("should return user profile data", async () => {
+const userJwts = {}
+
+function getJwt(username) {
+  return "Bearer " + userJwts[username]
+}
+
+beforeAll(async () => {
+  async function signUserIn(email_or_username) {
+    const body = {
+      email_or_username,
+      password: "fhunmytor",
+    }
+    const res = await supertest(app).post("/api/auth/signin").send(body)
+
+    expect(res.body).toHaveProperty("jwt")
+
+    userJwts[res.body.user.username] = res.body.jwt
+  }
+
+  await signUserIn("johnny@gmail.com")
+  await signUserIn("butcher@gmail.com")
+  await signUserIn("annak@gmail.com")
+  await signUserIn("annie_star@gmail.com")
+})
+
+it("should return client's profile data", async () => {
   const res = await supertest(app).get(prefixPath + "/johnny")
 
   expect(res.body).toHaveProperty("user_id")
-}, 5000)
-
-xtest("should return user followers", async () => {
-  const res = await axios.get(prefixPath + "/johnny/followers")
-
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-
-  console.log(res.data)
 })
 
-xtest("get user following", async () => {
-  const res = await axios.get(prefixPath + "/i9x/following")
+it("should return client's followers", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/johnny/followers")
+    .set("Authorization", getJwt("kendrick"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
-
-  console.log(res.data)
+  expect(res.body).toBeInstanceOf(Array)
 })
 
-xtest("get user posts", async () => {
-  const res = await axios.get(prefixPath + "/i9x/posts")
+it("should return user following client", async () => {
+  const res = await supertest(app)
+    .get(prefixPath + "/johnny/following")
+    .set("Authorization", getJwt("starlight"))
 
-  expect(res.status).toBe(200)
-  expect(res.data).toBeTruthy()
+  expect(res.body).toBeInstanceOf(Array)
+})
 
-  console.log(res.data)
+it("should return posts published by client", async () => {
+  const res = await supertest(app).get(prefixPath + "/johnny/posts")
+
+  expect(res.body).toBeInstanceOf(Array)
+  console.log(res.body)
 })

@@ -29,6 +29,8 @@ beforeAll(async () => {
 
   await signUserIn("johnny@gmail.com")
   await signUserIn("butcher@gmail.com")
+  await signUserIn("annak@gmail.com")
+  await signUserIn("annie_star@gmail.com")
 })
 
 it("should get the user session info via session jwt", async () => {

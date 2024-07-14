@@ -1369,7 +1369,7 @@ BEGIN
     LEFT JOIN i9l_user follower_user ON follower_user.id = follow.follower_user_id
     LEFT JOIN i9l_user followee_user ON followee_user.id = follow.followee_user_id
     LEFT JOIN follow client_follows 
-      ON client_follows.followee_user_id = followee_user.id AND client_follows.follower_user_id = client_user_id
+      ON client_follows.followee_user_id = follower_user.id AND client_follows.follower_user_id = client_user_id
     WHERE followee_user.username = in_username
 	ORDER BY follow.follow_on DESC
 	LIMIT in_limit OFFSET in_offset;
@@ -1417,11 +1417,12 @@ ALTER FUNCTION public.get_user_following(in_username character varying, in_limit
 -- Name: get_user_notifications(integer, timestamp without time zone, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.get_user_notifications(OUT user_notifications json, client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) RETURNS json
+CREATE FUNCTION public.get_user_notifications(client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) RETURNS SETOF json
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  SELECT json_agg(notif) INTO user_notifications FROM (SELECT json_strip_nulls(json_build_object(
+	RETURN QUERY
+    SELECT json_strip_nulls(json_build_object(
 	  'type', n.type,
 	  'is_read', n.is_read,
 	  'sender', json_build_object(
@@ -1434,11 +1435,11 @@ BEGIN
 	  'comment_created_id', n.comment_created_id,
 	  'reaction_code_point', n.reaction_code_point,
 	  'created_at', n.created_at
-  )) AS notif FROM notification n
+  )) FROM notification n
   INNER JOIN i9l_user sender ON sender.id = n.sender_user_id
   WHERE n.receiver_user_id = client_user_id AND n.created_at >= in_from
   ORDER BY n.created_at DESC
-  LIMIT in_limit OFFSET in_offset);
+  LIMIT in_limit OFFSET in_offset;
   
   
   RETURN;
@@ -1446,7 +1447,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user_notifications(OUT user_notifications json, client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) OWNER TO postgres;
+ALTER FUNCTION public.get_user_notifications(client_user_id integer, in_from timestamp without time zone, in_limit integer, in_offset integer) OWNER TO postgres;
 
 --
 -- Name: get_user_password(character varying); Type: FUNCTION; Schema: public; Owner: postgres
