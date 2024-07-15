@@ -190,7 +190,10 @@ BEGIN
   FOREACH mention_username IN ARRAY mentions
   LOOP
 	SELECT id INTO ment_user_id FROM i9l_user WHERE username = mention_username;
-	
+
+    -- skip if user doesn't exist
+	CONTINUE WHEN ment_user_id is null;
+
 	-- create mentions
     INSERT INTO pc_mention (comment_id, user_id)
 	VALUES (ret_comment_id, ment_user_id);
@@ -275,7 +278,10 @@ BEGIN
   FOREACH mention_username IN ARRAY mentions
   LOOP
 	SELECT id INTO ment_user_id FROM i9l_user WHERE username = mention_username;
-	
+
+    -- skip if user doesn't exist
+	CONTINUE WHEN ment_user_id is null;
+
 	-- create mentions
     INSERT INTO pc_mention (comment_id, user_id)
 	VALUES (ret_comment_id, ment_user_id);

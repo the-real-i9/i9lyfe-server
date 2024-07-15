@@ -67,11 +67,11 @@ export const reactTo = [
         reaction: {
           notEmpty: true,
           isLength: {
-            options: { min: 2, max: 2 },
+            options: { min: 1, max: 1 },
             errorMessage: "invalid reaction",
           },
           isSurrogatePair: {
-            errorMessage: "invalid reaction",
+            errorMessage: "invalid reaction (not surrogate pair)",
           },
         },
       },
