@@ -41,20 +41,18 @@ it("should get the user session info via session jwt", async () => {
   expect(res.body).toHaveProperty("sessionUser")
 })
 
-it("should make client follow the user", async () => {
-  const res = await supertest(app)
+it("should make client follow the user, and undo it", async () => {
+  const res1 = await supertest(app)
     .post(prefixPath + "/users/12/follow")
     .set("Authorization", getJwt("johnny"))
 
-  expect(res.body).toHaveProperty("msg")
-})
+  expect(res1.body).toHaveProperty("msg")
 
-it("should make client unfollow the user", async () => {
-  const res = await supertest(app)
+  const res2 = await supertest(app)
     .delete(prefixPath + "/users/12/unfollow")
     .set("Authorization", getJwt("johnny"))
 
-  expect(res.body).toHaveProperty("msg")
+  expect(res2.body).toHaveProperty("msg")
 })
 
 it("should edit client's profile", async () => {
@@ -68,18 +66,29 @@ it("should edit client's profile", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should update client's connection status", async () => {
-  const data = {
+it("should switch client's connection status between online and offline", async () => {
+  const data1 = {
+    connection_status: "online",
+  }
+
+  const res1 = await supertest(app)
+    .patch(prefixPath + "/update_connection_status")
+    .set("Authorization", getJwt("johnny"))
+    .send(data1)
+
+  expect(res1.body).toHaveProperty("msg")
+
+  const data2 = {
     connection_status: "offline",
     last_active: new Date(),
   }
 
-  const res = await supertest(app)
+  const res2 = await supertest(app)
     .patch(prefixPath + "/update_connection_status")
     .set("Authorization", getJwt("johnny"))
-    .send(data)
+    .send(data2)
 
-  expect(res.body).toHaveProperty("msg")
+  expect(res2.body).toHaveProperty("msg")
 })
 
 it("should return client's home feed posts", async () => {

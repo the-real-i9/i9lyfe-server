@@ -27,8 +27,8 @@ beforeAll(async () => {
     userJwts[res.body.user.username] = res.body.jwt
   }
 
-  /* await signUserIn("johnny@gmail.com")
-  await signUserIn("butcher@gmail.com") */
+  // await signUserIn("johnny@gmail.com")
+  await signUserIn("butcher@gmail.com")
   await signUserIn("annak@gmail.com")
   await signUserIn("annie_star@gmail.com")
 })
@@ -56,8 +56,9 @@ it("should return user following client", async () => {
 })
 
 it("should return posts published by client", async () => {
-  const res = await supertest(app).get(prefixPath + "/johnny/posts")
+  const res = await supertest(app)
+  .get(prefixPath + "/johnny/posts")
+  .set("Authorization", getJwt("itz_butcher"))
 
   expect(res.body).toBeInstanceOf(Array)
-  console.log(res.body)
 })

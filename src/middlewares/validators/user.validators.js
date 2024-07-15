@@ -48,8 +48,9 @@ export const updateConnectionStatus = [
         last_active: {
           custom: {
             options: (value, { req }) =>
-              req.body.connection_status === "offline" &&
-              !isNaN(Date.parse(value)),
+              (req.body.connection_status === "offline" &&
+                !isNaN(Date.parse(value))) ||
+              (req.body.connection_status === "online" && !value),
             errorMessage:
               "a valid datetime that should only be set if connection status is 'offline'",
           },
