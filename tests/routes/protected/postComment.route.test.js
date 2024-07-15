@@ -71,7 +71,7 @@ it("should delete the client's post", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should make client react to post, and then undo it", async () => {
+it("should let client react to post, and then undo it", async () => {
   const data = {
     reaction: "😂",
   }
@@ -108,7 +108,7 @@ it("should filter post reactors by specific reaction", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should make client comment on the post", async () => {
+it("should let client comment on the post", async () => {
   const data = {
     comment_text: `This is a comment on this post from @johnny.`,
     attachment_blob: [99],
@@ -128,7 +128,7 @@ it("should make client comment on the post", async () => {
   })
 })
 
-it("should make client comment on (reply to) the comment", async () => {
+it("should let client comment on (reply to) the comment", async () => {
   const data = {
     comment_text: `This is a reply to this comment from @johnny.`,
     attachment_blob: [99],
@@ -188,7 +188,7 @@ it("should delete client's comment on (reply to) comment", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should make client react to comment, and then undo it", async () => {
+it("should let client react to comment, and then undo it", async () => {
   const data = {
     reaction: "🦷",
   }
@@ -225,7 +225,7 @@ it("should filter comment reactors by specific reaction", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should make client repost the post, and then undo it", async () => {
+it("should let client repost the post, and then undo it", async () => {
   const res1 = await supertest(app)
     .post(prefixPath + "/posts/4/repost")
     .set("Authorization", getJwt("starlight"))
@@ -239,7 +239,7 @@ it("should make client repost the post, and then undo it", async () => {
   expect(res2.body).toHaveProperty("msg")
 })
 
-it("should make client save the post, and then undo it", async () => {
+it("should let client save the post, and then undo it", async () => {
   await dbQuery({
     text: "DELETE FROM saved_post WHERE saver_user_id = $1 AND post_id = $2",
     values: [11, 4],

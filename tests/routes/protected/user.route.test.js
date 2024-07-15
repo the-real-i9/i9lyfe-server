@@ -41,7 +41,7 @@ it("should get the user session info via session jwt", async () => {
   expect(res.body).toHaveProperty("sessionUser")
 })
 
-it("should make client follow the user, and undo it", async () => {
+it("should let client follow the user, and undo it", async () => {
   const res1 = await supertest(app)
     .post(prefixPath + "/users/12/follow")
     .set("Authorization", getJwt("johnny"))

@@ -113,7 +113,7 @@ export const ackMessageDelivered = async (req, res) => {
       delivery_time,
     })
 
-    res.sendStatus(204)
+    res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -133,7 +133,7 @@ export const ackMessageRead = async (req, res) => {
       message_id,
     })
 
-    res.sendStatus(204)
+    res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -158,7 +158,7 @@ export const reactToMessage = async (req, res) => {
       reaction_code_point: reaction.codePointAt(),
     })
 
-    res.sendStatus(201)
+    res.status(201).send({ msg: "operation sucessful" })
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

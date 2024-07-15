@@ -99,13 +99,15 @@ CREATE FUNCTION public.ack_msg_delivered(client_user_id integer, in_conversation
 DECLARE
   convo_partner_user_id int;
 BEGIN
+IF (SELECT delivery_status FROM message_ WHERE id = in_message_id) <> 'delivered' THEN
   UPDATE user_conversation SET unread_messages_count = unread_messages_count + 1, updated_at = delivery_time
   WHERE user_id = client_user_id AND conversation_id = in_conversation_id
   RETURNING partner_user_id INTO convo_partner_user_id;
   
-  -- convo_partner_user_id is a "guard" condition -- the message you ack must indeed belong to your conversation partner
+  -- convo_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your conversation partner
   UPDATE message_ SET delivery_status = 'delivered'
   WHERE id = in_message_id AND conversation_id = in_conversation_id AND sender_user_id = convo_partner_user_id;
+END IF;
   
   RETURN true;
 END;
@@ -124,14 +126,16 @@ CREATE FUNCTION public.ack_msg_read(client_user_id integer, in_conversation_id i
 DECLARE
   convo_partner_user_id int;
 BEGIN
+IF (SELECT delivery_status FROM message_ WHERE id = in_message_id) <> 'read' THEN
   UPDATE user_conversation SET unread_messages_count = CASE WHEN unread_messages_count > 0 THEN unread_messages_count - 1 ELSE 0 END
   WHERE user_id = client_user_id AND conversation_id = in_conversation_id
   RETURNING partner_user_id INTO convo_partner_user_id;
   
-  -- convo_partner_user_id is a "guard" condition -- the message you ack must indeed belong to your conversation partner
+  -- convo_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your conversation partner
   UPDATE message_ SET delivery_status = 'read'
   WHERE id = in_message_id AND conversation_id = in_conversation_id AND sender_user_id = convo_partner_user_id;
-  
+END IF;
+ 
   RETURN true;
 END;
 $$;
@@ -1949,6 +1953,43 @@ ALTER SEQUENCE public.i9l_user_id_seq OWNED BY public.i9l_user.id;
 
 
 --
+-- Name: message_deletion_log; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.message_deletion_log (
+    id integer NOT NULL,
+    deleter_user_id integer NOT NULL,
+    message_id integer NOT NULL,
+    deleted_for character varying NOT NULL,
+    CONSTRAINT message_deletion_log_deleted_for_check CHECK (((deleted_for)::text = ANY (ARRAY['me'::text, 'everyone'::text])))
+);
+
+
+ALTER TABLE public.message_deletion_log OWNER TO postgres;
+
+--
+-- Name: message_deletion_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.message_deletion_log_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.message_deletion_log_id_seq OWNER TO postgres;
+
+--
+-- Name: message_deletion_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.message_deletion_log_id_seq OWNED BY public.message_deletion_log.id;
+
+
+--
 -- Name: message_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -2331,6 +2372,13 @@ ALTER TABLE ONLY public.message_ ALTER COLUMN id SET DEFAULT nextval('public.mes
 
 
 --
+-- Name: message_deletion_log id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_deletion_log ALTER COLUMN id SET DEFAULT nextval('public.message_deletion_log_id_seq'::regclass);
+
+
+--
 -- Name: message_reaction id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2569,6 +2617,14 @@ ALTER TABLE ONLY public.follow
 
 
 --
+-- Name: message_deletion_log message_deletion_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_deletion_log
+    ADD CONSTRAINT message_deletion_log_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: pc_reaction one_comment_reaction_per_user; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2773,6 +2829,22 @@ ALTER TABLE ONLY public.pc_hashtag
 
 ALTER TABLE ONLY public.pc_hashtag
     ADD CONSTRAINT hashtaged_post FOREIGN KEY (post_id) REFERENCES public.post(id) ON DELETE CASCADE;
+
+
+--
+-- Name: message_deletion_log message_deletion_log_deleter_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_deletion_log
+    ADD CONSTRAINT message_deletion_log_deleter_user_id_fkey FOREIGN KEY (deleter_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
+
+
+--
+-- Name: message_deletion_log message_deletion_log_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_deletion_log
+    ADD CONSTRAINT message_deletion_log_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.message_(id) ON DELETE CASCADE;
 
 
 --

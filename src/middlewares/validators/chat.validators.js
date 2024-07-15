@@ -37,19 +37,25 @@ export const createConversation = [
         },
         "init_message.props.textContent": {
           custom: {
-            options: (value, { req }) => req.body.init_message.type === "text",
+            options: (value, { req }) =>
+              req.body.init_message.type === "text" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          notEmpty: true,
+          notEmpty: {
+            if: (value, { req }) => req.body.init_message.type === "text",
+            errorMessage: "cannot be empty",
+          },
         },
         "init_message.props.data": {
           custom: {
-            options: (value, { req }) => req.body.init_message.type !== "text",
+            options: (value, { req }) =>
+              req.body.init_message.type !== "text" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
           isArray: {
+            if: (value, { req }) => req.body.init_message.type !== "text",
             options: { min: 1, max: 10 * 1024 ** 2 },
             errorMessage:
               "value must me an array of uint8 integers with a maximum of 10mb",
@@ -57,16 +63,23 @@ export const createConversation = [
         },
         "init_message.props.duration": {
           custom: {
-            options: (value, { req }) => req.body.init_message.type === "voice",
+            options: (value, { req }) =>
+              req.body.init_message.type === "voice" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isInt: { options: { min: 1 } },
+          isInt: {
+            if: (value, { req }) => req.body.init_message.type === "voice",
+            options: { min: 1 },
+            errorMessage: "invalid duration: less than 1",
+          },
         },
         "init_message.props.extension": {
           custom: {
             options: (value, { req }) =>
-              req.body.init_message.type === "file" && value.startsWith("."),
+              (req.body.init_message.type === "file" &&
+                value.startsWith(".")) ||
+              !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
@@ -74,30 +87,42 @@ export const createConversation = [
         "init_message.props.mimeType": {
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.init_message.type),
+              !["text", "voice"].includes(req.body.init_message.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isMimeType: true,
+          isMimeType: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.init_message.type),
+            errorMessage: "invalid mime type",
+          },
         },
         "init_message.props.caption": {
           optional: true,
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.init_message.type),
+              !["text", "voice"].includes(req.body.init_message.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          notEmpty: true,
+          notEmpty: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.init_message.type),
+          },
         },
         "init_message.props.size": {
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.init_message.type),
+              !["text", "voice"].includes(req.body.init_message.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isInt: { options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ } },
+          isInt: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.init_message.type),
+            options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ },
+            errorMessage: "size out of range",
+          },
         },
       },
       ["body"]
@@ -131,19 +156,25 @@ export const sendMessage = [
         },
         "msg_content.props.textContent": {
           custom: {
-            options: (value, { req }) => req.body.msg_content.type === "text",
+            options: (value, { req }) =>
+              req.body.msg_content.type === "text" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          notEmpty: true,
+          notEmpty: {
+            if: (value, { req }) => req.body.msg_content.type === "text",
+            errorMessage: "cannot be empty",
+          },
         },
         "msg_content.props.data": {
           custom: {
-            options: (value, { req }) => req.body.msg_content.type !== "text",
+            options: (value, { req }) =>
+              req.body.msg_content.type !== "text" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
           isArray: {
+            if: (value, { req }) => req.body.msg_content.type !== "text",
             options: { min: 1, max: 10 * 1024 ** 2 },
             errorMessage:
               "value must me an array of uint8 integers with a maximum of 10mb",
@@ -151,16 +182,23 @@ export const sendMessage = [
         },
         "msg_content.props.duration": {
           custom: {
-            options: (value, { req }) => req.body.msg_content.type === "voice",
+            options: (value, { req }) =>
+              req.body.msg_content.type === "voice" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isInt: { options: { min: 1 } },
+          isInt: {
+            if: (value, { req }) => req.body.msg_content.type === "voice",
+            options: { min: 1 },
+            errorMessage: "invalid duration: less than 1",
+          },
         },
         "msg_content.props.extension": {
           custom: {
             options: (value, { req }) =>
-              req.body.msg_content.type === "file" && value.startsWith("."),
+              (req.body.msg_content.type === "file" &&
+                value.startsWith(".")) ||
+              !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
@@ -168,30 +206,42 @@ export const sendMessage = [
         "msg_content.props.mimeType": {
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.msg_content.type),
+              !["text", "voice"].includes(req.body.msg_content.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isMimeType: true,
+          isMimeType: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.msg_content.type),
+            errorMessage: "invalid mime type",
+          },
         },
         "msg_content.props.caption": {
           optional: true,
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.msg_content.type),
+              !["text", "voice"].includes(req.body.msg_content.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          notEmpty: true,
+          notEmpty: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.msg_content.type),
+          },
         },
         "msg_content.props.size": {
           custom: {
             options: (value, { req }) =>
-              !["text", "voice"].includes(req.body.msg_content.type),
+              !["text", "voice"].includes(req.body.msg_content.type) || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
-          isInt: { options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ } },
+          isInt: {
+            if: (value, { req }) =>
+              !["text", "voice"].includes(req.body.msg_content.type),
+            options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ },
+            errorMessage: "size out of range",
+          },
         },
       },
       ["body"]
@@ -207,9 +257,10 @@ export const ackMessageDelivered = [
       {
         delivery_time: {
           notEmpty: true,
-          isDate: {
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
             errorMessage:
-              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
+              "invalid date",
           },
         },
       },
@@ -227,8 +278,8 @@ export const reactToMessage = [
         reaction: {
           notEmpty: true,
           isLength: {
-            options: { min: 2, max: 2 },
-            errorMessage: "invalid reaction",
+            options: { min: 1, max: 1 },
+            errorMessage: "one reaction required",
           },
           isSurrogatePair: {
             errorMessage: "invalid reaction",
@@ -236,6 +287,24 @@ export const reactToMessage = [
         },
       },
       ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
+
+export const deleteMessage = [
+  checkExact(
+    checkSchema(
+      {
+        delete_for: {
+          isIn: {
+            options: [["me", "everyone"]],
+            errorMessage: "invalid delete-for value, should be either 'me' or 'everyone'"
+          }
+        },
+      },
+      ["query"]
     ),
     { message: "request body contains invalid fields" }
   ),

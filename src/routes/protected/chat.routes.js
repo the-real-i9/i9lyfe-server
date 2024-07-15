@@ -25,7 +25,11 @@ router.use(
   }
 )
 
-router.post("/create_conversation", ...chatValidators.createConversation, CC.createConversation)
+router.post(
+  "/create_conversation",
+  ...chatValidators.createConversation,
+  CC.createConversation
+)
 
 router.get("/my_conversations", CC.getMyConversations)
 
@@ -78,6 +82,7 @@ router.delete(
 router.delete(
   "/conversations/:conversation_id/partner/:partner_user_id/messages/:message_id",
   ...validateIdParams,
+  ...chatValidators.deleteMessage,
   CC.deleteMessage
 )
 

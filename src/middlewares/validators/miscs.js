@@ -25,8 +25,8 @@ export const validateIdParams = [
         },
         isLength: {
           if: (value, { path }) => path === "reaction",
-          options: { min: 2, max: 2 },
-          errorMessage: "invalid reaction",
+          options: { min: 1, max: 1 },
+          errorMessage: "one reaction required",
         },
         isSurrogatePair: {
           if: (value, { path }) => path === "reaction",
