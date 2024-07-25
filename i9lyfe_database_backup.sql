@@ -206,7 +206,7 @@ BEGIN
 	CONTINUE WHEN ment_user_id = client_user_id;
 	
 	-- create mention notifications
-	INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id)
+	INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id)
 	VALUES ('mention_in_comment', client_user_id, ment_user_id, ret_comment_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
@@ -225,7 +225,7 @@ BEGIN
   END LOOP;
   
   -- create comment notification
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id, comment_created_id)
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id, comment_created_id)
   VALUES ('comment_on_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id, ret_comment_id);
   
   
@@ -294,7 +294,7 @@ BEGIN
 	CONTINUE WHEN ment_user_id = client_user_id;
 	
 	-- create mention notifications
-	INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id)
+	INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id)
 	VALUES ('mention_in_comment', client_user_id, ment_user_id, ret_comment_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
@@ -313,7 +313,7 @@ BEGIN
   END LOOP;
   
   -- create comment notification
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id, comment_created_id)
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id, comment_created_id)
   VALUES ('comment_on_post', client_user_id, target_post_owner_user_id, in_target_post_id, ret_comment_id);
   
   
@@ -474,7 +474,7 @@ BEGIN
 	CONTINUE WHEN ment_user_id = client_user_id;
 	
 	-- create mention notifications
-	INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id)
+	INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id)
 	VALUES ('mention_in_post', client_user_id, ment_user_id, ret_post_id);
 	
 	mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
@@ -526,7 +526,7 @@ BEGIN
 	  'profile_pic_url', profile_pic_url
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, comment_id, reaction_code_point)
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id, reaction_code_point)
   VALUES ('reaction_to_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
@@ -567,7 +567,7 @@ BEGIN
 	  'profile_pic_url', profile_pic_url
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
-  INSERT INTO notification (type, sender_user_id, receiver_user_id, post_id, reaction_code_point)
+  INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id, reaction_code_point)
   VALUES ('reaction_to_post', client_user_id, target_post_owner_user_id, in_target_post_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
@@ -2043,8 +2043,8 @@ CREATE TABLE public.notification (
     is_read boolean DEFAULT false,
     sender_user_id integer NOT NULL,
     receiver_user_id integer NOT NULL,
-    post_id integer,
-    comment_id integer,
+    via_post_id integer,
+    via_comment_id integer,
     comment_created_id integer,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     reaction_code_point integer
@@ -3012,7 +3012,7 @@ ALTER TABLE ONLY public.saved_post
 --
 
 ALTER TABLE ONLY public.notification
-    ADD CONSTRAINT through_comment FOREIGN KEY (comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
+    ADD CONSTRAINT through_comment FOREIGN KEY (via_comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
 
 
 --
@@ -3020,7 +3020,7 @@ ALTER TABLE ONLY public.notification
 --
 
 ALTER TABLE ONLY public.notification
-    ADD CONSTRAINT through_post FOREIGN KEY (post_id) REFERENCES public.post(id) ON DELETE CASCADE;
+    ADD CONSTRAINT through_post FOREIGN KEY (via_post_id) REFERENCES public.post(id) ON DELETE CASCADE;
 
 
 --

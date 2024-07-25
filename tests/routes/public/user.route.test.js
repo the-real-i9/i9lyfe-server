@@ -55,7 +55,7 @@ it("should return user following client", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should return posts published by client", async () => {
+it("should return posts created by client", async () => {
   const res = await supertest(app)
   .get(prefixPath + "/johnny/posts")
   .set("Authorization", getJwt("itz_butcher"))
