@@ -1,60 +1,40 @@
-# syntax=docker/dockerfile:1
+# Stage 1: Build the Node.js app
+FROM node:20.10.0-alpine as build
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
+# Copy your Node.js app code
+COPY . /app
 
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
+# Install dependencies
+WORKDIR /app
+RUN npm install
 
-ARG NODE_VERSION=20.10.0
+# Stage 2: Build the PostgreSQL sidecar
+FROM alpine:latest
 
-FROM node:${NODE_VERSION}-alpine as base
-WORKDIR /usr/src/app
+# Copy the PostgreSQL data directory (if needed)
+COPY --from=build /app/data /var/lib/postgresql/data
 
-# Expose the port that the application listens on.
-EXPOSE 5000
+# Install psql
+RUN apk add --no-cache psql
 
-FROM base as dev
+# Set environment variables for database credentials
+ENV POSTGRES_USER myuser
+ENV POSTGRES_PASSWORD mypassword
+ENV POSTGRES_DB mydatabase
 
-ENV NODE_ENV development
+# Run psql to execute your SQL file
+RUN psql -U postgres -c "CREATE DATABASE $POSTGRES_DB;" && \
+    psql -U postgres -d $POSTGRES_DB -c "ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';" && \
+    psql -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
 
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+# Start the PostgreSQL container
+CMD ["postgres", "-D", "/var/lib/postgresql/data"]
 
-# Run the application as a non-root user.
-USER node
+# Stage 3: Combine the Node.js app and PostgreSQL
+FROM build
 
-# Copy the rest of the source files into the image.
-COPY . .
+# Copy the PostgreSQL container
+COPY --from=postgres /var/lib/postgresql/data /var/lib/postgresql/data
 
-# Run the application.
-CMD npm run dev
-
-FROM base as prod
-
-ENV NODE_ENV production
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
-
-# Run the application as a non-root user.
-USER node
-
-# Copy the rest of the source files into the image.
-COPY . .
-
-# Run the application.
-CMD npm start
-
-# FROM base as test
-# ENV NODE_ENV test
-# RUN --mount=type=bind,source=package.json,target=package.json \
-#     --mount=type=bind,source=package-lock.json,target=package-lock.json \
-#     --mount=type=cache,target=/root/.npm \
-#     npm ci --include=dev
-# USER node
-# COPY . .
-# RUN npm run test
+# Start the Node.js app
+CMD ["npm", "start"]
