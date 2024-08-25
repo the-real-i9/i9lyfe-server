@@ -37,12 +37,12 @@ jobs:
         run: sudo service postgresql start
 
       - name: Setup Postgres with DB
-        env:
-          PGPASSWORD: postgres
         run: |
           psql -U postgres -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
           psql -U postgres -c "CREATE DATABASE $PGDATABASE;"
           psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
+        env:
+          PGPASSWORD: postgres
 
       - name: Populate DB with test data
         run: |
