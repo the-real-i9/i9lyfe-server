@@ -38,13 +38,13 @@ jobs:
 
       - name: Setup Postgres with DB
         run: |
-          sudo -u postgres psql -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
-          sudo -u postgres psql -c "CREATE DATABASE $PGDATABASE;"
-          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
+          PGPASSWORD=postgres psql -U postgres -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
+          PGPASSWORD=postgres psql -U postgres -c "CREATE DATABASE $PGDATABASE;"
+          PGPASSWORD=postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
 
       - name: Populate DB with test data
         run: |
-          pg_restore -h $PGHOST -U $PGUSER -d $PGDATABASE -1 -v "./$PGDATABASE_database_backup.dump"
+          PGPASSWORD=$PGPASSWORD pg_restore -h $PGHOST -U $PGUSER -d $PGDATABASE -1 -v "./${PGDATABASE}_database_backup.dump"
       
       - name: Excecute tests
         run: PGUSER=$PGUSER PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT JWT_SECRET=$JWT_SECRET MAILING_EMAIL=$MAILING_EMAIL MAILING_PASSWORD=$MAILING_PASSWORD SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET npm run test
