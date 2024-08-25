@@ -36,15 +36,13 @@ jobs:
       - name: Setup Postgres with DB
         uses: harmon758/postgresql-action@v1
         with:
-          postgresql version: '16.4'
           postgresql db: $PGDATABASE
           postgresql user: $PGUSER
           postgresql password: $PGPASSWORD
 
 
       - name: Populate DB with test data
-        run: |
-          PGPASSWORD=$PGPASSWORD psql -U $PGUSER -d $PGDATABASE -f "./${PGDATABASE}_database_backup.sql"
+        run: PGPASSWORD=$PGPASSWORD psql -U $PGUSER -d $PGDATABASE -f "./${PGDATABASE}_database_backup.sql"
       
       - name: Excecute tests
         run: PGUSER=$PGUSER PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT JWT_SECRET=$JWT_SECRET MAILING_EMAIL=$MAILING_EMAIL MAILING_PASSWORD=$MAILING_PASSWORD SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET npm run test
