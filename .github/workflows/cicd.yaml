@@ -5,7 +5,36 @@ on:
     branches:
       - main
 
+env:
+  PGUSER: ${{ secrets.PGUSER }}
+  PGPASSWORD: ${{ secrets.PGPASSWORD }}
+  PGDATABASE: ${{ secrets.PGDATABASE }}
+  PGPORT: ${{ secrets.PGPORT }}
+  PGHOST: ${{ secrets.PGHOST }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
+  MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
+  SIGNUP_SESSION_COOKIE_SECRET: ${{ secrets.SIGNUP_SESSION_COOKIE_SECRET }}
+  PASSWORD_RESET_SESSION_COOKIE_SECRET: ${{ secrets.PASSWORD_RESET_SESSION_COOKIE_SECRET }}
+
 jobs:
   test:
     name: Run tests
-    runs-on: [ubuntu:latest]
+    runs-on: ubuntu:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+
+      - name: Start postgresql service
+        run: sudo service postgresql start
+
+      - name: Clean install dependencies
+        run: npm ci
+      
+      - name: Excecute tests
+        run: PGUSER=$PGUSER PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT JWT_SECRET=$JWT_SECRET MAILING_EMAIL=$MAILING_EMAIL MAILING_PASSWORD=$MAILING_PASSWORD SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET npm run test
