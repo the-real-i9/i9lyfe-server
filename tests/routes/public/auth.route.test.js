@@ -10,7 +10,7 @@ dotenv.config()
 const prefixPath = "/api/auth"
 
 it("should signup user", async () => {
-  const email = "oluwarinolasam@gmail.com"
+  const email = "sample_email@gmail.com"
 
   try {
     // step 1

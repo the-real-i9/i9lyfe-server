@@ -1,40 +1,16 @@
-# Stage 1: Build the Node.js app
-FROM node:20.10.0-alpine as build
+# syntax=docker/dockerfile:1
 
-# Copy your Node.js app code
-COPY . /app
+FROM node:lts-alpine
 
-# Install dependencies
 WORKDIR /app
-RUN npm install
 
-# Stage 2: Build the PostgreSQL sidecar
-FROM alpine:latest
+RUN --mount=type=bind,source=package.json,target=package.json \
+--mount=type=bind,source=package-lock.json,target=package-lock.json \
+--mount=type=cache,target=/root/.npm \
+npm ci
 
-# Copy the PostgreSQL data directory (if needed)
-COPY --from=build /app/data /var/lib/postgresql/data
+EXPOSE 5000
 
-# Install psql
-RUN apk add --no-cache psql
+COPY . .
 
-# Set environment variables for database credentials
-ENV POSTGRES_USER myuser
-ENV POSTGRES_PASSWORD mypassword
-ENV POSTGRES_DB mydatabase
-
-# Run psql to execute your SQL file
-RUN psql -U postgres -c "CREATE DATABASE $POSTGRES_DB;" && \
-    psql -U postgres -d $POSTGRES_DB -c "ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';" && \
-    psql -U $POSTGRES_USER -d $POSTGRES_DB -f init.sql
-
-# Start the PostgreSQL container
-CMD ["postgres", "-D", "/var/lib/postgresql/data"]
-
-# Stage 3: Combine the Node.js app and PostgreSQL
-FROM build
-
-# Copy the PostgreSQL container
-COPY --from=postgres /var/lib/postgresql/data /var/lib/postgresql/data
-
-# Start the Node.js app
-CMD ["npm", "start"]
+CMD ["npm" "start"]
