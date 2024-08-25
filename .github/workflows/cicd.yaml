@@ -38,11 +38,9 @@ jobs:
 
       - name: Setup Postgres with DB
         run: |
-          psql -U postgres -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
-          psql -U postgres -c "CREATE DATABASE $PGDATABASE;"
-          psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
-        env:
-          PGPASSWORD: postgres
+          sudo -U postgres psql -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
+          sudo -U postgres psql -c "CREATE DATABASE $PGDATABASE;"
+          sudo -U postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
 
       - name: Populate DB with test data
         run: |
