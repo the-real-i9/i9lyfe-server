@@ -30,11 +30,23 @@ jobs:
         with:
           node-version: latest
 
+      - name: Clean install dependencies
+        run: npm ci
+
       - name: Start postgresql service
         run: sudo service postgresql start
 
-      - name: Clean install dependencies
-        run: npm ci
+      - name: Setup Postgres with DB
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -U postgres -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
+          psql -U postgres -c "CREATE DATABASE $PGDATABASE;"
+          psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
+
+      - name: Populate DB with test data
+        run: |
+          pg_restore -h $PGHOST -U $PGUSER -d $PGDATABASE -1 -v "./$PGDATABASE_database_backup.dump"
       
       - name: Excecute tests
         run: PGUSER=$PGUSER PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT JWT_SECRET=$JWT_SECRET MAILING_EMAIL=$MAILING_EMAIL MAILING_PASSWORD=$MAILING_PASSWORD SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET npm run test
