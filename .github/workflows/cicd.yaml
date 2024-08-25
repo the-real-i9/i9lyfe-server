@@ -36,7 +36,7 @@ jobs:
       - name: Setup Postgres with DB
         uses: harmon758/postgresql-action@v1
         with:
-          postgresql version: '16'
+          postgresql version: '16.4'
           postgresql db: $PGDATABASE
           postgresql user: $PGUSER
           postgresql password: $PGPASSWORD
