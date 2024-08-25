@@ -38,9 +38,9 @@ jobs:
 
       - name: Setup Postgres with DB
         run: |
-          PGPASSWORD=postgres psql -U postgres -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
-          PGPASSWORD=postgres psql -U postgres -c "CREATE DATABASE $PGDATABASE;"
-          PGPASSWORD=postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
+          psql -U postgres -w -c "CREATE USER $PGUSER WITH PASSWORD '$PGPASSWORD';"
+          psql -U postgres -w -c "CREATE DATABASE $PGDATABASE;"
+          psql -U postgres -w -c "GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO $PGUSER;"
 
       - name: Populate DB with test data
         run: |
