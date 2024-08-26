@@ -5,7 +5,7 @@ export const searchUsersToChat = [
   checkExact(
     checkSchema(
       {
-        search: {
+        term: {
           matches: {
             options: /^[a-zA-Z0-9][\w-]+[a-zA-Z0-9]$/,
             errorMessage: "invalid username pattern",
@@ -24,7 +24,7 @@ export const searchAndFilter = [
   checkExact(
     checkSchema(
       {
-        search: {
+        term: {
           optional: true,
           notEmpty: {
             errorMessage: "what do you wanna search"

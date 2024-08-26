@@ -1,7 +1,5 @@
 import { it, expect, beforeAll, describe } from "@jest/globals"
-import dotenv from "dotenv"
 
-dotenv.config()
 
 import app from "../../../src/app.js"
 import supertest from "supertest"
