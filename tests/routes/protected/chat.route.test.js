@@ -166,6 +166,5 @@ it("should let client delete a message", async () => {
     .delete(prefixPath + "/conversations/1/partner/10/messages/3?delete_for=me")
     .set("Authorization", getJwt("itz_butcher"))
 
-  console.log(res.body)
   expect(res.body).toHaveProperty("msg")
 })

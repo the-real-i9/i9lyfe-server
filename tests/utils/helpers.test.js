@@ -1,5 +1,5 @@
 import { it, expect } from "@jest/globals"
-import { extractHashtags, extractMentions } from "../../utils/helpers.js"
+import { extractHashtags, extractMentions } from "../../src/utils/helpers.js"
 
 it("should extract mentions", () => {
   const text = "This is a text with @kenny you @samuel"

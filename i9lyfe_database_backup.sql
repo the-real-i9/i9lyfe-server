@@ -1446,8 +1446,8 @@ BEGIN
 		  'username', sender.username,
 		  'profile_pic_url', sender.profile_pic_url
 	  ),
-	  'post_id', n.post_id,
-	  'comment_id', n.comment_id,
+	  'via_post_id', n.via_post_id,
+	  'via_comment_id', n.via_comment_id,
 	  'comment_created_id', n.comment_created_id,
 	  'reaction_code_point', n.reaction_code_point,
 	  'created_at', n.created_at
@@ -2537,7 +2537,7 @@ COPY public.i9l_user (id, email, username, password, name, birthday, bio, profil
 11	annak@gmail.com	kendrick	$2b$10$HgR1Onh76X32zHWFryZG9Oizc.cND9dyyTdZts.IFc.8F43BqVzrS	Anna Kendrick	2000-12-07	#musicIsLife		online	\N	f	
 12	butcher@gmail.com	itz_butcher	$2b$10$.t6L5VxQkAf8NtQXVSKepeHz4Z1JC/xnGit4GKs/jMxYk0zgWT8iS	William Butcher	2000-11-07	Alright then, love		online	\N	f	
 13	annie_star@gmail.com	starlight	$2b$10$FxIqb8LpmnupXJDkaBURwuv3zIGPgRFSde1EPNAyJX8Fe9igV6YQC	Annie January	2000-01-07	I'm a good Supe! Pls, don't hurt me.		online	\N	f	
-10	johnny@gmail.com	johnny	$2b$10$RrSgFcssPSMTFb6SW.CeeOdSfesv66l6ipDgUZjVBjdonlJj1BM6W	Samuel Ayomide	2000-12-07	#nerdIsLife		offline	2024-08-22 10:17:21.347	f	
+10	johnny@gmail.com	johnny	$2b$10$RrSgFcssPSMTFb6SW.CeeOdSfesv66l6ipDgUZjVBjdonlJj1BM6W	Samuel Ayomide	2000-12-07	#nerdIsLife		offline	2024-08-26 07:28:37.626	f	
 \.
 
 
@@ -2561,6 +2561,7 @@ COPY public.message_ (id, sender_user_id, conversation_id, msg_content, created_
 
 COPY public.message_deletion_log (id, deleter_user_id, message_id, deleted_for) FROM stdin;
 1	12	3	me
+2	12	3	me
 \.
 
 
@@ -2946,7 +2947,7 @@ SELECT pg_catalog.setval('public.blocked_user_id_seq', 1, false);
 -- Name: comment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.comment_id_seq', 2, true);
+SELECT pg_catalog.setval('public.comment_id_seq', 45, true);
 
 
 --
@@ -2960,70 +2961,70 @@ SELECT pg_catalog.setval('public.conversation_id_seq', 1, true);
 -- Name: follow_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.follow_id_seq', 1, true);
+SELECT pg_catalog.setval('public.follow_id_seq', 83, true);
 
 
 --
 -- Name: i9l_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.i9l_user_id_seq', 2, true);
+SELECT pg_catalog.setval('public.i9l_user_id_seq', 13, true);
 
 
 --
 -- Name: message_deletion_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.message_deletion_log_id_seq', 1, true);
+SELECT pg_catalog.setval('public.message_deletion_log_id_seq', 2, true);
 
 
 --
 -- Name: message_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.message_id_seq', 1, true);
+SELECT pg_catalog.setval('public.message_id_seq', 7, true);
 
 
 --
 -- Name: message_reaction_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.message_reaction_id_seq', 1, true);
+SELECT pg_catalog.setval('public.message_reaction_id_seq', 3, true);
 
 
 --
 -- Name: notification_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notification_id_seq', 2, true);
+SELECT pg_catalog.setval('public.notification_id_seq', 290, true);
 
 
 --
 -- Name: pc_hashtag_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.pc_hashtag_id_seq', 1, false);
+SELECT pg_catalog.setval('public.pc_hashtag_id_seq', 2, true);
 
 
 --
 -- Name: pc_mention_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.pc_mention_id_seq', 1, true);
+SELECT pg_catalog.setval('public.pc_mention_id_seq', 106, true);
 
 
 --
 -- Name: pc_reaction_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.pc_reaction_id_seq', 2, true);
+SELECT pg_catalog.setval('public.pc_reaction_id_seq', 37, true);
 
 
 --
 -- Name: post_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.post_id_seq', 1, true);
+SELECT pg_catalog.setval('public.post_id_seq', 10, true);
 
 
 --
@@ -3037,21 +3038,21 @@ SELECT pg_catalog.setval('public.reported_message_id_seq', 1, false);
 -- Name: repost_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.repost_id_seq', 1, true);
+SELECT pg_catalog.setval('public.repost_id_seq', 15, true);
 
 
 --
 -- Name: saved_post_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.saved_post_id_seq', 1, true);
+SELECT pg_catalog.setval('public.saved_post_id_seq', 15, true);
 
 
 --
 -- Name: user_conversation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_conversation_id_seq', 1, false);
+SELECT pg_catalog.setval('public.user_conversation_id_seq', 2, true);
 
 
 --

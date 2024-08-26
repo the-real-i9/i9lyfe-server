@@ -75,6 +75,12 @@ it("should let client react to post, and then undo it", async () => {
   const data = {
     reaction: "😂",
   }
+  
+    const res2 = await supertest(app)
+      .delete(prefixPath + "/posts/10/remove_reaction")
+      .set("Authorization", getJwt("kendrick"))
+  
+    expect(res2.body).toHaveProperty("msg")
 
   const res1 = await supertest(app)
     .post(prefixPath + "/users/13/posts/10/react")
@@ -82,12 +88,6 @@ it("should let client react to post, and then undo it", async () => {
     .send(data)
 
   expect(res1.body).toHaveProperty("msg")
-
-  const res2 = await supertest(app)
-    .delete(prefixPath + "/posts/10/remove_reaction")
-    .set("Authorization", getJwt("kendrick"))
-
-  expect(res2.body).toHaveProperty("msg")
 })
 
 it("should return users who reacted to post", async () => {
@@ -192,6 +192,12 @@ it("should let client react to comment, and then undo it", async () => {
   const data = {
     reaction: "🦷",
   }
+  
+    const res2 = await supertest(app)
+      .delete(prefixPath + "/comments/4/remove_reaction")
+      .set("Authorization", getJwt("kendrick"))
+  
+    expect(res2.body).toHaveProperty("msg")
 
   const res1 = await supertest(app)
     .post(prefixPath + `/users/12/comments/4/react`)
@@ -199,12 +205,6 @@ it("should let client react to comment, and then undo it", async () => {
     .send(data)
 
   expect(res1.body).toHaveProperty("msg")
-
-  const res2 = await supertest(app)
-    .delete(prefixPath + "/comments/4/remove_reaction")
-    .set("Authorization", getJwt("kendrick"))
-
-  expect(res2.body).toHaveProperty("msg")
 })
 
 it("should return users who reacted to comment", async () => {
