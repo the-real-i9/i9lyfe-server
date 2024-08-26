@@ -51,7 +51,7 @@ it("should signup user", async () => {
     // step3
     const step3Body = {
       username: "i9x",
-      password: "fhunmytor",
+      password: process.env.TEST_USER_PASSWORD,
       name: "Samuel Oluwarinola",
       birthday: "2000-10-07",
       bio: "#nerdIsLife",
@@ -83,7 +83,7 @@ it("should signin user", async () => {
 
   const body = {
     email_or_username,
-    password: "fhunmytor",
+    password: process.env.TEST_USER_PASSWORD,
   }
   const res = await supertest(app)
     .post(prefixPath + "/signin")

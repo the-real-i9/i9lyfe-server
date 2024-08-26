@@ -11,7 +11,7 @@ export class App {
   }
 
   static async searchAndFilterPosts({
-    search,
+    term,
     filter,
     limit,
     offset,
@@ -19,13 +19,13 @@ export class App {
   }) {
     const query = {
       text: "SELECT * FROM search_filter_posts($1, $2, $3, $4, $5)",
-      values: [search, filter, limit, offset, client_user_id],
+      values: [term, filter, limit, offset, client_user_id],
     }
 
     return (await dbQuery(query)).rows
   }
 
-  static async searchHashtags({ search, limit, offset }) {
+  static async searchHashtags({ term, limit, offset }) {
     const query = {
       text: `
     SELECT hashtag_name, COUNT(post_id) AS posts_count 
@@ -33,13 +33,13 @@ export class App {
     WHERE hashtag_name ILIKE $1
     GROUP BY hashtag_name
     LIMIT $2 OFFSET $3`,
-      values: [`%${search}%`, limit, offset],
+      values: [`%${term}%`, limit, offset],
     }
 
     return (await dbQuery(query)).rows
   }
 
-  static async searchUsers({ search, limit, offset }) {
+  static async searchUsers({ term, limit, offset }) {
     const query = {
       text: `
     SELECT id AS user_id, 
@@ -49,7 +49,7 @@ export class App {
     FROM i9l_user
     WHERE username ILIKE $1 OR name ILIKE $1
     LIMIT $2 OFFSET $3`,
-      values: [`%${search}%`, limit, offset],
+      values: [`%${term}%`, limit, offset],
     }
 
     return (await dbQuery(query)).rows
@@ -72,10 +72,10 @@ export class App {
   /**
    * @param {string} search
    */
-  static async searchUsersToChat({ search, limit, offset, client_user_id }) {
+  static async searchUsersToChat({ term, limit, offset, client_user_id }) {
     const query = {
       text: "SELECT * FROM get_users_to_chat($1, $2, $3, $4)",
-      values: [`%${search}%`, limit, offset, client_user_id],
+      values: [`%${term}%`, limit, offset, client_user_id],
     }
 
     return (await dbQuery(query)).rows

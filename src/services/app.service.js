@@ -12,18 +12,18 @@ export class AppService {
    * @param {"all" | "user" | "photo" | "video" | "reel" | "story" | "hashtag"} param0.filter
    */
   static async searchAndFilter({
-    search,
+    term,
     filter,
     limit,
     offset,
     client_user_id,
   }) {
     return filter === "hashtag"
-      ? await App.searchHashtags({ search, limit, offset })
+      ? await App.searchHashtags({ term, limit, offset })
       : filter === "user"
-      ? await App.searchUsers({ search, limit, offset })
+      ? await App.searchUsers({ term, limit, offset })
       : await App.searchAndFilterPosts({
-          search,
+          term,
           filter,
           limit,
           offset,
@@ -45,9 +45,9 @@ export class AppService {
     })
   }
 
-  static async searchUsersToChat({ client_user_id, search, limit, offset }) {
+  static async searchUsersToChat({ client_user_id, term, limit, offset }) {
     return await App.searchUsersToChat({
-      search,
+      term,
       limit,
       offset,
       client_user_id,

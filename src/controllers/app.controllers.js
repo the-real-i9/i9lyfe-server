@@ -2,11 +2,11 @@ import { AppService } from "../services/app.service.js"
 
 export const searchUsersToChat = async (req, res) => {
   try {
-    const { search = "", limit = 20, offset = 0 } = req.query
+    const { term = "", limit = 20, offset = 0 } = req.query
 
     const users = await AppService.searchUsersToChat({
       client_user_id: req.auth?.client_user_id,
-      search,
+      term,
       limit,
       offset,
     })
@@ -37,10 +37,10 @@ export const getExplorePosts = async (req, res) => {
 
 export const searchAndFilter = async (req, res) => {
   try {
-    const { search = "", filter = "all", limit = 20, offset = 0 } = req.query
+    const { term = "", filter = "all", limit = 20, offset = 0 } = req.query
 
     const results = await AppService.searchAndFilter({
-      search,
+      term,
       filter,
       limit,
       offset,

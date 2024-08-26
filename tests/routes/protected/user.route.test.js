@@ -18,7 +18,7 @@ beforeAll(async () => {
   async function signUserIn(email_or_username) {
     const data = {
       email_or_username,
-      password: "fhunmytor",
+      password: process.env.TEST_USER_PASSWORD,
     }
     const res = await supertest(app).post("/api/auth/signin").send(data)
 
