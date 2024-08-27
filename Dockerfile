@@ -15,4 +15,4 @@ EXPOSE 5000
 
 COPY . .
 
-CMD ["npm" "start"]
+CMD npm start
