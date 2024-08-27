@@ -6,12 +6,21 @@ on:
       - main
 
 env:
+  PGUSER: ${{ secrets.PGUSER }}
+  PGPASSWORD: ${{ secrets.PGPASSWORD }}
+  PGDATABASE: ${{ secrets.PGDATABASE }}
+  PGPORT: ${{ secrets.PGPORT }}
   PGREMHOST: ${{ secrets.PGREMHOST }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
+  MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
+  SIGNUP_SESSION_COOKIE_SECRET: ${{ secrets.SIGNUP_SESSION_COOKIE_SECRET }}
+  PASSWORD_RESET_SESSION_COOKIE_SECRET: ${{ secrets.PASSWORD_RESET_SESSION_COOKIE_SECRET }}
   
 
 jobs:
-  test-build:
-    name: Test and Build
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,44 +36,19 @@ jobs:
         run: npm ci
 
       - name: Setup Postgres with DB
-        env:
-          PGUSER: ${{ secrets.PGUSER }}
-          PGPASSWORD: ${{ secrets.PGPASSWORD }}
-          PGDATABASE: ${{ secrets.PGDATABASE }}
         uses: harmon758/postgresql-action@v1
         with:
           postgresql db: $PGDATABASE
           postgresql user: $PGUSER
-          postgresql password: $PGPASSWORD 
-          
+          postgresql password: $PGPASSWORD
+
+
       - name: Populate DB with test data
-        env:
-          PGUSER: ${{ secrets.PGUSER }}
-          PGPASSWORD: ${{ secrets.PGPASSWORD }}
-          PGDATABASE: ${{ secrets.PGDATABASE }}
         run: |
           sudo service postgresql start
           PGPASSWORD=$PGPASSWORD psql -U $PGUSER -d $PGDATABASE -q -f "./${PGDATABASE}_database_backup.sql"
       
-      - name: Run tests
+      - name: Excecute tests
         env:
-          PGUSER: ${{ secrets.PGUSER }}
-          PGPASSWORD: ${{ secrets.PGPASSWORD }}
-          PGDATABASE: ${{ secrets.PGDATABASE }}
-          PGPORT: ${{ secrets.PGPORT }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
-          MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
-          SIGNUP_SESSION_COOKIE_SECRET: ${{ secrets.SIGNUP_SESSION_COOKIE_SECRET }}
-          PASSWORD_RESET_SESSION_COOKIE_SECRET: ${{ secrets.PASSWORD_RESET_SESSION_COOKIE_SECRET }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
         run: PGUSER=$PGUSER PGPASSWORD=$PGPASSWORD PGDATABASE=$PGDATABASE PGPORT=$PGPORT JWT_SECRET=$JWT_SECRET MAILING_EMAIL=$MAILING_EMAIL MAILING_PASSWORD=$MAILING_PASSWORD SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET TEST_USER_PASSWORD=$TEST_USER_PASSWORD npm test
-      
-      - name: Login to docker
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build docker image
-        run: docker build -t thereali9/i9lyfe-server .
-
-      - name: Publish image to docker hub
-        run: docker push thereali9/i9lyfe-server:latest
