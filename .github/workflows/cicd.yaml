@@ -47,7 +47,6 @@ jobs:
       - name: Run tests
         env:
           PGUSER: ${{ secrets.PGUSER }}
-          PGHOST: ${{ secrets.PGHOST }}
           PGPASSWORD: ${{ secrets.PGPASSWORD }}
           PGDATABASE: ${{ secrets.PGDATABASE }}
           PGPORT: ${{ secrets.PGPORT }}
@@ -67,3 +66,29 @@ jobs:
 
       - name: Publish image to docker hub
         run: docker push thereali9/i9lyfe-server:latest
+  
+  deploy:
+    needs: test-build
+    name: Deploy
+    runs-on: [gce-i9-server]
+    steps:
+      - name: Pull image from docker hub
+        run: docker pull thereali9/i9lyfe-server:latest
+
+      - name: Delete old container
+        run: docker rm -f i9lyfe-server-container
+
+      - name: Run docker container
+        env:
+          PGUSER: ${{ secrets.PGUSER }}
+          PGREMHOST: ${{ secrets.PGREMHOST }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+          PGPORT: ${{ secrets.PGPORT }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
+          MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
+          SIGNUP_SESSION_COOKIE_SECRET: ${{ secrets.SIGNUP_SESSION_COOKIE_SECRET }}
+          PASSWORD_RESET_SESSION_COOKIE_SECRET: ${{ secrets.PASSWORD_RESET_SESSION_COOKIE_SECRET }}
+        run: docker run -d -p 5000:5000 --name i9lyfe-server-container -e PGUSER=$PGUSER -e PGHOST=$PGREMHOST -e PGPASSWORD=$PGPASSWORD -e PGDATABASE=$PGDATABASE -e PGPORT=$PGPORT -e JWT_SECRET=$JWT_SECRET -e MAILING_EMAIL=$MAILING_EMAIL -e MAILING_PASSWORD=$MAILING_PASSWORD -e SIGNUP_SESSION_COOKIE_SECRET=$SIGNUP_SESSION_COOKIE_SECRET -e PASSWORD_RESET_SESSION_COOKIE_SECRET=$PASSWORD_RESET_SESSION_COOKIE_SECRET thereali9/i9lyfe-server
+
