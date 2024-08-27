@@ -10,6 +10,7 @@ env:
   PGPASSWORD: ${{ secrets.PGPASSWORD }}
   PGDATABASE: ${{ secrets.PGDATABASE }}
   PGPORT: ${{ secrets.PGPORT }}
+  PGHOST: ${{ secrets.PGHOST }}
   PGREMHOST: ${{ secrets.PGREMHOST }}
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
   MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
