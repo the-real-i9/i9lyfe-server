@@ -3,7 +3,7 @@ name: Test, Build, and Deploy
 on:
   push:
     branches:
-      - main
+      - colt
 
 jobs:
   test-build:
