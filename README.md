@@ -8,7 +8,7 @@ i9lyfe-server is an API server for a social media application modelled after Ins
 
 - Create post: Post types include *Photo*, *Video*, *Story*, and *Reel*; all accompanied by an optional description. Post may include @mentions and #hashtags.
 - Comment on Post/Comment: Comments may contain text, media, or both. Its text content may include @mentions and #hashtags.
-  > In this API, I've represented the notion of a *reply* as a *comment-on-comment*, as the former $-$ in my experience $-$ complicates API and database design.
+  > In this API, I've represented the notion of a *reply* as a *comment-on-comment*, as the former — in my experience — complicates API and database design.
 - React to Post/Comment: Reactions are basically, non-surrogate pair, emojis.
 - Repost posts. Save posts
 - See comments on posts and comments on comments. See users who reacted to posts.
@@ -53,19 +53,59 @@ Generally, the API uses a RESTful architecture and is built using the NodeJS's E
 
 #### Approach
 
+The Signup process involved three steps:
+
+- In the first step, the user submits a new email (which isn't already registered with the API) for verification, after which the API sends a 6-digit verification code to the email
+- In the second step, the user submits the 6-digit code they received via email for validation
+- In the third and final step, the user provides their registration information
+
+Each next step is dependent on the success of the previous.
+
 #### Concepts
 
-- OTP Auth:
+- **OTP Auth:** Used in cases where email verification is required before allowing the user to perform a transaction. Use cases in the API include, the signup transaction, and the forgot password transaction.
 
-- JWT Auth:
+- **JWT Auth:** We issue a JWT when user signup is successful or when credentials are valid at user signin. Subsequent requests to protected endpoints attach the JWT in the Authorization header for authetication.
+  > *Concern 1:* What if a client performs multiple login
+  requests to the API and the API issues a JWT for each, shouldn't we invalidate the JWTs previously issued??
+  >
+  > *Concern 2:* A client logs out the user only by deleting the JWT issued to it. Is that really the best way? Shouldn't we also invalidate the JWT on the backend?
+  >
+  > *I plan to settle these concerns and update the API accordinly.*
 
-- Session (Cookie) Auth:
+- **Session (Cookie) Auth:** Transactions involving a number of steps or lined-up requests, — like "Signup" and "Password Reset" — need to maintain a session between these requests.
 
 #### Technologies
 
-- express-jwt
+- **jsonwebtoken:** Used for JWT signing
 
-- express-session
+- **express-jwt:** The express jwt middleware that handles JWT authentication for subsequent requests, performing automatic JWT verification and populating `req.auth` with user data.
+
+  Setting the `credentialsRequired` parameter to `false` for public routes allows us to tailor our response data differently for the case where we have an authenticated user and for the case where we do not. This, for example, allows a client to see a user's profile and followers even when they're not logged in. And if they're logged in, they'll be able to see if they're following a user (*the unfollow button will be displayed instead of the follow button*). If they're not logged in, pressing the follow button will redirect them to the login page, as a JWT is not provided in the Authorization header of the POST request.
+
+  ```js
+    export const getFollowers = async (req, res) => {
+    try {
+      const { username } = req.params
+
+      const { limit = 50, offset = 0 } = req.query
+
+      const userFollowers = await UserService.getFollowers({
+        username,
+        limit,
+        offset,
+        client_user_id: req.auth?.client_user_id, // client is optional, data will be tailored accordinly
+      })
+
+      res.status(200).send(userFollowers)
+    } catch (error) {
+      console.error(error)
+      res.sendStatus(500)
+    }
+  }
+  ```
+
+- **express-session:** The express session middleware that handles session (cookie) management for "Signup" and "Password Reset". The session store **connect-pg** integrates with it to keep session data.
 
 ### Database & Management
 
