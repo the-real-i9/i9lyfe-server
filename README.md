@@ -32,26 +32,29 @@ i9lyfe-server is an API server for a social media application modelled after Ins
   - React to messages and view reactions
   - Realtime chat experience
 
-## Processes/Activities and Technologies used
+---
+---
+
+The following sections comprise of notable processes and activities in the API and its development. Each process discusses important aspects of the process, some of which are: *Approach*, *Concepts* applied, *Technologies* used, and *Tools* used.
 
 Generally, the API uses a RESTful architecture and is built using the NodeJS's Express.js framework.
 
-### Data modelling
+## Data modelling
 
 [ER diagram](./i9lyfe_ERD.png) - PNG file
 
-[ER diagram](./i9lyfe_ERD.pgerd) - pgAdmin ERD file. Open using pgAdmin.
+[ER diagram](./i9lyfe_ERD.pgerd) - pgAdmin ERD file. Open with pgAdmin.
 
-#### Tools
+### Tools
 
 - **pgAdmin ERD Tool:** Its canvas and UI objects were used to create the database's entity relationship diagram.
   - Its card UI objects were used to represent tables, whose properties iconically identify the table schema, table name, attributes/columns along with their data types, unique key attributes, primary key attributes, and foreign key attributes.
   - Its relationship line UI objects were used to establish relationships between entities (tables); linking the primary key column of one table to the foreign key column of another or the same (circular).
   - I was able to work with its canvas comfortably with the aid of my drawing tablet.
 
-### Authentication
+## Authentication
 
-#### Approach
+### Approach
 
 The Signup process involved three steps:
 
@@ -61,7 +64,7 @@ The Signup process involved three steps:
 
 Each next step is dependent on the success of the previous.
 
-#### Concepts
+### Concepts
 
 - **OTP Auth:** Used in cases where email verification is required before allowing the user to perform a transaction. Use cases in the API include, the signup transaction, and the forgot password transaction.
 
@@ -75,7 +78,7 @@ Each next step is dependent on the success of the previous.
 
 - **Session (Cookie) Auth:** Transactions involving a number of steps or lined-up requests, — like "Signup" and "Password Reset" — need to maintain a session between these requests.
 
-#### Technologies
+### Technologies
 
 - **jsonwebtoken:** Used for JWT signing
 
@@ -107,36 +110,49 @@ Each next step is dependent on the success of the previous.
 
 - **express-session:** The express session middleware that handles session (cookie) management for "Signup" and "Password Reset". The session store **connect-pg** integrates with it to keep session data.
 
-### Database & Management
+## Database & DB Management
 
-#### Technologies
+The API uses **PostgreSQL** as its RDBMS.
 
-- **PostgreSQL:** The RDBMS used for this API. Objects used:
-  - **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with databases are.
+PostgreSQL Objects used:
 
-  - **Views:** I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
+- **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with databases are.
 
-  - **Types:**
+- **Views:** I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
 
-  - **Functions:**
+- **Types:**
+
+- **Stored Functions:**
+
+- **Full-text Search:** With its `ts_query()` and `ts_vector()` functions, the API supports its searching through all text data contents (usernames, post descriptions, hashtags etc.) for a text, and of course there's the option to retrict your search to a particular set of content.
+
+Notable **DML clauses** used with `SELECT`:
+
+- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `DISTINCT`.
+
+**Aggregate functions** used:
+
+- `COUNT` and `json_agg()`
+
+### Technologies
 
 - node-postgres (pg):
 
-#### Tools
+### Tools
 
 - psql CLI
 
 - pgAdmin
 
-### Request Validation
+## Request Validation
 
 - express-validator library:
 
-### Realtime communication
+## Realtime communication
 
 - socket-io
 
-### Handling user-generated content
+## Handling user-generated content
 
 - Google Cloud Storage:
 
@@ -146,19 +162,17 @@ Each next step is dependent on the success of the previous.
 
 - @google-cloud/storage
 
-### Security knots
+## Security knots
 
-#### Rate limiting
+### Rate limiting
 
-### Testing
+## Testing
 
 - Jest/Supertest
 
 - Postman
 
-### Deployment
-
-- GCP Gemini AI Support
+## Deployment
 
 - Google Compute Engine
 
@@ -182,26 +196,30 @@ Each next step is dependent on the success of the previous.
 
   - Self Hosted Runner
 
-### API documentation
+## API documentation
 
 - Swagger Open API
 
 - API Blueprint
 
-### Version control
+## Version control
 
 - Git & GitHub
 
-### Development tools
+## Development tools
 
 - Bash
 
 - Linux
 
+- VSCode
+
+## Support tools
+
+- PostgreSQL Official documentation
+
 - ChatGPT AI
 
-## Process story
+- Microsoft Bing Copilot
 
-### Data Modelling
-
-### Deployment
+- GCP Gemini AI
