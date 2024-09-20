@@ -35,15 +35,11 @@ i9lyfe-server is an API server for a social media application modelled after Ins
 ---
 ---
 
-The following sections comprise of notable processes and activities in the API and its development. Each process discusses important aspects of the process, some of which are: *Approach*, *Concepts* applied, *Technologies* used, and *Tools* used.
+The following sections comprise of notable processes and activities in the API and its development. Each process discusses important aspects of the process, some of which are: *Approach*, *Concepts* applied, *Technologies* used, File *Attachments*, and *Tools* used.
 
 Generally, the API uses a RESTful architecture and is built using the NodeJS's Express.js framework.
 
 ## Data modelling
-
-[ER diagram](./i9lyfe_ERD.png) - PNG file
-
-[ER diagram](./i9lyfe_ERD.pgerd) - pgAdmin ERD file. Open with pgAdmin.
 
 ### Tools
 
@@ -51,6 +47,13 @@ Generally, the API uses a RESTful architecture and is built using the NodeJS's E
   - Its card UI objects were used to represent tables, whose properties iconically identify the table schema, table name, attributes/columns along with their data types, unique key attributes, primary key attributes, and foreign key attributes.
   - Its relationship line UI objects were used to establish relationships between entities (tables); linking the primary key column of one table to the foreign key column of another or the same (circular).
   - I was able to work with its canvas comfortably with the aid of my drawing tablet.
+  
+### Attachments
+
+[ER diagram](./i9lyfe_ERD.png) - PNG file
+
+[ER diagram](./i9lyfe_ERD.pgerd) - pgAdmin ERD file. Open with pgAdmin.
+
 
 ## Authentication
 
@@ -128,15 +131,27 @@ PostgreSQL Objects used:
 
 Notable **DML clauses** used with `SELECT`:
 
-- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `DISTINCT`.
+- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `DISTINCT`
 
-**Aggregate functions** used:
+Some **Aggregate functions** used:
 
-- `COUNT` and `json_agg()`
+- `COUNT`, `array_agg()`, and `json_agg()`
+
+Some **JSON functions** used:
+
+- `json_build_object()`
+
+Some **Array Functions** used:
+
+- `array_append()`
 
 ### Technologies
 
 - node-postgres (pg):
+
+### Attachments
+
+[SQL Backup file](./i9lyfe_database_backup.sql) - Scan through the schema definitions and object definitions — **function definitions**, in particuler. It also includes sample data for testing.
 
 ### Tools
 
