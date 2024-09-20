@@ -1,6 +1,4 @@
-# i9lyfe (API server)
-
-## Intro
+# i9lyfe-server
 
 i9lyfe-server is an API server for a social media application modelled after Instagram
 
