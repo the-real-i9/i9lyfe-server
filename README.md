@@ -111,14 +111,14 @@ Each next step is dependent on the success of the previous.
 
 #### Technologies
 
-- **PostgreSQL:** The RDBMS used for this API. Objects I heavily used, include:
+- **PostgreSQL:** The RDBMS used for this API. Objects used:
   - **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with databases are.
 
   - **Views:** I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
 
   - **Types:**
 
-  - Functions
+  - **Functions:**
 
 - node-postgres (pg):
 
