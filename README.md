@@ -291,7 +291,7 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 - **psql:** This tool was a swiss army knife throughout the development process. I used it many times to inspect and make mimimal changes to the database. I also used it when setting up PostgreSQL; to CREATE a new USER X, and ALTER database OWNER TO X (after restoring from backup)
 - **pg_dump:** Used when backing-up the database.
 
-  I backup my database's state each time I make changes to any definition, so that when I accidentally damage my database — which happened💀, I can be able to restore it back to its last working state.
+  I backup my database's state each time I make changes to any  of its definitions, so that when I accidentally damage my database — which happened💀, I can be able to restore it back to its last working state.
   
   The backup is also useful when you'll want to populate an empty database with an existing backup in a new environment. I remember doing this when deploying the database in my GCE VM instance, also when using sample data to run endpoint tests in GitHub Actions.
 - **dropdb**, **createdb**, **pg_restore | psql**: Used when restoring the database. The process involves the following steps:
@@ -308,7 +308,15 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 
 ## Realtime communication
 
-- socket-io
+The API uses WebSockets for realtime communication
+
+Here are aspects of the application for which realtime communication is used:
+
+- **Home feed new post updates:** First, all clients should listen for the event `new post` on the home feed. Whenever a client comes online, he is added to the "new post" room of each of the users he follows, so as to receive their "new post" whenever it is broadcasted to their "new post" room.
+
+### Technologies
+
+- socket-io: 
 
 ## Handling user-generated content
 
