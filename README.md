@@ -52,7 +52,6 @@ Generally, the API uses a RESTful architecture and is built using the NodeJS's E
 
 [ER diagram](./i9lyfe_ERD.pgerd) - pgAdmin ERD file. Open with pgAdmin.
 
-
 ## Authentication
 
 ### Approach
@@ -77,7 +76,7 @@ Each next step is dependent on the success of the previous.
   >
   > *I plan to settle these concerns and update the API accordinly.*
 
-- **Session (Cookie) Auth:** Transactions involving a number of steps or lined-up requests, — like "Signup" and "Password Reset" — need to maintain a session between these requests.
+- **Session Management:** Transactions involving a number of steps or lined-up requests, — like "Signup" and "Password Reset" — need to maintain a session between these requests. I used HTTP cookie with the express session middleware to achieve this.
 
 ### Technologies
 
@@ -117,19 +116,21 @@ The API uses **PostgreSQL** as its RDBMS.
 
 PostgreSQL Objects used:
 
-- **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with databases are.
+- **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with the RDBMS follow.
 
 - **Views:** I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
 
-- **Types:**
+- **Types:** I used types specifically as return types from stored functions to simplify complex return values and to represent the data object we'll return to the client from the application server.
+
+  Although for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Those properties, however, don't contain values specific to the client user (i.e. the API request user for which we're executing the function), rather they contain values for all users in our database. Returning types from our stored functions allows us to have a structure that contains value(s) specific to the client user.
 
 - **Stored Functions:**
 
-- **Full-text Search:** With its `ts_query()` and `ts_vector()` functions, the API supports its searching through all text data contents (usernames, post descriptions, hashtags etc.) for a text, and of course there's the option to retrict your search to a particular set of content.
+- **Full-text Search:** The API supports its search & filter feature with PostgreSQL's `ts_query()` and `ts_vector()` functions searching through all text-based data (usernames, post descriptions, hashtags etc.) for the query text, and, of course, there's the option to restrict your search to a set of content types.
 
 Notable **DML clauses** used with `SELECT`:
 
-- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `DISTINCT`
+- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `ORDER BY`, `DISTINCT`
 
 Some **Aggregate functions** used:
 
@@ -211,7 +212,7 @@ Some **Array Functions** used:
 
 ## API documentation
 
-- Swagger Open API
+- Open API Specification
 
 - API Blueprint
 
