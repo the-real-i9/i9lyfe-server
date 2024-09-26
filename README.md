@@ -97,7 +97,7 @@ Each next step is dependent on the success of the previous.
         username,
         limit,
         offset,
-        client_user_id: req.auth?.client_user_id, // client is optional, data will be tailored accordinly
+        client_user_id: req.auth?.client_user_id, // client is optional, data will be tailored accordingly
       })
 
       res.status(200).send(userFollowers)
@@ -258,7 +258,7 @@ Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our V
 
 #### Full-text Search
 
-The API supports its search & filter feature with PostgreSQL's `ts_query()` and `ts_vector()` functions searching through all text-based data (usernames, post descriptions, hashtags etc.) for the query text, and, of course, there's the option to restrict your search to a set of content types.
+The API supports its search & filter feature with PostgreSQL's `to_tsquery()` and `to_tsvector()` functions searching through all text-based data (usernames, post descriptions, hashtags etc.) for the query text, and, of course, there's the option to restrict your search to a set of content types.
 
 #### Notable *DML clauses* used with `SELECT`
 
