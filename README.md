@@ -114,35 +114,47 @@ Each next step is dependent on the success of the previous.
 
 The API uses **PostgreSQL** as its RDBMS.
 
-PostgreSQL Objects used:
+### Notable PostgreSQL Objects
 
-- **Tables:** Of course, I'll use tables. But the ones that prove my proficiency with the RDBMS follow.
+#### Tables
 
-- **Views:** I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
+Of course, I'll use tables. But the ones that prove my proficiency with the RDBMS follow.
 
-- **Types:** I used types specifically as return types from stored functions to simplify complex return values and to represent the data object we'll return to the client from the application server.
+#### Views
 
-  Although for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Those properties, however, don't contain values specific to the client user (i.e. the API request user for which we're executing the function), rather they contain values for all users in our database. Returning types from our stored functions allows us to have a structure that contains value(s) specific to the client user.
+I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
 
-- **Stored Functions:**
+#### Types
 
-- **Full-text Search:** The API supports its search & filter feature with PostgreSQL's `ts_query()` and `ts_vector()` functions searching through all text-based data (usernames, post descriptions, hashtags etc.) for the query text, and, of course, there's the option to restrict your search to a set of content types.
+I used types specifically as return types from stored functions to simplify complex return values and to represent the data object we'll return to the client from the application server.
 
-Notable **DML clauses** used with `SELECT`:
+Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Our Views, however, do not consist results narrowed to a client user (i.e. the API request user for which we're executing the function), rather, by default, they hold results for all users in our database. Returning types from our stored functions allows us to have results narrowed to a client user.
 
-- `GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `ORDER BY`, `DISTINCT`
+#### Stored Functions
 
-Some **Aggregate functions** used:
+One thing you'll notice while you inspect the `*.model.js` files is that, all database queries are so small, and 99% includes function calls. Well, that's because I made a heavy use of stored functions to handle business logic. It completely takes over the big deal of handling database transactions, and it saves the API server multiple round-trips to the database server in order to complete a single user task.
 
-- `COUNT`, `array_agg()`, and `json_agg()`
+### Notable PostgreSQL Features
 
-Some **JSON functions** used:
+#### Full-text Search
 
-- `json_build_object()`
+The API supports its search & filter feature with PostgreSQL's `ts_query()` and `ts_vector()` functions searching through all text-based data (usernames, post descriptions, hashtags etc.) for the query text, and, of course, there's the option to restrict your search to a set of content types.
 
-Some **Array Functions** used:
+#### Notable *DML clauses* used with `SELECT`
 
-- `array_append()`
+`GROUP`, `UNION`, `INNER JOIN`, `LEFT JOIN`, `ORDER BY`, `DISTINCT`
+
+#### Some *Aggregate functions* used
+
+`COUNT`, `array_agg()`, and `json_agg()`
+
+#### Some *JSON functions* used
+
+`json_build_object()`
+
+#### Some *Array Functions* used
+
+`array_append()`
 
 ### Technologies
 
