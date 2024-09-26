@@ -278,7 +278,7 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 
 ### Technologies
 
-- node-postgres (pg):
+- node-postgres (pg): The Node.js database driver used for PostgreSQL. Personally, I prefer to write DDL and DML queries purely and I don't like to delegate the job to ORMs. I'm not here to give my own take on the use of ORMs, but I think I know enough database concepts, SQL, and PostgreSQL not to need an ORM. Besides, this project is pretty big and advanced for the use of ORMs. That said, I've had good experience with the Sequelize ORM in small projects.
 
 ### Attachments
 
