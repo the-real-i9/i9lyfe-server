@@ -124,15 +124,135 @@ Of course, I'll use tables. But the ones that prove my proficiency with the RDBM
 
 I used Views to represent specific UI components, for exmaple, the post card component. The View attributes consists of the properties of the UI component it represents. The "PostView", for example, includes the `reactions_count`, `comments_count`, `reposts_count`, and `saves_count` attributes, among others (these attributes are not calculated with every SELECT query, optimizing SELECT's performance).
 
-#### Types
-
-I used types specifically as return types from stored functions to simplify complex return values and to represent the data object we'll return to the client from the application server.
-
-Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Our Views, however, do not consist results narrowed to a client user (i.e. the API request user for which we're executing the function), rather, by default, they hold results for all users in our database. Returning types from our stored functions allows us to have results narrowed to a client user.
-
 #### Stored Functions
 
-One thing you'll notice while you inspect the `*.model.js` files is that, all database queries are so small, and 99% includes function calls. Well, that's because I made a heavy use of stored functions to handle business logic. It completely takes over the big deal of handling database transactions, and it saves the API server multiple round-trips to the database server in order to complete a single user task.
+> I get that the info here is somewhat lengthy, but its worth the read — you'll enjoy it.
+
+One thing you'll observe as you inspect the `*.model.js` files is that, all database queries are small and 99% include function calls. Well, that's because I made a heavy use of stored functions to handle business logic. It completely takes over the big deal of handling database transactions, and it saves the API server multiple round-trips to the database server required to complete a single business task.
+
+I was getting overwhemled by the complexity and weight of database code. Large-size queries were written directly into the `*.model.js` files, buisiness tasks require complex database transaction constructs; it resulted into a javascript code that's difficult to navigate and understand.
+
+I tried using `WITH` queries coupled with "SQL Triggers" with the aim of simplifying things, but even with these I also got an incomprehensible database code. I became stressed and burned-out. You'll be confused if you decided to go through the whole code.
+
+It wasn't until when I was working on i9chat — a chat application modelled after WhatsApp and Messenger, and got to a point where I needed a programmatic solution to achieve a certain behaviour, and found "stored functions and procedures" to be the solution, that I realized that "stored functions" are the solution to all my database manipulation problems.
+
+I had heard about "stored functions and procedures", but I postponed it for later learning seeing it claims to be an advance feature of PostgreSQL. Little did I know that the project I decided to take on as my first is pretty much advance itself.
+
+As I continued to learn and integrate "Stored functions" into aspects of my database and business logic code, I began to realize that PLpgSQL, which is the language you use to write the functions, is no different from an actual programming language, seeing it comprises of all the constructs I already understood in programming languages. On realizing this, my head tingled *"Wooow, database programming is a thing??? Think of all the possibilities!"* I immediately got the idea that I could rewrite all my messy database and business logic code using PLpgSQL, statement-after-statement, in a stored function, passing the necessary input parameters and returning as much result as I need.
+
+It wasn't long after this realization that I suspended "i9chat-server", revisited this application (i9lyfe-server),  and reworked its business logic and database code into "stored functions". One of the reworkings that I love is this portion that implements the business task of "creating a post".
+
+Post model code:
+
+```js
+export class Post {
+  /**
+   * @param {object} post
+   * @param {number} post.client_user_id
+   * @param {string[]} post.media_urls
+   * @param {string[]} post.mentions
+   * @param {string[]} post.hashtags
+   * @param {"photo" | "video" | "reel" | "story"} post.type
+   * @param {string} post.description
+   */
+  static async create({ client_user_id, media_urls, type, description, mentions, hashtags }) {
+    const query = {
+      text: "SELECT new_post_id, mention_notifs FROM create_post($1, $2, $3, $4, $5, $6)",
+      values: [
+        client_user_id,
+        [...media_urls],
+        type,
+        description,
+        [...mentions],
+        [...hashtags],
+      ],
+    }
+
+    return (await dbQuery(query)).rows[0]
+  }
+}
+```
+
+`create_post` function definition:
+
+```sql
+CREATE FUNCTION public.create_post(OUT new_post_id integer, OUT mention_notifs json[], client_user_id integer, in_media_urls text[], in_type text, in_description text, mentions character varying[], hashtags character varying[]) RETURNS record
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  ret_post_id int;
+  
+  mention_username varchar;
+  ment_user_id int;
+  
+  client_data json;
+  
+  mention_notifs_acc json[] := ARRAY[]::json[];
+  
+  hashtag_n varchar;
+BEGIN
+  INSERT INTO post (user_id, type, media_urls, description)
+  VALUES (client_user_id, in_type, in_media_urls, in_description)
+  RETURNING id INTO ret_post_id;
+  
+  -- populate client data
+  SELECT json_build_object(
+   'id', id,
+   'username', username,
+   'profile_pic_url', profile_pic_url
+  ) INTO client_data FROM i9l_user WHERE id = client_user_id;
+  
+  
+  FOREACH mention_username IN ARRAY mentions
+  LOOP
+    SELECT id INTO ment_user_id FROM i9l_user WHERE username = mention_username;
+
+        -- skip if mentioned user is not found
+    CONTINUE WHEN ment_user_id IS NULL;
+
+    -- create mentions
+    INSERT INTO pc_mention (post_id, user_id) 
+    VALUES (ret_post_id, ment_user_id);
+    
+    -- skip mention notification for client user
+    CONTINUE WHEN ment_user_id = client_user_id;
+    
+    -- create mention notifications
+    INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id)
+    VALUES ('mention_in_post', client_user_id, ment_user_id, ret_post_id);
+    
+    -- accumulate mention notifications
+    mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
+      'receiver_user_id', ment_user_id,
+      'sender', client_data,
+      'type', 'mention_in_post',
+      'post_id', ret_post_id
+    ));
+  END LOOP;
+  
+  
+  -- create hashtags
+  FOREACH hashtag_n IN ARRAY hashtags
+  LOOP
+    INSERT INTO pc_hashtag (post_id, hashtag_name)
+    VALUES (ret_post_id, hashtag_n);
+  END LOOP;
+  
+  new_post_id := ret_post_id;
+  mention_notifs := mention_notifs_acc;
+  
+  RETURN;
+END;
+$$;
+```
+
+A lot of PLpgSQL constructs including variable declarations, conditional statements, loops, function input parameters, function return types, function output parameters, and error handling were all useful accross stored functions.
+
+#### Types
+
+I used types specifically as return types from stored functions to simplify complex return values — when things got serious — and to represent the data object we'll return to the client from the application server.
+
+Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Our Views, however, do not consist results narrowed to a client user (i.e. the API request user for which we're executing the function), rather, by default, they hold results for all users in our database. Returning types from our stored functions allows us to have results narrowed to a client user.
 
 ### Notable PostgreSQL Features
 
