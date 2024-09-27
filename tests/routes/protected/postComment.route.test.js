@@ -36,7 +36,7 @@ beforeAll(async () => {
 
 it("should create a post for client", async () => {
   const data = {
-    media_blobs: [[97, 98, 99]],
+    media_binaries: [[97, 98, 99]],
     type: "reel",
     description: `Johnny! Johnny! Yes papa!`,
   }
@@ -111,7 +111,7 @@ it("should filter post reactors by specific reaction", async () => {
 it("should let client comment on the post", async () => {
   const data = {
     comment_text: `This is a comment on this post from @johnny.`,
-    attachment_blob: [99],
+    attachment_binary: [99],
   }
 
   const res = await supertest(app)
@@ -131,7 +131,7 @@ it("should let client comment on the post", async () => {
 it("should let client comment on (reply to) the comment", async () => {
   const data = {
     comment_text: `This is a reply to this comment from @johnny.`,
-    attachment_blob: [99],
+    attachment_binary: [99],
   }
 
   const res = await supertest(app)

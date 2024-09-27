@@ -13,6 +13,10 @@
  * @param {ExpressNextFunction} next
  */
 export const uploadMessageFiles = (req, res, next) => {
+  // const { data } = req.body.msg_content.props
+
+  // change "data" property to "media_url"
+
   return next()
 }
 
@@ -26,11 +30,11 @@ export const uploadMessageFiles = (req, res, next) => {
  */
 export const uploadPostFiles = async (req, res, next) => {
   try {
-    // "https://storage.cloud.google.com/i9lyfe-bucket/%s"
+    // "https://storage.googleapis.com/i9lyfe-bucket/%s"
     
     req.body.media_urls = []
     
-    delete req.body.media_blobs
+    delete req.body.media_binaries
 
     return next()
   } catch (error) {
@@ -41,12 +45,28 @@ export const uploadPostFiles = async (req, res, next) => {
 
 export const uploadCommentFiles = async (req, res, next) => {
   try {
-    // "https://storage.cloud.google.com/i9lyfe-bucket/%s"
+    // "https://storage.googleapis.com/i9lyfe-bucket/%s"
     
     
     req.body.attachment_url = ""
     
-    delete req.body.attachment_blob
+    delete req.body.attachment_binary
+
+    return next()
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+export const uploadProfilePicture = async (req, res, next) => {
+  try {
+    // "https://storage.googleapis.com/i9lyfe-bucket/%s"
+    
+    
+    req.body.profile_pic_url = ""
+    
+    delete req.body.profile_pic_binary
 
     return next()
   } catch (error) {

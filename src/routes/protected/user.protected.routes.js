@@ -4,7 +4,11 @@ import { expressjwt } from "express-jwt"
 
 import * as UC from "../../controllers/user.controllers.js"
 import * as userValidators from "../../middlewares/validators/user.validators.js"
-import { validateIdParams, validateLimitOffset } from "../../middlewares/validators/miscs.js"
+import {
+  validateIdParams,
+  validateLimitOffset,
+} from "../../middlewares/validators/miscs.js"
+import { uploadProfilePicture } from "../../middlewares/app.middlewares.js"
 
 dotenv.config()
 
@@ -24,7 +28,6 @@ router.use(
   }
 )
 
-
 router.get("/home_feed", ...validateLimitOffset, UC.getHomeFeed)
 
 router.get("/session_user", UC.getSessionUser)
@@ -35,11 +38,23 @@ router.delete("/users/:user_id/unfollow", ...validateIdParams, UC.unfollowUser)
 
 router.patch("/edit_profile", ...userValidators.editProfile, UC.editProfile)
 
-router.put("/upload_profile_picture", UC.uploadProfilePicture)
+router.put(
+  "/change_profile_picture",
+  uploadProfilePicture,
+  UC.changeProfilePicture
+)
 
-router.patch("/update_connection_status", ...userValidators.updateConnectionStatus, UC.updateConnectionStatus)
+router.patch(
+  "/update_connection_status",
+  ...userValidators.updateConnectionStatus,
+  UC.updateConnectionStatus
+)
 
-router.put("/my_notifications/:notification_id/read", ...validateIdParams, UC.readNotification)
+router.put(
+  "/my_notifications/:notification_id/read",
+  ...validateIdParams,
+  UC.readNotification
+)
 
 // GET posts user has been mentioned in
 router.get("/mentioned_posts", ...validateLimitOffset, UC.getMentionedPosts)
@@ -51,6 +66,10 @@ router.get("/reacted_posts", ...validateLimitOffset, UC.getReactedPosts)
 router.get("/saved_posts", ...validateLimitOffset, UC.getSavedPosts)
 
 // GET user notifications
-router.get("/my_notifications", ...userValidators.getNotifications, UC.getNotifications)
+router.get(
+  "/my_notifications",
+  ...userValidators.getNotifications,
+  UC.getNotifications
+)
 
 export default router

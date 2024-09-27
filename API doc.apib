@@ -664,7 +664,7 @@ The last step of the signup process, requiring you to provide your account infor
 
 ### Create new post [POST]
 
-+ **media_blobs** (uint8[][]) - An array of media datas in `uint8` array format. They will be uploaded cloud storage and returned as `media_urls` when requested.
++ **media_binaries** (uint8[][]) - An array of media datas in `uint8` array format. They will be uploaded cloud storage and returned as `media_urls` when requested.
 + **type** (string) - The type of post. Possible values are `photo`, `video`, `story`, or `reel`.
 + **description** (string) - The description supporting the post.
 
@@ -677,7 +677,7 @@ The last step of the signup process, requiring you to provide your account infor
     + Body
 
             {
-                "media_blobs": [],
+                "media_binaries": [],
                 "type": "video",
                 "description": "This is a post mentioning @dollyp and hashtaging #genius."
             }
@@ -849,7 +849,7 @@ Remove my reaction on post with `postId` of `4`
 
 ### Write comment on post [POST]
 
-+ **attachment_blob** (uint8[]) - Attachment data in `uint8` array binary format.
++ **attachment_binary** (uint8[]) - Attachment data in `uint8` array binary format.
 + comment_text (string)
 
 + Request (application/json)
@@ -861,7 +861,7 @@ Remove my reaction on post with `postId` of `4`
     + Body
 
             {
-                "attachment_blob": [],
+                "attachment_binary": [],
                 "comment_text": "This is another comment on this post."
             }
 
@@ -1002,7 +1002,7 @@ Remove my reaction on post with `postId` of `4`
 
 ### Write comment on comment [POST]
 
-+ **attachment_blob** (uint8[], optional) - Attachment data in `uint8` array binary format. This field isn't required, it is just an option to enable the use GIFs by users.
++ **attachment_binary** (uint8[], optional) - Attachment data in `uint8` array binary format. This field isn't required, it is just an option to enable the use GIFs by users.
 + comment_text (string)
 
 + Request (application/json)
@@ -1014,7 +1014,7 @@ Remove my reaction on post with `postId` of `4`
     + Body
 
             {
-                "attachment_blob": [],
+                "attachment_binary": [],
                 "comment_text": "This is another comment on this post."
             }
 

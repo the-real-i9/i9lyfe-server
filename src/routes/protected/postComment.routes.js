@@ -29,7 +29,12 @@ router.use(
 )
 
 /* ====== POST ====== */
-router.post("/new_post", ...PCV.createNewPost, uploadPostFiles, PCC.createNewPost)
+router.post(
+  "/new_post",
+  ...PCV.createNewPost,
+  uploadPostFiles,
+  PCC.createNewPost
+)
 router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)
 router.delete("/posts/:post_id", ...validateIdParams, PCC.deletePost)
 
@@ -124,11 +129,7 @@ router.delete(
 /* ====== REPOST ====== */
 
 router.post("/posts/:post_id/repost", ...validateIdParams, PCC.createRepost)
-router.delete(
-  "/posts/:post_id/unrepost",
-  ...validateIdParams,
-  PCC.deleteRepost
-)
+router.delete("/posts/:post_id/unrepost", ...validateIdParams, PCC.deleteRepost)
 
 /* ====== POST SAVE ====== */
 

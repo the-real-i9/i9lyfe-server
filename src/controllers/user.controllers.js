@@ -92,7 +92,7 @@ export const readNotification = async (req, res) => {
   }
 }
 
-export const uploadProfilePicture = async (req, res) => {
+export const changeProfilePicture = async (req, res) => {
   try {
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
     res.status(200).send({ msg: "operation successful" })
