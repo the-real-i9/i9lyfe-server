@@ -246,13 +246,13 @@ END;
 $$;
 ```
 
-A lot of PLpgSQL constructs including variable declarations, conditional statements, loops, function input parameters, function return types, function output parameters, and error handling were all useful accross stored functions.
+A lot of PLpgSQL constructs including variable declarations, conditional statements, loops, function input parameters, function return types, function output parameters, and error handling were useful accross stored functions.
 
 #### Types
 
-I used types specifically as return types from stored functions to simplify complex return values — when things got serious — and to represent the data object we'll return to the client from the application server.
+I used types particulaly as return types of stored functions in order to simplify complex return values — when things got serious, and to represent the data object to be returned to the client from the application server.
 
-Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Our Views, however, do not consist results narrowed to a client user (i.e. the API request user for which we're executing the function), rather, by default, they hold results for all users in our database. Returning types from our stored functions allows us to have results narrowed to a client user.
+Although, for some types such as `ui_post_struct` and `ui_comment_struct`, our Views already contain the properties (attributes) we need. Our Views, however, do not consist results narrowed to a single client user (i.e. the API request user for which we're executing the function), rather, by default, they hold results for all users in our database. Returning types from our stored functions allows us to have results narrowed to a single client user.
 
 ### Notable PostgreSQL Features
 
@@ -278,7 +278,7 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 
 ### Technologies
 
-- node-postgres (pg): The Node.js database driver used for PostgreSQL. Personally, I prefer to write DDL and DML queries purely and I don't like to delegate the job to ORMs. I'm not here to give my own take on the use of ORMs, but I think I know enough database concepts, SQL, and PostgreSQL not to need an ORM. Besides, this project is pretty big and advanced for the use of ORMs. That said, I've had good experience with the Sequelize ORM in small projects.
+- **node-postgres (pg):** The Node.js database driver used for PostgreSQL. Personally, I prefer to write DDL and DML queries purely and I don't like to delegate the job to ORMs. I'm not here to give my own take on the use of ORMs, but I think I know enough database concepts, SQL, and PostgreSQL not to need an ORM. Besides, this project is pretty big and advanced for the use of ORMs. That said, I've had good experience with the Sequelize ORM in small projects.
 
 ### Attachments
 
@@ -302,9 +302,21 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 
 #### pgAdmin
 
+Alongside psql is pgAdmin, which I use to handle complex, bulky task, particulary in situations where its editor interface makes the task easier and more convenient.
+
+Definitions of objects such as tables, functions, and views involve lenghty lines of SQL code that require careful, algorithmic thinking and multiple changes throughout the definition process.
+
+I also use it when constructing complex multi-table queries that involve multiple JOIN stacks; primarily for the purpose of inspecting how each JOIN layer affects the resulting data, thereby ensuring that the query works correctly.
+
 ## Request Validation
 
-- express-validator library:
+Request data such as POST/PUT request bodies, query parameters, and variable segements, need to be validated for correctness, according to the requirements of an API endpoint.
+
+### Technologies
+
+- **express-validator:** An express request validation middleware.
+
+  I particularly love it for the way it helped define structural constraints on complex POST request bodies — specifically those of *Post* and *Message* that come in varying structures depending on post or message type.
 
 ## Realtime communication
 
@@ -387,7 +399,7 @@ See [chat.realtime.service.js](./src/services/realtime/chat.realtime.service.js)
 
 ### Technologies
 
-- socket-io: 
+- **socket-io:** The WebSocket library used for Realtime Communication.
 
 ## Handling user-generated content
 
