@@ -19,10 +19,12 @@ export class NotificationService {
     const { client_user_id } = socket.jwt_payload
     NotificationService.io ??= io
     NotificationService.sockClients.set(client_user_id, socket)
-
+  
+    // notify client of unread notifications when they're connected
     new NotificationService(client_user_id).notifyUnreadNotifications()
   }
 
+  // send a new notification update
   sendNotification(notificationData) {
     NotificationService.sockClients
       .get(this.receiver_user_id)

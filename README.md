@@ -20,7 +20,7 @@ i9lyfe-server is an API server for a social media application modelled after Ins
 - Home feed
   - Contents may be fetched in chunks, with the limit and offset request query parameters, to allow UI pagination/infinite-scrolling
   - New posts, relevant to a specific user, are delivered in realtime
-  - Post stats including reactions count, comments count, reposts count, and saves count, are updated in realtime
+  - Post metrics including reactions count, comments count, reposts count, and saves count, are updated in realtime
 
 ---
 
@@ -310,9 +310,80 @@ The API supports its search & filter feature with PostgreSQL's `to_tsquery()` an
 
 The API uses WebSockets for realtime communication
 
-Here are aspects of the application for which realtime communication is used:
+### Use cases in the application
 
-- **Home feed new post updates:** First, all clients should listen for the event `new post` on the home feed. Whenever a client comes online, he is added to the "new post" room of each of the users he follows, so as to receive their "new post" whenever it is broadcasted to their "new post" room.
+#### Home feed new post updates
+
+First, all clients should listen for the event `new post` on the home feed. When a client comes online, he is added to the *"new post"* room of each of the users he follows, so as to receive their *"new post"* whenever it is broadcasted to their *"new post"* room. Now, whenever the client creates a new post, he broadcasts it to his *"new post"* room, and all users active in this room receives the *"new post"*.
+> Note: By *"new post"*, we're actually referring to the post data.
+
+Below is the portion of code that implements this functionality. See [postComment.realtime.service.js](./src/services/realtime/postComment.realtime.service.js)
+
+```js
+// When a client comes online i.e. when their socket connects
+const followeesNewPostRooms = (
+  await User.getFolloweesIds(client_user_id)
+).map((followee_user_id) => `user_${followee_user_id}_new_post_room`)
+
+// they subsribe to their followees new post rooms, listening for any new post they might publish
+socket.join(followeesNewPostRooms)
+
+// when a client creates a new post, they broadcast it to their new post room by invoking this function, so any client who has subscribed above receives it
+static sendNewPost(user_id, newPostData) {
+  PostCommentRealtimeService.io
+    ?.to(`user_${user_id}_new_post_room`)
+    .emit("new post", newPostData)
+}
+```
+
+#### Post/Comment metrics updates
+
+When a *"post/comment card/snippet component"* comes into view in the UI, a client subscribes to *"post/comment metric updates"* for that post/comment. This subscription adds them to the room of *"metric update subscribers"* for that post.
+
+Now, whenever a client reacts to, comments on, or reposts this post/comment, this post/comment broadcasts the update to its room of *"metric update subscribers",* and all clients (client sockets) active in that room will receive the broadcast, updating their *"post/comment card/snippet UI component"* accordingly.
+
+When the *"post/comment card/snippet component"* goes out of view in the UI, the client can then unsubscribe to stop receiving updates for it.
+
+> When to subscribe or unsubscribe for updates is actually the businesses design decision. That, above, is just my suggestion.
+
+Below is the portion of code that implements this functionality. See [postComment.realtime.service.js](./src/services/realtime/postComment.realtime.service.js)
+
+```js
+/* To start receiving metrics update for post when in view in UI */
+socket.on("subscribe to post metrics update", (post_id) => {
+  socket.join(`post_${post_id}_metrics_update_subscribers`)
+})
+
+/* To stop receiving metrics update for post when out of view in UI */
+socket.on("unsubscribe from post metrics update", (post_id) => {
+  socket.leave(`post_${post_id}_metrics_update_subscribers`)
+})
+```
+
+#### Notification updates
+
+When a client comes online (i.e. socket connection established), they immediately receive an update on their number of unread notifications.
+
+When a client needs to be notified of an activity that involves them — they're followed or someone reacted to their post, a notification is streamed to them via a WebSocket connection.
+
+See [notification.service.js](./src/services/notification.service.js)
+
+#### DM Chat & Messaging
+
+A client handles the data associated with each event accordingly.
+
+```js
+/**
+ * @param {"new conversation" | "new message" | "message delivered" | "message read" | "message reaction" | "message reaction removed" | "message deleted"} event
+ * @param {number} partner_user_id
+ * @param {object} data
+ */
+static send(event, partner_user_id, data) {
+  ChatRealtimeService.sockClients.get(partner_user_id)?.emit(event, data)
+}
+```
+
+See [chat.realtime.service.js](./src/services/realtime/chat.realtime.service.js)
 
 ### Technologies
 
