@@ -14,7 +14,7 @@ export class UserService {
     )
 
     const { receiver_user_id, ...restData } = follow_notif
-    new NotificationService(receiver_user_id).pushNotification(restData)
+    new NotificationService(receiver_user_id).sendNotification(restData)
   }
 
   static async editProfile(client_user_id, updateKVPairs) {

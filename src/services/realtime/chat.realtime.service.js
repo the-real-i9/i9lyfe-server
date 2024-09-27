@@ -15,9 +15,12 @@ export class ChatRealtimeService {
     ChatRealtimeService.sockClients.set(client_user_id, socket)
   }
 
+  /**
+   * @param {"new conversation" | "new message" | "message delivered" | "message read" | "message reaction" | "message reaction removed" | "message deleted"} event
+   * @param {number} partner_user_id
+   * @param {object} data
+   */
   static send(event, partner_user_id, data) {
-    ChatRealtimeService.sockClients
-      .get(partner_user_id)
-      ?.emit(event, data)
+    ChatRealtimeService.sockClients.get(partner_user_id)?.emit(event, data)
   }
 }

@@ -33,7 +33,7 @@ export class PostService {
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif
 
-      new NotificationService(receiver_user_id).pushNotification({
+      new NotificationService(receiver_user_id).sendNotification({
         ...restData,
       })
     })
@@ -74,7 +74,7 @@ export class PostService {
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif
 
-      new NotificationService(receiver_user_id).pushNotification({
+      new NotificationService(receiver_user_id).sendNotification({
         ...restData,
       })
     })
@@ -82,7 +82,7 @@ export class PostService {
     // notify post owner of comment
     if (comment_notif) {
       const { receiver_user_id, ...restData } = comment_notif
-      new NotificationService(receiver_user_id).pushNotification({
+      new NotificationService(receiver_user_id).sendNotification({
         ...restData,
       })
     }
@@ -139,7 +139,7 @@ export class PostService {
     // notify post owner of reaction
     if (reaction_notif) {
       const { receiver_user_id, ...restData } = reaction_notif
-      new NotificationService(receiver_user_id).pushNotification({
+      new NotificationService(receiver_user_id).sendNotification({
         ...restData,
       })
     }

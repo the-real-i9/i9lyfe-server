@@ -1,7 +1,5 @@
 import { User } from "../../models/user.model.js"
 
-
-
 export class PostCommentRealtimeService {
   /** @type {import("socket.io").Server} */
   static io = null
@@ -26,44 +24,24 @@ export class PostCommentRealtimeService {
     socket.join(followeesNewPostRooms)
 
     /* To start receiving metrics update for post when in view */
-    socket.on(
-      "subscribe to post metrics update",
-      (post_id) => {
-        socket.join(
-          `post_${post_id}_metrics_update_subscribers`
-        )
-      }
-    )
+    socket.on("subscribe to post metrics update", (post_id) => {
+      socket.join(`post_${post_id}_metrics_update_subscribers`)
+    })
 
     /* To stop receiving metrics update for post when out of view */
-    socket.on(
-      "unsubscribe from post metrics update",
-      (post_id) => {
-        socket.leave(
-          `post_${post_id}_metrics_update_subscribers`
-        )
-      }
-    )
+    socket.on("unsubscribe from post metrics update", (post_id) => {
+      socket.leave(`post_${post_id}_metrics_update_subscribers`)
+    })
 
     /* To start receiving metrics update for post when in view */
-    socket.on(
-      "subscribe to comment metrics update",
-      (comment_id) => {
-        socket.join(
-          `comment_${comment_id}_metrics_update_subscribers`
-        )
-      }
-    )
+    socket.on("subscribe to comment metrics update", (comment_id) => {
+      socket.join(`comment_${comment_id}_metrics_update_subscribers`)
+    })
 
     /* To stop receiving metrics update for comment when out of view */
-    socket.on(
-      "unsubscribe from comment metrics update",
-      (comment_id) => {
-        socket.leave(
-          `comment_${comment_id}_metrics_update_subscribers`
-        )
-      }
-    )
+    socket.on("unsubscribe from comment metrics update", (comment_id) => {
+      socket.leave(`comment_${comment_id}_metrics_update_subscribers`)
+    })
   }
 
   static sendNewPost(user_id, newPostData) {
@@ -72,8 +50,6 @@ export class PostCommentRealtimeService {
       .emit("new post", newPostData)
   }
 
-
-  
   static sendPostMetricsUpdate(post_id, data) {
     PostCommentRealtimeService.io
       ?.to(`post_${post_id}_metrics_update_subscribers`)

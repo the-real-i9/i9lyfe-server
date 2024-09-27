@@ -23,18 +23,10 @@ export class NotificationService {
     new NotificationService(client_user_id).notifyUnreadNotifications()
   }
 
-  notifyNewNotification() {
+  sendNotification(notificationData) {
     NotificationService.sockClients
       .get(this.receiver_user_id)
-      ?.emit("new notification")
-  }
-
-  pushNotification(notificationData) {
-    NotificationService.sockClients
-      .get(this.receiver_user_id)
-      ?.emit("push notification", notificationData)
-    
-    this.notifyNewNotification()
+      ?.emit("new notification", notificationData)
   }
 
   async notifyUnreadNotifications() {
