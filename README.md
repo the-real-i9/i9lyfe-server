@@ -403,13 +403,25 @@ See [chat.realtime.service.js](./src/services/realtime/chat.realtime.service.js)
 
 ## Handling user-generated content
 
-- Google Cloud Storage:
+User-generated media from user profiles, posts, and chat messages shouldn't be kept on the API server. Using a managed storage service is the best way to go.
 
-  - Service Account Credential:
+Consider the case when a client initiates the changing of their profile picture in the API. The steps below, contained in a middleware dedicated to file upload, are executed.
 
-  - API Token Credential:
+- The API receives the request body which includes the picture in binary format — specifically an array of unsigned 8-bit integers.
+- The API takes the property it expects to contain the picture binary data, uploads the binary data to the GCS bucket dedicated to the API while specifying a location path that ends in the file name.
+- This location path combined with google cloud storage bucket's public domain, [https://storage.googleapis.com](https://storage.googleapis.com), to form a full, publicly accessible URL.
+- The property holding the binary data is then deleted for a new property that holds the generated URL, in the request body.
+- The modified request body is then passed from this middleware on to the request handler.
 
-- @google-cloud/storage
+### Technologies
+
+#### Google Cloud Storage API
+
+- **Service Account credential:**
+
+- **API token credential:**
+
+- **@google-cloud/storage:**
 
 ## Security knots
 
@@ -423,27 +435,45 @@ See [chat.realtime.service.js](./src/services/realtime/chat.realtime.service.js)
 
 ## Deployment
 
-- Google Compute Engine
+### Google Cloud Platform
 
-  - VM instance
+#### Credentials
 
-  - SSH login
+- Service Account credential
 
-- gcloud CLI
+- Workload Identity Federation
 
-  - gcloud compute scp
+### Google Compute Engine
 
-  - gcloud compute ssh
+#### VM instance
 
-- docker CLI
+#### SSH login
 
-- Docker Hub
+#### Delployment preparation (setups) in VM instance
 
-- CI/CD: GitHub Actions
+#### Firewall setup
 
-  - .yaml script
+#### gcloud CLI Usage
 
-  - Self Hosted Runner
+- gcloud login
+
+- gcloud compute scp
+
+- gcloud compute ssh
+
+#### docker CLI Usage
+
+#### Docker Hub Usage
+
+#### CI/CD with GitHub Actions
+
+- Setting Variables
+
+- Job: Test `&&` Build
+
+- Setting up a Self Hosted Runner
+
+- Job: Deploy
 
 ## API documentation
 
@@ -462,6 +492,8 @@ See [chat.realtime.service.js](./src/services/realtime/chat.realtime.service.js)
 - Linux
 
 - VSCode
+
+- GitHub Desktop
 
 ## Support tools
 
