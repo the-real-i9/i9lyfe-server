@@ -455,15 +455,25 @@ Credentials authenticate clients into the API, and the ones used are:
 
 - **@google-cloud/storage:** The Node.js Google Cloud API Client library used to upload files to "i9lyfe-bucket".
 
+## Security knots
+
+### Rate limiting
+
 ## Testing
 
-- Jest/Supertest
+### Technologies
 
-- Postman
+- **Jest/Supertest:** For endpoint testing. Check out the [test](./tests/) folder to see them.
+
+- **Postman:** For functional testing of the application.
+
+  I created a *collection* for this application which includes folders categorizing the endpoints contained in them.
+
+  I've spent hours, days, weeks, and months working with this app for every API I'm working on.
 
 ## Deployment
 
-### Google Cloud Platform
+### GCP: Google Compute Engine
 
 #### Credentials
 
@@ -471,7 +481,6 @@ Credentials authenticate clients into the API, and the ones used are:
 
 - Workload Identity Federation
 
-### Google Compute Engine
 
 #### VM instance
 
