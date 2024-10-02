@@ -413,19 +413,47 @@ Consider the case when a client initiates the changing of their profile picture 
 - The property holding the binary data is then deleted for a new property that holds the generated URL, in the request body.
 - The modified request body is then passed from this middleware on to the request handler.
 
-### Technologies
+### Technology: Google Cloud Storage API
 
-#### Google Cloud Storage API
+#### Bucket name
 
-- **Service Account credential:**
+i9lyfe-bucket
 
-- **API token credential:**
+#### Credentials
 
-- **@google-cloud/storage:**
+Credentials authenticate clients into the API, and the ones used are:
 
-## Security knots
+- **Service Account:** I consider this option a really sophisticated form of authorization.
 
-### Rate limiting
+  Service accounts are like passes that have a selected number of permissions attached to them. When a client uses a Service Account, they take on the roles specified in the SA, and use the scopes defined in it.
+
+  Google APIs require roles to access them, and/or scopes to tell them what you want. A Google user himself has the highest form of access via their email, he has unrestricted access to any Google API (this isn't secure). SAs are like emails, but their access levels and restrictions can be controlled. You can have an SA that can access Cloud Storage, but not Cloud Run; and you can later modify it to access Cloud Run, but not Cloud Storage.
+
+  One particular role required for GCS is the **"Storage Admin"** role.
+
+- **API Key:** I find this to be the easiest form of credential to use in production.
+
+  It also has its own access level and restriction control. You can restrict its access to one or more APIs, or even one or more domain.
+
+> The fact that you can control their access levels and restrictions doesn't mean you should be lax about storing them securely.
+
+- **ADC** (Application Default Credential): I set this up using the **gcloud CLI**. I think it's best used in a development environment, since you have to set it up on the client machine, which is your local machine or a remote VM instance.
+
+  But if you like setting things up, you can go ahead to set it up in production in your VM instance. The best approach is to:
+  - Create one Service Account Credential that has access to all the Google APIs used in the application server.
+  - Use the **gcloud CLI** to perform an *application-default* login, as this Service Account.
+
+    ```bash
+    gcloud auth application-default activate-service-account
+    ```
+
+    Follow the next steps, and you have for yourself a default creadential in your application.
+
+  The API Client Library automatically detects this credential without you having to explicity pass any. That is cool.
+  
+#### API Client Library
+
+- **@google-cloud/storage:** The Node.js Google Cloud API Client library used to upload files to "i9lyfe-bucket".
 
 ## Testing
 
