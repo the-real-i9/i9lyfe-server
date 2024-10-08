@@ -272,6 +272,10 @@ export class User {
     return (await dbQuery(query)).rows[0].count
   }
 
+  /**
+   * @param {number} user_id 
+   * @returns {Promise<number[]>}
+   */
   static async getFolloweesIds(user_id) {
     const query = {
       text: `

@@ -12,7 +12,7 @@ import { PostCommentRealtimeService } from "./services/realtime/postComment.real
 
 import { renewJwtToken } from "./services/auth/auth.service.js"
 
-export const io = new Server(server)
+const io = new Server(server)
 
 io.use((socket, next) => {
   const token = socket.handshake.headers.authorization
