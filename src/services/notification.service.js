@@ -7,17 +7,12 @@ export class NotificationService {
     this.receiver_user_id = receiver_user_id
   }
 
-  static io = null
   /** @type {Map<number, import("socket.io").Socket>} */
   static sockClients = new Map()
 
-  /**
-   * @param {import("socket.io").Server} io
-   * @param {import("socket.io").Socket} socket
-   */
-  static initRTC(io, socket) {
+  /** @param {import("socket.io").Socket} socket */
+  static initRTC(socket) {
     const { client_user_id } = socket.jwt_payload
-    NotificationService.io ??= io
     NotificationService.sockClients.set(client_user_id, socket)
   
     // notify client of unread notifications when they're connected

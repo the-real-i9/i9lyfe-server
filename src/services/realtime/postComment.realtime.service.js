@@ -4,9 +4,6 @@ export class PostCommentRealtimeService {
   /** @type {import("socket.io").Server} */
   static io = null
 
-  /** @type {Map<number, import("socket.io").Socket>} */
-  static sockClients = new Map()
-
   /**
    * @param {import("socket.io").Server} io
    * @param {import("socket.io").Socket} socket
@@ -14,7 +11,6 @@ export class PostCommentRealtimeService {
   static async initRTC(io, socket) {
     const { client_user_id } = socket.jwt_payload
     PostCommentRealtimeService.io ??= io
-    PostCommentRealtimeService.sockClients.set(client_user_id, socket)
 
     /* To receive new post from those you follow */
     const followeesNewPostRooms = (

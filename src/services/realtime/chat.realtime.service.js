@@ -1,17 +1,10 @@
 export class ChatRealtimeService {
-  /** @type {import("socket.io").Server} */
-  static io = null
-
   /** @type {Map<number, import("socket.io").Socket>} */
   static sockClients = new Map()
 
-  /**
-   * @param {import("socket.io").Server} io
-   * @param {import("socket.io").Socket} socket
-   */
-  static async initRTC(io, socket) {
+  /** @param {import("socket.io").Socket} socket */
+  static async initRTC(socket) {
     const { client_user_id } = socket.jwt_payload
-    ChatRealtimeService.io ??= io
     ChatRealtimeService.sockClients.set(client_user_id, socket)
   }
 

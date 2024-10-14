@@ -24,8 +24,8 @@ io.use((socket, next) => {
 })
 
 io.on("connection", (socket) => {
-  NotificationService.initRTC(io, socket)
-  ChatRealtimeService.initRTC(io, socket)
+  NotificationService.initRTC(socket)
+  ChatRealtimeService.initRTC(socket)
   PostCommentRealtimeService.initRTC(io, socket)
   renewJwtToken(socket)
 })
