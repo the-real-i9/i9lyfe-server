@@ -5,13 +5,13 @@ export const createNewPost = [
   checkExact(
     checkSchema(
       {
-        media_binaries: {
+        medias_data_list: {
           isArray: {
             options: { min: 1 },
             errorMessage: "value must be an array of at least one item",
           },
         },
-        "media_datas.*": {
+        "media_data_list.*": {
           isArray: {
             options: { min: 1, max: 10 * 1024 ** 2 },
             errorMessage:

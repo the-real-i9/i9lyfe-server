@@ -1,40 +1,37 @@
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- * @typedef {import("express").NextFunction} ExpressNextFunction
- */
+import fs from "node:fs"
+import os from "node:os"
+import { Buffer } from "node:buffer"
+import { fileTypeFromBuffer } from "file-type"
+import { Storage } from "@google-cloud/storage"
 
-/**
- * Check `req.body` for fields that should contain binary data, based on the `type` property.
- *
- * Upload the binary data to cloud storage and replace the field's value with the returned `URL`
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- * @param {ExpressNextFunction} next
- */
-export const uploadMessageFiles = (req, res, next) => {
-  // const { data } = req.body.msg_content.props
+const bucketName = "i9lyfe-bucket"
+const bucket = new Storage({
+  credentials: {
+    apiKey: process.env.GCS_API_KEY,
+  }
+}).bucket(bucketName)
 
-  // change "data" property to "media_url"
+export const uploadMessageMedia = (req, res, next) => {
+  const fileData = req.body.msg_content.props.media_data
+
+
+  req.body.msg_content.props.media_url = ""
+  // change "media_data" property to "media_url"
+
+  delete req.body.msg_content.props.media_data
 
   return next()
 }
 
-/**
- * Check `req.body` for fields that should contain binary data, based on the `type` property.
- *
- * Upload the binary data to cloud storage and replace the field's value with the returned `URL`
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- * @param {ExpressNextFunction} next
- */
-export const uploadPostFiles = async (req, res, next) => {
+export const uploadPostMediaDatas = async (req, res, next) => {
   try {
     // "https://storage.googleapis.com/i9lyfe-bucket/%s"
+
+    const fileDataList = req.body.media_data_list
     
     req.body.media_urls = []
     
-    delete req.body.media_binaries
+    delete req.body.media_data_list
 
     return next()
   } catch (error) {
@@ -43,14 +40,23 @@ export const uploadPostFiles = async (req, res, next) => {
   }
 }
 
-export const uploadCommentFiles = async (req, res, next) => {
+export const uploadCommentAttachment = async (req, res, next) => {
   try {
     // "https://storage.googleapis.com/i9lyfe-bucket/%s"
     
+    const fileData = req.body.attachment_data
+
+    if (!fileData) {
+      req.body.attachment_url = ""
+      return next()
+    }
+
+    // write uint8 array to a file
     
+      
     req.body.attachment_url = ""
     
-    delete req.body.attachment_binary
+    delete req.body.attachment_data
 
     return next()
   } catch (error) {
@@ -61,12 +67,21 @@ export const uploadCommentFiles = async (req, res, next) => {
 
 export const uploadProfilePicture = async (req, res, next) => {
   try {
-    // "https://storage.googleapis.com/i9lyfe-bucket/%s"
+    const fileData = new Uint8Array(Buffer.from(req.body.picture_data))
+
+    const fileType = await fileTypeFromBuffer(fileData)
+
+    const destination = `profile_pictures/${req.auth.client_username}/profile_pic_${Date.now()}.${fileType.ext}`
+
+    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, (err) => {
+      bucket.upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+        destination
+      })
+    })
     
+    req.body.profile_pic_url = `https://storage.googleapis.com/${bucketName}/${destination}`
     
-    req.body.profile_pic_url = ""
-    
-    delete req.body.profile_pic_binary
+    delete req.body.picture_data
 
     return next()
   } catch (error) {

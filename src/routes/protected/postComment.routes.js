@@ -5,8 +5,8 @@ import dotenv from "dotenv"
 import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../middlewares/validators/postComment.validators.js"
 import {
-  uploadCommentFiles,
-  uploadPostFiles,
+  uploadCommentAttachment,
+  uploadPostMediaDatas,
 } from "../../middlewares/mediaUploaders.js"
 import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
@@ -32,7 +32,7 @@ router.use(
 router.post(
   "/new_post",
   ...PCV.createNewPost,
-  uploadPostFiles,
+  uploadPostMediaDatas,
   PCC.createNewPost
 )
 router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)
@@ -68,7 +68,7 @@ router.post(
   "/users/:target_post_owner_user_id/posts/:target_post_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
-  uploadCommentFiles,
+  uploadCommentAttachment,
   PCC.commentOnPost
 )
 router.post(

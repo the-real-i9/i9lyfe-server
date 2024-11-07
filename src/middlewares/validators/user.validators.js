@@ -4,7 +4,7 @@ import { errHandler, limitOffsetSchema } from "./miscs.js"
 export const changeProfilePicture = [
   checkExact(
     checkSchema({
-      image_data: {
+      picture_data: {
         isArray: {
           options: { min: 1, max: 10 * 1024 ** 2 },
           errorMessage:

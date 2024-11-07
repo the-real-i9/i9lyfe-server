@@ -75,6 +75,16 @@ export const createConversation = [
             errorMessage: "invalid duration: less than 1",
           },
         },
+        "init_message.props.extension": {
+          custom: {
+            options: (value, { req }) =>
+              (req.body.init_message.type === "file" &&
+                value.startsWith(".")) ||
+              !value,
+            errorMessage: "invalid property for the specified type",
+            bail: true,
+          },
+        },
         "init_message.props.mimeType": {
           custom: {
             options: (value, { req }) =>
@@ -182,6 +192,16 @@ export const sendMessage = [
             if: (value, { req }) => req.body.msg_content.type === "voice",
             options: { min: 1 },
             errorMessage: "invalid duration: less than 1",
+          },
+        },
+        "msg_content.props.extension": {
+          custom: {
+            options: (value, { req }) =>
+              (req.body.msg_content.type === "file" &&
+                value.startsWith(".")) ||
+              !value,
+            errorMessage: "invalid property for the specified type",
+            bail: true,
           },
         },
         "msg_content.props.mimeType": {
