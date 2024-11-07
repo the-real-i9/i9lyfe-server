@@ -123,11 +123,7 @@ export const reactToComment = async (req, res) => {
 export const commentOnComment = async (req, res) => {
   try {
     const { target_comment_id, target_comment_owner_user_id } = req.params
-    const {
-      comment_text,
-      // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url = "",
-    } = req.body
+    const {comment_text, attachment_data} = req.body
 
     const { client_user_id } = req.auth
 
@@ -136,7 +132,7 @@ export const commentOnComment = async (req, res) => {
       target_comment_id,
       target_comment_owner_user_id,
       comment_text,
-      attachment_url
+      attachment_data
     })
 
     res.status(201).send(commentData)

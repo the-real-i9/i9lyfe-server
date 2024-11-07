@@ -1,52 +1,12 @@
-import os from "node:os"
-import fs from "node:fs"
-import {Buffer} from "node:buffer"
 import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./notification.service.js"
 import { Post } from "../models/post.model.js"
 import { Comment } from "../models/comment.model.js"
-import { fileTypeFromBuffer } from "file-type"
-import { getStorageBucket, storageBucketName } from "../configs/gcs.js"
-
-/**
- * @param {any[][]} media_data_list 
-*/
-const uploadPostMediaDataList = async (media_data_list) => {
-  const media_urls = media_data_list.map(async (media_data, index) => {
-    const fileData = new Uint8Array(Buffer.from(media_data))
-
-    const fileType = await fileTypeFromBuffer(fileData)
-
-    const destination = `post_medias/${Date.now()}/${index+1}.${fileType.ext}`
-
-    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
-        destination
-      })
-    })
-    
-    return `https://storage.googleapis.com/${storageBucketName}/${destination}`
-  })
-
-  return media_urls
-}
-
-const uploadCommentAttachmentData = async (attachment_data) => {
-  const fileData = new Uint8Array(Buffer.from(attachment_data))
-
-    const fileType = await fileTypeFromBuffer(fileData)
-
-    const destination = `comment_attachments/_${Date.now()}_.${fileType.ext}`
-
-    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
-        destination
-      })
-    })
-    
-    return `https://storage.googleapis.com/${storageBucketName}/${destination}`
-}
+import {
+  uploadCommentAttachmentData,
+  uploadPostMediaDataList,
+} from "./mediaUploader.service.js"
 
 export class PostService {
   /**
@@ -175,14 +135,12 @@ export class PostService {
     target_post_owner_user_id,
     reaction_code_point,
   }) {
-    const { reaction_notif, latest_reactions_count } = Post.reactTo(
-      {
-        client_user_id,
-        target_post_id,
-        target_post_owner_user_id,
-        reaction_code_point,
-      }
-    )
+    const { reaction_notif, latest_reactions_count } = Post.reactTo({
+      client_user_id,
+      target_post_id,
+      target_post_owner_user_id,
+      reaction_code_point,
+    })
 
     // notify post owner of reaction
     if (reaction_notif) {

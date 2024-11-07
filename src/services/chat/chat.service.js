@@ -1,9 +1,8 @@
 import { Conversation, Message } from "../../models/chat.model.js"
+import { uploadMessageMediaData } from "../mediaUploader.service.js"
 import { ChatRealtimeService } from "../realtime/chat.realtime.service.js"
 
 export class ChatService {
-  
-
   /**
    * @param {object} client
    * @param {number} client.user_id
@@ -13,7 +12,11 @@ export class ChatService {
    * @param {string} partner.username
    * @returns The data needed to display the DM chat page for the client
    */
-  static async createConversation(client, partner, init_message) {
+  static async createConversation(client, partner, init_msg) {
+    const { media_data, ...init_message } = init_msg
+
+    init_message.media_url = await uploadMessageMediaData(media_data)
+
     const { client_res, partner_res } = await Conversation.create(
       client,
       partner.user_id,

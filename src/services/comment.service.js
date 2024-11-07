@@ -1,5 +1,6 @@
 import { Comment } from "../models/comment.model.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
+import { uploadCommentAttachmentData } from "./mediaUploader.service.js"
 import { NotificationService } from "./notification.service.js"
 import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
 
@@ -9,10 +10,12 @@ export class CommentService {
     target_comment_id,
     target_comment_owner_user_id,
     comment_text,
-    attachment_url,
+    attachment_data,
   }) {
     const mentions = extractMentions(comment_text)
     const hashtags = extractHashtags(comment_text)
+
+    const attachment_url = await uploadCommentAttachmentData(attachment_data)
 
     const {
       new_comment_id,
