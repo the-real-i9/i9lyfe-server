@@ -121,7 +121,7 @@ export class User {
     await dbQuery(query)
   }
 
-  static async uploadProfilePicture(client_user_id, profile_pic_url) {
+  static async changeProfilePicture(client_user_id, profile_pic_url) {
     await User.edit(client_user_id, [["profile_pic_url", profile_pic_url]])
   }
 

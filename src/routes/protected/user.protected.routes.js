@@ -8,7 +8,6 @@ import {
   validateIdParams,
   validateLimitOffset,
 } from "../../middlewares/validators/miscs.js"
-import { uploadProfilePicture } from "../../middlewares/mediaUploaders.js"
 
 dotenv.config()
 
@@ -41,7 +40,6 @@ router.patch("/edit_profile", ...userValidators.editProfile, UC.editProfile)
 router.put(
   "/change_profile_picture",
   ...userValidators.changeProfilePicture,
-  uploadProfilePicture,
   UC.changeProfilePicture
 )
 

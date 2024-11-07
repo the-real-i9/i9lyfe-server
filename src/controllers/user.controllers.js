@@ -94,6 +94,13 @@ export const readNotification = async (req, res) => {
 
 export const changeProfilePicture = async (req, res) => {
   try {
+    const { client_user_id, client_username } = req.auth
+    
+    await UserService.changeProfilePicture(
+      { user_id: client_user_id, username: client_username },
+      req.body.picture_data
+    )
+
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {

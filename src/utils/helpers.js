@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+import { Storage } from "@google-cloud/storage"
 
 export const commaSeparateString = (str) => str.replaceAll(" ", ", ")
 
@@ -40,4 +41,19 @@ export const extractMentions = (text) => {
 export const extractHashtags = (text) => {
   const matches = text.match(/(?<=#)\w+/g)
   return matches ? [...new Set(matches)] : []
+}
+
+const bucketName = "i9lyfe-bucket"
+const bucket = new Storage({
+  credentials: {
+    apiKey: process.env.GCS_API_KEY,
+  }
+}).bucket(bucketName)
+
+export const getStorageBucket = () => {
+  return bucket
+}
+
+export const getStorageBucketName = () => {
+  return bucketName
 }
