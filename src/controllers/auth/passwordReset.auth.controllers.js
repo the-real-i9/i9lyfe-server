@@ -1,25 +1,9 @@
-import {
-  emailConfirmationService,
-  passwordResetService,
-} from "../../services/auth/auth.service.js"
-import { PasswordResetEmailConfirmationStrategy } from "../../services/auth/emailConfirmationStrategy.auth.service.js"
-
-/**
- * @typedef {import("express").Request} ExpressRequest
- * @typedef {import("express").Response} ExpressResponse
- */
-
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
+import * as passwordResetServices from "../../services/auth/passwordReset.auth.services.js"
 
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body
   try {
-    const response = await emailConfirmationService(
-      new PasswordResetEmailConfirmationStrategy()
-    ).handleEmailSubmission(email)
+    const response = await passwordResetServices.requestPasswordReset(email)
 
     if (!response.ok)
       return res.status(response.error.code).send({ msg: response.error.msg })
@@ -34,17 +18,11 @@ export const requestPasswordReset = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const confirmEmail = async (req, res) => {
   const { code } = req.body
 
   try {
-    const response = await emailConfirmationService(
-      new PasswordResetEmailConfirmationStrategy()
-    ).handleCodeValidation(
+    const response = await passwordResetServices.confirmEmail(
       code,
       req.session.password_reset_email_confirmation_state
     )
@@ -63,16 +41,12 @@ export const confirmEmail = async (req, res) => {
   }
 }
 
-/**
- * @param {ExpressRequest} req
- * @param {ExpressResponse} res
- */
 export const resetPassword = async (req, res) => {
   try {
     const { email } = req.session.password_reset_email_confirmation_state
     const { newPassword } = req.body
 
-    const response = await passwordResetService(email, newPassword)
+    const response = await passwordResetServices.resetPassword(email, newPassword)
 
     req.session.destroy()
 

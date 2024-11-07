@@ -8,9 +8,9 @@ import {
   proceedPasswordReset,
   proceedUserRegistration,
 } from "../../middlewares/auth.middlewares.js"
-import signinController from "../../controllers/auth/signin.controller.js"
-import * as PRC from "../../controllers/auth/passwordReset.controller.js"
-import * as SC from "../../controllers/auth/signup.controller.js"
+import signinController from "../../controllers/auth/signin.auth.controllers.js"
+import * as PRC from "../../controllers/auth/passwordReset.auth.controllers.js"
+import * as SC from "../../controllers/auth/signup.auth.controllers.js"
 import * as authValidators from "../../middlewares/validators/auth.validators.js"
 
 dotenv.config()
