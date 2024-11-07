@@ -122,7 +122,13 @@ export class User {
   }
 
   static async changeProfilePicture(client_user_id, profile_pic_url) {
-    await User.edit(client_user_id, [["profile_pic_url", profile_pic_url]])
+    /** @type {PgQueryConfig} */
+    const query = {
+      text: "UPDATE i9l_user SET profile_pic_url = $2 WHERE id = $1",
+      values: [client_user_id, profile_pic_url],
+    }
+
+    await dbQuery(query)
   }
 
   static async getFeedPosts({ client_user_id, limit, offset }) {

@@ -16,8 +16,8 @@ export const uploadPostMediaDataList = async (media_data_list) => {
 
     const destination = `post_medias/_${randomUUID()}_.${fileType.ext}`
 
-    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+    fs.writeFile(os.tmpdir + `/tempfile.${fileType.ext}`, fileData, () => {
+      getStorageBucket().upload(os.tmpdir + `/tempfile.${fileType.ext}`, {
         destination,
       })
     })
@@ -35,8 +35,8 @@ export const uploadCommentAttachmentData = async (attachment_data) => {
 
   const destination = `comment_attachments/_${Date.now()}_.${fileType.ext}`
 
-  fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-    getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+  fs.writeFile(os.tmpdir + `/tempfile.${fileType.ext}`, fileData, () => {
+    getStorageBucket().upload(os.tmpdir + `/tempfile.${fileType.ext}`, {
       destination,
     })
   })
@@ -51,8 +51,8 @@ export const uploadMessageMediaData = async (media_data) => {
 
   const destination = `message_medias/_${randomUUID()}_.${fileType.ext}`
 
-  fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-    getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+  fs.writeFile(os.tmpdir + `/tempfile.${fileType.ext}`, fileData, () => {
+    getStorageBucket().upload(os.tmpdir + `/tempfile.${fileType.ext}`, {
       destination,
     })
   })
@@ -67,8 +67,8 @@ export const uploadProfilePicture = async (picture_data, username) => {
 
     const destination = `profile_pictures/${username}/profile_pic_${randomUUID()}.${fileType.ext}`
 
-    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+    fs.writeFile(os.tmpdir + `/tempfile.${fileType.ext}`, fileData, () => {
+      getStorageBucket().upload(os.tmpdir + `/tempfile.${fileType.ext}`, {
         destination
       })
     })

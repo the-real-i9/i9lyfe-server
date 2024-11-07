@@ -35,7 +35,7 @@ beforeAll(async () => {
 })
 
 it("should change user profile picture", async () => {
-  const file = await fs.readFile("../../../profile_pic.png")
+  const file = await fs.readFile("profile_pic.png")
   
   const data = {
     picture_data: [...file],

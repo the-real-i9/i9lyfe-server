@@ -63,14 +63,12 @@ router.post(
   "/users/:target_post_owner_user_id/posts/:target_post_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
-  uploadCommentAttachment,
   PCC.commentOnPost
 )
 router.post(
   "/users/:target_comment_owner_user_id/comments/:target_comment_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
-  uploadCommentFiles,
   PCC.commentOnComment
 )
 
