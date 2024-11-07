@@ -3,10 +3,6 @@ import { User } from "../models/user.model.js"
 
 
 export class NotificationService {
-  constructor(receiver_user_id) {
-    this.receiver_user_id = receiver_user_id
-  }
-
   /** @type {Map<number, import("socket.io").Socket>} */
   static sockClients = new Map()
 
@@ -16,21 +12,21 @@ export class NotificationService {
     NotificationService.sockClients.set(client_user_id, socket)
   
     // notify client of unread notifications when they're connected
-    new NotificationService(client_user_id).notifyUnreadNotifications()
+    NotificationService.notifyUnreadNotifications(client_user_id)
   }
 
   // send a new notification update
-  sendNotification(notificationData) {
+  static sendNotification(receiver_user_id, notificationData) {
     NotificationService.sockClients
-      .get(this.receiver_user_id)
+      .get(receiver_user_id)
       ?.emit("new notification", notificationData)
   }
 
-  async notifyUnreadNotifications() {
-    const count = await User.getUnreadNotificationsCount(this.receiver_user_id)
+  static async notifyUnreadNotifications(client_user_id) {
+    const count = await User.getUnreadNotificationsCount(client_user_id)
     if (!Number(count)) return
     NotificationService.sockClients
-      .get(this.receiver_user_id)
+      .get(client_user_id)
       ?.emit(
         "unread notifications",
         count,

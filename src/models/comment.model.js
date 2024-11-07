@@ -1,4 +1,4 @@
-import { dbQuery } from "./db.js"
+import { dbQuery } from "../configs/db.js"
 
 /**
  * @typedef {import("pg").PoolClient} PgPoolClient

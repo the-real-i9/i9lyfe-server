@@ -1,8 +1,52 @@
+import os from "node:os"
+import fs from "node:fs"
+import {Buffer} from "node:buffer"
 import { PostCommentRealtimeService } from "./realtime/postComment.realtime.service.js"
 import { extractHashtags, extractMentions } from "../utils/helpers.js"
 import { NotificationService } from "./notification.service.js"
 import { Post } from "../models/post.model.js"
 import { Comment } from "../models/comment.model.js"
+import { fileTypeFromBuffer } from "file-type"
+import { getStorageBucket, storageBucketName } from "../configs/gcs.js"
+
+/**
+ * @param {any[][]} media_data_list 
+*/
+const uploadPostMediaDataList = async (media_data_list) => {
+  const media_urls = media_data_list.map(async (media_data, index) => {
+    const fileData = new Uint8Array(Buffer.from(media_data))
+
+    const fileType = await fileTypeFromBuffer(fileData)
+
+    const destination = `post_medias/${Date.now()}/${index+1}.${fileType.ext}`
+
+    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
+      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+        destination
+      })
+    })
+    
+    return `https://storage.googleapis.com/${storageBucketName}/${destination}`
+  })
+
+  return media_urls
+}
+
+const uploadCommentAttachmentData = async (attachment_data) => {
+  const fileData = new Uint8Array(Buffer.from(attachment_data))
+
+    const fileType = await fileTypeFromBuffer(fileData)
+
+    const destination = `comment_attachments/_${Date.now()}_.${fileType.ext}`
+
+    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
+      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+        destination
+      })
+    })
+    
+    return `https://storage.googleapis.com/${storageBucketName}/${destination}`
+}
 
 export class PostService {
   /**
@@ -12,9 +56,11 @@ export class PostService {
    * @param {string} post.type
    * @param {string} post.description
    */
-  static async create({ client_user_id, media_urls, type, description }) {
+  static async create({ client_user_id, media_data_list, type, description }) {
     const hashtags = extractHashtags(description)
     const mentions = extractMentions(description)
+
+    const media_urls = await uploadPostMediaDataList(media_data_list)
 
     const { new_post_id, mention_notifs } = await Post.create({
       client_user_id,
@@ -33,7 +79,7 @@ export class PostService {
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif
 
-      new NotificationService(receiver_user_id).sendNotification({
+      NotificationService.sendNotification(receiver_user_id, {
         ...restData,
       })
     })
@@ -50,10 +96,12 @@ export class PostService {
     target_post_id,
     target_post_owner_user_id,
     comment_text,
-    attachment_url,
+    attachment_data,
   }) {
     const mentions = extractMentions(comment_text)
     const hashtags = extractHashtags(comment_text)
+
+    const attachment_url = await uploadCommentAttachmentData(attachment_data)
 
     const {
       new_comment_id,

@@ -6,7 +6,6 @@ import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../middlewares/validators/postComment.validators.js"
 import {
   uploadCommentAttachment,
-  uploadPostMediaDatas,
 } from "../../middlewares/mediaUploaders.js"
 import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
@@ -32,7 +31,6 @@ router.use(
 router.post(
   "/new_post",
   ...PCV.createNewPost,
-  uploadPostMediaDatas,
   PCC.createNewPost
 )
 router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)

@@ -11,15 +11,14 @@ import { CommentService as Comment } from "../services/comment.service.js"
  * @param {ExpressResponse} res
  */
 export const createNewPost = async (req, res) => {
-  // Note: You have to accept binary data(s) in the request body, upload them to a CDN, and receive their corresponding URLS in order
   try {
-    const { media_urls, type, description } = req.body
+    const { media_data_list, type, description } = req.body
 
     const { client_user_id } = req.auth
 
     const postData = await Post.create({
       client_user_id,
-      media_urls,
+      media_data_list,
       type,
       description,
     })
@@ -69,11 +68,7 @@ export const reactToPost = async (req, res) => {
 export const commentOnPost = async (req, res) => {
   try {
     const { target_post_id, target_post_owner_user_id } = req.params
-    const {
-      comment_text,
-      // attachment is a GIF, an Image, a Sticker etc. provided by frontend services via URLs
-      attachment_url = "",
-    } = req.body
+    const {comment_text, attachment_data} = req.body
 
     const { client_user_id } = req.auth
 
@@ -82,7 +77,7 @@ export const commentOnPost = async (req, res) => {
       target_post_id,
       target_post_owner_user_id,
       comment_text,
-      attachment_url,
+      attachment_data,
     })
 
     // asynchronously send a comment notification with the NotificationService via WebSockets
