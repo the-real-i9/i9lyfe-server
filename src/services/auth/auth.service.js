@@ -3,55 +3,7 @@ import { generateJwt } from "../../utils/helpers.js"
 import sendMail from "../mail.service.js"
 import { User } from "../../models/user.model.js"
 
-/** @param {string} password */
-const hashPassword = async (password) => {
-  return await bcrypt.hash(password, 10)
-}
 
-/**
- * @param {object} info
- * @param {string} info.email
- * @param {string} info.username
- * @param {string} info.password
- * @param {string} info.name
- * @param {Date} info.birthday
- * @param {string} info.bio
- */
-export const userRegistrationService = async (info) => {
-  if (await User.exists(info.username)) {
-    return {
-      ok: false,
-      error: {
-        code: 422,
-        msg: "Username already taken. Try another.",
-      },
-      data: null,
-    }
-  }
-
-  const passwordHash = await hashPassword(info.password)
-
-  const user = await User.create({
-    ...info,
-    password: passwordHash,
-    birthday: new Date(info.birthday),
-  })
-
-  const jwt = generateJwt({
-    client_user_id: user.id,
-    client_username: user.username,
-  })
-
-  return {
-    ok: true,
-    error: null,
-    data: {
-      msg: "Registration success! You're automatically logged in.",
-      user,
-      jwt,
-    },
-  }
-}
 
 /**
  * @param {string} emailOrUsername

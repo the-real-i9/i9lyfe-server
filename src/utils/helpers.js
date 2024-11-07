@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
 
 export const commaSeparateString = (str) => str.replaceAll(" ", ", ")
 
@@ -15,6 +16,15 @@ export const generateCodeWithExpiration = () => {
  */
 export const generateJwt = (payload) =>
   jwt.sign(payload, process.env.JWT_SECRET)
+
+/**
+ * 
+ * @param {string} password 
+ * @returns {Promise<string>} Hashed password
+ */
+export const hashPassword = async (password) => {
+  return await bcrypt.hash(password, 10)
+}
 
 /** @param {Date} tokenExpiration */
 export const tokenLives = (tokenExpiration) =>

@@ -1,8 +1,7 @@
 import {
-  emailConfirmationService,
   userRegistrationService,
 } from "../../services/auth/auth.service.js"
-import { SignupEmailConfirmationStrategy } from "../../services/auth/emailConfirmationStrategy.auth.service.js"
+import * as signupServices from "../../services/auth/signup.auth.services.js"
 
 
 
@@ -10,9 +9,7 @@ export const requestNewAccount = async (req, res) => {
   const { email } = req.body
 
   try {
-    const response = await emailConfirmationService(
-      new SignupEmailConfirmationStrategy()
-    ).handleEmailSubmission(email)
+    const response = await signupServices.requestNewAccount(email)
 
     if (!response.ok)
       return res.status(response.error.code).send({ msg: response.error.msg })
@@ -30,9 +27,7 @@ export const verifyEmail = async (req, res) => {
   const {code} = req.body
 
   try {
-    const response = await emailConfirmationService(
-      new SignupEmailConfirmationStrategy()
-    ).handleCodeValidation(code, req.session.email_verification_state)
+    const response = await signupServices.verifyEmail(code, req.session.email_verification_state)
 
     if (!response.ok) {
       return res.status(response.error.code).send({ msg: response.error.msg })
@@ -50,7 +45,8 @@ export const verifyEmail = async (req, res) => {
 export const registerUser = async (req, res) => {
   try {
     const { email } = req.session.email_verification_state
-    const response = await userRegistrationService({ email, ...req.body })
+
+    const response = await signupServices.registerUser({ email, ...req.body })
 
     if (!response.ok) {
       return res

@@ -30,11 +30,11 @@
     "transform": {}
   },
   "devDependencies": {
-    "@eslint/js": "^9.1.1",
-    "eslint": "^9.1.1",
-    "globals": "^15.1.0",
-    "nodemon": "^3.1.4",
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "globals": "^15.12.0",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
     "supertest": "^6.3.3"
   }
 }
