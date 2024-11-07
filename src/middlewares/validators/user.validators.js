@@ -1,6 +1,22 @@
 import { body, checkExact, checkSchema } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
 
+export const changeProfilePicture = [
+  checkExact(
+    checkSchema({
+      image_data: {
+        isArray: {
+          options: { min: 1, max: 10 * 1024 ** 2 },
+          errorMessage:
+            "value must me an array of uint8 integers with a maximum of 10mb",
+        },
+      }
+    }, ["body"]),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler
+]
+
 export const editProfile = [
   body()
     .custom((value) => Object.keys(value).length > 0)

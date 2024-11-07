@@ -1,6 +1,7 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
+
 export const createConversation = [
   checkExact(
     checkSchema(
@@ -47,7 +48,7 @@ export const createConversation = [
             errorMessage: "cannot be empty",
           },
         },
-        "init_message.props.data": {
+        "init_message.props.media_data": {
           custom: {
             options: (value, { req }) =>
               req.body.init_message.type !== "text" || !value,
@@ -72,16 +73,6 @@ export const createConversation = [
             if: (value, { req }) => req.body.init_message.type === "voice",
             options: { min: 1 },
             errorMessage: "invalid duration: less than 1",
-          },
-        },
-        "init_message.props.extension": {
-          custom: {
-            options: (value, { req }) =>
-              (req.body.init_message.type === "file" &&
-                value.startsWith(".")) ||
-              !value,
-            errorMessage: "invalid property for the specified type",
-            bail: true,
           },
         },
         "init_message.props.mimeType": {
@@ -166,7 +157,7 @@ export const sendMessage = [
             errorMessage: "cannot be empty",
           },
         },
-        "msg_content.props.data": {
+        "msg_content.props.media_data": {
           custom: {
             options: (value, { req }) =>
               req.body.msg_content.type !== "text" || !value,
@@ -191,16 +182,6 @@ export const sendMessage = [
             if: (value, { req }) => req.body.msg_content.type === "voice",
             options: { min: 1 },
             errorMessage: "invalid duration: less than 1",
-          },
-        },
-        "msg_content.props.extension": {
-          custom: {
-            options: (value, { req }) =>
-              (req.body.msg_content.type === "file" &&
-                value.startsWith(".")) ||
-              !value,
-            errorMessage: "invalid property for the specified type",
-            bail: true,
           },
         },
         "msg_content.props.mimeType": {

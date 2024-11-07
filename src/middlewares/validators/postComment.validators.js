@@ -11,7 +11,7 @@ export const createNewPost = [
             errorMessage: "value must be an array of at least one item",
           },
         },
-        "media_binaries.*": {
+        "media_datas.*": {
           isArray: {
             options: { min: 1, max: 10 * 1024 ** 2 },
             errorMessage:
@@ -44,7 +44,7 @@ export const commentOn = [
         comment_text: {
           notEmpty: true,
         },
-        attachment_binary: {
+        attachment_data: {
           optional: true,
           isArray: {
             options: { min: 1, max: 10 * 1024 ** 2 },

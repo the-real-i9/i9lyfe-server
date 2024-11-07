@@ -7,7 +7,7 @@ import * as PCV from "../../middlewares/validators/postComment.validators.js"
 import {
   uploadCommentFiles,
   uploadPostFiles,
-} from "../../middlewares/app.middlewares.js"
+} from "../../middlewares/mediaUploaders.js"
 import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()

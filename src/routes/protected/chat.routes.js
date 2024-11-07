@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 
 import * as CC from "../../controllers/chat.controllers.js"
 import * as chatValidators from "../../middlewares/validators/chat.validators.js"
-import { uploadMessageFiles } from "../../middlewares/app.middlewares.js"
+import { uploadMessageFiles } from "../../middlewares/mediaUploaders.js"
 import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()
