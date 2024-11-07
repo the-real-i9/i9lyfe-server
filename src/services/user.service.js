@@ -1,10 +1,6 @@
-import fs from "node:fs"
-import {Buffer} from "node:buffer"
-import os from "node:os"
-import { fileTypeFromBuffer } from "file-type"
 import { User } from "../models/user.model.js"
 import { NotificationService } from "./notification.service.js"
-import { getStorageBucket, storageBucketName } from "../configs/gcs.js"
+import { uploadProfilePicture } from "./mediaUploader.service.js"
 
 export class UserService {
   static async getClientUser(client_user_id) {
@@ -42,19 +38,10 @@ export class UserService {
   }
 
   static async changeProfilePicture(client, picture_data) {
-    const fileData = new Uint8Array(Buffer.from(picture_data))
-
-    const fileType = await fileTypeFromBuffer(fileData)
-
-    const destination = `profile_pictures/${client.username}/profile_pic_${Date.now()}.${fileType.ext}`
-
-    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
-      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
-        destination
-      })
-    })
-    
-    const profile_pic_url = `https://storage.googleapis.com/${storageBucketName}/${destination}`
+    const profile_pic_url = await uploadProfilePicture(
+      picture_data,
+      client.username
+    )
 
     return await User.changeProfilePicture(client.user_id, profile_pic_url)
   }

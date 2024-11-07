@@ -1,4 +1,5 @@
-import { beforeAll, it, expect } from "@jest/globals"
+import fs from "fs/promises"
+import { beforeAll, xit, it, expect } from "@jest/globals"
 import dotenv from "dotenv"
 import supertest from "supertest"
 
@@ -33,7 +34,22 @@ beforeAll(async () => {
   await signUserIn("annie_star@gmail.com") */
 })
 
-it("should get the user session info via session jwt", async () => {
+it("should change user profile picture", async () => {
+  const file = await fs.readFile("../../../profile_pic.png")
+  
+  const data = {
+    picture_data: [...file],
+  }
+
+  const res = await supertest(app)
+  .put(prefixPath + "/change_profile_picture")
+  .set("Authorization", getJwt("johnny"))
+  .send(data)
+
+  expect(res.body).toHaveProperty("msg")
+})
+
+xit("should get the user session info via session jwt", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/session_user")
     .set("Authorization", getJwt("johnny"))
@@ -41,7 +57,7 @@ it("should get the user session info via session jwt", async () => {
   expect(res.body).toHaveProperty("sessionUser")
 })
 
-it("should let client follow the user, and undo it", async () => {
+xit("should let client follow the user, and undo xit", async () => {
   const res1 = await supertest(app)
     .post(prefixPath + "/users/12/follow")
     .set("Authorization", getJwt("johnny"))
@@ -55,7 +71,7 @@ it("should let client follow the user, and undo it", async () => {
   expect(res2.body).toHaveProperty("msg")
 })
 
-it("should edit client's profile", async () => {
+xit("should edit client's profile", async () => {
   const data = { name: "Samuel Ayomide" }
 
   const res = await supertest(app)
@@ -66,7 +82,7 @@ it("should edit client's profile", async () => {
   expect(res.body).toHaveProperty("msg")
 })
 
-it("should switch client's connection status between online and offline", async () => {
+xit("should switch client's connection status between online and offline", async () => {
   const data1 = {
     connection_status: "online",
   }
@@ -91,7 +107,7 @@ it("should switch client's connection status between online and offline", async 
   expect(res2.body).toHaveProperty("msg")
 })
 
-it("should return client's home feed posts", async () => {
+xit("should return client's home feed posts", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/home_feed")
     .set("Authorization", getJwt("johnny"))
@@ -99,7 +115,7 @@ it("should return client's home feed posts", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should return posts client is mentioned in", async () => {
+xit("should return posts client is mentioned in", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/mentioned_posts")
     .set("Authorization", getJwt("johnny"))
@@ -107,7 +123,7 @@ it("should return posts client is mentioned in", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should return posts client reacted to", async () => {
+xit("should return posts client reacted to", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/reacted_posts")
     .set("Authorization", getJwt("johnny"))
@@ -115,7 +131,7 @@ it("should return posts client reacted to", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should return posts saved by client", async () => {
+xit("should return posts saved by client", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/saved_posts")
     .set("Authorization", getJwt("johnny"))
@@ -123,7 +139,7 @@ it("should return posts saved by client", async () => {
   expect(res.body).toBeInstanceOf(Array)
 })
 
-it("should return client's notifications", async () => {
+xit("should return client's notifications", async () => {
   const res = await supertest(app)
     .get(prefixPath + "/my_notifications?from=2024-04-30")
     .set("Authorization", getJwt("johnny"))

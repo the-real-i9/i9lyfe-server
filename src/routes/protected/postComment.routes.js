@@ -4,9 +4,6 @@ import dotenv from "dotenv"
 
 import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../middlewares/validators/postComment.validators.js"
-import {
-  uploadCommentAttachment,
-} from "../../middlewares/mediaUploaders.js"
 import { validateIdParams } from "../../middlewares/validators/miscs.js"
 
 dotenv.config()

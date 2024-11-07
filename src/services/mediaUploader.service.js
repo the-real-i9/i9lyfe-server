@@ -59,3 +59,19 @@ export const uploadMessageMediaData = async (media_data) => {
 
   return `https://storage.googleapis.com/${storageBucketName}/${destination}`
 }
+
+export const uploadProfilePicture = async (picture_data, username) => {
+  const fileData = new Uint8Array(Buffer.from(picture_data))
+
+    const fileType = await fileTypeFromBuffer(fileData)
+
+    const destination = `profile_pictures/${username}/profile_pic_${randomUUID()}.${fileType.ext}`
+
+    fs.writeFile(os.tmpdir + `tempfile.${fileType.ext}`, fileData, () => {
+      getStorageBucket().upload(os.tmpdir + `tempfile.${fileType.ext}`, {
+        destination
+      })
+    })
+    
+    return `https://storage.googleapis.com/${storageBucketName}/${destination}`
+}
