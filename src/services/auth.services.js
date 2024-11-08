@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 import { randomInt } from "node:crypto"
 
+/**
+ * @returns {string}
+ */
 export const generateJwt = (payload) =>
   jwt.sign(payload, process.env.JWT_SECRET)
 
