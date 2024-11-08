@@ -4,8 +4,8 @@
  */
 
 import { Conversation, Message } from "../models/chat.model.js"
-import { ChatRealtimeService } from "../services/realtime/chat.realtime.service.js"
 import * as mediaUploadService from "../services/mediaUploader.service.js"
+import { producer } from "../services/messageBroker.service.js"
 
 export const createConversation = async (req, res) => {
   try {
@@ -16,16 +16,27 @@ export const createConversation = async (req, res) => {
 
     const { media_data, ...init_msg } = init_message
 
-    init_msg.media_url = await mediaUploadService.uploadMessageMediaData(media_data, init_msg.extension)
+    init_msg.media_url = await mediaUploadService.uploadMessageMediaData(
+      media_data,
+      init_msg.extension
+    )
 
     const { client_res, partner_res } = await Conversation.create(
       client,
       partner.user_id,
-      init_msg,
+      init_msg
     )
 
-    // replace with message broker
-    ChatRealtimeService.send("new conversation", partner.user_id, partner_res)
+    producer.send([
+      {
+        topic: `user-${partner.user_id}`,
+        messages: JSON.stringify({
+          event: "new conversation",
+          data: partner_res,
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -94,7 +105,10 @@ export const sendMessage = async (req, res) => {
 
     const { media_data, ...message_content } = msg_content
 
-    message_content.media_url = await mediaUploadService.uploadMessageMediaData(media_data, message_content.extension)
+    message_content.media_url = await mediaUploadService.uploadMessageMediaData(
+      media_data,
+      message_content.extension
+    )
 
     const { client_res, partner_res } = await Conversation.sendMessage({
       client_user_id,
@@ -102,8 +116,14 @@ export const sendMessage = async (req, res) => {
       message_content,
     })
 
-    // replace with 
-    ChatRealtimeService.send("new message", partner_user_id, partner_res)
+    // replace with
+    producer.send([
+      {
+        topic: `user-${partner_user_id}`,
+        messages: JSON.stringify({ event: "new message", data: partner_res }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -127,10 +147,19 @@ export const ackMessageDelivered = async (req, res) => {
       delivery_time,
     })
 
-    ChatRealtimeService.send("message delivered", partner_user_id, {
-      conversation_id,
-      message_id,
-    })
+    producer.send([
+      {
+        topic: `user-${partner_user_id}`,
+        messages: JSON.stringify({
+          event: "message delivered",
+          data: {
+            conversation_id,
+            message_id,
+          },
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -151,10 +180,19 @@ export const ackMessageRead = async (req, res) => {
       message_id,
     })
 
-    ChatRealtimeService.send("message read", partner_user_id, {
-      conversation_id,
-      message_id,
-    })
+    producer.send([
+      {
+        topic: `user-${partner_user_id}`,
+        messages: JSON.stringify({
+          event: "message read",
+          data: {
+            conversation_id,
+            message_id,
+          },
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -169,7 +207,7 @@ export const reactToMessage = async (req, res) => {
     const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
-    
+
     const reactor = {
       user_id: client_user_id,
       username: client_username,
@@ -183,12 +221,21 @@ export const reactToMessage = async (req, res) => {
       reaction_code_point,
     })
 
-    ChatRealtimeService.send("message reaction", partner_user_id, {
-      conversation_id,
-      reactor,
-      message_id,
-      reaction_code_point,
-    })
+    producer.send([
+      {
+        topic: `user-${partner_user_id}`,
+        messages: JSON.stringify({
+          event: "message reaction",
+          data: {
+            conversation_id,
+            reactor,
+            message_id,
+            reaction_code_point,
+          },
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(201).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -210,11 +257,20 @@ export const removeReactionToMessage = async (req, res) => {
 
     await Message.removeReaction(message_id, reactor.user_id)
 
-    ChatRealtimeService.send("message reaction removed", partner_user_id, {
-      reactor,
-      conversation_id,
-      message_id,
-    })
+    producer.send([
+      {
+        topic: `user-${partner_user_id}`,
+        messages: JSON.stringify({
+          event: "message reaction removed",
+          data: {
+            reactor,
+            conversation_id,
+            message_id,
+          },
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -243,11 +299,20 @@ export const deleteMessage = async (req, res) => {
     })
 
     if (delete_for === "everyone") {
-      ChatRealtimeService.send("message deleted", partner_user_id, {
-        conversation_id,
-        deleter_username: deleter.username,
-        message_id,
-      })
+      producer.send([
+        {
+          topic: `user-${partner_user_id}`,
+          messages: JSON.stringify({
+            event: "message deleted",
+            data: {
+              conversation_id,
+              deleter_username: deleter.username,
+              message_id,
+            },
+          }),
+        },
+        (err) => console.log(err),
+      ])
     }
 
     res.status(200).send({ msg: "operation successful" })

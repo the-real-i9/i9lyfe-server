@@ -6,6 +6,7 @@ import app from "./app.js"
 const server = createServer(app)
 
 import { Server } from "socket.io"
+import * as realtimeService from "./services/realtime.service.js"
 import { NotificationService } from "./services/realtime/notification.service.js"
 import { ChatRealtimeService } from "./services/realtime/chat.realtime.service.js"
 import { PostCommentRealtimeService } from "./services/realtime/postComment.realtime.service.js"
@@ -24,8 +25,7 @@ io.use((socket, next) => {
 })
 
 io.on("connection", (socket) => {
-  NotificationService.initRTC(socket)
-  ChatRealtimeService.initRTC(socket)
+  realtimeService.initRTC(socket)
   PostCommentRealtimeService.initRTC(io, socket)
   renewJwtToken(socket)
 })

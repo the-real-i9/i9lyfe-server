@@ -1,6 +1,6 @@
 import { User } from "../models/user.model.js"
 import { uploadProfilePicture } from "../services/mediaUploader.service.js"
-import { NotificationService } from "../services/realtime/notification.service.js"
+import { producer } from "../services/messageBroker.service.js"
 
 export const getSessionUser = async (req, res) => {
   try {
@@ -27,7 +27,16 @@ export const followUser = async (req, res) => {
     )
 
     const { receiver_user_id, ...restData } = follow_notif
-    NotificationService.sendNotification(receiver_user_id, restData)
+    producer.send([
+      {
+        topic: `user-${receiver_user_id}`,
+        messages: JSON.stringify({
+          event: "new notification",
+          data: restData,
+        }),
+      },
+      (err) => console.log(err),
+    ])
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
