@@ -6,11 +6,11 @@ import app from "./app.js"
 const server = createServer(app)
 
 import { Server } from "socket.io"
-import { NotificationService } from "./services/notification.service.js"
+import { NotificationService } from "./services/realtime/notification.service.js"
 import { ChatRealtimeService } from "./services/realtime/chat.realtime.service.js"
 import { PostCommentRealtimeService } from "./services/realtime/postComment.realtime.service.js"
 
-import { renewJwtToken } from "./services/auth/auth.service.js"
+import { renewJwtToken } from "./services/auth.services.js"
 
 const io = new Server(server)
 

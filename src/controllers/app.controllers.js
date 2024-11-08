@@ -1,14 +1,14 @@
-import { AppService } from "../services/app.service.js"
+import { App } from "../models/app.model.js"
 
 export const searchUsersToChat = async (req, res) => {
   try {
     const { term = "", limit = 20, offset = 0 } = req.query
 
-    const users = await AppService.searchUsersToChat({
-      client_user_id: req.auth?.client_user_id,
+    const users = await App.searchUsersToChat({
       term,
       limit,
       offset,
+      client_user_id: req.auth?.client_user_id,
     })
 
     res.status(200).send(users)
@@ -22,7 +22,7 @@ export const getExplorePosts = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
-    const explorePosts = await AppService.getExplorePosts({
+    const explorePosts = await App.getExplorePosts({
       limit,
       offset,
       client_user_id: req.auth?.client_user_id,
@@ -39,13 +39,18 @@ export const searchAndFilter = async (req, res) => {
   try {
     const { term = "", filter = "all", limit = 20, offset = 0 } = req.query
 
-    const results = await AppService.searchAndFilter({
-      term,
-      filter,
-      limit,
-      offset,
-      client_user_id: req.auth?.client_user_id,
-    })
+    const results =
+      filter === "hashtag"
+        ? await App.searchHashtags({ term, limit, offset })
+        : filter === "user"
+        ? await App.searchUsers({ term, limit, offset })
+        : await App.searchAndFilterPosts({
+            term,
+            filter,
+            limit,
+            offset,
+            client_user_id: req.auth?.client_user_id,
+          })
 
     res.status(200).send(results)
   } catch (error) {
@@ -60,7 +65,7 @@ export const getHashtagPosts = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const hashtagPosts = await AppService.getHashtagPosts({
+    const hashtagPosts = await App.getHashtagPosts({
       hashtag_name,
       limit,
       offset,

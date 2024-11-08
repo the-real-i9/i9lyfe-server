@@ -3,20 +3,29 @@
  * @typedef {import("express").Response} ExpressResponse
  */
 
-import { ChatService } from "../services/chat/chat.service.js"
-
+import { Conversation, Message } from "../models/chat.model.js"
+import { ChatRealtimeService } from "../services/realtime/chat.realtime.service.js"
+import * as mediaUploadService from "../services/mediaUploader.service.js"
 
 export const createConversation = async (req, res) => {
   try {
     const { partner, init_message } = req.body
 
     const { client_user_id, client_username } = req.auth
+    const client = { user_id: client_user_id, username: client_username }
 
-    const client_res = await ChatService.createConversation(
-      { user_id: client_user_id, username: client_username },
-      partner,
-      init_message
+    const { media_data, ...init_msg } = init_message
+
+    init_msg.media_url = await mediaUploadService.uploadMessageMediaData(media_data, init_msg.extension)
+
+    const { client_res, partner_res } = await Conversation.create(
+      client,
+      partner.user_id,
+      init_msg,
     )
+
+    // replace with message broker
+    ChatRealtimeService.send("new conversation", partner.user_id, partner_res)
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -29,7 +38,7 @@ export const getMyConversations = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const conversations = await ChatService.getMyConversations(client_user_id)
+    const conversations = await Conversation.getAll(client_user_id)
 
     res.status(200).send(conversations)
   } catch (error) {
@@ -44,7 +53,7 @@ export const deleteConversation = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await ChatService.deleteMyConversation(client_user_id, conversation_id)
+    await Conversation.delete(client_user_id, conversation_id)
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -59,7 +68,7 @@ export const getConversationHistory = async (req, res) => {
 
     const { limit = 50, offset = 0 } = req.query
 
-    const conversationHistory = await ChatService.getConversationHistory({
+    const conversationHistory = await Conversation.getHistory({
       conversation_id,
       limit,
       offset,
@@ -83,12 +92,18 @@ export const sendMessage = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const client_res = await ChatService.sendMessage({
+    const { media_data, ...message_content } = msg_content
+
+    message_content.media_url = await mediaUploadService.uploadMessageMediaData(media_data, message_content.extension)
+
+    const { client_res, partner_res } = await Conversation.sendMessage({
       client_user_id,
-      partner_user_id,
       conversation_id,
-      msg_content,
+      message_content,
     })
+
+    // replace with 
+    ChatRealtimeService.send("new message", partner_user_id, partner_res)
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -105,12 +120,16 @@ export const ackMessageDelivered = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await ChatService.acknowledgeMessageDelivered({
+    await Message.isDelivered({
       client_user_id,
-      partner_user_id,
       conversation_id,
       message_id,
       delivery_time,
+    })
+
+    ChatRealtimeService.send("message delivered", partner_user_id, {
+      conversation_id,
+      message_id,
     })
 
     res.status(200).send({ msg: "operation sucessful" })
@@ -126,9 +145,13 @@ export const ackMessageRead = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await ChatService.acknowledgeMessageRead({
+    await Message.isRead({
       client_user_id,
-      partner_user_id,
+      conversation_id,
+      message_id,
+    })
+
+    ChatRealtimeService.send("message read", partner_user_id, {
       conversation_id,
       message_id,
     })
@@ -146,16 +169,25 @@ export const reactToMessage = async (req, res) => {
     const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
+    
+    const reactor = {
+      user_id: client_user_id,
+      username: client_username,
+    }
 
-    await ChatService.reactToMessage({
-      conversation_id,
-      reactor: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      partner_user_id,
+    const reaction_code_point = reaction.codePointAt()
+
+    await Message.reactTo({
+      reactor_user_id: reactor.user_id,
       message_id,
-      reaction_code_point: reaction.codePointAt(),
+      reaction_code_point,
+    })
+
+    ChatRealtimeService.send("message reaction", partner_user_id, {
+      conversation_id,
+      reactor,
+      message_id,
+      reaction_code_point,
     })
 
     res.status(201).send({ msg: "operation sucessful" })
@@ -171,13 +203,16 @@ export const removeReactionToMessage = async (req, res) => {
 
     const { conversation_id, partner_user_id, message_id } = req.params
 
-    await ChatService.removeReactionToMessage({
+    const reactor = {
+      user_id: client_user_id,
+      username: client_username,
+    }
+
+    await Message.removeReaction(message_id, reactor.user_id)
+
+    ChatRealtimeService.send("message reaction removed", partner_user_id, {
+      reactor,
       conversation_id,
-      reactor: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      partner_user_id,
       message_id,
     })
 
@@ -196,16 +231,24 @@ export const deleteMessage = async (req, res) => {
 
     const { client_user_id, client_username } = req.auth
 
-    await ChatService.deleteMessage({
-      conversation_id,
-      deleter: {
-        user_id: client_user_id,
-        username: client_username,
-      },
-      partner_user_id,
+    const deleter = {
+      user_id: client_user_id,
+      username: client_username,
+    }
+
+    await Message.delete({
+      deleter_user_id: deleter.user_id,
       message_id,
-      delete_for,
+      deleted_for: delete_for,
     })
+
+    if (delete_for === "everyone") {
+      ChatRealtimeService.send("message deleted", partner_user_id, {
+        conversation_id,
+        deleter_username: deleter.username,
+        message_id,
+      })
+    }
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {

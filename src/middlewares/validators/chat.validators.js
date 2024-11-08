@@ -1,7 +1,6 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
-
 export const createConversation = [
   checkExact(
     checkSchema(
@@ -78,9 +77,7 @@ export const createConversation = [
         "init_message.props.extension": {
           custom: {
             options: (value, { req }) =>
-              (req.body.init_message.type === "file" &&
-                value.startsWith(".")) ||
-              !value,
+              req.body.init_message.type === "file" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
@@ -197,9 +194,7 @@ export const sendMessage = [
         "msg_content.props.extension": {
           custom: {
             options: (value, { req }) =>
-              (req.body.msg_content.type === "file" &&
-                value.startsWith(".")) ||
-              !value,
+              req.body.msg_content.type === "file" || !value,
             errorMessage: "invalid property for the specified type",
             bail: true,
           },
@@ -260,8 +255,7 @@ export const ackMessageDelivered = [
           notEmpty: true,
           custom: {
             options: (value) => !isNaN(Date.parse(value)),
-            errorMessage:
-              "invalid date",
+            errorMessage: "invalid date",
           },
         },
       },
@@ -301,8 +295,9 @@ export const deleteMessage = [
         delete_for: {
           isIn: {
             options: [["me", "everyone"]],
-            errorMessage: "invalid delete-for value, should be either 'me' or 'everyone'"
-          }
+            errorMessage:
+              "invalid delete-for value, should be either 'me' or 'everyone'",
+          },
         },
       },
       ["query"]

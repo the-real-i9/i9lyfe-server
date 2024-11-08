@@ -1,10 +1,12 @@
-import { UserService } from "../services/user.service.js"
+import { User } from "../models/user.model.js"
+import { uploadProfilePicture } from "../services/mediaUploader.service.js"
+import { NotificationService } from "../services/realtime/notification.service.js"
 
 export const getSessionUser = async (req, res) => {
   try {
     const { client_user_id } = req.auth
 
-    const sessionUser = await UserService.getClientUser(client_user_id)
+    const sessionUser = await User.findOne(client_user_id)
 
     res.status(200).send({ sessionUser })
   } catch (error) {
@@ -19,7 +21,13 @@ export const followUser = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await UserService.follow(client_user_id, to_follow_user_id)
+    const { follow_notif } = await User.followUser(
+      client_user_id,
+      to_follow_user_id
+    )
+
+    const { receiver_user_id, ...restData } = follow_notif
+    NotificationService.sendNotification(receiver_user_id, restData)
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -34,7 +42,7 @@ export const unfollowUser = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await UserService.unfollow(client_user_id, followee_user_id)
+    await User.unfollowUser(client_user_id, followee_user_id)
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -45,11 +53,11 @@ export const unfollowUser = async (req, res) => {
 
 export const editProfile = async (req, res) => {
   try {
-    const updateDict = req.body
+    const updateKVPairs = req.body
 
     const { client_user_id } = req.auth
 
-    await UserService.editProfile(client_user_id, Object.entries(updateDict))
+    await User.edit(client_user_id, updateKVPairs)
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -64,7 +72,7 @@ export const updateConnectionStatus = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await UserService.updateConnectionStatus({
+    await User.updateConnectionStatus({
       client_user_id,
       connection_status,
       last_active,
@@ -83,7 +91,7 @@ export const readNotification = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    await UserService.readNotification(notification_id, client_user_id)
+    await User.readNotification(notification_id, client_user_id)
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -95,11 +103,15 @@ export const readNotification = async (req, res) => {
 export const changeProfilePicture = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
-    
-    await UserService.changeProfilePicture(
-      { user_id: client_user_id, username: client_username },
-      req.body.picture_data
+
+    const { picture_data } = req.body
+
+    const profile_pic_url = await uploadProfilePicture(
+      picture_data,
+      client_username
     )
+
+    await User.changeProfilePicture(client_user_id, profile_pic_url)
 
     // upload binary data to CDN, and store the url in profile_pic_url for the session use
     res.status(200).send({ msg: "operation successful" })
@@ -117,7 +129,7 @@ export const getHomeFeed = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const homeFeedPosts = await UserService.getFeedPosts({
+    const homeFeedPosts = await User.getFeedPosts({
       client_user_id,
       limit,
       offset,
@@ -134,9 +146,9 @@ export const getProfile = async (req, res) => {
   try {
     const { username } = req.params
 
-    const profileData = await UserService.getProfile(
+    const profileData = await User.getProfile(
       username,
-      req.auth?.client_user_id
+      req.auth?.client_user_idd
     )
 
     res.status(200).send(profileData)
@@ -152,7 +164,7 @@ export const getFollowers = async (req, res) => {
 
     const { limit = 50, offset = 0 } = req.query
 
-    const userFollowers = await UserService.getFollowers({
+    const userFollowers = await User.getFollowers({
       username,
       limit,
       offset,
@@ -172,7 +184,7 @@ export const getFollowing = async (req, res) => {
 
     const { limit = 50, offset = 0 } = req.query
 
-    const userFollowing = await UserService.getFollowing({
+    const userFollowing = await User.getFollowing({
       username,
       limit,
       offset,
@@ -192,7 +204,7 @@ export const getPosts = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const userPosts = await UserService.getPosts({
+    const userPosts = await User.getPosts({
       username,
       limit,
       offset,
@@ -212,11 +224,7 @@ export const getMentionedPosts = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const mentionedPosts = await UserService.getMentionedPosts({
-      limit,
-      offset,
-      client_user_id,
-    })
+    const mentionedPosts = await User.getMentionedPosts({ limit, offset, client_user_id })
 
     res.status(200).send(mentionedPosts)
   } catch (error) {
@@ -231,11 +239,7 @@ export const getReactedPosts = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const reactedPosts = await UserService.getReactedPosts({
-      limit,
-      offset,
-      client_user_id,
-    })
+    const reactedPosts = await User.getReactedPosts({ limit, offset, client_user_id })
 
     res.status(200).send(reactedPosts)
   } catch (error) {
@@ -250,11 +254,7 @@ export const getSavedPosts = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const savedPosts = await UserService.getSavedPosts({
-      limit,
-      offset,
-      client_user_id,
-    })
+    const savedPosts = await User.getSavedPosts({ limit, offset, client_user_id })
 
     res.status(200).send(savedPosts)
   } catch (error) {
@@ -269,9 +269,9 @@ export const getNotifications = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const notifications = await UserService.getNotifications({
+    const notifications = await User.getNotifications({
       client_user_id,
-      from,
+      from: new Date(from),
       limit,
       offset,
     })

@@ -45,7 +45,7 @@ export class User {
   /**
    * @param {string} emailOrUsername
    */
-  static async findOneForAuth(emailOrUsername) {
+  static async findOneIncPassword(emailOrUsername) {
     /** @type {PgQueryConfig} */
     const query = {
       text: `SELECT * FROM get_user($1), get_user_password($1)`,

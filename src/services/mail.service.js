@@ -29,4 +29,3 @@ export const sendMail = ({ to, subject, html }) => {
   }
 }
 
-export default sendMail
