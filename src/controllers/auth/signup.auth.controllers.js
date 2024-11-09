@@ -1,5 +1,6 @@
 import * as authServices from "../../services/auth.services.js"
 import * as mailService from "../../services/mail.service.js"
+import * as messageBrokerService from "../../services/messageBroker.service.js"
 import { User } from "../../models/user.model.js"
 
 export const requestNewAccount = async (req, res) => {
@@ -104,6 +105,8 @@ export const registerUser = async (req, res) => {
     })
 
     req.session.destroy()
+
+    messageBrokerService.createTopic(`user-${user.id}-alerts`)
 
     res.status(201).send({
       msg: "Registration success! You're automatically logged in.",

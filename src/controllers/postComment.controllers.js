@@ -17,7 +17,7 @@ export const createNewPost = async (req, res) => {
       media_data_list
     )
 
-    const { new_post_id, mention_notifs } = await Post.create({
+    const { new_post_data, mention_notifs } = await Post.create({
       client_user_id,
       media_urls,
       type,
@@ -26,10 +26,9 @@ export const createNewPost = async (req, res) => {
       hashtags,
     })
 
-    const postData = await Post.find(new_post_id, client_user_id)
+    messageBrokerService.createTopic(`post-${new_post_data.post_id}-updates`)
 
-    // replace with message broker
-    // PostCommentRealtimeService.sendNewPost(client_user_id, postData)
+    // TODO: publish new post's id in topic: new-post-alert
 
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif
@@ -38,7 +37,7 @@ export const createNewPost = async (req, res) => {
       messageBrokerService.sendNewNotification(receiver_user_id, restData)
     })
 
-    res.status(200).send(postData)
+    res.status(200).send(new_post_data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -96,7 +95,7 @@ export const commentOnPost = async (req, res) => {
     )
 
     const {
-      new_comment_id,
+      new_comment_data,
       comment_notif,
       mention_notifs,
       latest_comments_count,
@@ -109,6 +108,8 @@ export const commentOnPost = async (req, res) => {
       mentions,
       hashtags,
     })
+
+    messageBrokerService.createTopic(`comment-${new_comment_data.comment_id}-updates`)
 
     // notify mentioned users
     mention_notifs.forEach((notif) => {
@@ -129,10 +130,7 @@ export const commentOnPost = async (req, res) => {
       latest_comments_count,
     })
 
-    // return comment data back to client
-    const commentData = await Comment.find(new_comment_id, client_user_id)
-
-    res.status(201).send(commentData)
+    res.status(201).send(new_comment_data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -189,7 +187,7 @@ export const commentOnComment = async (req, res) => {
     )
 
     const {
-      new_comment_id,
+      new_comment_data,
       comment_notif,
       mention_notifs,
       latest_comments_count,
@@ -202,6 +200,8 @@ export const commentOnComment = async (req, res) => {
       mentions,
       hashtags,
     })
+
+    messageBrokerService.createTopic(`comment-${new_comment_data.comment_id}-updates`)
 
     // notify mentioned users
     mention_notifs.forEach((notif) => {
@@ -221,12 +221,8 @@ export const commentOnComment = async (req, res) => {
       comment_id: target_comment_id,
       latest_comments_count,
     })
-    
 
-    // return comment data back to client
-    const commentData = await Comment.find(new_comment_id, client_user_id)
-
-    res.status(201).send(commentData)
+    res.status(201).send(new_comment_data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -259,7 +255,6 @@ export const postSave = async (req, res) => {
       post_id,
       latest_saves_count,
     })
-  
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -279,7 +274,6 @@ export const postUnsave = async (req, res) => {
       post_id,
       latest_saves_count,
     })
-    
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {

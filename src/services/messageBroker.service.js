@@ -7,7 +7,7 @@ const producer = new Producer(kafkaClient)
 export const sendNewNotification = (receiver_user_id, data) => {
   producer.send([
     {
-      topic: `user-${receiver_user_id}`,
+      topic: `user-${receiver_user_id}-alerts`,
       messages: JSON.stringify({
         event: "new notification",
         data,
@@ -45,7 +45,7 @@ export const sendCommentUpdate = (comment_id, data) => {
 export const sendChatEvent = (event, partner_user_id, data) => {
   producer.send([
     {
-      topic: `user-${partner_user_id}`,
+      topic: `user-${partner_user_id}-alerts`,
       messages: JSON.stringify({
         event,
         data,
@@ -53,4 +53,13 @@ export const sendChatEvent = (event, partner_user_id, data) => {
     },
     (err) => console.log(err),
   ])
+}
+
+/**
+ * @param {string} topic
+ */
+export const createTopic = (topic) => {
+  producer.createTopics([topic], (err) => {
+    console.error(err)
+  })
 }
