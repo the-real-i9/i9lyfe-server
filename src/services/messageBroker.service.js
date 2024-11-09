@@ -41,3 +41,16 @@ export const sendCommentUpdate = (comment_id, data) => {
     (err) => console.log(err),
   ])
 }
+
+export const sendChatEvent = (event, partner_user_id, data) => {
+  producer.send([
+    {
+      topic: `user-${partner_user_id}`,
+      messages: JSON.stringify({
+        event,
+        data,
+      }),
+    },
+    (err) => console.log(err),
+  ])
+}

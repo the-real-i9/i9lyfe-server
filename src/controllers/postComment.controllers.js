@@ -1,7 +1,6 @@
 import * as appServices from "../services/app.services.js"
 import * as mediaUploadService from "../services/mediaUploader.service.js"
 import { Post } from "../models/post.model.js"
-import { PostCommentRealtimeService } from "../services/realtime/postComment.realtime.service.js"
 import { Comment } from "../models/comment.model.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 
@@ -30,7 +29,7 @@ export const createNewPost = async (req, res) => {
     const postData = await Post.find(new_post_id, client_user_id)
 
     // replace with message broker
-    PostCommentRealtimeService.sendNewPost(client_user_id, postData)
+    // PostCommentRealtimeService.sendNewPost(client_user_id, postData)
 
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif

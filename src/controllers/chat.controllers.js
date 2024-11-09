@@ -5,7 +5,7 @@
 
 import { Conversation, Message } from "../models/chat.model.js"
 import * as mediaUploadService from "../services/mediaUploader.service.js"
-import { producer } from "../services/messageBroker.service.js"
+import { sendChatEvent } from "../services/messageBroker.service.js"
 
 export const createConversation = async (req, res) => {
   try {
@@ -27,16 +27,7 @@ export const createConversation = async (req, res) => {
       init_msg
     )
 
-    producer.send([
-      {
-        topic: `user-${partner.user_id}`,
-        messages: JSON.stringify({
-          event: "new conversation",
-          data: partner_res,
-        }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("new conversation", partner.user_id, partner_res)
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -117,13 +108,7 @@ export const sendMessage = async (req, res) => {
     })
 
     // replace with
-    producer.send([
-      {
-        topic: `user-${partner_user_id}`,
-        messages: JSON.stringify({ event: "new message", data: partner_res }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("new message", partner_user_id, partner_res)
 
     res.status(201).send(client_res)
   } catch (error) {
@@ -147,19 +132,10 @@ export const ackMessageDelivered = async (req, res) => {
       delivery_time,
     })
 
-    producer.send([
-      {
-        topic: `user-${partner_user_id}`,
-        messages: JSON.stringify({
-          event: "message delivered",
-          data: {
-            conversation_id,
-            message_id,
-          },
-        }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("message delivered", partner_user_id, {
+      conversation_id,
+      message_id,
+    })
 
     res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -180,19 +156,10 @@ export const ackMessageRead = async (req, res) => {
       message_id,
     })
 
-    producer.send([
-      {
-        topic: `user-${partner_user_id}`,
-        messages: JSON.stringify({
-          event: "message read",
-          data: {
-            conversation_id,
-            message_id,
-          },
-        }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("message read", partner_user_id, {
+      conversation_id,
+      message_id,
+    })
 
     res.status(200).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -221,21 +188,12 @@ export const reactToMessage = async (req, res) => {
       reaction_code_point,
     })
 
-    producer.send([
-      {
-        topic: `user-${partner_user_id}`,
-        messages: JSON.stringify({
-          event: "message reaction",
-          data: {
-            conversation_id,
-            reactor,
-            message_id,
-            reaction_code_point,
-          },
-        }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("message reaction", partner_user_id, {
+      conversation_id,
+      reactor,
+      message_id,
+      reaction_code_point,
+    })
 
     res.status(201).send({ msg: "operation sucessful" })
   } catch (error) {
@@ -257,20 +215,11 @@ export const removeReactionToMessage = async (req, res) => {
 
     await Message.removeReaction(message_id, reactor.user_id)
 
-    producer.send([
-      {
-        topic: `user-${partner_user_id}`,
-        messages: JSON.stringify({
-          event: "message reaction removed",
-          data: {
-            reactor,
-            conversation_id,
-            message_id,
-          },
-        }),
-      },
-      (err) => console.log(err),
-    ])
+    sendChatEvent("message reaction removed", partner_user_id, {
+      reactor,
+      conversation_id,
+      message_id,
+    })
 
     res.status(200).send({ msg: "operation successful" })
   } catch (error) {
@@ -299,20 +248,11 @@ export const deleteMessage = async (req, res) => {
     })
 
     if (delete_for === "everyone") {
-      producer.send([
-        {
-          topic: `user-${partner_user_id}`,
-          messages: JSON.stringify({
-            event: "message deleted",
-            data: {
-              conversation_id,
-              deleter_username: deleter.username,
-              message_id,
-            },
-          }),
-        },
-        (err) => console.log(err),
-      ])
+      sendChatEvent("message deleted", partner_user_id, {
+        conversation_id,
+        deleter_username: deleter.username,
+        message_id,
+      })
     }
 
     res.status(200).send({ msg: "operation successful" })
