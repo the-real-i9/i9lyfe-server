@@ -21,8 +21,10 @@ io.use((socket, next) => {
   })
 })
 
+realtimeService.initRTC(io)
+
 io.on("connection", (socket) => {
-  realtimeService.initRTC(socket)
+  realtimeService.initSocketRTC(socket)
   renewJwtToken(socket)
 })
 

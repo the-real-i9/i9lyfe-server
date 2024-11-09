@@ -20,39 +20,8 @@ export const sendNewNotification = (receiver_user_id, data) => {
     }
   )
 }
-export const sendPostUpdate = (post_id, data) => {
-  producer.send(
-    [
-      {
-        topic: `post-${post_id}-updates`,
-        messages: JSON.stringify({
-          event: "latest post update",
-          data,
-        }),
-      },
-    ],
-    (err) => {
-      err && console.error(err)
-    }
-  )
-}
 
-export const sendCommentUpdate = (comment_id, data) => {
-  producer.send(
-    [
-      {
-        topic: `comment-${comment_id}-updates`,
-        messages: JSON.stringify({
-          event: "latest comment update",
-          data,
-        }),
-      },
-    ],
-    (err) => {
-      err && console.error(err)
-    }
-  )
-}
+
 
 export const sendChatEvent = (event, partner_user_id, data) => {
   producer.send(
