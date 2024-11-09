@@ -32,9 +32,10 @@ export const initRTC = (socket) => {
   })
 
   socket.on("disconnect", () => {
-    consumer.close((err) => {
-      console.error(err)
-    })
+    consumer.close((err) => err && console.error(err))
   })
 
+  consumer.on("error", (err) => console.error(err))
+
+  consumer.on("offsetOutOfRange", (err) => console.error(err))
 }
