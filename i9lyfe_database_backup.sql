@@ -669,6 +669,52 @@ $_$;
 ALTER FUNCTION public.edit_user(client_user_id integer, col_updates character varying[]) OWNER TO i9;
 
 --
+-- Name: fetch_home_feed_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
+--
+
+CREATE FUNCTION public.fetch_home_feed_posts(client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_post_struct
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  -- This stored function aggregates posts based on the "content recommendation algorithm"
+  
+  RETURN QUERY SELECT json_build_object(
+        'user_id', owner_user_id,
+        'username', owner_username,
+        'profile_pic_url', owner_profile_pic_url
+      ) AS owner_user,
+      post_id,
+      type,
+      media_urls,
+      description,
+      reactions_count,
+      comments_count,
+      reposts_count,
+      saves_count,
+      CASE 
+        WHEN reactor_user_id = client_user_id THEN reaction_code_point
+        ELSE NULL
+      END client_reaction,
+      CASE 
+        WHEN reposter_user_id = client_user_id THEN true
+        ELSE false
+      END client_reposted,
+      CASE 
+        WHEN saver_user_id = client_user_id THEN true
+        ELSE false
+      END client_saved
+    FROM "PostView"
+    WHERE owner_user_id = client_user_id OR recommend_post(client_user_id, post_id)
+    ORDER BY created_at DESC
+    LIMIT in_limit OFFSET in_offset;
+	  
+END;
+$$;
+
+
+ALTER FUNCTION public.fetch_home_feed_posts(client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
+
+--
 -- Name: follow_user(integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
@@ -951,52 +997,6 @@ $$;
 ALTER FUNCTION public.get_explore_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO i9;
 
 --
--- Name: get_feed_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
---
-
-CREATE FUNCTION public.get_feed_posts(client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_post_struct
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  RETURN QUERY SELECT json_build_object(
-        'user_id', owner_user_id,
-        'username', owner_username,
-        'profile_pic_url', owner_profile_pic_url
-      ) AS owner_user,
-      post_id,
-      type,
-      media_urls,
-      description,
-      reactions_count,
-      comments_count,
-      reposts_count,
-      saves_count,
-      CASE 
-        WHEN reactor_user_id = client_user_id THEN reaction_code_point
-        ELSE NULL
-      END client_reaction,
-      CASE 
-        WHEN reposter_user_id = client_user_id THEN true
-        ELSE false
-      END client_reposted,
-      CASE 
-        WHEN saver_user_id = client_user_id THEN true
-        ELSE false
-      END client_saved
-    FROM "PostView"
-    LEFT JOIN follow ON follow.followee_user_id = owner_user_id
-    WHERE follow.follower_user_id = client_user_id OR owner_user_id = client_user_id
-    ORDER BY created_at DESC
-    LIMIT in_limit OFFSET in_offset;
-	  
-	  
-END;
-$$;
-
-
-ALTER FUNCTION public.get_feed_posts(client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
-
---
 -- Name: get_hashtag_posts(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
@@ -1087,10 +1087,10 @@ $$;
 ALTER FUNCTION public.get_mentioned_posts(in_limit integer, in_offset integer, client_user_id integer) OWNER TO i9;
 
 --
--- Name: get_post(integer, integer); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: get_post(integer, integer, boolean); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_post(in_post_id integer, client_user_id integer) RETURNS SETOF public.ui_post_struct
+CREATE FUNCTION public.get_post(in_post_id integer, client_user_id integer, if_recommended boolean) RETURNS SETOF public.ui_post_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1120,14 +1120,14 @@ BEGIN
         ELSE false
       END client_saved
     FROM "PostView"
-    WHERE post_id = in_post_id;
+    WHERE post_id = in_post_id AND (CASE WHEN if_recommended THEN recommend_post(client_user_id, post_id) ELSE true END);
 	  
 	  
 END;
 $$;
 
 
-ALTER FUNCTION public.get_post(in_post_id integer, client_user_id integer) OWNER TO i9;
+ALTER FUNCTION public.get_post(in_post_id integer, client_user_id integer, if_recommended boolean) OWNER TO i9;
 
 --
 -- Name: get_reacted_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
@@ -1619,6 +1619,44 @@ $$;
 
 
 ALTER FUNCTION public.get_users_to_chat(in_search text, in_limit integer, in_offset integer, client_user_id integer) OWNER TO i9;
+
+--
+-- Name: recommend_post(integer, integer); Type: FUNCTION; Schema: public; Owner: i9
+--
+
+CREATE FUNCTION public.recommend_post(client_user_id integer, post_id integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  post_owner_user_id int;
+BEGIN
+  -- This is the implementation of the "post recommendation algorithm", 
+  -- it promises to be advanced and sophisticated in the near future.
+  -- For now, it just checks the following conditions in decreasing order of priority
+     -- if the client follows the post owner, else
+	 -- if the client follows a user who follows the post owner
+
+  SELECT user_id INTO post_owner_user_id FROM post WHERE id = post_id;
+
+  IF (SELECT EXISTS (SELECT 1 FROM follow 
+	WHERE follower_user_id = client_user_id AND followee_user_id = post_owner_user_id)) THEN
+    -- does client follow post owner?
+	-- rationale: the client is interested in the owner's content
+    RETURN true;
+  ELSIF (SELECT array_agg(followee_user_id) FROM follow 
+	WHERE follower_user_id = client_user_id) @> (SELECT array_agg(follower_user_id) FROM follow 
+	WHERE followee_user_id = post_owner_user_id) THEN
+	  -- does client follow a user that follows the post owner?
+	  -- rationale: possibility of shared interest between the client and the user he follows
+      RETURN true;
+  END IF;
+
+  RETURN false;
+END;
+$$;
+
+
+ALTER FUNCTION public.recommend_post(client_user_id integer, post_id integer) OWNER TO i9;
 
 --
 -- Name: search_filter_posts(text, text, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
@@ -2507,6 +2545,8 @@ COPY public.conversation (id, created_at, initiator_user_id, with_user_id) FROM 
 --
 
 COPY public.follow (id, follower_user_id, followee_user_id, follow_on) FROM stdin;
+95	14	15	2024-11-09 20:22:31.197094
+96	15	14	2024-11-09 20:29:23.486856
 \.
 
 
@@ -2515,6 +2555,8 @@ COPY public.follow (id, follower_user_id, followee_user_id, follow_on) FROM stdi
 --
 
 COPY public.i9l_user (id, email, username, password, name, birthday, bio, profile_pic_url, connection_status, last_active, acc_deleted, cover_pic_url) FROM stdin;
+14	johnny@gmail.com	johnny	$2b$10$R7CabqQLCGO.XtmwA5YVK.qB28vF/.5nQYUNy0pchPyUkbfCyb1CS	Johnny Cage	2000-11-07	This is a second account for testing!		online	\N	f	
+15	annak@gmail.com	kendrick	$2b$10$31B7ZJy7ZaSrn9dwwaNA/u0d/ZfsY59EiEyIc3VuLUFCwGEbDcuhW	Anna Kendrick	2000-11-07	This is Anna Kendrick's account!		online	\N	f	
 \.
 
 
@@ -2547,6 +2589,18 @@ COPY public.message_reaction (id, message_id, reactor_user_id, reaction_code_poi
 --
 
 COPY public.notification (id, type, is_read, sender_user_id, receiver_user_id, via_post_id, via_comment_id, comment_created_id, created_at, reaction_code_point) FROM stdin;
+291	follow	f	14	15	\N	\N	\N	2024-11-09 13:58:28.949581	\N
+292	follow	f	14	15	\N	\N	\N	2024-11-09 14:07:58.27792	\N
+293	follow	f	14	15	\N	\N	\N	2024-11-09 14:11:55.388571	\N
+294	follow	f	14	15	\N	\N	\N	2024-11-09 14:22:43.821553	\N
+295	follow	f	14	15	\N	\N	\N	2024-11-09 14:28:56.556161	\N
+296	follow	f	14	15	\N	\N	\N	2024-11-09 14:29:33.249321	\N
+297	follow	f	14	15	\N	\N	\N	2024-11-09 14:34:19.515045	\N
+298	follow	f	14	15	\N	\N	\N	2024-11-09 19:51:17.55273	\N
+299	follow	f	14	15	\N	\N	\N	2024-11-09 19:59:18.787253	\N
+300	follow	f	14	15	\N	\N	\N	2024-11-09 20:18:55.89074	\N
+301	follow	f	14	15	\N	\N	\N	2024-11-09 20:22:31.197094	\N
+302	follow	f	15	14	\N	\N	\N	2024-11-09 20:29:23.486856	\N
 \.
 
 
@@ -2647,14 +2701,14 @@ SELECT pg_catalog.setval('public.conversation_id_seq', 1, true);
 -- Name: follow_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
 --
 
-SELECT pg_catalog.setval('public.follow_id_seq', 83, true);
+SELECT pg_catalog.setval('public.follow_id_seq', 96, true);
 
 
 --
 -- Name: i9l_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
 --
 
-SELECT pg_catalog.setval('public.i9l_user_id_seq', 13, true);
+SELECT pg_catalog.setval('public.i9l_user_id_seq', 15, true);
 
 
 --
@@ -2682,7 +2736,7 @@ SELECT pg_catalog.setval('public.message_reaction_id_seq', 3, true);
 -- Name: notification_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
 --
 
-SELECT pg_catalog.setval('public.notification_id_seq', 290, true);
+SELECT pg_catalog.setval('public.notification_id_seq', 302, true);
 
 
 --
