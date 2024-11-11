@@ -123,13 +123,13 @@ export const changeProfilePicture = async (req, res) => {
 
 /* GETs */
 
-export const getHomeFeed = async (req, res) => {
+export const getHomeFeedPosts = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
-    const homeFeedPosts = await User.getFeedPosts({
+    const homeFeedPosts = await User.getHomeFeedPosts({
       client_user_id,
       limit,
       offset,

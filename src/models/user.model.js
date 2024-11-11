@@ -131,10 +131,14 @@ export class User {
     await dbQuery(query)
   }
 
-  static async getFeedPosts({ client_user_id, limit, offset }) {
+  /**
+   * The stored function `fetch_home_feed_posts` aggregates posts
+   * based on a "post recommendation algorithm"
+   */
+  static async getHomeFeedPosts({ client_user_id, limit, offset }) {
     /** @type {PgQueryConfig} */
     const query = {
-      text: "SELECT * FROM get_feed_posts($1, $2, $3)",
+      text: "SELECT * FROM fetch_home_feed_posts($1, $2, $3)",
       values: [client_user_id, limit, offset],
     }
 
