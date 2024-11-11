@@ -1,4 +1,7 @@
+import { EventEmitter } from "node:events"
 import { Consumer, KafkaClient } from "kafka-node"
+import { Post } from "../models/post.model"
+
 
 /** @type import("socket.io").Server */
 let sio = null
@@ -7,6 +10,8 @@ let sio = null
 export const initRTC = (io) => {
   sio = io
 }
+
+export const newPostEventEmitter = new EventEmitter()
 
 /** @param {import("socket.io").Socket} socket */
 export const initSocketRTC = (socket) => {
@@ -46,6 +51,15 @@ export const initSocketRTC = (socket) => {
 
   socket.on("stop receiving comment updates", (comment_id) => {
     socket.leave(`comment-${comment_id}-updates`)
+  })
+
+  newPostEventEmitter.on("new post", async (post_id) => {
+    // get post based on "post recommendation algorithm"
+    const post = await Post.find(post_id, client_user_id, true)
+
+    if (post) {
+      socket.send("new post", post)
+    }
   })
 }
 

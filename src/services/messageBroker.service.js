@@ -21,8 +21,6 @@ export const sendNewNotification = (receiver_user_id, data) => {
   )
 }
 
-
-
 export const sendChatEvent = (event, partner_user_id, data) => {
   producer.send(
     [

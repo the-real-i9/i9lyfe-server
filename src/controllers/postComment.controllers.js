@@ -27,7 +27,7 @@ export const createNewPost = async (req, res) => {
       hashtags,
     })
 
-    // TODO: publish new post's id in topic: new-post-alert
+    realtimeService.newPostEventEmitter.emit("new post", new_post_data.post_id)
 
     mention_notifs.forEach((notif) => {
       const { receiver_user_id, ...restData } = notif
@@ -285,7 +285,7 @@ export const getPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const post = await Post.find(post_id, client_user_id)
+    const post = await Post.find(post_id, client_user_id, false)
 
     res.status(200).send(post)
   } catch (error) {
