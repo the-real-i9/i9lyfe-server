@@ -17,10 +17,10 @@ export const renewJwtToken = (socket) => {
 }
 
 export const generateCodeWithExpiration = () => {
-  const token = randomInt(100000, 999999)
-  const expirationTime = new Date(Date.now() + 1 * 60 * 60 * 1000)
+  const code = randomInt(100000, 999999)
+  const expires = new Date(Date.now() + 1 * 60 * 60 * 1000)
 
-  return [token, expirationTime]
+  return { code, expires }
 }
 
 export const hashPassword = async (password) => {

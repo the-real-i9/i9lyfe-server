@@ -3,8 +3,8 @@ import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import * as PCC from "../../controllers/postComment.controllers.js"
-import * as PCV from "../../middlewares/validators/postComment.validators.js"
-import { validateIdParams } from "../../middlewares/validators/miscs.js"
+import * as PCV from "../../validators/postComment.validators.js"
+import { validateIdParams } from "../../validators/miscs.js"
 
 dotenv.config()
 

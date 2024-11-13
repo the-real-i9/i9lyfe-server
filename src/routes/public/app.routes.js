@@ -2,8 +2,8 @@ import express from "express"
 import dotenv from "dotenv"
 import { expressjwt } from "express-jwt"
 import * as AC from "../../controllers/app.controllers.js"
-import * as appValidators from "../../middlewares/validators/app.validators.js"
-import { validateLimitOffset } from "../../middlewares/validators/miscs.js"
+import * as appValidators from "../../validators/app.validators.js"
+import { validateLimitOffset } from "../../validators/miscs.js"
 
 dotenv.config()
 

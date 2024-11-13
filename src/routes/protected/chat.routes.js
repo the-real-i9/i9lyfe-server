@@ -3,8 +3,8 @@ import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import * as CC from "../../controllers/chat.controllers.js"
-import * as chatValidators from "../../middlewares/validators/chat.validators.js"
-import { validateIdParams } from "../../middlewares/validators/miscs.js"
+import * as chatValidators from "../../validators/chat.validators.js"
+import { validateIdParams } from "../../validators/miscs.js"
 
 dotenv.config()
 
