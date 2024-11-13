@@ -4,7 +4,7 @@
  */
 
 import { Conversation, Message } from "../models/chat.model.js"
-import * as mediaUploadService from "../services/mediaUploader.service.js"
+import * as mediaUploadService from "../services/mediaUpload.service.js"
 import { sendChatEvent } from "../services/messageBroker.service.js"
 
 export const createConversation = async (req, res) => {

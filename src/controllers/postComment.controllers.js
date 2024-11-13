@@ -1,5 +1,5 @@
-import * as appServices from "../services/app.services.js"
-import * as mediaUploadService from "../services/mediaUploader.service.js"
+import * as appUtilServices from "../services/utils/app.utilServices.js"
+import * as mediaUploadService from "../services/mediaUpload.service.js"
 import { Post } from "../models/post.model.js"
 import { Comment } from "../models/comment.model.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
@@ -11,8 +11,8 @@ export const createNewPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const hashtags = appServices.extractHashtags(description)
-    const mentions = appServices.extractMentions(description)
+    const hashtags = appUtilServices.extractHashtags(description)
+    const mentions = appUtilServices.extractMentions(description)
 
     const media_urls = await mediaUploadService.uploadPostMediaDataList(
       media_data_list
@@ -86,8 +86,8 @@ export const commentOnPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const mentions = appServices.extractMentions(comment_text)
-    const hashtags = appServices.extractHashtags(comment_text)
+    const mentions = appUtilServices.extractMentions(comment_text)
+    const hashtags = appUtilServices.extractHashtags(comment_text)
 
     const attachment_url = await mediaUploadService.uploadCommentAttachmentData(
       attachment_data
@@ -176,8 +176,8 @@ export const commentOnComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const mentions = appServices.extractMentions(comment_text)
-    const hashtags = appServices.extractHashtags(comment_text)
+    const mentions = appUtilServices.extractMentions(comment_text)
+    const hashtags = appUtilServices.extractHashtags(comment_text)
 
     const attachment_url = await mediaUploadService.uploadCommentAttachmentData(
       attachment_data
