@@ -5,17 +5,11 @@
 import { dbQuery } from "../configs/db.js"
 
 export class Conversation {
-  /**
-   * @param {object} client
-   * @param {number} client.user_id
-   * @param {string} client.username
-   * @param {number} partner_user_id
-   */
-  static async create(client, partner_user_id, init_message) {
+  static async create({ client_user_id, partner_user_id, init_message }) {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT client_res, partner_res FROM create_conversation($1, $2, $3)",
-      values: [client.user_id, partner_user_id, init_message],
+      values: [client_user_id, partner_user_id, init_message],
     }
 
     // return needed details
@@ -104,7 +98,11 @@ export class Conversation {
    * @param {string} param0.message_content.link_url Link URL. If type is link
    * @param {string} param0.message_content.link_description Link description. If type is file
    */
-  static async sendMessage({ client_user_id, conversation_id, message_content }) {
+  static async sendMessage({
+    client_user_id,
+    conversation_id,
+    message_content,
+  }) {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT client_res, partner_res FROM create_message($1, $2, $3)",
@@ -146,8 +144,6 @@ export class Conversation {
 }
 
 export class Message {
-  
-
   static async isDelivered({
     client_user_id,
     conversation_id,
