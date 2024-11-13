@@ -1,12 +1,7 @@
-/**
- * @typedef {import("pg").QueryConfig} PgQueryConfig
- */
-
 import { dbQuery } from "../configs/db.js"
 
 export class Conversation {
   static async create({ client_user_id, partner_user_id, init_message }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT client_res, partner_res FROM create_conversation($1, $2, $3)",
       values: [client_user_id, partner_user_id, init_message],
@@ -28,11 +23,7 @@ export class Conversation {
     await dbQuery(query)
   }
 
-  /**
-   * @param {number} client_user_id
-   */
   static async getAll(client_user_id) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_user_conversations($1)",
       values: [client_user_id],
@@ -41,25 +32,7 @@ export class Conversation {
     return (await dbQuery(query)).rows
   }
 
-  /**
-   * To retrieve history in chunks, from (-ve)N offset to the newest history (0)
-   * First fetch N rows from DESC row set
-   * Finaly, reorder the row set to ASC
-   *
-   * This is how you can display conversation history in a chat history page
-   * @example
-   * SELECT * FROM
-   * (SELECT * FROM "ConversationHistory"
-   * WHERE conversation_id = $1
-   * ORDER BY created_at DESC
-   * LIMIT 20)
-   * ORDER BY created_at ASC
-   * @param {number} conversation_id
-   * @param {number} limit
-   * @param {number} offset
-   */
   static async getHistory({ conversation_id, limit, offset }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
     SELECT * FROM get_conversation_history($1, $2, $3)
@@ -70,40 +43,11 @@ export class Conversation {
     return (await dbQuery(query)).rows
   }
 
-  /**
-   * @param {object} param0
-   * @param {number} param0.sender_user_id
-   * @param {number} param0.conversation_id
-   * @param {object} param0.message_content
-   * @param {"text" | "emoji" | "image" | "video" | "voice" | "file" | "location" | "link"} param0.message_content.type
-   * @param {string} [param0.message_content.text_content] Text content. If type is text
-   *
-   * @param {string} [param0.message_content.emoji_code_point] Emoji code. If type is emoji
-   *
-   * @param {string} [param0.message_content.image_data_url] Image URL. If type is image
-   * @param {string} [param0.message_content.image_caption] Image caption. If type is image
-   *
-   * @param {string} [param0.message_content.voice_data_url] Voice data URL. If type is voice
-   * @param {string} [param0.message_content.voice_duration] Voice data duration. If type is voice
-   *
-   * @param {string} [param0.message_content.video_data_url] Video URL. If type is video
-   * @param {string} [param0.message_content.video_caption] Video caption. If type is video
-   *
-   * @param {"auido/*" | "document/*" | "compressed/*"} param0.message_content.file_type A valid MIME file type. If type is file
-   * @param {string} param0.message_content.file_url File URL. If type is file
-   * @param {string} param0.message_content.file_name File name. If type is file
-   *
-   * @param {GeolocationCoordinates} param0.message_content.location_coordinate A valid geolocation coordinate. If type is location
-   *
-   * @param {string} param0.message_content.link_url Link URL. If type is link
-   * @param {string} param0.message_content.link_description Link description. If type is file
-   */
   static async sendMessage({
     client_user_id,
     conversation_id,
     message_content,
   }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT client_res, partner_res FROM create_message($1, $2, $3)",
       values: [conversation_id, client_user_id, message_content],
@@ -112,12 +56,7 @@ export class Conversation {
     return (await dbQuery(query)).rows[0]
   }
 
-  /**
-   * @param {number} blocking_user_id
-   * @param {number} blocked_user_id
-   */
   static async blockUser(blocking_user_id, blocked_user_id) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
     INSERT INTO blocked_user (blocking_user_id, blocked_user_id) 
@@ -128,11 +67,6 @@ export class Conversation {
     await dbQuery(query)
   }
 
-  /**
-   * @param {object} param0
-   * @param {number} param0.blocking_user_id
-   * @param {number} param0.blocked_user_id
-   */
   static async unblockUser(blocking_user_id, blocked_user_id) {
     const query = {
       text: "DELETE FROM blocked_user WHERE blocking_user_id = $1 AND blocked_user_id = $2",
@@ -150,7 +84,6 @@ export class Message {
     message_id,
     delivery_time,
   }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT ack_msg_delivered($1, $2, $3, $4)",
       values: [client_user_id, conversation_id, message_id, delivery_time],
@@ -160,7 +93,6 @@ export class Message {
   }
 
   static async isRead({ client_user_id, conversation_id, message_id }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT ack_msg_read($1, $2, $3)",
       values: [client_user_id, conversation_id, message_id],
@@ -169,14 +101,7 @@ export class Message {
     return await dbQuery(query)
   }
 
-  /**
-   * @param {object} param0
-   * @param {number} param0.message_id
-   * @param {number} param0.reactor_user_id
-   * @param {number} param0.reaction_code_point
-   */
   static async reactTo({ message_id, reactor_user_id, reaction_code_point }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
     INSERT INTO message_reaction (message_id, reactor_user_id, reaction_code_point) 
@@ -187,12 +112,7 @@ export class Message {
     await dbQuery(query)
   }
 
-  /**
-   * @param {number} message_id
-   * @param {number} reactor_user_id
-   */
   static async removeReaction(message_id, reactor_user_id) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
     DELETE FROM message_reaction WHERE message_id = $1 AND reactor_user_id = $2`,
@@ -202,20 +122,12 @@ export class Message {
     await dbQuery(query)
   }
 
-  /**
-   * @param {object} param0
-   * @param {number} param0.message_id
-   * @param {number} param0.reporter_user_id
-   * @param {number} param0.reported_user_id
-   * @param {string} param0.reason
-   */
   static async report({
     message_id,
     reporter_user_id,
     reported_user_id,
     reason,
   }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
     INSERT INTO reported_message (message_id, reporter_user_id, reported_user_id, reason) 
@@ -226,14 +138,7 @@ export class Message {
     await dbQuery(query)
   }
 
-  /**
-   * @param {object} param0
-   * @param {number} param0.deleter_user_id
-   * @param {number} param0.message_id
-   * @param {"me" | "everyone"} param0.deleted_for
-   */
   static async delete({ deleter_user_id, message_id, deleted_for }) {
-    /** @type {PgQueryConfig} */
     const query = {
       text: `
   INSERT INTO message_deletion_log (deleter_user_id, message_id, deleted_for) 
