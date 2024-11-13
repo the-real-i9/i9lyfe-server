@@ -1,5 +1,5 @@
 import * as mailService from "../mail.service.js"
-import * as authServices from "../auth.services.js"
+import * as authUtilServices from "../utils/auth.utilServices.js"
 import { User } from "../../models/user.model.js"
 
 export const requestPasswordReset = async (email) => {
@@ -9,7 +9,7 @@ export const requestPasswordReset = async (email) => {
     }
 
   const { token: passwordResetToken, expires: passwordResetTokenExpires } =
-    authServices.generateTokenWithExpiration()
+    authUtilServices.generateTokenWithExpiration()
 
   mailService.sendMail({
     to: email,
@@ -40,7 +40,7 @@ export const confirmEmail = ({
     }
   }
 
-  if (!authServices.isTokenAlive(passwordResetTokenExpires)) {
+  if (!authUtilServices.isTokenAlive(passwordResetTokenExpires)) {
     return {
       error: { msg: "Password reset token expired! Re-submit your email." },
     }
@@ -52,7 +52,7 @@ export const confirmEmail = ({
 }
 
 export const resetPassword = async (email, newPassword) => {
-  const passwordHash = await authServices.hashPassword(newPassword)
+  const passwordHash = await authUtilServices.hashPassword(newPassword)
 
   await User.changePassword(email, passwordHash)
 

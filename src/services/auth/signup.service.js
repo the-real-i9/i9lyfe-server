@@ -1,5 +1,5 @@
 import * as mailService from "../mail.service.js"
-import * as authServices from "../auth.services.js"
+import * as authUtilServices from "../utils/auth.utilServices.js"
 import * as messageBrokerService from "../messageBroker.service.js"
 import { User } from "../../models/user.model.js"
 
@@ -10,7 +10,7 @@ export const requestNewAccount = async (email) => {
     }
 
   const { token: verificationCode, expires: verificationCodeExpires } =
-    authServices.generateTokenWithExpiration()
+    authUtilServices.generateTokenWithExpiration()
 
   mailService.sendMail({
     to: email,
@@ -41,7 +41,7 @@ export const verifyEmail = ({
     }
   }
 
-  if (!authServices.isTokenAlive(verificationCodeExpires)) {
+  if (!authUtilServices.isTokenAlive(verificationCodeExpires)) {
     return {
       error: {
         msg: "Verification code expired! Re-submit your email.",
@@ -64,7 +64,7 @@ export const registerUser = async (info) => {
   if (await User.exists(info.username))
     return { error: { msg: "Username already taken. Try another." } }
 
-  const passwordHash = await authServices.hashPassword(info.password)
+  const passwordHash = await authUtilServices.hashPassword(info.password)
 
   const user = await User.create({
     ...info,
@@ -72,7 +72,7 @@ export const registerUser = async (info) => {
     birthday: new Date(info.birthday),
   })
 
-  const jwt = authServices.generateJwt({
+  const jwt = authUtilServices.generateJwt({
     client_user_id: user.id,
     client_username: user.username,
   })
