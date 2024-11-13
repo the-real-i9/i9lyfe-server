@@ -1,10 +1,10 @@
-import * as signupServices from "../../services/auth/signup.services.js"
+import * as signupService from "../../services/auth/signup.service.js"
 
 export const requestNewAccount = async (req, res) => {
   const { email } = req.body
 
   try {
-    const resp = await signupServices.requestNewAccount(email)
+    const resp = await signupService.requestNewAccount(email)
 
     if (resp.error) return res.status(422).send(resp.error)
 
@@ -34,7 +34,7 @@ export const verifyEmail = async (req, res) => {
 
     const signupSessionData = req.session.signup.data
 
-    const resp = signupServices.verifyEmail({ inputCode, ...signupSessionData })
+    const resp = signupService.verifyEmail({ inputCode, ...signupSessionData })
 
     if (resp.error) return res.status(422).send(resp.error)
 
@@ -60,7 +60,7 @@ export const registerUser = async (req, res) => {
 
     const { email } = req.session.signup.data
 
-    const resp = await signupServices.registerUser({ email, ...req.body })
+    const resp = await signupService.registerUser({ email, ...req.body })
 
     if (resp.error) return res.status(422).send(resp.error)
 

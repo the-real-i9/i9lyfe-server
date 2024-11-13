@@ -1,36 +1,16 @@
-import { User } from "../../models/user.model.js"
-import * as authServices from "../../services/auth.services.js"
+import * as signinService from "../../services/auth/signin.service.js"
 
-const signinController = async (req, res) => {
+export const signin = async (req, res) => {
   try {
     const { email_or_username, password: inputPassword } = req.body
 
-    const userData = await User.findOneIncPassword(email_or_username)
+    const resp = await signinService.signin(email_or_username, inputPassword)
 
-    if (!userData) {
-      return res.status(422).send({ msg: "Incorrect email or password" })
-    }
+    if (resp.error) return res.status(422).send(resp.error)
 
-    const { pswd: storedPassword, ...user } = userData
-
-    if (!(await authServices.passwordsMatch(inputPassword, storedPassword))) {
-      return res.status(422).send({ msg: "Incorrect email or password" })
-    }
-
-    const jwt = authServices.generateJwt({
-      client_user_id: user.id,
-      client_username: user.username,
-    })
-
-    res.status(200).send({
-      msg: "Signin success!",
-      user,
-      jwt,
-    })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
   }
 }
-
-export default signinController

@@ -9,8 +9,8 @@ export const requestNewAccount = async (email) => {
       error: { msg: "A user with this email already exists." },
     }
 
-  const { code: verificationCode, expires: verificationCodeExpires } =
-    authServices.generateCodeWithExpiration()
+  const { token: verificationCode, expires: verificationCodeExpires } =
+    authServices.generateTokenWithExpiration()
 
   mailService.sendMail({
     to: email,

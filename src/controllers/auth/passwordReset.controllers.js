@@ -1,33 +1,23 @@
-import { User } from "../../models/user.model.js"
-import * as authServices from "../../services/auth.services.js"
-import * as mailService from "../../services/mail.service.js"
+import * as passwordResetService from "../../services/auth/passwordReset.service.js"
 
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body
   try {
-    if (!(await User.exists(email)))
-      return res.status(422).send({ msg: "No user with this email exists." })
+    const resp = await passwordResetService.requestPasswordReset(email)
 
-    const [token, tokenExpires] = authServices.generateCodeWithExpiration()
+    if (resp.error) return res.status(422).send(resp.error)
 
-    mailService.sendMail({
-      to: email,
-      subject: "i9lyfe - Confirm your email: Password Reset",
-      html: `<p>Your password reset token is <strong>${token}</strong>.</p>`,
-    })
-
-    req.session.password_reset_email_confirmation_state = {
-      email,
-      emailConfirmed: false,
-      passwordResetToken: token,
-      passwordResetTokenExpires: tokenExpires,
+    req.session.passwordReset = {
+      step: "confirm email",
+      data: {
+        email,
+        emailConfirmed: false,
+        passwordResetToken: resp.passwordResetToken,
+        passwordResetTokenExpires: resp.passwordResetTokenExpires,
+      },
     }
 
-    res
-      .status(200)
-      .send({
-        msg: `Enter the 6-digit number token sent to ${email} to reset your password`,
-      })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -35,34 +25,30 @@ export const requestPasswordReset = async (req, res) => {
 }
 
 export const confirmEmail = async (req, res) => {
-  const { code } = req.body
+  const { token: inputToken } = req.body
 
   try {
-    const { email, passwordResetToken, passwordResetTokenExpires } =
-      req.session.password_reset_email_confirmation_state
+    if (req.session?.passwordReset.step != "confirm email")
+      return res.status(400).send({ msg: "Invalid cookie at endpoint" })
 
-    if (passwordResetToken !== Number(code)) {
-      return res
-        .status(422)
-        .send({
-          msg: "Incorrect password reset token! Check or Re-submit your email.",
-        })
+    const passwordResetSessionData = req.session.passwordReset.data
+
+    const resp = passwordResetService.confirmEmail({
+      inputToken,
+      ...passwordResetSessionData,
+    })
+
+    if (resp.error) return res.status(422).send(resp.error)
+
+    req.session.passwordReset = {
+      step: "reset password",
+      data: {
+        email: passwordResetSessionData.email,
+        emailConfirmed: true,
+      },
     }
 
-    if (!authServices.isTokenAlive(passwordResetTokenExpires)) {
-      return res
-        .status(422)
-        .send({ msg: "Password reset token expired! Re-submit your email." })
-    }
-
-    req.session.password_reset_email_confirmation_state = {
-      email,
-      emailConfirmed: true,
-      passwordResetToken: null,
-      passwordResetTokenExpires: null,
-    }
-
-    res.status(200).send({ msg: `Your email ${email} has been verified!` })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -71,23 +57,18 @@ export const confirmEmail = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { email } = req.session.password_reset_email_confirmation_state
+    if (req.session?.passwordReset.step != "reset password")
+      return res.status(400).send({ msg: "Invalid cookie at endpoint" })
+
+    const { email } = req.session.passwordReset.data
 
     const { newPassword } = req.body
 
-    const passwordHash = await authServices.hashPassword(newPassword)
-
-    await User.changePassword(email, passwordHash)
-
-    mailService.sendMail({
-      to: email,
-      subject: "i9lyfe - Password reset successful",
-      html: `<p>${email}, your password has been changed successfully!</p>`,
-    })
+    const resp = await passwordResetService.resetPassword(email, newPassword)
 
     req.session.destroy()
 
-    res.status(200).send({ msg: "Your password has been changed successfully" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
