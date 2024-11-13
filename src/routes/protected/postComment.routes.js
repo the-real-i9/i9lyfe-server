@@ -126,8 +126,8 @@ router.delete("/posts/:post_id/unrepost", ...validateIdParams, PCC.deleteRepost)
 
 /* ====== POST SAVE ====== */
 
-router.post("/posts/:post_id/save", ...validateIdParams, PCC.postSave)
-router.delete("/posts/:post_id/unsave", ...validateIdParams, PCC.postUnsave)
+router.post("/posts/:post_id/save", ...validateIdParams, PCC.savePost)
+router.delete("/posts/:post_id/unsave", ...validateIdParams, PCC.unsavePost)
 
 // GET insight data for a specific post
 

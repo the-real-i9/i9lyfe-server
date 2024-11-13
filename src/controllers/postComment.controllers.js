@@ -1,9 +1,4 @@
-import * as appUtilServices from "../services/utils/app.utilServices.js"
-import * as mediaUploadService from "../services/mediaUpload.service.js"
-import { Post } from "../models/post.model.js"
-import { Comment } from "../models/comment.model.js"
-import * as messageBrokerService from "../services/messageBroker.service.js"
-import * as realtimeService from "../services/realtime.service.js"
+import * as postCommentService from "../services/postComment.service.js"
 
 export const createNewPost = async (req, res) => {
   try {
@@ -11,32 +6,14 @@ export const createNewPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const hashtags = appUtilServices.extractHashtags(description)
-    const mentions = appUtilServices.extractMentions(description)
-
-    const media_urls = await mediaUploadService.uploadPostMediaDataList(
-      media_data_list
-    )
-
-    const { new_post_data, mention_notifs } = await Post.create({
+    const resp = await postCommentService.createNewPost({
       client_user_id,
-      media_urls,
+      media_data_list,
       type,
       description,
-      mentions,
-      hashtags,
     })
 
-    realtimeService.newPostEventEmitter.emit("new post", new_post_data.post_id)
-
-    mention_notifs.forEach((notif) => {
-      const { receiver_user_id, ...restData } = notif
-
-      // replace with message broker
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    })
-
-    res.status(200).send(new_post_data)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -48,31 +25,16 @@ export const reactToPost = async (req, res) => {
     const { target_post_id, target_post_owner_user_id } = req.params
     const { reaction } = req.body
 
-    const reaction_code_point = reaction.codePointAt()
-
     const { client_user_id } = req.auth
 
-    const { reaction_notif, latest_reactions_count } = Post.reactTo({
+    const resp = await postCommentService.reactToPost({
       client_user_id,
       target_post_id,
       target_post_owner_user_id,
-      reaction_code_point,
+      reaction,
     })
 
-    // notify post owner of reaction
-    if (reaction_notif) {
-      const { receiver_user_id, ...restData } = reaction_notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    }
-
-    // update metrics for post for all post watchers
-    realtimeService.sendPostUpdate(target_post_id, {
-      post_id: target_post_id,
-      latest_reactions_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -86,48 +48,15 @@ export const commentOnPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const mentions = appUtilServices.extractMentions(comment_text)
-    const hashtags = appUtilServices.extractHashtags(comment_text)
-
-    const attachment_url = await mediaUploadService.uploadCommentAttachmentData(
-      attachment_data
-    )
-
-    const {
-      new_comment_data,
-      comment_notif,
-      mention_notifs,
-      latest_comments_count,
-    } = await Post.commentOn({
+    const resp = await postCommentService.commentOnPost({
+      client_user_id,
       target_post_id,
       target_post_owner_user_id,
-      client_user_id,
       comment_text,
-      attachment_url,
-      mentions,
-      hashtags,
+      attachment_data,
     })
 
-    // notify mentioned users
-    mention_notifs.forEach((notif) => {
-      const { receiver_user_id, ...restData } = notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    })
-
-    // notify post owner of comment
-    if (comment_notif) {
-      const { receiver_user_id, ...restData } = comment_notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    }
-
-    realtimeService.sendPostUpdate(target_post_id, {
-      post_id: target_post_id,
-      latest_comments_count,
-    })
-
-    res.status(201).send(new_comment_data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -139,30 +68,16 @@ export const reactToComment = async (req, res) => {
     const { target_comment_id, target_comment_owner_user_id } = req.params
     const { reaction } = req.body
 
-    const reaction_code_point = reaction.codePointAt()
-
     const { client_user_id } = req.auth
 
-    const { reaction_notif, latest_reactions_count } = Comment.reactTo({
+    const resp = await postCommentService.reactToComment({
       client_user_id,
       target_comment_id,
       target_comment_owner_user_id,
-      reaction_code_point,
+      reaction,
     })
 
-    // notify comment owner of reaction
-    if (reaction_notif) {
-      const { receiver_user_id, ...restData } = reaction_notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    }
-
-    realtimeService.sendCommentUpdate(target_comment_id, {
-      comment_id: target_comment_id,
-      latest_reactions_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -176,48 +91,15 @@ export const commentOnComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const mentions = appUtilServices.extractMentions(comment_text)
-    const hashtags = appUtilServices.extractHashtags(comment_text)
-
-    const attachment_url = await mediaUploadService.uploadCommentAttachmentData(
-      attachment_data
-    )
-
-    const {
-      new_comment_data,
-      comment_notif,
-      mention_notifs,
-      latest_comments_count,
-    } = await Comment.commentOn({
+    const resp = await postCommentService.commentOnComment({
+      client_user_id,
       target_comment_id,
       target_comment_owner_user_id,
-      client_user_id,
       comment_text,
-      attachment_url,
-      mentions,
-      hashtags,
+      attachment_data,
     })
 
-    // notify mentioned users
-    mention_notifs.forEach((notif) => {
-      const { receiver_user_id, ...restData } = notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    })
-
-    // notify comment owner of comment
-    if (comment_notif) {
-      const { receiver_user_id, ...restData } = comment_notif
-
-      messageBrokerService.sendNewNotification(receiver_user_id, restData)
-    }
-
-    realtimeService.sendCommentUpdate(target_comment_id, {
-      comment_id: target_comment_id,
-      latest_comments_count,
-    })
-
-    res.status(201).send(new_comment_data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -229,48 +111,38 @@ export const createRepost = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await Post.repost(post_id, client_user_id)
+    const resp = await postCommentService.createRepost(post_id, client_user_id)
 
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const postSave = async (req, res) => {
+export const savePost = async (req, res) => {
   try {
     const { post_id } = req.params
 
     const { client_user_id } = req.auth
 
-    const { latest_saves_count } = await Post.save(post_id, client_user_id)
+    const resp = await postCommentService.savePost(post_id, client_user_id)
 
-    realtimeService.sendPostUpdate(post_id, {
-      post_id,
-      latest_saves_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
   }
 }
 
-export const postUnsave = async (req, res) => {
+export const unsavePost = async (req, res) => {
   try {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    const { latest_saves_count } = await Post.unsave(post_id, client_user_id)
+    const resp = await postCommentService.unsavePost(post_id, client_user_id)
 
-    realtimeService.sendPostUpdate(post_id, {
-      post_id,
-      latest_saves_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -285,9 +157,9 @@ export const getPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const post = await Post.find(post_id, client_user_id, false)
+    const resp = await postCommentService.getPost(post_id, client_user_id)
 
-    res.status(200).send(post)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -302,14 +174,14 @@ export const getCommentsOnPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentsOnPost = await Post.getComments({
+    const resp = await postCommentService.getCommentsOnPost({
       post_id,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(commentsOnPost)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -322,9 +194,9 @@ export const getComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const comment = await Comment.find(comment_id, client_user_id)
+    const resp = await postCommentService.getComment(comment_id, client_user_id)
 
-    res.status(200).send(comment)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -339,14 +211,14 @@ export const getReactorsToPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const postReactors = await Post.getReactors({
+    const resp = await postCommentService.getReactorsToPost({
       post_id,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(postReactors)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -361,15 +233,15 @@ export const getReactorsWithReactionToPost = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const reactorsWithReaction = await Post.getReactorsWithReaction({
+    const resp = await postCommentService.getReactorsWithReactionToPost({
       post_id,
-      reaction_code_point: reaction.codePointAt(),
+      reaction,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(reactorsWithReaction)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -384,14 +256,14 @@ export const getCommentsOnComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentsOnComment = await Comment.getComments({
+    const resp = await postCommentService.getCommentsOnComment({
       comment_id,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(commentsOnComment)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -406,14 +278,14 @@ export const getReactorsToComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentReactors = await Comment.getReactors({
+    const resp = await postCommentService.getReactorsToComment({
       comment_id,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(commentReactors)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -428,15 +300,15 @@ export const getReactorsWithReactionToComment = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const commentReactorsWithReaction = await Comment.getReactorsWithReaction({
+    const resp = await postCommentService.getReactorsWithReactionToComment({
       comment_id,
-      reaction_code_point: reaction.codePointAt(),
+      reaction,
       client_user_id,
       limit,
       offset,
     })
 
-    res.status(200).send(commentReactorsWithReaction)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -450,9 +322,9 @@ export const deletePost = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await Post.delete(post_id, client_user_id)
+    const resp = await postCommentService.deletePost(post_id, client_user_id)
 
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -464,17 +336,12 @@ export const removeReactionToPost = async (req, res) => {
     const { target_post_id } = req.params
     const { client_user_id } = req.auth
 
-    const { latest_reactions_count } = await Post.removeReaction(
+    const resp = await postCommentService.removeReactionToPost(
       target_post_id,
       client_user_id
     )
 
-    realtimeService.sendPostUpdate(target_post_id, {
-      post_id: target_post_id,
-      latest_reactions_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -486,18 +353,13 @@ export const removeCommentOnPost = async (req, res) => {
     const { post_id, comment_id } = req.params
     const { client_user_id } = req.auth
 
-    const { latest_comments_count } = await Post.removeComment({
+    const resp = await postCommentService.removeCommentOnPost({
       post_id,
       comment_id,
       client_user_id,
     })
 
-    realtimeService.sendPostUpdate(post_id, {
-      post_id,
-      latest_comments_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -509,18 +371,13 @@ export const removeCommentOnComment = async (req, res) => {
     const { parent_comment_id, comment_id } = req.params
     const { client_user_id } = req.auth
 
-    const { latest_comments_count } = await Comment.removeChildComment({
+    const resp = await postCommentService.removeCommentOnComment({
       parent_comment_id,
       comment_id,
       client_user_id,
     })
 
-    realtimeService.sendCommentUpdate(parent_comment_id, {
-      comment_id: parent_comment_id,
-      latest_comments_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -532,17 +389,12 @@ export const removeReactionToComment = async (req, res) => {
     const { target_comment_id } = req.params
     const { client_user_id } = req.auth
 
-    const { latest_reactions_count } = await Comment.removeReaction(
+    const resp = await postCommentService.removeReactionToComment(
       target_comment_id,
       client_user_id
     )
 
-    realtimeService.sendCommentUpdate(target_comment_id, {
-      comment_id: target_comment_id,
-      latest_reactions_count,
-    })
-
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -554,9 +406,9 @@ export const deleteRepost = async (req, res) => {
     const { post_id } = req.params
     const { client_user_id } = req.auth
 
-    await Post.unrepost(post_id, client_user_id)
+    const resp = await postCommentService.deletePost(post_id, client_user_id)
 
-    res.status(200).send({ msg: "operation successful" })
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

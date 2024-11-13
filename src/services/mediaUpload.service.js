@@ -5,6 +5,13 @@ import { fileTypeFromBuffer } from "file-type"
 import { randomUUID } from "node:crypto"
 import { getStorageBucket, storageBucketName } from "../configs/gcs.js"
 
+/**
+ * @param {object} param0 
+ * @param {number[]} param0.media_data 
+ * @param {string?} param0.extension 
+ * @param {string} param0.pathToDestFolder
+ * @returns 
+ */
 export const upload = async ({ media_data, extension, pathToDestFolder }) => {
   const fileData = new Uint8Array(Buffer.from(media_data))
 

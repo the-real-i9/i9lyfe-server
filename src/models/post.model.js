@@ -116,12 +116,7 @@ export class Post {
     return (await dbQuery(query)).rows[0]
   }
 
-  /**
-   * @param {number} post_id
-   * @param {number} client_user_id
-   * @param {boolean} if_recommended
-   */
-  static async find(post_id, client_user_id, if_recommended) {
+  static async find({ post_id, client_user_id, if_recommended }) {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_post($1, $2, $3)",

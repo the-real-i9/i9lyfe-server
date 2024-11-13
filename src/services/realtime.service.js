@@ -2,7 +2,6 @@ import { EventEmitter } from "node:events"
 import { Consumer, KafkaClient } from "kafka-node"
 import { Post } from "../models/post.model"
 
-
 /** @type import("socket.io").Server */
 let sio = null
 
@@ -55,7 +54,11 @@ export const initSocketRTC = (socket) => {
 
   newPostEventEmitter.on("new post", async (post_id) => {
     // get post based on "post recommendation algorithm"
-    const post = await Post.find(post_id, client_user_id, true)
+    const post = await Post.find({
+      post_id,
+      client_user_id,
+      if_recommended: true,
+    })
 
     if (post) {
       socket.send("new post", post)
