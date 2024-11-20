@@ -73,3 +73,7 @@ export const sendPostUpdate = (post_id, data) => {
 export const sendCommentUpdate = (comment_id, data) => {
   sio.to(`comment-${comment_id}-updates`).emit("latest comment update", data)
 }
+
+export const publishNewPost = (post_id) => {
+  newPostEventEmitter.emit("new post", post_id)
+}

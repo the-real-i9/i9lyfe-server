@@ -1,4 +1,4 @@
-import * as appUtils from "../services/utility.services.js"
+import * as utilServices from "../services/utility.services.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import { Post } from "../models/post.model.js"
 import { Comment } from "../models/comment.model.js"
@@ -18,8 +18,8 @@ export const createNewPost = async ({
   type,
   description,
 }) => {
-  const hashtags = appUtils.extractHashtags(description)
-  const mentions = appUtils.extractMentions(description)
+  const hashtags = utilServices.extractHashtags(description)
+  const mentions = utilServices.extractMentions(description)
 
   const media_urls = media_data_list.map(async (media_data) => {
     return await mediaUploadService.upload({
@@ -37,7 +37,7 @@ export const createNewPost = async ({
     hashtags,
   })
 
-  realtimeService.newPostEventEmitter.emit("new post", new_post_data.post_id)
+  realtimeService.publishNewPost(new_post_data.post_id)
 
   mention_notifs.forEach((notif) => {
     const { receiver_user_id, ...restData } = notif
@@ -91,8 +91,8 @@ export const commentOnPost = async ({
   comment_text,
   attachment_data,
 }) => {
-  const mentions = appUtils.extractMentions(comment_text)
-  const hashtags = appUtils.extractHashtags(comment_text)
+  const mentions = utilServices.extractMentions(comment_text)
+  const hashtags = utilServices.extractHashtags(comment_text)
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
@@ -177,8 +177,8 @@ export const commentOnComment = async ({
   comment_text,
   attachment_data,
 }) => {
-  const mentions = appUtils.extractMentions(comment_text)
-  const hashtags = appUtils.extractHashtags(comment_text)
+  const mentions = utilServices.extractMentions(comment_text)
+  const hashtags = utilServices.extractHashtags(comment_text)
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
