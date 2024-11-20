@@ -3,7 +3,7 @@ import fs from "node:fs"
 import { Buffer } from "node:buffer"
 import { fileTypeFromBuffer } from "file-type"
 import { randomUUID } from "node:crypto"
-import { getStorageBucket, storageBucketName } from "../configs/gcs.js"
+import { getStorageBucket } from "../configs/gcs.js"
 
 /**
  * @param {object} param0 
@@ -25,5 +25,5 @@ export const upload = async ({ media_data, extension, pathToDestFolder }) => {
     })
   })
 
-  return `https://storage.googleapis.com/${storageBucketName}/${destination}`
+  return `https://storage.googleapis.com/${process.env.GCS_BUCKET}/${destination}`
 }

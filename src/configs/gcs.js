@@ -1,10 +1,9 @@
 import { Storage } from "@google-cloud/storage"
 
-export const storageBucketName = "i9lyfe-bucket"
 
 const bucket = new Storage({
   apiKey: process.env.GCS_API_KEY
-}).bucket(storageBucketName)
+}).bucket(process.env.GCS_BUCKET)
 
 export const getStorageBucket = () => {
   return bucket

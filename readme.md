@@ -12,6 +12,9 @@ i9lyfe is an API server for a social media platform, designed as a portfolio pro
 - [Diagrams](#diagrams)
 - [Technologies Used](#technologies-used)
 - [Code examples (Code explained)](#code-examples-code-exaplained)
+- [Challenges](#challenges)
+- [Design patterns](#design-patterns)
+- [Usage](#usage)
 
 ## Features
 
@@ -168,55 +171,121 @@ Coming up with a completely new social media platform idea is challenging, and d
 
 The following are code examples with explanations of notable functionalities and solutions.
 
-### Problem: User creates a post
-
-#### Solution
+### Task: Creating a post
 
 The API server handles this `POST` request on this endpoint: `/api/post_comment/new_post`
 
-Before handling this request, we validate the request body using the express-validator middleware:
+#### Sample request body
 
 ```js
-export const createNewPost = [
-  checkExact(
-    checkSchema(
-      {
-        medias_data_list: {
-          isArray: {
-            options: { min: 1 },
-            errorMessage: "value must be an array of at least one item",
-          },
-        },
-        "media_data_list.*": {
-          isArray: {
-            options: { min: 1, max: 10 * 1024 ** 2 },
-            errorMessage:
-              "item must be an array of uint8 integers containing a maximum of 10mb",
-          },
-        },
-        type: {
-          notEmpty: true,
-          isIn: {
-            options: [["photo", "video", "reel", "story"]],
-            errorMessage: "invalid post type",
-          },
-        },
-        description: {
-          optional: true,
-          notEmpty: true,
-        },
-      },
-      ["body"]
-    ),
-    { message: "request body contains invalid fields" }
-  ),
-  errHandler,
-]
+{
+  media_data_list: [[97, 98, 99, 100, ...], [0...255, ...], ...],
+  type: "photo",
+  description: "Am I beautiful??"
+}
 ```
 
-The `checkExact` function validates that the fields provided in the are no more than the ones specified.
+The `media_data_list` field is a list of media items of a specific type, according to post's `type`. Each media item is represented as a binary data&#x2014;specifically an array of unsigned 8-bit integers. Maximum size for each media item is 10mb.
 
-- The `media_data_list` field is a list of media items of a specific type, according to post's `type`, selected for the post. `checkSchema` validates that at least one media item is provided.
-- The `media_data_list.*` field is any media item in the `media_data_list` array, represented as a binary data&#x2014;specifically an array of unsigned 8-bit integers. `checkSchema` validates that each media data size is no more than 10mb.
-- The `type` field is the type of post selected, which must be one of photo, video, story, or reel. `checkSchema` validates that the field is one of these types.
-- The `description` field is the optional description text associated with this post. `checkSchema` validates that it is either not provided or must not be an empty string.
+The `type` field is the type of post selected, which must be one of photo, video, story, or reel.
+
+The `description` field is the optional description text associated with this post.
+
+The constraints on the request body are validated with the express-validator middleware.
+
+#### Business Logic
+
+The business logic is written in a `createNewPost` service, called by the `createNewPost` controller/handler.
+
+```js
+/**
+ * @param {object} param0
+ * @param {number} param0.client_user_id
+ * @param {number[][]} param0.media_data_list
+ * @param {"photo" | "video" | "reel" | "story"} param0.type
+ * @param {string} param0.description
+ */
+export const createNewPost = async ({ client_user_id, media_data_list, type, description }) => {
+  const hashtags = utilServices.extractHashtags(description)
+  const mentions = utilServices.extractMentions(description)
+
+  const media_urls = media_data_list.map(async (media_data) => {
+    return await mediaUploadService.upload({
+      media_data,
+      pathToDestFolder: `post_medias/user-${client_user_id}`,
+    })
+  })
+
+  const { new_post_data, mention_notifs } = await Post.create({
+    client_user_id,
+    media_urls,
+    type,
+    description,
+    mentions,
+    hashtags,
+  })
+
+  realtimeService.publishNewPost(new_post_data.post_id)
+
+  mention_notifs.forEach((notif) => {
+    const { receiver_user_id, ...restData } = notif
+
+    // replace with message broker
+    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+  })
+
+  return {
+    data: new_post_data,
+  }
+}
+```
+
+## Challenges
+
+## Design Patterns
+
+## Usage
+
+Use the provided [API documention](./attachments/API%20doc.apib) (written according to the OpenAPI specification using the API blueprint format) to see available actions and endpoints, their request body, and their expected response.
+
+This API server is not currently running remotely, as payment is required to maintain remote resource usage.
+
+However, you can run the project locally after cloning it to your computer by following these steps:
+
+- Install and Setup Node.js
+- Install and Setup PostgreSQL
+- Install and Setup Apache Kafka
+- Setup Google Cloud Storage on Google Cloud Platform
+  - Create an API Key.
+  - Create a bucket with desired name and make it publicly accessible.
+- Setup Google SMTP with your gmail account and application password.
+- Add a `.env` file cotaining these environment variables in the project's root folder.
+
+  ```env
+  PGDATABASE=i9lyfe_db
+  PGPASSWORD=
+  PGUSER=
+  PGHOST=localhost
+  PGPORT=5432
+
+  KAFKA_HOST=
+
+  MAILING_EMAIL=
+  MAILING_PASSWORD=
+
+  JWT_SECRET=
+
+  SIGNUP_SESSION_COOKIE_SECRET=
+
+  PASSWORD_RESET_SESSION_COOKIE_SECRET=
+
+  GCS_BUCKET=
+  GCS_API_KEY=
+  ```
+
+- Get Kafka up and running
+- Get PostgreSQL server up and running.
+- Open a terminal in the project's root
+  - Run `npm install` to install dependencies.
+  - Run `npm run dev`
+
