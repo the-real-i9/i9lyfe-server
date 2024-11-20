@@ -4,34 +4,59 @@ i9lyfe-server is an API server for a social media application modelled after Ins
 
 ## Features
 
-- Create post: Post types include *Photo*, *Video*, *Story*, and *Reel*; all accompanied by an optional description. Post may include @mentions and #hashtags.
-- Comment on Post/Comment: Comments may contain text, media, or both. Its text content may include @mentions and #hashtags.
+### Content Creation & Sharing
+
+- **Create post:** Post types include *Photo*, *Video*, *Story*, and *Reel*; all may include a description, which may include @mentions and #hashtags.
+
+### Interactivity
+
+- **Comment on Post/Comment:** Comments may contain text, media, or both. Its text content may include @mentions and #hashtags.
   > In this API, I've represented the notion of a *reply* as a *comment-on-comment*, as the former — in my experience — complicates API and database design.
-- React to Post/Comment: Reactions are basically, non-surrogate pair, emojis.
-- Repost posts. Save posts
-- See comments on posts and comments on comments. See users who reacted to posts.
-- See your posts. Delete your posts or comments
-- See posts and comments you reacted to. See posts you saved
-- Follow users. View user profiles
+- **React to Post/Comment:** Reactions are basically, non-surrogate pair, emojis.
+- Repost posts.
+- View comments on posts and comments on comments. View users who reacted to posts.
+
+### User profile
+
 - Edit your profile
+- Delete your contents
+- View contents you saved
+- View contents you reacted to or commented on
 
----
+### Networking
 
-- Home feed
-  - Contents may be fetched in chunks, with the limit and offset request query parameters, to allow UI pagination/infinite-scrolling
-  - New posts, relevant to a specific user, are delivered in realtime
-  - Post metrics including reactions count, comments count, reposts count, and saves count, are updated in realtime
+- Follow/Unfollow users
+- Content Suggestions/Recommendations
+- View user profiles and their contents
 
----
+### Home feed & Explore section
 
-- Chat and Messaging
-  - Initiate DM chat with user
-  - Messages may come in various types including text, voice note, image, video, audio, and file attatchment. image, video, and audio may optionally include a description
-  - React to messages and view reactions
-  - Realtime chat experience
+- Pagination (Infinite-scrolling)
+- New posts, relevant to the user, are delivered in real-time.
+- Post interactions including reactions count, comments count, reposts count, and saves count, are updated in realtime
 
----
----
+### Messaging
+
+- Initiate DM chat with user
+- Messages may come in various types including text, voice note, image, video, audio, and file attatchment. image, video, and audio may optionally include a description
+- React to messages and view reactions
+- Realtime chat experience
+
+### Discovery and Search
+
+- **Search Bar:** Helps users find accounts, hashtags, content, or topics of interest.
+- **Hashtags:** Organizes posts under common themes for easy discovery.
+
+### Content Curation
+
+- Save specific posts
+- Retrieve saved posts
+
+### Notifications
+
+- **Activity Updates:** Alerts about likes, comments, shares, or mentions.
+
+## Doings
 
 The following sections comprise of notable processes and activities in the API and its development. Each process discusses important aspects of the process, some of which are: *Approach*, *Concepts* applied, *Technologies* used, File *Attachments*, and *Tools* used.
 
@@ -118,7 +143,7 @@ The API uses **PostgreSQL** as its RDBMS.
 
 #### Tables
 
-Of course, I'll use tables. But the ones that prove my proficiency with the RDBMS follow.
+Of course, I'll use tables. But the ones that vett my proficiency with the DBMS follow.
 
 #### Views
 
@@ -470,74 +495,4 @@ Credentials authenticate clients into the API, and the ones used are:
   I created a *collection* for this application which includes folders categorizing the endpoints contained in them.
 
   I've spent hours, days, weeks, and months working with this app for every API I'm working on.
-
-## Deployment
-
-### GCP: Google Compute Engine
-
-#### Credentials
-
-- Service Account credential
-
-- Workload Identity Federation
-
-
-#### VM instance
-
-#### SSH login
-
-#### Delployment preparation (setups) in VM instance
-
-#### Firewall setup
-
-#### gcloud CLI Usage
-
-- gcloud login
-
-- gcloud compute scp
-
-- gcloud compute ssh
-
-#### docker CLI Usage
-
-#### Docker Hub Usage
-
-#### CI/CD with GitHub Actions
-
-- Setting Variables
-
-- Job: Test `&&` Build
-
-- Setting up a Self Hosted Runner
-
-- Job: Deploy
-
-## API documentation
-
-- Open API Specification
-
-- API Blueprint
-
-## Version control
-
-- Git & GitHub
-
-## Development tools
-
-- Bash
-
-- Linux
-
-- VSCode
-
-- GitHub Desktop
-
-## Support tools
-
-- PostgreSQL Official documentation
-
-- ChatGPT AI
-
-- Microsoft Bing Copilot
-
-- GCP Gemini AI
+  

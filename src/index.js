@@ -3,12 +3,12 @@ import jwt from "jsonwebtoken"
 
 import app from "./app.js"
 
-const server = createServer(app)
-
 import { Server } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken } from "./services/auth.services.js"
+
+const server = createServer(app)
 
 const io = new Server(server)
 

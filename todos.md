@@ -1,4 +1,4 @@
 # Todos
 
-- Upload user generated content to cloud storage
+- Cursor-based pagination with PostgreSQL
 - Implementing OWASP Security measures
