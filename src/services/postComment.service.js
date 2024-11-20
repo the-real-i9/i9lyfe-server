@@ -1,4 +1,4 @@
-import * as appUtilServices from "../services/utils/app.utilServices.js"
+import * as appUtils from "../services/utility.services.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import { Post } from "../models/post.model.js"
 import { Comment } from "../models/comment.model.js"
@@ -6,10 +6,11 @@ import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as realtimeService from "../services/realtime.service.js"
 
 /**
- *
  * @param {object} param0
+ * @param {number} param0.client_user_id
  * @param {number[][]} param0.media_data_list
- * @returns
+ * @param {"photo" | "video" | "story" | "reel"} param0.type
+ * @param {string} param0.description
  */
 export const createNewPost = async ({
   client_user_id,
@@ -17,8 +18,8 @@ export const createNewPost = async ({
   type,
   description,
 }) => {
-  const hashtags = appUtilServices.extractHashtags(description)
-  const mentions = appUtilServices.extractMentions(description)
+  const hashtags = appUtils.extractHashtags(description)
+  const mentions = appUtils.extractMentions(description)
 
   const media_urls = media_data_list.map(async (media_data) => {
     return await mediaUploadService.upload({
@@ -90,8 +91,8 @@ export const commentOnPost = async ({
   comment_text,
   attachment_data,
 }) => {
-  const mentions = appUtilServices.extractMentions(comment_text)
-  const hashtags = appUtilServices.extractHashtags(comment_text)
+  const mentions = appUtils.extractMentions(comment_text)
+  const hashtags = appUtils.extractHashtags(comment_text)
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
@@ -176,8 +177,8 @@ export const commentOnComment = async ({
   comment_text,
   attachment_data,
 }) => {
-  const mentions = appUtilServices.extractMentions(comment_text)
-  const hashtags = appUtilServices.extractHashtags(comment_text)
+  const mentions = appUtils.extractMentions(comment_text)
+  const hashtags = appUtils.extractHashtags(comment_text)
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,

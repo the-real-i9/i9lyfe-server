@@ -2,7 +2,7 @@ import * as postCommentService from "../services/postComment.service.js"
 
 export const createNewPost = async (req, res) => {
   try {
-    const { media_data_list, type, description } = req.body
+    const { media_data_list, type, description = "" } = req.body
 
     const { client_user_id } = req.auth
 

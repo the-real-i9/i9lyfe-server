@@ -1,4 +1,4 @@
-import * as authUtilServices from "../utils/auth.utilServices.js"
+import * as securityServices from "../security.services.js"
 import { User } from "../../models/user.model.js"
 
 export const signin = async (email_or_username, inputPassword) => {
@@ -11,12 +11,12 @@ export const signin = async (email_or_username, inputPassword) => {
 
   const { pswd: storedPassword, ...user } = userData
 
-  if (!(await authUtilServices.passwordsMatch(inputPassword, storedPassword)))
+  if (!(await securityServices.passwordsMatch(inputPassword, storedPassword)))
     return {
       error: { msg: "Incorrect email or password" },
     }
 
-  const jwt = authUtilServices.generateJwt({
+  const jwt = securityServices.generateJwt({
     client_user_id: user.id,
     client_username: user.username,
   })
