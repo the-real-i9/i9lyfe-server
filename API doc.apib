@@ -289,6 +289,8 @@ The last step of the signup process, requiring you to provide your profile infor
 
 ## Home Feed [/api/private/home_feed?limit={limit}&offset={offset}]
 
+Retrieves posts for the user's Home Feed according to a content recommendation algorithm
+
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
@@ -416,10 +418,10 @@ The last step of the signup process, requiring you to provide your profile infor
                 }
             ]
 
-## Client notifications [/api/private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
+## Client notifications [/api/private/my_notifications?from={from}&limit={limit}&offset={offset}]
 
 + Parameters
-    + fromDate: `2024-05-01` (datestring) - Specify the date constraint of notifications to be retrieved.
+    + from: `2024-05-01` (datestring, optional) - Specify the date constraint of notifications to be retrieved. Valid formats are `YYYY-MM-DD` and `YYYY/MM/DD`
     + limit: `20` (number) - A maximum of 20 notifications per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
@@ -452,16 +454,16 @@ The last step of the signup process, requiring you to provide your profile infor
 
 # Group User {public}
 
-## User profile [/api/user_public/{username}]
+## User profile [/api/public/{username}]
 
 + Parameters
-    + username (string) - User's username for which to retrieve profile information
+    + username (string) - The username of the user who's profile information you want to retrieve
 
 ### Get user profile [GET]
 
 + Request
 
-    In user public routes the `Authorization` request header is not mandatory.
+    `Authorization` header is not optional in user public routes
 
     + Headers
 
@@ -469,7 +471,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Response 200 (application/json)
 
-    The response body contains the user's profile information, as specified by their username.
+    The response body is the user's profile information
 
     + Body
 
@@ -481,16 +483,16 @@ The last step of the signup process, requiring you to provide your profile infor
             }
 
 
-## User's followers [/api/user_public/{username}/followers]
+## User's followers [/api/public/{username}/followers]
 
 + Parameters
-    + username (string) - User's username for which to retrieve its followers
+    + username (string) - The username of the user who's followers you want to retrieve
 
 ### Get user's followers [GET]
 
 + Request
 
-    In user public routes the `Authorization` request header is not mandatory.
+    `Authorization` header is not optional in user public routes
 
     + Headers
 
@@ -498,7 +500,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Response 200 (application/json)
 
-    The response body contains a collection of followers' user data belonging to the specifiy user.
+    The response body is a collection of followers' user data belonging to the specified username
 
     + Body
 
@@ -516,16 +518,16 @@ The last step of the signup process, requiring you to provide your profile infor
             ]
 
 
-## User's following [/api/user_public/{username}/following]
+## User's following [/api/public/{username}/following]
 
 + Parameters
-    + username (string) - User's username for which to retrieve the users they follow
+    + username (string) - The username of the user who's following you want to retrieve
 
 ### Get user's following [GET]
 
 + Request
 
-    In user public routes the `Authorization` request header is not mandatory.
+    `Authorization` header is not optional in user public routes
 
     + Headers
 
@@ -533,7 +535,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Response 200 (application/json)
 
-    The response body contains a collection of user data followed by the specified username.
+    The response body is a collection of user data followed by the specified username.
 
     + Body
 
@@ -551,10 +553,10 @@ The last step of the signup process, requiring you to provide your profile infor
             ]
             
 
-## User's posts [/api/user_public/{username}/posts?limit={limit}&offset={offset}]
+## User's posts [/api/public/{username}/posts?limit={limit}&offset={offset}]
 
 + Parameters
-    + username (string) - User's username for which to retrieve their posts
+    + username (string) - The username of the user who's posts you want to retrieve
     + limit: `20` (number) - A maximum of 20 posts per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
@@ -562,7 +564,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Request
 
-    In user public routes the `Authorization` request header is not mandatory.
+    `Authorization` header is not optional in user public routes
 
     + Headers
 
@@ -588,7 +590,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 # Group App
 
-## Explore posts [/api/app/explore?limit={limit}&offset={offset}]
+## Explore posts [/api/explore?limit={limit}&offset={offset}]
 
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
@@ -606,7 +608,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Response 200 (application/json)
 
-    The response body is a collection of post data as aggreegated by the app's algorithm.
+    The response body is a collection of post data as aggregated by the app's algorithm.
 
     + Body
 
@@ -622,7 +624,7 @@ The last step of the signup process, requiring you to provide your profile infor
             ]
 
 
-## App contents [/api/app/search?search={search}&filter={filter}&limit={limit}&offset={offset}]
+## App Entities [/api/search?search={search}&filter={filter}&limit={limit}&offset={offset}]
 
 + Parameters
     + search (string) - The text you want to search for within `filter`. A filter of `user` allows you to search users by username, `hashtag` allows you to search hashtags by name, while specifying one of post types or leaving the `filter` unspecified searches through the post description lexically.
@@ -658,14 +660,14 @@ The last step of the signup process, requiring you to provide your profile infor
             ]
 
 
-## Hashtagged posts [/api/app/hashtags/{hashtagName}?limit={limit}&offset={offset}]
+## Hashtagged posts [/api/hashtags/{hashtag_name}?limit={limit}&offset={offset}]
 
 + Parameters
-    + hashtagName (string) - Name of the hashtag for which to retrieve posts.
+    + hashtag_name (string) - Name of the hashtag for which to retrieve posts.
     + limit: `20` (number) - A maximum of 20 posts per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Get posts with {hashtagName} [GET]
+### Get posts with {hashtag_name} [GET]
 
 + Request
 
@@ -696,13 +698,13 @@ The last step of the signup process, requiring you to provide your profile infor
 
 # Group Post
 
-## New post [/api/post_comment/new_post]
+## Create New Post [/api/private/new_post]
 
 ### Create new post [POST]
 
-+ **media_binaries** (uint8[][]) - An array of media datas in `uint8` array format. They will be uploaded cloud storage and returned as `media_urls` when requested.
-+ **type** (string) - The type of post. Possible values are `photo`, `video`, `story`, or `reel`.
-+ **description** (string) - The description supporting the post.
++ **media_data_list** (uint8[][], required) - An array of media datas in `uint8` array format. They will be uploaded cloud storage and returned as `media_urls` when requested.
++ **type** (string, required) - The type of post. Possible values are `photo`, `video`, `story`, or `reel`.
++ **description** (string, optional) - The description supporting the post.
 
 + Request (application/json)
 
@@ -720,7 +722,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 + Response 201 (application/json)
 
-    The response body contains the full details needed to render a post card UI.
+    The response body is the full details needed to render a post card UI.
 
     + Body
     
@@ -732,14 +734,14 @@ The last step of the signup process, requiring you to provide your profile infor
             }
 
 
-## Post [/api/post_comment/posts/{postId}]
+## Post [/api/private/posts/{post_id}]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post.
+    + post_id: `4` (number) - Unique id of post.
 
 ### Get post detail [GET]
 
-Get post with `postId` of `4`
+Get post with `post_id` of `4`
 
 + Request
 
@@ -749,7 +751,7 @@ Get post with `postId` of `4`
 
 + Response 200 (application/json)
 
-    The response body contains the full details needed to render a post detail UI.
+    The response body is the full details needed to render a post detail UI.
 
     + Body
     
@@ -762,7 +764,7 @@ Get post with `postId` of `4`
 
 ### Delete post [DELETE]
 
-Delete post with `postId` of `4`
+Delete post with `post_id` of `4`
 
 + Request
 
@@ -773,11 +775,11 @@ Delete post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/users/{user_id}/posts/{postId}/react]
+## React to post [/api/private/users/{user_id}/posts/{post_id}/react]
 
 + Parameters
     + user_id: `1` (number) - Unique id of post owner.
-    + postId: `4` (number) - Unique id of post to react to.
+    + post_id: `4` (number) - Unique id of post to react to.
 
 ### React to post [POST]
 
@@ -798,16 +800,16 @@ React to post `4` belonging to user `1`
 + Response 200
 
 
-## Post reactors [/api/post_comment/posts/{postId}/reactors?limit={limit}&offset={offset}]
+## Post reactors [/api/private/posts/{post_id}/reactors?limit={limit}&offset={offset}]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post reacted to.
+    + post_id: `4` (number) - Unique id of post reacted to.
     + limit: `20` (number) - A maximum of 20 data items per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
 ### Get post reactors [GET]
 
-Get reactors to post with `postId` of `4`
+Get reactors to post with `post_id` of `4`
 
 + Request (application/json)
 
@@ -828,17 +830,17 @@ Get reactors to post with `postId` of `4`
             ]
 
 
-## Reactors of {reaction} to post [/api/post_comment/posts/{postId}/reactors/{reaction}?limit={limit}&offset={offset}]
+## Reactors of {reaction} to post [/api/private/posts/{post_id}/reactors/{reaction}?limit={limit}&offset={offset}]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post to reacted to.
+    + post_id: `4` (number) - Unique id of post to reacted to.
     + reaction: `🤣` (string) - The particular reaction of interest.
     + limit: `20` (number) - A maximum of 20 data items per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
 ### Get reactors of {reaction} to post [GET]
 
-Get reactors of 🤣 to post with `postId` of `4`
+Get reactors of 🤣 to post with `post_id` of `4`
 
 + Request (application/json)
 
@@ -859,14 +861,14 @@ Get reactors of 🤣 to post with `postId` of `4`
             ]
 
 
-## Post reaction [/api/post_comment/posts/{postId}/remove_reaction]
+## Post reaction [/api/private/posts/{post_id}/remove_reaction]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post reacted to.
+    + post_id: `4` (number) - Unique id of post reacted to.
 
 ### Remove post reaction [DELETE]
 
-Remove my reaction on post with `postId` of `4`
+Remove my reaction on post with `post_id` of `4`
 
 + Request (application/json)
 
@@ -877,11 +879,11 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## New comment on post [/api/post_comment/users{user_id}/posts/{postId}/comment]
+## New comment on post [/api/private/users{user_id}/posts/{post_id}/comment]
 
 + Parameters
     + user_id: `1` (number) - Unique id of post owner.
-    + postId: `4` (number) - Unique id of post to comment on.
+    + post_id: `4` (number) - Unique id of post to comment on.
 
 ### Write comment on post [POST]
 
@@ -912,10 +914,10 @@ Remove my reaction on post with `postId` of `4`
             }
 
 
-## Comments on post [/api/post_comment/posts/{postId}/comments?limit={limit}&offset={offset}]
+## Comments on post [/api/private/posts/{post_id}/comments?limit={limit}&offset={offset}]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post for which to retrieve comments.
+    + post_id: `4` (number) - Unique id of post for which to retrieve comments.
     + limit: `20` (number) - A maximum of 20 comment cards per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll request subsequent batches of comments.
 
@@ -945,7 +947,7 @@ Remove my reaction on post with `postId` of `4`
             ]
 
 
-## Comment on post [/api/post_comment/posts/{targetPostId}/comments/{commentId}]
+## Comment on post [/api/private/posts/{targetPostId}/comments/{commentId}]
 
 + Parameters
     + targetPostId: `4` (number) - Unique id of target post.
@@ -962,10 +964,10 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/posts/{postId}/repost]
+## Post [/api/private/posts/{post_id}/repost]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post to repost.
+    + post_id: `4` (number) - Unique id of post to repost.
 
 ### Repost post [POST]
 
@@ -978,10 +980,10 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/posts/{postId}/unrepost]
+## Post [/api/private/posts/{post_id}/unrepost]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post to unrepost.
+    + post_id: `4` (number) - Unique id of post to unrepost.
 
 ### Unrepost post [DELETE]
 
@@ -994,10 +996,10 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/posts/{postId}/save]
+## Post [/api/private/posts/{post_id}/save]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post to save.
+    + post_id: `4` (number) - Unique id of post to save.
 
 ### Save post [POST]
 
@@ -1010,10 +1012,10 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/posts/{postId}/unsave]
+## Post [/api/private/posts/{post_id}/unsave]
 
 + Parameters
-    + postId: `4` (number) - Unique id of post to unsave.
+    + post_id: `4` (number) - Unique id of post to unsave.
 
 ### Unsave post [DELETE]
 
@@ -1028,7 +1030,7 @@ Remove my reaction on post with `postId` of `4`
 
 # Group Comment
 
-## New comment on comment [/api/post_comment/users/{user_id}/comment/{commentId}/comment]
+## New comment on comment [/api/private/users/{user_id}/comment/{commentId}/comment]
 
 **Note:** There isn't a notion of *"reply"* in the API. The notion of *"reply"* introduces confusion in the API design, database design, precisely. Therefore, it is treated as a "comment on comment" throughout the API.
 
@@ -1065,7 +1067,7 @@ Remove my reaction on post with `postId` of `4`
             }
 
 
-## Comments on comment [/api/post_comment/comments/{commentId}/comments?limit={limit}&offset={offset}]
+## Comments on comment [/api/private/comments/{commentId}/comments?limit={limit}&offset={offset}]
 
 + Parameters
     + commentId: `4` (number) - Unique id of comment for which to retrieve comments (i.e. replies).
@@ -1098,7 +1100,7 @@ Remove my reaction on post with `postId` of `4`
             ]
 
 
-## Comment [/api/post_comment/comments/{commentId}]
+## Comment [/api/private/comments/{commentId}]
 
 + Parameters
     + commentId: `4` (number) - Unique id of comment.
@@ -1122,7 +1124,7 @@ Remove my reaction on post with `postId` of `4`
             }
 
 
-## Comment on comment [/api/post_comment/comments/{parentCommentId}/comments/{commentId}]
+## Comment on comment [/api/private/comments/{parentCommentId}/comments/{commentId}]
 
 + Parameters
     + parentCommentId: `4` (number) - Unique id of parent comment.
@@ -1140,7 +1142,7 @@ Remove my reaction on post with `postId` of `4`
 
 
 
-## Comment reaction [/api/post_comment/users/{user_id}/comments/{commentId}/react]
+## Comment reaction [/api/private/users/{user_id}/comments/{commentId}/react]
 
 + Parameters
     + user_id: `1` (number) - Unique id of comment owner.
@@ -1165,7 +1167,7 @@ React to comment `4` belonging to user `1`
 + Response 200
 
 
-## Comment reactors [/api/post_comment/comments/{commentId}/reactors?limit={limit}&offset={offset}]
+## Comment reactors [/api/private/comments/{commentId}/reactors?limit={limit}&offset={offset}]
 
 + Parameters
     + commentId: `4` (number) - Unique id of comment reacted to.
@@ -1195,7 +1197,7 @@ Get reactors to comment with `commentId` of `4`
             ]
 
 
-## Reactors of {reaction} to comment [/api/post_comment/comments/{commentId}/reactors/{reaction}?limit={limit}&offset={offset}]
+## Reactors of {reaction} to comment [/api/private/comments/{commentId}/reactors/{reaction}?limit={limit}&offset={offset}]
 
 + Parameters
     + commentId: `4` (number) - Unique id of post comment reacted to.
@@ -1226,7 +1228,7 @@ Get reactors of 🤣 to comment with `commentId` of `4`
             ]
 
 
-## Comment reaction [/api/post_comment/comments/{commentId}/remove_reaction]
+## Comment reaction [/api/private/comments/{commentId}/remove_reaction]
 
 + Parameters
     + commentId: `4` (number) - Unique id of comment reacted to.

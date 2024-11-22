@@ -165,7 +165,7 @@ ALTER FUNCTION public.change_password(in_email character varying, in_new_passwor
 -- Name: create_comment_on_comment(integer, integer, integer, text, text, character varying[], character varying[]); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_comment_on_comment(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_target_comment_id integer, target_comment_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) RETURNS record
+CREATE FUNCTION public.create_comment_on_comment(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_comment_id integer, comment_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -180,8 +180,8 @@ DECLARE
   
   hashtag_n varchar;
 BEGIN
-  INSERT INTO comment_ (target_comment_id, commenter_user_id, comment_text, attachment_url)
-  VALUES (in_target_comment_id, client_user_id, in_comment_text, in_attachment_url)
+  INSERT INTO comment_ (comment_id, commenter_user_id, comment_text, attachment_url)
+  VALUES (in_comment_id, client_user_id, in_comment_text, in_attachment_url)
   RETURNING id INTO ret_comment_id;
   
   -- populate client data
@@ -227,7 +227,7 @@ BEGIN
   
   -- create comment notification
   INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id, comment_created_id)
-  VALUES ('comment_on_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id, ret_comment_id);
+  VALUES ('comment_on_comment', client_user_id, comment_owner_user_id, in_comment_id, ret_comment_id);
   
   
   new_comment_data := json_build_object(
@@ -241,27 +241,27 @@ BEGIN
   );
   mention_notifs := mention_notifs_acc;
   comment_notif := json_build_object(
-	  'receiver_user_id', target_comment_owner_user_id,
+	  'receiver_user_id', comment_owner_user_id,
 	  'type', 'comment_on_comment',
 	  'sender', client_data,
-	  'target_comment_id', in_target_comment_id,
+	  'comment_id', in_comment_id,
 	  'comment_created_id', ret_comment_id
   );
   
-  SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE target_comment_id = in_target_comment_id;
+  SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE comment_id = in_comment_id;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.create_comment_on_comment(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_target_comment_id integer, target_comment_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) OWNER TO i9;
+ALTER FUNCTION public.create_comment_on_comment(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_comment_id integer, comment_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) OWNER TO i9;
 
 --
 -- Name: create_comment_on_post(integer, integer, integer, text, text, character varying[], character varying[]); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_comment_on_post(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_target_post_id integer, target_post_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) RETURNS record
+CREATE FUNCTION public.create_comment_on_post(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_post_id integer, post_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -276,8 +276,8 @@ DECLARE
   
   hashtag_n varchar;
 BEGIN
-  INSERT INTO comment_ (target_post_id, commenter_user_id, comment_text, attachment_url)
-  VALUES (in_target_post_id, client_user_id, in_comment_text, in_attachment_url)
+  INSERT INTO comment_ (post_id, commenter_user_id, comment_text, attachment_url)
+  VALUES (in_post_id, client_user_id, in_comment_text, in_attachment_url)
   RETURNING id INTO ret_comment_id;
   
   -- populate client data
@@ -323,7 +323,7 @@ BEGIN
   
   -- create comment notification
   INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id, comment_created_id)
-  VALUES ('comment_on_post', client_user_id, target_post_owner_user_id, in_target_post_id, ret_comment_id);
+  VALUES ('comment_on_post', client_user_id, post_owner_user_id, in_post_id, ret_comment_id);
   
   
   new_comment_data := json_build_object(
@@ -337,21 +337,21 @@ BEGIN
   );
   mention_notifs := mention_notifs_acc;
   comment_notif := json_build_object(
-	  'receiver_user_id', target_post_owner_user_id,
+	  'receiver_user_id', post_owner_user_id,
 	  'type', 'comment_on_post',
 	  'sender', client_data,
-	  'post_id', in_target_post_id,
+	  'post_id', in_post_id,
 	  'comment_created_id', ret_comment_id
   );
   
-  SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE target_post_id = in_target_post_id;
+  SELECT COUNT(1) + 1 INTO latest_comments_count FROM comment_ WHERE post_id = in_post_id;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.create_comment_on_post(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_target_post_id integer, target_post_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) OWNER TO i9;
+ALTER FUNCTION public.create_comment_on_post(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_post_id integer, post_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) OWNER TO i9;
 
 --
 -- Name: create_chat(integer, integer, json); Type: FUNCTION; Schema: public; Owner: i9
@@ -540,14 +540,14 @@ ALTER FUNCTION public.create_post(OUT new_post_data json, OUT mention_notifs jso
 -- Name: create_reaction_to_comment(integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_reaction_to_comment(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_target_comment_id integer, target_comment_owner_user_id integer, in_reaction_code_point integer) RETURNS record
+CREATE FUNCTION public.create_reaction_to_comment(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_comment_id integer, comment_owner_user_id integer, in_reaction_code_point integer) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
   client_data json;
 BEGIN
-  INSERT INTO pc_reaction (reactor_user_id, target_comment_id, reaction_code_point)
-  VALUES (client_user_id, in_target_comment_id, in_reaction_code_point);
+  INSERT INTO pc_reaction (reactor_user_id, comment_id, reaction_code_point)
+  VALUES (client_user_id, in_comment_id, in_reaction_code_point);
   
   -- populate client data
   SELECT json_build_object(
@@ -557,38 +557,38 @@ BEGIN
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
   INSERT INTO notification (type, sender_user_id, receiver_user_id, via_comment_id, reaction_code_point)
-  VALUES ('reaction_to_comment', client_user_id, target_comment_owner_user_id, in_target_comment_id, in_reaction_code_point);
+  VALUES ('reaction_to_comment', client_user_id, comment_owner_user_id, in_comment_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
-	  'receiver_user_id', target_comment_owner_user_id,
+	  'receiver_user_id', comment_owner_user_id,
 	  'type', 'reaction_to_comment',
 	  'reaction_code_point', in_reaction_code_point,
-	  'comment_id', in_target_comment_id,
+	  'comment_id', in_comment_id,
 	  'sender', client_data
 	  
   );
   
-  SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE target_comment_id = in_target_comment_id;
+  SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE comment_id = in_comment_id;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.create_reaction_to_comment(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_target_comment_id integer, target_comment_owner_user_id integer, in_reaction_code_point integer) OWNER TO i9;
+ALTER FUNCTION public.create_reaction_to_comment(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_comment_id integer, comment_owner_user_id integer, in_reaction_code_point integer) OWNER TO i9;
 
 --
 -- Name: create_reaction_to_post(integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_reaction_to_post(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_target_post_id integer, target_post_owner_user_id integer, in_reaction_code_point integer) RETURNS record
+CREATE FUNCTION public.create_reaction_to_post(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_post_id integer, post_owner_user_id integer, in_reaction_code_point integer) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
   client_data json;
 BEGIN
-  INSERT INTO pc_reaction (reactor_user_id, target_post_id, reaction_code_point)
-  VALUES (client_user_id, in_target_post_id, in_reaction_code_point);
+  INSERT INTO pc_reaction (reactor_user_id, post_id, reaction_code_point)
+  VALUES (client_user_id, in_post_id, in_reaction_code_point);
   
   -- populate client data
   SELECT json_build_object(
@@ -598,24 +598,24 @@ BEGIN
   ) INTO client_data FROM i9l_user WHERE id = client_user_id;
   
   INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id, reaction_code_point)
-  VALUES ('reaction_to_post', client_user_id, target_post_owner_user_id, in_target_post_id, in_reaction_code_point);
+  VALUES ('reaction_to_post', client_user_id, post_owner_user_id, in_post_id, in_reaction_code_point);
   
   reaction_notif := json_build_object(
-	  'receiver_user_id', target_post_owner_user_id,
+	  'receiver_user_id', post_owner_user_id,
 	  'type', 'reaction_to_post',
-	  'post_id', in_target_post_id,
+	  'post_id', in_post_id,
 	  'reaction_code_point', in_reaction_code_point,
 	  'sender', client_data
   );
   
-  SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE target_post_id = in_target_post_id;
+  SELECT COUNT(1) + 1 INTO latest_reactions_count FROM pc_reaction WHERE post_id = in_post_id;
   
   RETURN;
 END;
 $$;
 
 
-ALTER FUNCTION public.create_reaction_to_post(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_target_post_id integer, target_post_owner_user_id integer, in_reaction_code_point integer) OWNER TO i9;
+ALTER FUNCTION public.create_reaction_to_post(OUT reaction_notif json, OUT latest_reactions_count integer, client_user_id integer, in_post_id integer, post_owner_user_id integer, in_reaction_code_point integer) OWNER TO i9;
 
 --
 -- Name: create_user(character varying, character varying, character varying, character varying, timestamp without time zone, character varying); Type: FUNCTION; Schema: public; Owner: i9
@@ -788,7 +788,7 @@ ALTER FUNCTION public.get_comment(in_comment_id integer, client_user_id integer)
 -- Name: get_comments_on_comment(integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_comments_on_comment(in_target_comment_id integer, client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_comment_struct
+CREATE FUNCTION public.get_comments_on_comment(in_comment_id integer, client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_comment_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -807,7 +807,7 @@ BEGIN
         ELSE NULL
       END AS client_reaction
     FROM "CommentView"
-    WHERE target_comment_id = in_target_comment_id
+    WHERE comment_id = in_comment_id
     ORDER BY created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	  
@@ -815,13 +815,13 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_comments_on_comment(in_target_comment_id integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
+ALTER FUNCTION public.get_comments_on_comment(in_comment_id integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
 
 --
 -- Name: get_comments_on_post(integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_comments_on_post(in_target_post_id integer, client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_comment_struct
+CREATE FUNCTION public.get_comments_on_post(in_post_id integer, client_user_id integer, in_limit integer, in_offset integer) RETURNS SETOF public.ui_comment_struct
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -840,7 +840,7 @@ BEGIN
         ELSE NULL
       END AS client_reaction
     FROM "CommentView"
-    WHERE target_post_id = in_target_post_id
+    WHERE post_id = in_post_id
     ORDER BY created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	  
@@ -848,7 +848,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_comments_on_post(in_target_post_id integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
+ALTER FUNCTION public.get_comments_on_post(in_post_id integer, client_user_id integer, in_limit integer, in_offset integer) OWNER TO i9;
 
 SET default_tablespace = '';
 
@@ -1195,7 +1195,7 @@ BEGIN
     FROM pc_reaction 
     INNER JOIN i9l_user i9l_user ON pc_reaction.reactor_user_id = i9l_user.id 
     LEFT JOIN follow client_follows ON client_follows.followee_user_id = i9l_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE pc_reaction.target_comment_id = in_comment_id
+    WHERE pc_reaction.comment_id = in_comment_id
     ORDER BY pc_reaction.created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	  
@@ -1227,7 +1227,7 @@ BEGIN
     FROM pc_reaction 
     INNER JOIN i9l_user i9l_user ON pc_reaction.reactor_user_id = i9l_user.id 
     LEFT JOIN follow client_follows ON client_follows.followee_user_id = i9l_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE pc_reaction.target_post_id = in_post_id
+    WHERE pc_reaction.post_id = in_post_id
     ORDER BY pc_reaction.created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	  
@@ -1259,7 +1259,7 @@ BEGIN
     FROM pc_reaction 
     INNER JOIN i9l_user i9l_user ON pc_reaction.reactor_user_id = i9l_user.id 
     LEFT JOIN follow client_follows ON client_follows.followee_user_id = i9l_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE pc_reaction.target_comment_id = in_comment_id AND pc_reaction.reaction_code_point = in_reaction_code_point
+    WHERE pc_reaction.comment_id = in_comment_id AND pc_reaction.reaction_code_point = in_reaction_code_point
     ORDER BY pc_reaction.created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	  
@@ -1291,7 +1291,7 @@ BEGIN
     FROM pc_reaction 
     INNER JOIN i9l_user i9l_user ON pc_reaction.reactor_user_id = i9l_user.id 
     LEFT JOIN follow client_follows ON client_follows.followee_user_id = i9l_user.id AND client_follows.follower_user_id = client_user_id
-    WHERE pc_reaction.target_post_id = in_post_id AND pc_reaction.reaction_code_point = in_reaction_code_point
+    WHERE pc_reaction.post_id = in_post_id AND pc_reaction.reaction_code_point = in_reaction_code_point
     ORDER BY pc_reaction.created_at DESC
     LIMIT in_limit OFFSET in_offset;
 	
@@ -1736,10 +1736,10 @@ CREATE TABLE public.comment_ (
     comment_text text NOT NULL,
     commenter_user_id integer NOT NULL,
     attachment_url text,
-    target_post_id integer,
-    target_comment_id integer,
+    post_id integer,
+    comment_id integer,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
-    CONSTRAINT either_comment_on_post_or_reply_to_comment CHECK (((target_post_id IS NULL) OR (target_comment_id IS NULL)))
+    CONSTRAINT either_comment_on_post_or_reply_to_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
 );
 
 
@@ -1752,11 +1752,11 @@ ALTER TABLE public.comment_ OWNER TO i9;
 CREATE TABLE public.pc_reaction (
     id integer NOT NULL,
     reactor_user_id integer NOT NULL,
-    target_post_id integer,
-    target_comment_id integer,
+    post_id integer,
+    comment_id integer,
     reaction_code_point integer NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
-    CONSTRAINT reaction_either_in_post_or_comment CHECK (((target_post_id IS NULL) OR (target_comment_id IS NULL)))
+    CONSTRAINT reaction_either_in_post_or_comment CHECK (((post_id IS NULL) OR (comment_id IS NULL)))
 );
 
 
@@ -1777,15 +1777,15 @@ CREATE VIEW public."CommentView" AS
     (count(DISTINCT cm_on_cm.id))::integer AS comments_count,
     certain_reaction.reactor_user_id,
     certain_reaction.reaction_code_point,
-    cm.target_post_id,
-    cm.target_comment_id,
+    cm.post_id,
+    cm.comment_id,
     cm.created_at
    FROM ((((public.comment_ cm
      JOIN public.i9l_user ON ((i9l_user.id = cm.commenter_user_id)))
-     LEFT JOIN public.pc_reaction any_reaction ON ((any_reaction.target_comment_id = cm.id)))
-     LEFT JOIN public.comment_ cm_on_cm ON ((cm_on_cm.target_comment_id = cm.id)))
-     LEFT JOIN public.pc_reaction certain_reaction ON ((certain_reaction.target_comment_id = cm.id)))
-  GROUP BY i9l_user.id, i9l_user.username, i9l_user.profile_pic_url, cm.id, cm.comment_text, cm.attachment_url, certain_reaction.reactor_user_id, certain_reaction.reaction_code_point, cm.target_post_id, cm.target_comment_id, cm.created_at;
+     LEFT JOIN public.pc_reaction any_reaction ON ((any_reaction.comment_id = cm.id)))
+     LEFT JOIN public.comment_ cm_on_cm ON ((cm_on_cm.comment_id = cm.id)))
+     LEFT JOIN public.pc_reaction certain_reaction ON ((certain_reaction.comment_id = cm.id)))
+  GROUP BY i9l_user.id, i9l_user.username, i9l_user.profile_pic_url, cm.id, cm.comment_text, cm.attachment_url, certain_reaction.reactor_user_id, certain_reaction.reaction_code_point, cm.post_id, cm.comment_id, cm.created_at;
 
 
 ALTER VIEW public."CommentView" OWNER TO i9;
@@ -1855,11 +1855,11 @@ CREATE VIEW public."PostView" AS
     post.created_at
    FROM ((((((((public.post
      JOIN public.i9l_user ON ((i9l_user.id = post.user_id)))
-     LEFT JOIN public.pc_reaction any_reaction ON ((any_reaction.target_post_id = post.id)))
-     LEFT JOIN public.comment_ any_comment ON ((any_comment.target_post_id = post.id)))
+     LEFT JOIN public.pc_reaction any_reaction ON ((any_reaction.post_id = post.id)))
+     LEFT JOIN public.comment_ any_comment ON ((any_comment.post_id = post.id)))
      LEFT JOIN public.repost any_repost ON ((any_repost.post_id = post.id)))
      LEFT JOIN public.saved_post any_saved_post ON ((any_saved_post.post_id = post.id)))
-     LEFT JOIN public.pc_reaction certain_reaction ON ((certain_reaction.target_post_id = post.id)))
+     LEFT JOIN public.pc_reaction certain_reaction ON ((certain_reaction.post_id = post.id)))
      LEFT JOIN public.repost certain_repost ON ((certain_repost.post_id = post.id)))
      LEFT JOIN public.saved_post certain_saved_post ON ((certain_saved_post.post_id = post.id)))
   GROUP BY i9l_user.id, i9l_user.username, i9l_user.profile_pic_url, post.id, post.type, post.media_urls, post.description, certain_reaction.reactor_user_id, certain_reaction.reaction_code_point, certain_repost.reposter_user_id, certain_saved_post.saver_user_id, post.created_at;
@@ -2528,7 +2528,7 @@ COPY public.blocked_user (id, blocking_user_id, blocked_user_id, blocked_at) FRO
 -- Data for Name: comment_; Type: TABLE DATA; Schema: public; Owner: i9
 --
 
-COPY public.comment_ (id, comment_text, commenter_user_id, attachment_url, target_post_id, target_comment_id, created_at) FROM stdin;
+COPY public.comment_ (id, comment_text, commenter_user_id, attachment_url, post_id, comment_id, created_at) FROM stdin;
 \.
 
 
@@ -2632,7 +2632,7 @@ COPY public.pc_mention (id, post_id, comment_id, user_id) FROM stdin;
 -- Data for Name: pc_reaction; Type: TABLE DATA; Schema: public; Owner: i9
 --
 
-COPY public.pc_reaction (id, reactor_user_id, target_post_id, target_comment_id, reaction_code_point, created_at) FROM stdin;
+COPY public.pc_reaction (id, reactor_user_id, post_id, comment_id, reaction_code_point, created_at) FROM stdin;
 \.
 
 
@@ -2976,7 +2976,7 @@ ALTER TABLE ONLY public.message_deletion_log
 --
 
 ALTER TABLE ONLY public.pc_reaction
-    ADD CONSTRAINT one_comment_reaction_per_user UNIQUE (reactor_user_id, target_comment_id);
+    ADD CONSTRAINT one_comment_reaction_per_user UNIQUE (reactor_user_id, comment_id);
 
 
 --
@@ -2984,7 +2984,7 @@ ALTER TABLE ONLY public.pc_reaction
 --
 
 ALTER TABLE ONLY public.pc_reaction
-    ADD CONSTRAINT one_post_reaction_per_user UNIQUE (reactor_user_id, target_post_id);
+    ADD CONSTRAINT one_post_reaction_per_user UNIQUE (reactor_user_id, post_id);
 
 
 --
@@ -3095,7 +3095,7 @@ ALTER TABLE ONLY public.comment_
 --
 
 ALTER TABLE ONLY public.comment_
-    ADD CONSTRAINT comment_commented_on FOREIGN KEY (target_comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
+    ADD CONSTRAINT comment_commented_on FOREIGN KEY (comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
 
 
 --
@@ -3119,7 +3119,7 @@ ALTER TABLE ONLY public.pc_mention
 --
 
 ALTER TABLE ONLY public.pc_reaction
-    ADD CONSTRAINT comment_reacted_to FOREIGN KEY (target_comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
+    ADD CONSTRAINT comment_reacted_to FOREIGN KEY (comment_id) REFERENCES public.comment_(id) ON DELETE CASCADE;
 
 
 --
@@ -3255,7 +3255,7 @@ ALTER TABLE ONLY public.user_chat
 --
 
 ALTER TABLE ONLY public.comment_
-    ADD CONSTRAINT post_commented_on FOREIGN KEY (target_post_id) REFERENCES public.post(id) ON DELETE CASCADE;
+    ADD CONSTRAINT post_commented_on FOREIGN KEY (post_id) REFERENCES public.post(id) ON DELETE CASCADE;
 
 
 --
@@ -3271,7 +3271,7 @@ ALTER TABLE ONLY public.pc_mention
 --
 
 ALTER TABLE ONLY public.pc_reaction
-    ADD CONSTRAINT post_reacted_to FOREIGN KEY (target_post_id) REFERENCES public.post(id) ON DELETE CASCADE;
+    ADD CONSTRAINT post_reacted_to FOREIGN KEY (post_id) REFERENCES public.post(id) ON DELETE CASCADE;
 
 
 --

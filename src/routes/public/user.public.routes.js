@@ -1,28 +1,9 @@
 import express from "express"
-import dotenv from "dotenv"
-import { expressjwt } from "express-jwt"
 
 import * as UC from "../../controllers/user.controllers.js"
 import { validateLimitOffset } from "../../validators/miscs.js"
 
 const router = express.Router()
-
-dotenv.config()
-
-router.use(
-  expressjwt({
-    secret: process.env.JWT_SECRET,
-    algorithms: ["HS256"],
-    credentialsRequired: false,
-  }),
-  (err, req, res, next) => {
-    if (err) {
-      res.status(err.status).send({ msg: err.inner.message })
-    } else {
-      next(err)
-    }
-  }
-)
 
 /* Users */
 // GET a specific user's profile data

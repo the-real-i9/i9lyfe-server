@@ -65,8 +65,8 @@ export class Post {
 
   static async reactTo({
     client_user_id,
-    target_post_id,
-    target_post_owner_user_id,
+    post_id,
+    post_owner_user_id,
     reaction_code_point,
   }) {
     /** @type {PgQueryConfig} */
@@ -76,8 +76,8 @@ export class Post {
       FROM create_reaction_to_post($1, $2, $3, $4)`,
       values: [
         client_user_id,
-        target_post_id,
-        target_post_owner_user_id,
+        post_id,
+        post_owner_user_id,
         reaction_code_point,
       ],
     }
@@ -86,8 +86,8 @@ export class Post {
   }
 
   static async commentOn({
-    target_post_id,
-    target_post_owner_user_id,
+    post_id,
+    post_owner_user_id,
     client_user_id,
     comment_text,
     attachment_url,
@@ -103,8 +103,8 @@ export class Post {
         latest_comments_count 
       FROM create_comment_on_post($1, $2, $3, $4, $5, $6, $7)`,
       values: [
-        target_post_id,
-        target_post_owner_user_id,
+        post_id,
+        post_owner_user_id,
         client_user_id,
         comment_text,
         attachment_url,
@@ -171,16 +171,16 @@ export class Post {
     await dbQuery(query)
   }
 
-  static async removeReaction(target_post_id, client_user_id) {
+  static async removeReaction(post_id, client_user_id) {
     const query = {
       text: `
       WITH pc_reaction AS (
-        DELETE FROM pc_reaction WHERE target_post_id = $1 AND reactor_user_id = $2
+        DELETE FROM pc_reaction WHERE post_id = $1 AND reactor_user_id = $2
       )
       SELECT reactions_count - 1 AS latest_reactions_count 
       FROM "PostView" 
       WHERE post_id = $1`,
-      values: [target_post_id, client_user_id],
+      values: [post_id, client_user_id],
     }
 
     return (await dbQuery(query)).rows[0]

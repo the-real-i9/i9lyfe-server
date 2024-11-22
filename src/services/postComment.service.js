@@ -53,16 +53,16 @@ export const createNewPost = async ({
 
 export const reactToPost = async ({
   client_user_id,
-  target_post_id,
-  target_post_owner_user_id,
+  post_id,
+  post_owner_user_id,
   reaction,
 }) => {
   const reaction_code_point = reaction.codePointAt()
 
   const { reaction_notif, latest_reactions_count } = Post.reactTo({
     client_user_id,
-    target_post_id,
-    target_post_owner_user_id,
+    post_id,
+    post_owner_user_id,
     reaction_code_point,
   })
 
@@ -74,8 +74,8 @@ export const reactToPost = async ({
   }
 
   // update metrics for post for all post watchers
-  realtimeService.sendPostUpdate(target_post_id, {
-    post_id: target_post_id,
+  realtimeService.sendPostUpdate(post_id, {
+    post_id,
     latest_reactions_count,
   })
 
@@ -86,8 +86,8 @@ export const reactToPost = async ({
 
 export const commentOnPost = async ({
   client_user_id,
-  target_post_id,
-  target_post_owner_user_id,
+  post_id,
+  post_owner_user_id,
   comment_text,
   attachment_data,
 }) => {
@@ -105,8 +105,8 @@ export const commentOnPost = async ({
     mention_notifs,
     latest_comments_count,
   } = await Post.commentOn({
-    target_post_id,
-    target_post_owner_user_id,
+    post_id,
+    post_owner_user_id,
     client_user_id,
     comment_text,
     attachment_url,
@@ -128,8 +128,8 @@ export const commentOnPost = async ({
     messageBrokerService.sendNewNotification(receiver_user_id, restData)
   }
 
-  realtimeService.sendPostUpdate(target_post_id, {
-    post_id: target_post_id,
+  realtimeService.sendPostUpdate(post_id, {
+    post_id,
     latest_comments_count,
   })
 
@@ -140,16 +140,16 @@ export const commentOnPost = async ({
 
 export const reactToComment = async ({
   client_user_id,
-  target_comment_id,
-  target_comment_owner_user_id,
+  comment_id,
+  comment_owner_user_id,
   reaction,
 }) => {
   const reaction_code_point = reaction.codePointAt()
 
   const { reaction_notif, latest_reactions_count } = Comment.reactTo({
     client_user_id,
-    target_comment_id,
-    target_comment_owner_user_id,
+    comment_id,
+    comment_owner_user_id,
     reaction_code_point,
   })
 
@@ -160,8 +160,8 @@ export const reactToComment = async ({
     messageBrokerService.sendNewNotification(receiver_user_id, restData)
   }
 
-  realtimeService.sendCommentUpdate(target_comment_id, {
-    comment_id: target_comment_id,
+  realtimeService.sendCommentUpdate(comment_id, {
+    comment_id,
     latest_reactions_count,
   })
 
@@ -172,8 +172,8 @@ export const reactToComment = async ({
 
 export const commentOnComment = async ({
   client_user_id,
-  target_comment_id,
-  target_comment_owner_user_id,
+  comment_id,
+  comment_owner_user_id,
   comment_text,
   attachment_data,
 }) => {
@@ -191,8 +191,8 @@ export const commentOnComment = async ({
     mention_notifs,
     latest_comments_count,
   } = await Comment.commentOn({
-    target_comment_id,
-    target_comment_owner_user_id,
+    comment_id,
+    comment_owner_user_id,
     client_user_id,
     comment_text,
     attachment_url,
@@ -214,8 +214,8 @@ export const commentOnComment = async ({
     messageBrokerService.sendNewNotification(receiver_user_id, restData)
   }
 
-  realtimeService.sendCommentUpdate(target_comment_id, {
-    comment_id: target_comment_id,
+  realtimeService.sendCommentUpdate(comment_id, {
+    comment_id,
     latest_comments_count,
   })
 
@@ -402,14 +402,14 @@ export const deletePost = async (post_id, client_user_id) => {
   }
 }
 
-export const removeReactionToPost = async (target_post_id, client_user_id) => {
+export const removeReactionToPost = async (post_id, client_user_id) => {
   const { latest_reactions_count } = await Post.removeReaction(
-    target_post_id,
+    post_id,
     client_user_id
   )
 
-  realtimeService.sendPostUpdate(target_post_id, {
-    post_id: target_post_id,
+  realtimeService.sendPostUpdate(post_id, {
+    post_id,
     latest_reactions_count,
   })
 
@@ -461,16 +461,16 @@ export const removeCommentOnComment = async ({
 }
 
 export const removeReactionToComment = async (
-  target_comment_id,
+  comment_id,
   client_user_id
 ) => {
   const { latest_reactions_count } = await Comment.removeReaction(
-    target_comment_id,
+    comment_id,
     client_user_id
   )
 
-  realtimeService.sendCommentUpdate(target_comment_id, {
-    comment_id: target_comment_id,
+  realtimeService.sendCommentUpdate(comment_id, {
+    comment_id,
     latest_reactions_count,
   })
 

@@ -22,15 +22,15 @@ export const createNewPost = async (req, res) => {
 
 export const reactToPost = async (req, res) => {
   try {
-    const { target_post_id, target_post_owner_user_id } = req.params
+    const { post_id, post_owner_user_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.reactToPost({
       client_user_id,
-      target_post_id,
-      target_post_owner_user_id,
+      post_id,
+      post_owner_user_id,
       reaction,
     })
 
@@ -43,15 +43,15 @@ export const reactToPost = async (req, res) => {
 
 export const commentOnPost = async (req, res) => {
   try {
-    const { target_post_id, target_post_owner_user_id } = req.params
+    const { post_id, post_owner_user_id } = req.params
     const { comment_text, attachment_data } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.commentOnPost({
       client_user_id,
-      target_post_id,
-      target_post_owner_user_id,
+      post_id,
+      post_owner_user_id,
       comment_text,
       attachment_data,
     })
@@ -65,15 +65,15 @@ export const commentOnPost = async (req, res) => {
 
 export const reactToComment = async (req, res) => {
   try {
-    const { target_comment_id, target_comment_owner_user_id } = req.params
+    const { comment_id, comment_owner_user_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.reactToComment({
       client_user_id,
-      target_comment_id,
-      target_comment_owner_user_id,
+      comment_id,
+      comment_owner_user_id,
       reaction,
     })
 
@@ -86,15 +86,15 @@ export const reactToComment = async (req, res) => {
 
 export const commentOnComment = async (req, res) => {
   try {
-    const { target_comment_id, target_comment_owner_user_id } = req.params
+    const { comment_id, comment_owner_user_id } = req.params
     const { comment_text, attachment_data } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.commentOnComment({
       client_user_id,
-      target_comment_id,
-      target_comment_owner_user_id,
+      comment_id,
+      comment_owner_user_id,
       comment_text,
       attachment_data,
     })
@@ -333,11 +333,11 @@ export const deletePost = async (req, res) => {
 
 export const removeReactionToPost = async (req, res) => {
   try {
-    const { target_post_id } = req.params
+    const { post_id } = req.params
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.removeReactionToPost(
-      target_post_id,
+      post_id,
       client_user_id
     )
 
@@ -386,11 +386,11 @@ export const removeCommentOnComment = async (req, res) => {
 
 export const removeReactionToComment = async (req, res) => {
   try {
-    const { target_comment_id } = req.params
+    const { comment_id } = req.params
     const { client_user_id } = req.auth
 
     const resp = await postCommentService.removeReactionToComment(
-      target_comment_id,
+      comment_id,
       client_user_id
     )
 

@@ -8,8 +8,8 @@ import { dbQuery } from "../configs/db.js"
 export class Comment {
   static async reactTo({
     client_user_id,
-    target_comment_id,
-    target_comment_owner_user_id,
+    comment_id,
+    comment_owner_user_id,
     reaction_code_point,
   }) {
     /** @type {PgQueryConfig} */
@@ -19,8 +19,8 @@ export class Comment {
     FROM create_reaction_to_comment($1, $2, $3, $4)`,
       values: [
         client_user_id,
-        target_comment_id,
-        target_comment_owner_user_id,
+        comment_id,
+        comment_owner_user_id,
         reaction_code_point,
       ],
     }
@@ -29,8 +29,8 @@ export class Comment {
   }
 
   static async commentOn({
-    target_comment_id,
-    target_comment_owner_user_id,
+    comment_id,
+    comment_owner_user_id,
     client_user_id,
     comment_text,
     attachment_url,
@@ -46,8 +46,8 @@ export class Comment {
       latest_comments_count 
     FROM create_comment_on_comment($1, $2, $3, $4, $5, $6, $7)`,
       values: [
-        target_comment_id,
-        target_comment_owner_user_id,
+        comment_id,
+        comment_owner_user_id,
         client_user_id,
         comment_text,
         attachment_url,
@@ -115,16 +115,16 @@ export class Comment {
     return (await dbQuery(query)).rows
   }
 
-  static async removeReaction(target_comment_id, client_user_id) {
+  static async removeReaction(comment_id, client_user_id) {
     const query = {
       text: `
     WITH pc_reaction AS (
-      DELETE FROM pc_reaction WHERE target_comment_id = $1 AND reactor_user_id = $2
+      DELETE FROM pc_reaction WHERE comment_id = $1 AND reactor_user_id = $2
     )
     SELECT reactions_count - 1 AS latest_reactions_count 
     FROM "CommentView" 
     WHERE comment_id = $1`,
-      values: [target_comment_id, client_user_id],
+      values: [comment_id, client_user_id],
     }
 
     return (await dbQuery(query)).rows[0]

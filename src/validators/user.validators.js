@@ -84,6 +84,7 @@ export const getNotifications = [
     checkSchema(
       {
         from: {
+          optional: true,
           notEmpty: true,
           isDate: {
             errorMessage:

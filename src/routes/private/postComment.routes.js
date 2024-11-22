@@ -4,23 +4,17 @@ import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../validators/postComment.validators.js"
 import { validateIdParams } from "../../validators/miscs.js"
 
-
 const router = express.Router()
 
-
 /* ====== POST ====== */
-router.post(
-  "/new_post",
-  ...PCV.createNewPost,
-  PCC.createNewPost
-)
+router.post("/new_post", ...PCV.createNewPost, PCC.createNewPost)
 router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)
 router.delete("/posts/:post_id", ...validateIdParams, PCC.deletePost)
 
 /* ====== POST'S REACTION ====== */
 
 router.post(
-  "/users/:target_post_owner_user_id/posts/:target_post_id/react",
+  "/users/:post_owner_user_id/posts/:post_id/react",
   ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToPost
@@ -36,7 +30,7 @@ router.get(
   PCC.getReactorsWithReactionToPost
 )
 router.delete(
-  "/posts/:target_post_id/remove_reaction",
+  "/posts/:post_id/remove_reaction",
   ...validateIdParams,
   PCC.removeReactionToPost
 )
@@ -44,13 +38,13 @@ router.delete(
 /* ====== POST'S COMMENT ====== */
 
 router.post(
-  "/users/:target_post_owner_user_id/posts/:target_post_id/comment",
+  "/users/:post_owner_user_id/posts/:post_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
   PCC.commentOnPost
 )
 router.post(
-  "/users/:target_comment_owner_user_id/comments/:target_comment_id/comment",
+  "/users/:comment_owner_user_id/comments/:comment_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
   PCC.commentOnComment
@@ -82,7 +76,7 @@ router.delete(
 /* ====== COMMENT'S REACTION====== */
 
 router.post(
-  "/users/:target_comment_owner_user_id/comments/:target_comment_id/react",
+  "/users/:comment_owner_user_id/comments/:comment_id/react",
   ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToComment
@@ -98,7 +92,7 @@ router.get(
   PCC.getReactorsWithReactionToComment
 )
 router.delete(
-  "/comments/:target_comment_id/remove_reaction",
+  "/comments/:comment_id/remove_reaction",
   ...validateIdParams,
   PCC.removeReactionToComment
 )
