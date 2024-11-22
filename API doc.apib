@@ -6,7 +6,7 @@ A social media application sever with a wide range of social media interactions.
 
 # Group Auth
 
-## Signup: Request New Account [/api/auth/signup/request_new_account]
+## Signup: Request New Account [/api/public/signup/request_new_account]
 
 ### Request New Account [POST]
 
@@ -40,7 +40,7 @@ This endpoint allows you to initiate the signup process by first submitting a va
                "msg": "A user with this email already exists."
             }
 
-## Signup: Verify Email [/api/auth/signup/verify_email]
+## Signup: Verify Email [/api/public/signup/verify_email]
 
 ### Verify Email [POST]
 
@@ -74,6 +74,8 @@ This endpoint is strictly the second step of the signup process, requiring you t
 
 + Response 400 (application/json)
 
+    Error message can come in two forms
+
     + Headers
 
             Set-cookie: connect.sid={encoded_session_id};
@@ -88,7 +90,7 @@ This endpoint is strictly the second step of the signup process, requiring you t
                 "msg": "Verification code expired! Re-submit your email."
             }
 
-## Signup: Register User [/api/auth/signup/register_user]
+## Signup: Register User [/api/public/signup/register_user]
 
 ### Register User [POST]
 
@@ -140,7 +142,7 @@ The last step of the signup process, requiring you to provide your profile infor
                 "msg": "Username already taken. Try another."
             }
 
-## Signin [/api/auth/signin]
+## Signin [/api/public/signin]
 
 ### Signin [POST]
 
@@ -174,9 +176,9 @@ The last step of the signup process, requiring you to provide your profile infor
                 "msg": "Incorrect email or password"
             }
 
-# Group User {protected}
+# Group User {private}
 
-## Client User [/api/user_private/session_user]
+## Client User [/api/private/session_user]
 
 ### Get Session User [GET]
 
@@ -195,12 +197,12 @@ The last step of the signup process, requiring you to provide your profile infor
             }
 
 
-## Follow User [/api/user_private/users/{userId}/follow]
+## Follow User [/api/private/users/{user_id}/follow]
 
 + Parameters
-    + userId: `1` (number) - User's unique id
+    + user_id: `1` (number) - User's unique id
 
-### Follow user [POST]
+### Follow User [POST]
 
 + Request
 
@@ -208,15 +210,19 @@ The last step of the signup process, requiring you to provide your profile infor
 
             Authorization: Bearer f23rwfwfff...
 
-+ Response 200
++ Response 200 (application/json)
+
+            {
+                "msg": "operation successful"
+            }
 
 
-## User [/api/user_private/users/{userId}/unfollow]
+## Unfollow User [/api/private/users/{user_id}/unfollow]
 
 + Parameters
-    + userId: `1` (number) - User's unique id
+    + user_id: `1` (number) - User's unique id
 
-### Unfollow user [DELETE]
+### Unfollow User [DELETE]
 
 + Request
 
@@ -224,14 +230,18 @@ The last step of the signup process, requiring you to provide your profile infor
 
             Authorization: Bearer f23rwfwfff...
 
-+ Response 200
++ Response 200 (application/json)
+
+            {
+                "msg": "operation successful"
+            }
 
 
-## Client user [/api/user_private/edit_my_profile]
+## Edit Profile [/api/private/edit_profile]
 
-### Edit profile [PATCH]
+### Edit Profile [PATCH]
 
-+ field (any, required) - The name of the field you wish to edit, with its new data
++ field (any, required) - The name of the field you wish to change, with its new data. Allowed fields are `name`, `birthday`, and `bio`
 
 + Request (application/json)
     + Headers
@@ -244,15 +254,19 @@ The last step of the signup process, requiring you to provide your profile infor
                 "field": "new data"
             }
 
-+ Response 200
++ Response 200 (application/json)
+
+            {
+                "msg": "operation successful"
+            }
 
 
-## Client user [/api/user_private/update_my_connection_status]
+## Update Connection Status [/api/private/update_connection_status]
 
-### Update Connection status [PATCH]
+### Update Connection Status [PATCH]
 
 + connection_status (string, required) - Value is either "online" or "offline".
-+ last_active (Date) - The `connection_status` is "offline", then `last_active` is set, else it is unspecified or nulled.
++ last_active (datestring) - If `connection_status` is "offline", then `last_active` is required, else, must be `null`.
 
 + Request (application/json)
     + Headers
@@ -266,16 +280,20 @@ The last step of the signup process, requiring you to provide your profile infor
                 "last_active": "${offline time}"
             }
 
-+ Response 200
++ Response 200 (application/json)
+
+            {
+                "msg": "operation successful"
+            }
 
 
-## Home feed posts [/api/user_private/home_feed?limit={limit}&offset={offset}]
+## Home Feed [/api/private/home_feed?limit={limit}&offset={offset}]
 
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Get Home feed posts [GET]
+### Get Home Feed [GET]
 
 + Request (application/json)
 
@@ -302,7 +320,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 
 
-## Posts mentioning client [/api/user_private/mentioned_posts?limit={limit}&offset={offset}]
+## Posts mentioning client [/api/private/mentioned_posts?limit={limit}&offset={offset}]
 
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
@@ -334,7 +352,7 @@ The last step of the signup process, requiring you to provide your profile infor
             ]
 
 
-## Posts client reacted to [/api/user_private/reacted_posts?limit={limit}&offset={offset}]
+## Posts client reacted to [/api/private/reacted_posts?limit={limit}&offset={offset}]
 
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
@@ -367,7 +385,7 @@ The last step of the signup process, requiring you to provide your profile infor
 
 
 
-## Posts saved [/api/user_private/saved_posts?limit={limit}&offset={offset}]
+## Posts client saved [/api/private/saved_posts?limit={limit}&offset={offset}]
 
 + Parameters
     + limit: `20` (number) - A maximum of 20 posts per batch
@@ -398,10 +416,10 @@ The last step of the signup process, requiring you to provide your profile infor
                 }
             ]
 
-## Client notifications [/api/user_private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
+## Client notifications [/api/private/my_notifications?from={fromDate}&limit={limit}&offset={offset}]
 
 + Parameters
-    + fromDate: `2024-05-01` (string) - Specify the date constraint of notifications to be retrieved.
+    + fromDate: `2024-05-01` (datestring) - Specify the date constraint of notifications to be retrieved.
     + limit: `20` (number) - A maximum of 20 notifications per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
@@ -755,10 +773,10 @@ Delete post with `postId` of `4`
 + Response 200
 
 
-## Post [/api/post_comment/users/{userId}/posts/{postId}/react]
+## Post [/api/post_comment/users/{user_id}/posts/{postId}/react]
 
 + Parameters
-    + userId: `1` (number) - Unique id of post owner.
+    + user_id: `1` (number) - Unique id of post owner.
     + postId: `4` (number) - Unique id of post to react to.
 
 ### React to post [POST]
@@ -859,10 +877,10 @@ Remove my reaction on post with `postId` of `4`
 + Response 200
 
 
-## New comment on post [/api/post_comment/users{userId}/posts/{postId}/comment]
+## New comment on post [/api/post_comment/users{user_id}/posts/{postId}/comment]
 
 + Parameters
-    + userId: `1` (number) - Unique id of post owner.
+    + user_id: `1` (number) - Unique id of post owner.
     + postId: `4` (number) - Unique id of post to comment on.
 
 ### Write comment on post [POST]
@@ -1010,12 +1028,12 @@ Remove my reaction on post with `postId` of `4`
 
 # Group Comment
 
-## New comment on comment [/api/post_comment/users/{userId}/comment/{commentId}/comment]
+## New comment on comment [/api/post_comment/users/{user_id}/comment/{commentId}/comment]
 
 **Note:** There isn't a notion of *"reply"* in the API. The notion of *"reply"* introduces confusion in the API design, database design, precisely. Therefore, it is treated as a "comment on comment" throughout the API.
 
 + Parameters
-    + userId: `1` (number) - Unique id of post owner.
+    + user_id: `1` (number) - Unique id of post owner.
     + commentId: `4` (number) - Unique id of comment to comment on (i.e. "reply to", in a non-technical speak).
 
 ### Write comment on comment [POST]
@@ -1122,10 +1140,10 @@ Remove my reaction on post with `postId` of `4`
 
 
 
-## Comment reaction [/api/post_comment/users/{userId}/comments/{commentId}/react]
+## Comment reaction [/api/post_comment/users/{user_id}/comments/{commentId}/react]
 
 + Parameters
-    + userId: `1` (number) - Unique id of comment owner.
+    + user_id: `1` (number) - Unique id of comment owner.
     + commentId: `4` (number) - Unique id of comment to react to.
 
 ### React to comment [POST]

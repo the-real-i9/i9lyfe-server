@@ -9,7 +9,7 @@ import {
 
 const router = express.Router()
 
-router.get("/home_feed_posts", ...validateLimitOffset, UC.getHomeFeedPosts)
+router.get("/home_feed", ...validateLimitOffset, UC.getHomeFeedPosts)
 
 router.get("/session_user", UC.getSessionUser)
 
