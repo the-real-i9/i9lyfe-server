@@ -4,7 +4,7 @@ export const errHandler = (req, res, next) => {
   try {
     const result = validationResult(req)
     if (!result.isEmpty()) {
-      return res.status(422).send({ error: result.mapped() })
+      return res.status(400).send({ error: result.mapped() })
     }
 
     return next()

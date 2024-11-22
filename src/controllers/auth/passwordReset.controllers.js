@@ -5,7 +5,7 @@ export const requestPasswordReset = async (req, res) => {
   try {
     const resp = await passwordResetService.requestPasswordReset(email)
 
-    if (resp.error) return res.status(422).send(resp.error)
+    if (resp.error) return res.status(400).send(resp.error)
 
     req.session.passwordReset = {
       step: "confirm email",
@@ -38,7 +38,7 @@ export const confirmEmail = async (req, res) => {
       ...passwordResetSessionData,
     })
 
-    if (resp.error) return res.status(422).send(resp.error)
+    if (resp.error) return res.status(400).send(resp.error)
 
     req.session.passwordReset = {
       step: "reset password",

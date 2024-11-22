@@ -6,9 +6,9 @@ A social media application sever with a wide range of social media interactions.
 
 # Group Auth
 
-## New account [/api/auth/signup/request_new_account]
+## Signup: Request New Account [/api/auth/signup/request_new_account]
 
-### Request new account [POST]
+### Request New Account [POST]
 
 This endpoint allows you to initiate the signup process by first submitting a valid email address.
 
@@ -22,7 +22,7 @@ This endpoint allows you to initiate the signup process by first submitting a va
 
 + Response 200 (application/json)
 
-    This `Set-cookie` header is attached to maintain an ongoing signup session between independent requests. It will be attached to subsequent request/response till the signup process is done.
+    This `Set-cookie` header is attached to maintain an ongoing signup session between independent requests. It will be attached to subsequent requests/responses in the signup proecess till signup is done.
 
     + Headers
 
@@ -31,18 +31,18 @@ This endpoint allows you to initiate the signup process by first submitting a va
     + Body
 
             {
-                "msg": "Enter the 6-digit code sent to {yourEmail}"
+                "msg": "Enter the 6-digit code sent to ${email} to verify your email"
             }
 
 + Response 400 (application/json)
 
             {
-                "reason": "An account already exists with this email!"
+               "msg": "A user with this email already exists."
             }
 
-## Email verification [/api/auth/signup/verify_email]
+## Signup: Verify Email [/api/auth/signup/verify_email]
 
-### Verify your email [POST]
+### Verify Email [POST]
 
 This endpoint is strictly the second step of the signup process, requiring you to enter the 6-digit code sent to the email address provided in the previous step. Any attempt to access it out of order will result in an error.
 
@@ -69,7 +69,7 @@ This endpoint is strictly the second step of the signup process, requiring you t
     + Body
 
             {
-                "msg": "Your email has been verified!"
+                "msg": "Your email ${email} has been verified!"
             }
 
 + Response 400 (application/json)
@@ -81,19 +81,23 @@ This endpoint is strictly the second step of the signup process, requiring you t
     + Body
 
             {
-                "reason": "Incorrect/Expired verification code. Re-check your mail or Re-submit email."
+                "msg": "Incorrect verification code! Check or Re-submit your email."
             }
 
-## User registration [/api/auth/signup/register_user]
+            {
+                "msg": "Verification code expired! Re-submit your email."
+            }
 
-### Register user [POST]
+## Signup: Register User [/api/auth/signup/register_user]
 
-The last step of the signup process, requiring you to provide your account information
+### Register User [POST]
+
+The last step of the signup process, requiring you to provide your profile information
 
 + **username** (string, required) - Username must be unique. Minimum of 3-digits.
 + **password** (string, required) - A strong password. Minimum of 8-digts.
 + **name** (string, required) - Display name
-+ **birthday** (datestring, required) - Date of birth
++ **birthday** (datestring, required) - Date of birth. Can be any vald datestring format.
 + **bio** (string, optional)
 
 + Request (application/json)
@@ -115,18 +119,32 @@ The last step of the signup process, requiring you to provide your account infor
 + Response 201 (application/json)
 
             {
-                "msg": "Signup success. You're automatically logged in.",
-                "jwtToken": "${JWT_TOKEN}",
+                "msg": "Signup success! You're automatically logged in.",
                 "user": {
+                    "id": 3
                     "username": "mckenney",
-                }
+                    ...
+                },
+                "jwt": "${JWT_TOKEN}"
+            }
+
++ Response 400 (application/json)
+
+    + Headers
+
+            Set-cookie: connect.sid={encoded_session_id};
+
+    + Body
+
+            {
+                "msg": "Username already taken. Try another."
             }
 
 ## Signin [/api/auth/signin]
 
 ### Signin [POST]
 
-+ username (string, required)
++ email_or_username (string, required)
 + password (string, required)
 
 + Request (application/json)
@@ -134,27 +152,27 @@ The last step of the signup process, requiring you to provide your account infor
     + Body
 
             {
-                "username": "mckenney",
+                "email_or_username": "mckenney",
                 "password": "xxxxxxxx"
-            }
-
-+ Response 422 (application/json)
-
-            {
-                "reason": "Incorrect email or password"
             }
 
 + Response 200 (application/json)
 
             {
                 "msg": "Signin success!",
-                "userData": {
-                    "id": 1,
+                "jwt": "${AUTH_JWT_TOKEN}"
+                "user": {
+                    "id": 3,
                     "username": "mckenney"
+                    ...
                 },
-                "jwtToken": "${AUTH_JWT_TOKEN}"
             }
 
++ Response 400 (application/json)
+
+            {
+                "msg": "Incorrect email or password"
+            }
 
 # Group User {protected}
 

@@ -6,7 +6,7 @@ export const requestNewAccount = async (req, res) => {
   try {
     const resp = await signupService.requestNewAccount(email)
 
-    if (resp.error) return res.status(422).send(resp.error)
+    if (resp.error) return res.status(400).send(resp.error)
 
     req.session.signup = {
       step: "verify email",
@@ -36,7 +36,7 @@ export const verifyEmail = async (req, res) => {
 
     const resp = signupService.verifyEmail({ inputCode, ...signupSessionData })
 
-    if (resp.error) return res.status(422).send(resp.error)
+    if (resp.error) return res.status(400).send(resp.error)
 
     req.session.signup = {
       step: "register user",
@@ -62,7 +62,7 @@ export const registerUser = async (req, res) => {
 
     const resp = await signupService.registerUser({ email, ...req.body })
 
-    if (resp.error) return res.status(422).send(resp.error)
+    if (resp.error) return res.status(400).send(resp.error)
 
     req.session.destroy()
 

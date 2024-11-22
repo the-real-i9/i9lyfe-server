@@ -9,7 +9,7 @@ i9lyfe is an API server for a social media platform, designed as a portfolio pro
 - [Overview](#overview)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [Diagrams](#diagrams)
+- [Diagrams](#diagrams): ER, Architectural, Sequence (Dynamic)
 - [Technologies Used](#technologies-used)
 - [Code examples (Code explained)](#code-examples-code-exaplained)
 - [Challenges](#challenges)
@@ -90,7 +90,7 @@ Coming up with a completely new social media platform idea is challenging, and d
 
 #### PostgreSQL (Features used)
 
-- Objects: Tables, Views, Sequences, Stored Functions, and Types.
+- Objects: Tables, Views, Stored Functions, and Types.
 - Full-text Search
 - Cursor-based data fetching
 
@@ -240,13 +240,17 @@ export const createNewPost = async ({ client_user_id, media_data_list, type, des
 }
 ```
 
+...
+
 ## Challenges
 
 ## Design Patterns
 
+### Singleton pattern
+
 ## Usage
 
-Use the provided [API documention](./attachments/API%20doc.apib) (written according to the OpenAPI specification using the API blueprint format) to see available actions and endpoints, their request body, and their expected response.
+Use the provided [API documention](./API%20doc.apib) (written according to the OpenAPI specification using the API blueprint format) to see available actions and endpoints, their request body, and their expected response.
 
 This API server is not currently running remotely, as payment is required to maintain remote resource usage.
 

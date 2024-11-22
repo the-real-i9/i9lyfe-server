@@ -81,7 +81,7 @@ export const registerUser = async (info) => {
 
   return {
     data: {
-      msg: "Registration success! You're automatically logged in.",
+      msg: "Signup success! You're automatically logged in.",
       user,
       jwt,
     },
