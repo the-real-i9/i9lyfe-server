@@ -1,6 +1,4 @@
 import express from "express"
-import dotenv from "dotenv"
-import { expressjwt } from "express-jwt"
 
 import * as UC from "../../controllers/user.controllers.js"
 import * as userValidators from "../../validators/user.validators.js"
@@ -9,23 +7,7 @@ import {
   validateLimitOffset,
 } from "../../validators/miscs.js"
 
-dotenv.config()
-
 const router = express.Router()
-
-router.use(
-  expressjwt({
-    secret: process.env.JWT_SECRET,
-    algorithms: ["HS256"],
-  }),
-  (err, req, res, next) => {
-    if (err) {
-      res.status(err.status).send({ msg: err.inner.message })
-    } else {
-      next(err)
-    }
-  }
-)
 
 router.get("/home_feed_posts", ...validateLimitOffset, UC.getHomeFeedPosts)
 

@@ -6,9 +6,9 @@ export const changeProfilePicture = [
     checkSchema({
       picture_data: {
         isArray: {
-          options: { min: 1, max: 10 * 1024 ** 2 },
+          options: { min: 1, max: 8 * 1024 ** 2 },
           errorMessage:
-            "value must me an array of uint8 integers with a maximum of 10mb",
+            "value must me an array of uint8 integers with a maximum of 8mb",
         },
       }
     }, ["body"]),

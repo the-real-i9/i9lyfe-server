@@ -1,28 +1,12 @@
 import express from "express"
-import { expressjwt } from "express-jwt"
-import dotenv from "dotenv"
 
 import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../validators/postComment.validators.js"
 import { validateIdParams } from "../../validators/miscs.js"
 
-dotenv.config()
 
 const router = express.Router()
 
-router.use(
-  expressjwt({
-    secret: process.env.JWT_SECRET,
-    algorithms: ["HS256"],
-  }),
-  (err, req, res, next) => {
-    if (err) {
-      res.status(err.status).send({ msg: err.inner.message })
-    } else {
-      next(err)
-    }
-  }
-)
 
 /* ====== POST ====== */
 router.post(

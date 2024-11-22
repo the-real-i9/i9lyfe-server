@@ -1,9 +1,9 @@
 import { dbQuery } from "../configs/db.js"
 
-export class Conversation {
+export class Chat {
   static async create({ client_user_id, partner_user_id, init_message }) {
     const query = {
-      text: "SELECT client_res, partner_res FROM create_conversation($1, $2, $3)",
+      text: "SELECT client_res, partner_res FROM create_chat($1, $2, $3)",
       values: [client_user_id, partner_user_id, init_message],
     }
 
@@ -11,13 +11,13 @@ export class Conversation {
     return (await dbQuery(query)).rows[0]
   }
 
-  static async delete(client_user_id, conversation_id) {
+  static async delete(client_user_id, chat_id) {
     const query = {
       text: `
-    UPDATE user_conversation
+    UPDATE user_chat
     SET deleted = true
-    WHERE user_id = $1 AND conversation_id = $2`,
-      values: [client_user_id, conversation_id],
+    WHERE user_id = $1 AND chat_id = $2`,
+      values: [client_user_id, chat_id],
     }
 
     await dbQuery(query)
@@ -25,19 +25,19 @@ export class Conversation {
 
   static async getAll(client_user_id) {
     const query = {
-      text: "SELECT * FROM get_user_conversations($1)",
+      text: "SELECT * FROM get_user_chats($1)",
       values: [client_user_id],
     }
 
     return (await dbQuery(query)).rows
   }
 
-  static async getHistory({ conversation_id, limit, offset }) {
+  static async getHistory({ chat_id, limit, offset }) {
     const query = {
       text: `
-    SELECT * FROM get_conversation_history($1, $2, $3)
+    SELECT * FROM get_chat_history($1, $2, $3)
     `,
-      values: [conversation_id, limit, offset],
+      values: [chat_id, limit, offset],
     }
 
     return (await dbQuery(query)).rows
@@ -45,12 +45,12 @@ export class Conversation {
 
   static async sendMessage({
     client_user_id,
-    conversation_id,
+    chat_id,
     message_content,
   }) {
     const query = {
       text: "SELECT client_res, partner_res FROM create_message($1, $2, $3)",
-      values: [conversation_id, client_user_id, message_content],
+      values: [chat_id, client_user_id, message_content],
     }
 
     return (await dbQuery(query)).rows[0]
@@ -80,22 +80,22 @@ export class Conversation {
 export class Message {
   static async isDelivered({
     client_user_id,
-    conversation_id,
+    chat_id,
     message_id,
     delivery_time,
   }) {
     const query = {
       text: "SELECT ack_msg_delivered($1, $2, $3, $4)",
-      values: [client_user_id, conversation_id, message_id, delivery_time],
+      values: [client_user_id, chat_id, message_id, delivery_time],
     }
 
     await dbQuery(query)
   }
 
-  static async isRead({ client_user_id, conversation_id, message_id }) {
+  static async isRead({ client_user_id, chat_id, message_id }) {
     const query = {
       text: "SELECT ack_msg_read($1, $2, $3)",
-      values: [client_user_id, conversation_id, message_id],
+      values: [client_user_id, chat_id, message_id],
     }
 
     return await dbQuery(query)

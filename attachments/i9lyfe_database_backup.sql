@@ -94,20 +94,20 @@ ALTER TYPE public.ui_post_struct OWNER TO i9;
 -- Name: ack_msg_delivered(integer, integer, integer, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.ack_msg_delivered(client_user_id integer, in_conversation_id integer, in_message_id integer, delivery_time timestamp without time zone) RETURNS boolean
+CREATE FUNCTION public.ack_msg_delivered(client_user_id integer, in_chat_id integer, in_message_id integer, delivery_time timestamp without time zone) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  convo_partner_user_id int;
+  chat_partner_user_id int;
 BEGIN
 IF (SELECT delivery_status FROM message_ WHERE id = in_message_id) <> 'delivered' THEN
-  UPDATE user_conversation SET unread_messages_count = unread_messages_count + 1, updated_at = delivery_time
-  WHERE user_id = client_user_id AND conversation_id = in_conversation_id
-  RETURNING partner_user_id INTO convo_partner_user_id;
+  UPDATE user_chat SET unread_messages_count = unread_messages_count + 1, updated_at = delivery_time
+  WHERE user_id = client_user_id AND chat_id = in_chat_id
+  RETURNING partner_user_id INTO chat_partner_user_id;
   
-  -- convo_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your conversation partner
+  -- chat_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your chat partner
   UPDATE message_ SET delivery_status = 'delivered'
-  WHERE id = in_message_id AND conversation_id = in_conversation_id AND sender_user_id = convo_partner_user_id;
+  WHERE id = in_message_id AND chat_id = in_chat_id AND sender_user_id = chat_partner_user_id;
 END IF;
   
   RETURN true;
@@ -115,26 +115,26 @@ END;
 $$;
 
 
-ALTER FUNCTION public.ack_msg_delivered(client_user_id integer, in_conversation_id integer, in_message_id integer, delivery_time timestamp without time zone) OWNER TO i9;
+ALTER FUNCTION public.ack_msg_delivered(client_user_id integer, in_chat_id integer, in_message_id integer, delivery_time timestamp without time zone) OWNER TO i9;
 
 --
 -- Name: ack_msg_read(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.ack_msg_read(client_user_id integer, in_conversation_id integer, in_message_id integer) RETURNS boolean
+CREATE FUNCTION public.ack_msg_read(client_user_id integer, in_chat_id integer, in_message_id integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  convo_partner_user_id int;
+  chat_partner_user_id int;
 BEGIN
 IF (SELECT delivery_status FROM message_ WHERE id = in_message_id) <> 'read' THEN
-  UPDATE user_conversation SET unread_messages_count = CASE WHEN unread_messages_count > 0 THEN unread_messages_count - 1 ELSE 0 END
-  WHERE user_id = client_user_id AND conversation_id = in_conversation_id
-  RETURNING partner_user_id INTO convo_partner_user_id;
+  UPDATE user_chat SET unread_messages_count = CASE WHEN unread_messages_count > 0 THEN unread_messages_count - 1 ELSE 0 END
+  WHERE user_id = client_user_id AND chat_id = in_chat_id
+  RETURNING partner_user_id INTO chat_partner_user_id;
   
-  -- convo_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your conversation partner
+  -- chat_partner_user_id is a "guard" condition asserting that the message you ack must indeed belong to your chat partner
   UPDATE message_ SET delivery_status = 'read'
-  WHERE id = in_message_id AND conversation_id = in_conversation_id AND sender_user_id = convo_partner_user_id;
+  WHERE id = in_message_id AND chat_id = in_chat_id AND sender_user_id = chat_partner_user_id;
 END IF;
  
   RETURN true;
@@ -142,7 +142,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.ack_msg_read(client_user_id integer, in_conversation_id integer, in_message_id integer) OWNER TO i9;
+ALTER FUNCTION public.ack_msg_read(client_user_id integer, in_chat_id integer, in_message_id integer) OWNER TO i9;
 
 --
 -- Name: change_password(character varying, character varying); Type: FUNCTION; Schema: public; Owner: i9
@@ -354,40 +354,40 @@ $$;
 ALTER FUNCTION public.create_comment_on_post(OUT new_comment_data json, OUT comment_notif json, OUT mention_notifs json[], OUT latest_comments_count integer, in_target_post_id integer, target_post_owner_user_id integer, client_user_id integer, in_comment_text text, in_attachment_url text, mentions character varying[], hashtags character varying[]) OWNER TO i9;
 
 --
--- Name: create_conversation(integer, integer, json); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: create_chat(integer, integer, json); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_conversation(OUT client_res json, OUT partner_res json, in_initiator_user_id integer, in_with_user_id integer, init_message json) RETURNS record
+CREATE FUNCTION public.create_chat(OUT client_res json, OUT partner_res json, in_initiator_user_id integer, in_with_user_id integer, init_message json) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  ret_conversation_id int;
+  ret_chat_id int;
   ret_message_id int;
   
   client_data json;
 BEGIN
-  INSERT INTO conversation(initiator_user_id, with_user_id)
+  INSERT INTO chat(initiator_user_id, with_user_id)
   VALUES (in_initiator_user_id, in_with_user_id)
-  RETURNING id INTO ret_conversation_id;
+  RETURNING id INTO ret_chat_id;
   
-  INSERT INTO user_conversation(conversation_id, user_id, partner_user_id)
-  VALUES (ret_conversation_id, in_initiator_user_id, in_with_user_id);
+  INSERT INTO user_chat(chat_id, user_id, partner_user_id)
+  VALUES (ret_chat_id, in_initiator_user_id, in_with_user_id);
   
-  INSERT INTO user_conversation(conversation_id, user_id, partner_user_id)
-  VALUES (ret_conversation_id, in_with_user_id, in_initiator_user_id);
+  INSERT INTO user_chat(chat_id, user_id, partner_user_id)
+  VALUES (ret_chat_id, in_with_user_id, in_initiator_user_id);
   
-  INSERT INTO message_(sender_user_id, conversation_id, msg_content)
-  VALUES (in_initiator_user_id, ret_conversation_id, init_message)
+  INSERT INTO message_(sender_user_id, chat_id, msg_content)
+  VALUES (in_initiator_user_id, ret_chat_id, init_message)
   RETURNING id INTO ret_message_id;
   
   SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url) INTO client_data
   FROM i9l_user WHERE id = in_initiator_user_id;
   
-  client_res := json_build_object('conversation_id', ret_conversation_id, 'init_message_id', ret_message_id);
+  client_res := json_build_object('chat_id', ret_chat_id, 'init_message_id', ret_message_id);
   
   partner_res := json_build_object(
-	  'conversation', json_build_object(
-		  'id', ret_conversation_id,
+	  'chat', json_build_object(
+		  'id', ret_chat_id,
 		  'partner', client_data
 	  ),
 	  'init_message', json_build_object(
@@ -402,13 +402,13 @@ END;
 $$;
 
 
-ALTER FUNCTION public.create_conversation(OUT client_res json, OUT partner_res json, in_initiator_user_id integer, in_with_user_id integer, init_message json) OWNER TO i9;
+ALTER FUNCTION public.create_chat(OUT client_res json, OUT partner_res json, in_initiator_user_id integer, in_with_user_id integer, init_message json) OWNER TO i9;
 
 --
 -- Name: create_message(integer, integer, json); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content json) RETURNS record
+CREATE FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_chat_id integer, client_user_id integer, in_msg_content json) RETURNS record
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -416,8 +416,8 @@ DECLARE
   
   client_data json;
 BEGIN
-  INSERT INTO message_ (sender_user_id, conversation_id, msg_content) 
-  VALUES (client_user_id, in_conversation_id, in_msg_content)
+  INSERT INTO message_ (sender_user_id, chat_id, msg_content) 
+  VALUES (client_user_id, in_chat_id, in_msg_content)
   RETURNING id INTO ret_msg_id;
   
   -- sender data
@@ -432,7 +432,7 @@ BEGIN
   client_res := json_build_object('new_msg_id', ret_msg_id);
   
   partner_res := json_build_object(
-	  'conversation_id', in_conversation_id,
+	  'chat_id', in_chat_id,
 	  'new_msg_id', ret_msg_id,
 	  'sender', client_data,
 	  'msg_content', in_msg_content
@@ -443,7 +443,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_conversation_id integer, client_user_id integer, in_msg_content json) OWNER TO i9;
+ALTER FUNCTION public.create_message(OUT client_res json, OUT partner_res json, in_chat_id integer, client_user_id integer, in_msg_content json) OWNER TO i9;
 
 --
 -- Name: create_post(integer, text[], text, text, character varying[], character varying[]); Type: FUNCTION; Schema: public; Owner: i9
@@ -885,7 +885,7 @@ ALTER TABLE public.i9l_user OWNER TO i9;
 CREATE TABLE public.message_ (
     id integer NOT NULL,
     sender_user_id integer NOT NULL,
-    conversation_id integer NOT NULL,
+    chat_id integer NOT NULL,
     msg_content jsonb,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     delivery_status text DEFAULT 'sent'::text NOT NULL,
@@ -911,10 +911,10 @@ CREATE TABLE public.message_reaction (
 ALTER TABLE public.message_reaction OWNER TO i9;
 
 --
--- Name: ConversationHistoryView; Type: VIEW; Schema: public; Owner: i9
+-- Name: ChatHistoryView; Type: VIEW; Schema: public; Owner: i9
 --
 
-CREATE VIEW public."ConversationHistoryView" AS
+CREATE VIEW public."ChatHistoryView" AS
  SELECT msg.id AS msg_id,
     json_build_object('id', sender.id, 'username', sender.username, 'profile_pic_url', sender.profile_pic_url) AS sender,
     msg.msg_content,
@@ -923,25 +923,25 @@ CREATE VIEW public."ConversationHistoryView" AS
            FROM public.message_reaction
           WHERE (message_reaction.message_id = msg.id)) AS reactions,
     msg.created_at,
-    msg.conversation_id
+    msg.chat_id
    FROM (public.message_ msg
      JOIN public.i9l_user sender ON ((sender.id = msg.sender_user_id)))
   ORDER BY msg.created_at DESC;
 
 
-ALTER VIEW public."ConversationHistoryView" OWNER TO i9;
+ALTER VIEW public."ChatHistoryView" OWNER TO i9;
 
 --
--- Name: get_conversation_history(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: get_chat_history(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_conversation_history(in_conversation_id integer, in_limit integer, in_offset integer) RETURNS SETOF public."ConversationHistoryView"
+CREATE FUNCTION public.get_chat_history(in_chat_id integer, in_limit integer, in_offset integer) RETURNS SETOF public."ChatHistoryView"
     LANGUAGE plpgsql
     AS $$
 BEGIN
   RETURN QUERY SELECT * FROM (
-	  SELECT * FROM "ConversationHistoryView"
-      WHERE conversation_id = in_conversation_id
+	  SELECT * FROM "ChatHistoryView"
+      WHERE chat_id = in_chat_id
       LIMIT in_limit OFFSET in_offset
   ) ORDER BY created_at ASC;
   
@@ -950,7 +950,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_conversation_history(in_conversation_id integer, in_limit integer, in_offset integer) OWNER TO i9;
+ALTER FUNCTION public.get_chat_history(in_chat_id integer, in_limit integer, in_offset integer) OWNER TO i9;
 
 --
 -- Name: get_explore_posts(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
@@ -1367,14 +1367,14 @@ $$;
 ALTER FUNCTION public.get_user(unique_identifier character varying) OWNER TO i9;
 
 --
--- Name: get_user_conversations(integer); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: get_user_chats(integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_user_conversations(client_user_id integer) RETURNS TABLE(conversation_id integer, partner json, unread_messages_count integer, updated_at timestamp without time zone)
+CREATE FUNCTION public.get_user_chats(client_user_id integer) RETURNS TABLE(chat_id integer, partner json, unread_messages_count integer, updated_at timestamp without time zone)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  RETURN QUERY SELECT uconv.conversation_id,
+  RETURN QUERY SELECT uconv.chat_id,
     json_build_object(
 		'id', par.id,
 		'username', par.username,
@@ -1384,7 +1384,7 @@ BEGIN
 	) AS partner,
     uconv.unread_messages_count,
     uconv.updated_at
-  FROM user_conversation uconv
+  FROM user_chat uconv
   LEFT JOIN i9l_user par ON par.id = uconv.partner_user_id
   WHERE uconv.user_id = client_user_id AND uconv.deleted = false;
   
@@ -1393,7 +1393,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user_conversations(client_user_id integer) OWNER TO i9;
+ALTER FUNCTION public.get_user_chats(client_user_id integer) OWNER TO i9;
 
 --
 -- Name: get_user_followers(character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
@@ -1598,7 +1598,7 @@ ALTER FUNCTION public.get_user_profile(in_username character varying, client_use
 -- Name: get_users_to_chat(text, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_users_to_chat(in_search text, in_limit integer, in_offset integer, client_user_id integer) RETURNS TABLE(id integer, username character varying, name character varying, profile_pic_url character varying, connection_status text, conversation_id integer)
+CREATE FUNCTION public.get_users_to_chat(in_search text, in_limit integer, in_offset integer, client_user_id integer) RETURNS TABLE(id integer, username character varying, name character varying, profile_pic_url character varying, connection_status text, chat_id integer)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1607,9 +1607,9 @@ BEGIN
 	  i9l_user.name,
 	  i9l_user.profile_pic_url,
 	  i9l_user.connection_status,
-	  uconv.conversation_id
+	  uconv.chat_id
   FROM i9l_user
-  LEFT JOIN user_conversation uconv ON uconv.user_id = i9l_user.id
+  LEFT JOIN user_chat uconv ON uconv.user_id = i9l_user.id
   WHERE (i9l_user.username ILIKE in_search OR i9l_user.name ILIKE in_search) AND i9l_user.id != client_user_id
   LIMIT in_limit OFFSET in_offset;
   
@@ -1926,10 +1926,10 @@ ALTER SEQUENCE public.comment_id_seq OWNED BY public.comment_.id;
 
 
 --
--- Name: conversation; Type: TABLE; Schema: public; Owner: i9
+-- Name: chat; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.conversation (
+CREATE TABLE public.chat (
     id integer NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     initiator_user_id integer NOT NULL,
@@ -1937,13 +1937,13 @@ CREATE TABLE public.conversation (
 );
 
 
-ALTER TABLE public.conversation OWNER TO i9;
+ALTER TABLE public.chat OWNER TO i9;
 
 --
--- Name: conversation_id_seq; Type: SEQUENCE; Schema: public; Owner: i9
+-- Name: chat_id_seq; Type: SEQUENCE; Schema: public; Owner: i9
 --
 
-CREATE SEQUENCE public.conversation_id_seq
+CREATE SEQUENCE public.chat_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -1952,13 +1952,13 @@ CREATE SEQUENCE public.conversation_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.conversation_id_seq OWNER TO i9;
+ALTER SEQUENCE public.chat_id_seq OWNER TO i9;
 
 --
--- Name: conversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: i9
+-- Name: chat_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: i9
 --
 
-ALTER SEQUENCE public.conversation_id_seq OWNED BY public.conversation.id;
+ALTER SEQUENCE public.chat_id_seq OWNED BY public.chat.id;
 
 
 --
@@ -2357,29 +2357,29 @@ ALTER SEQUENCE public.saved_post_id_seq OWNED BY public.saved_post.id;
 
 
 --
--- Name: user_conversation; Type: TABLE; Schema: public; Owner: i9
+-- Name: user_chat; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_conversation (
+CREATE TABLE public.user_chat (
     id integer NOT NULL,
     user_id integer NOT NULL,
-    conversation_id integer NOT NULL,
+    chat_id integer NOT NULL,
     unread_messages_count integer DEFAULT 0,
     notification_mode text DEFAULT 'enabled'::text NOT NULL,
     deleted boolean DEFAULT false,
     updated_at timestamp without time zone DEFAULT now() NOT NULL,
     partner_user_id integer NOT NULL,
-    CONSTRAINT "UserConversation_notification_mode_check" CHECK ((notification_mode = ANY (ARRAY['enabled'::text, 'mute'::text])))
+    CONSTRAINT "UserChat_notification_mode_check" CHECK ((notification_mode = ANY (ARRAY['enabled'::text, 'mute'::text])))
 );
 
 
-ALTER TABLE public.user_conversation OWNER TO i9;
+ALTER TABLE public.user_chat OWNER TO i9;
 
 --
--- Name: user_conversation_id_seq; Type: SEQUENCE; Schema: public; Owner: i9
+-- Name: user_chat_id_seq; Type: SEQUENCE; Schema: public; Owner: i9
 --
 
-CREATE SEQUENCE public.user_conversation_id_seq
+CREATE SEQUENCE public.user_chat_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -2388,13 +2388,13 @@ CREATE SEQUENCE public.user_conversation_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.user_conversation_id_seq OWNER TO i9;
+ALTER SEQUENCE public.user_chat_id_seq OWNER TO i9;
 
 --
--- Name: user_conversation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: i9
+-- Name: user_chat_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: i9
 --
 
-ALTER SEQUENCE public.user_conversation_id_seq OWNED BY public.user_conversation.id;
+ALTER SEQUENCE public.user_chat_id_seq OWNED BY public.user_chat.id;
 
 
 --
@@ -2412,10 +2412,10 @@ ALTER TABLE ONLY public.comment_ ALTER COLUMN id SET DEFAULT nextval('public.com
 
 
 --
--- Name: conversation id; Type: DEFAULT; Schema: public; Owner: i9
+-- Name: chat id; Type: DEFAULT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.conversation ALTER COLUMN id SET DEFAULT nextval('public.conversation_id_seq'::regclass);
+ALTER TABLE ONLY public.chat ALTER COLUMN id SET DEFAULT nextval('public.chat_id_seq'::regclass);
 
 
 --
@@ -2510,10 +2510,10 @@ ALTER TABLE ONLY public.saved_post ALTER COLUMN id SET DEFAULT nextval('public.s
 
 
 --
--- Name: user_conversation id; Type: DEFAULT; Schema: public; Owner: i9
+-- Name: user_chat id; Type: DEFAULT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation ALTER COLUMN id SET DEFAULT nextval('public.user_conversation_id_seq'::regclass);
+ALTER TABLE ONLY public.user_chat ALTER COLUMN id SET DEFAULT nextval('public.user_chat_id_seq'::regclass);
 
 
 --
@@ -2533,10 +2533,10 @@ COPY public.comment_ (id, comment_text, commenter_user_id, attachment_url, targe
 
 
 --
--- Data for Name: conversation; Type: TABLE DATA; Schema: public; Owner: i9
+-- Data for Name: chat; Type: TABLE DATA; Schema: public; Owner: i9
 --
 
-COPY public.conversation (id, created_at, initiator_user_id, with_user_id) FROM stdin;
+COPY public.chat (id, created_at, initiator_user_id, with_user_id) FROM stdin;
 \.
 
 
@@ -2564,7 +2564,7 @@ COPY public.i9l_user (id, email, username, password, name, birthday, bio, profil
 -- Data for Name: message_; Type: TABLE DATA; Schema: public; Owner: i9
 --
 
-COPY public.message_ (id, sender_user_id, conversation_id, msg_content, created_at, delivery_status, reply_to_id) FROM stdin;
+COPY public.message_ (id, sender_user_id, chat_id, msg_content, created_at, delivery_status, reply_to_id) FROM stdin;
 \.
 
 
@@ -2669,10 +2669,10 @@ COPY public.saved_post (id, saver_user_id, post_id) FROM stdin;
 
 
 --
--- Data for Name: user_conversation; Type: TABLE DATA; Schema: public; Owner: i9
+-- Data for Name: user_chat; Type: TABLE DATA; Schema: public; Owner: i9
 --
 
-COPY public.user_conversation (id, user_id, conversation_id, unread_messages_count, notification_mode, deleted, updated_at, partner_user_id) FROM stdin;
+COPY public.user_chat (id, user_id, chat_id, unread_messages_count, notification_mode, deleted, updated_at, partner_user_id) FROM stdin;
 \.
 
 
@@ -2691,10 +2691,10 @@ SELECT pg_catalog.setval('public.comment_id_seq', 45, true);
 
 
 --
--- Name: conversation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
+-- Name: chat_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
 --
 
-SELECT pg_catalog.setval('public.conversation_id_seq', 1, true);
+SELECT pg_catalog.setval('public.chat_id_seq', 1, true);
 
 
 --
@@ -2789,10 +2789,10 @@ SELECT pg_catalog.setval('public.saved_post_id_seq', 15, true);
 
 
 --
--- Name: user_conversation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
+-- Name: user_chat_id_seq; Type: SEQUENCE SET; Schema: public; Owner: i9
 --
 
-SELECT pg_catalog.setval('public.user_conversation_id_seq', 2, true);
+SELECT pg_catalog.setval('public.user_chat_id_seq', 2, true);
 
 
 --
@@ -2812,11 +2812,11 @@ ALTER TABLE ONLY public.comment_
 
 
 --
--- Name: conversation Conversation_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat Chat_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.conversation
-    ADD CONSTRAINT "Conversation_pkey" PRIMARY KEY (id);
+ALTER TABLE ONLY public.chat
+    ADD CONSTRAINT "Chat_pkey" PRIMARY KEY (id);
 
 
 --
@@ -2932,11 +2932,11 @@ ALTER TABLE ONLY public.saved_post
 
 
 --
--- Name: user_conversation UserConversation_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: user_chat UserChat_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation
-    ADD CONSTRAINT "UserConversation_pkey" PRIMARY KEY (id);
+ALTER TABLE ONLY public.user_chat
+    ADD CONSTRAINT "UserChat_pkey" PRIMARY KEY (id);
 
 
 --
@@ -3044,11 +3044,11 @@ ALTER TABLE ONLY public.i9l_user
 
 
 --
--- Name: user_conversation userX_to_conversationX_once; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: user_chat userX_to_chatX_once; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation
-    ADD CONSTRAINT "userX_to_conversationX_once" UNIQUE (user_id, conversation_id);
+ALTER TABLE ONLY public.user_chat
+    ADD CONSTRAINT "userX_to_chatX_once" UNIQUE (user_id, chat_id);
 
 
 --
@@ -3123,27 +3123,27 @@ ALTER TABLE ONLY public.pc_reaction
 
 
 --
--- Name: conversation conversation_initiator_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat chat_initiator_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.conversation
-    ADD CONSTRAINT conversation_initiator_user_id_fkey FOREIGN KEY (initiator_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
-
-
---
--- Name: conversation conversation_with_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.conversation
-    ADD CONSTRAINT conversation_with_user_id_fkey FOREIGN KEY (with_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.chat
+    ADD CONSTRAINT chat_initiator_user_id_fkey FOREIGN KEY (initiator_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
 
 
 --
--- Name: user_conversation convo_participant; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat chat_with_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation
-    ADD CONSTRAINT convo_participant FOREIGN KEY (user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.chat
+    ADD CONSTRAINT chat_with_user_id_fkey FOREIGN KEY (with_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_chat chat_participant; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.user_chat
+    ADD CONSTRAINT chat_participant FOREIGN KEY (user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
 
 
 --
@@ -3235,19 +3235,19 @@ ALTER TABLE ONLY public.notification
 
 
 --
--- Name: message_ owner_conversation; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: message_ owner_chat; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
 ALTER TABLE ONLY public.message_
-    ADD CONSTRAINT owner_conversation FOREIGN KEY (conversation_id) REFERENCES public.conversation(id) ON DELETE CASCADE;
+    ADD CONSTRAINT owner_chat FOREIGN KEY (chat_id) REFERENCES public.chat(id) ON DELETE CASCADE;
 
 
 --
--- Name: user_conversation owner_conversation; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: user_chat owner_chat; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation
-    ADD CONSTRAINT owner_conversation FOREIGN KEY (conversation_id) REFERENCES public.conversation(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_chat
+    ADD CONSTRAINT owner_chat FOREIGN KEY (chat_id) REFERENCES public.chat(id) ON DELETE CASCADE;
 
 
 --
@@ -3371,11 +3371,11 @@ ALTER TABLE ONLY public.notification
 
 
 --
--- Name: user_conversation user_conversation_partner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: user_chat user_chat_partner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_conversation
-    ADD CONSTRAINT user_conversation_partner_user_id_fkey FOREIGN KEY (partner_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.user_chat
+    ADD CONSTRAINT user_chat_partner_user_id_fkey FOREIGN KEY (partner_user_id) REFERENCES public.i9l_user(id) ON DELETE CASCADE;
 
 
 --

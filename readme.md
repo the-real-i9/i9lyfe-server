@@ -185,7 +185,7 @@ The API server handles this `POST` request on this endpoint: `/api/post_comment/
 }
 ```
 
-The `media_data_list` field is a list of media items of a specific type, according to post's `type`. Each media item is represented as a binary data&#x2014;specifically an array of unsigned 8-bit integers. Maximum size for each media item is 10mb.
+The `media_data_list` field is a list of media items of a specific type, according to post's `type`. Each media item is represented as a binary data&#x2014;specifically an array of unsigned 8-bit integers. Maximum size for each media item is 8mb.
 
 The `type` field is the type of post selected, which must be one of photo, video, story, or reel.
 

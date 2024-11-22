@@ -411,7 +411,7 @@ A client handles the data associated with each event accordingly.
 
 ```js
 /**
- * @param {"new conversation" | "new message" | "message delivered" | "message read" | "message reaction" | "message reaction removed" | "message deleted"} event
+ * @param {"new chat" | "new message" | "message delivered" | "message read" | "message reaction" | "message reaction removed" | "message deleted"} event
  * @param {number} partner_user_id
  * @param {object} data
  */

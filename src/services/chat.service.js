@@ -1,8 +1,8 @@
-import { Conversation, Message } from "../models/chat.model.js"
+import { Chat, Message } from "../models/chat.model.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 
-export const createConversation = async ({
+export const createChat = async ({
   partner_user_id,
   client_user_id,
   init_message,
@@ -15,14 +15,14 @@ export const createConversation = async ({
     pathToDestFolder: `message_medias/user-${client_user_id}`,
   })
 
-  const { client_res, partner_res } = await Conversation.create({
+  const { client_res, partner_res } = await Chat.create({
     client_user_id,
     partner_user_id,
     init_message: init_msg,
   })
 
   messageBrokerService.sendChatEvent(
-    "new conversation",
+    "new chat",
     partner_user_id,
     partner_res
   )
@@ -32,41 +32,41 @@ export const createConversation = async ({
   }
 }
 
-export const getMyConversations = async (client_user_id) => {
-  const conversations = await Conversation.getAll(client_user_id)
+export const getMyChats = async (client_user_id) => {
+  const chats = await Chat.getAll(client_user_id)
 
   return {
-    data: conversations,
+    data: chats,
   }
 }
 
-export const deleteConversation = async (client_user_id, conversation_id) => {
-  await Conversation.delete(client_user_id, conversation_id)
+export const deleteChat = async (client_user_id, chat_id) => {
+  await Chat.delete(client_user_id, chat_id)
 
   return {
     data: { msg: "operation successful" },
   }
 }
 
-export const getConversationHistory = async ({
-  conversation_id,
+export const getChatHistory = async ({
+  chat_id,
   limit,
   offset,
 }) => {
-  const conversationHistory = await Conversation.getHistory({
-    conversation_id,
+  const chatHistory = await Chat.getHistory({
+    chat_id,
     limit,
     offset,
   })
 
   return {
-    data: conversationHistory,
+    data: chatHistory,
   }
 }
 
 export const sendMessage = async ({
   client_user_id,
-  conversation_id,
+  chat_id,
   partner_user_id,
   msg_content,
 }) => {
@@ -77,9 +77,9 @@ export const sendMessage = async ({
     extension: msg_content.extension,
   })
 
-  const { client_res, partner_res } = await Conversation.sendMessage({
+  const { client_res, partner_res } = await Chat.sendMessage({
     client_user_id,
-    conversation_id,
+    chat_id,
     message_content,
   })
 
@@ -98,19 +98,19 @@ export const sendMessage = async ({
 export const ackMessageDelivered = async ({
   client_user_id,
   partner_user_id,
-  conversation_id,
+  chat_id,
   message_id,
   delivery_time,
 }) => {
   await Message.isDelivered({
     client_user_id,
-    conversation_id,
+    chat_id,
     message_id,
     delivery_time,
   })
 
   messageBrokerService.sendChatEvent("message delivered", partner_user_id, {
-    conversation_id,
+    chat_id,
     message_id,
   })
 
@@ -122,17 +122,17 @@ export const ackMessageDelivered = async ({
 export const ackMessageRead = async ({
   client_user_id,
   partner_user_id,
-  conversation_id,
+  chat_id,
   message_id,
 }) => {
   await Message.isRead({
     client_user_id,
-    conversation_id,
+    chat_id,
     message_id,
   })
 
   messageBrokerService.sendChatEvent("message read", partner_user_id, {
-    conversation_id,
+    chat_id,
     message_id,
   })
 
@@ -143,7 +143,7 @@ export const ackMessageRead = async ({
 
 export const reactToMessage = async ({
   client,
-  conversation_id,
+  chat_id,
   partner_user_id,
   message_id,
   reaction,
@@ -157,7 +157,7 @@ export const reactToMessage = async ({
   })
 
   messageBrokerService.sendChatEvent("message reaction", partner_user_id, {
-    conversation_id,
+    chat_id,
     reactor: client,
     message_id,
     reaction_code_point,
@@ -170,7 +170,7 @@ export const reactToMessage = async ({
 
 export const removeReactionToMessage = async ({
   client,
-  conversation_id,
+  chat_id,
   partner_user_id,
   message_id,
 }) => {
@@ -181,7 +181,7 @@ export const removeReactionToMessage = async ({
     partner_user_id,
     {
       reactor: client,
-      conversation_id,
+      chat_id,
       message_id,
     }
   )
@@ -193,7 +193,7 @@ export const removeReactionToMessage = async ({
 
 export const deleteMessage = async ({
   client,
-  conversation_id,
+  chat_id,
   partner_user_id,
   message_id,
   delete_for,
@@ -206,7 +206,7 @@ export const deleteMessage = async ({
 
   if (delete_for === "everyone") {
     messageBrokerService.sendChatEvent("message deleted", partner_user_id, {
-      conversation_id,
+      chat_id,
       deleter_username: client.username,
       message_id,
     })

@@ -13,9 +13,9 @@ export const createNewPost = [
         },
         "media_data_list.*": {
           isArray: {
-            options: { min: 1, max: 10 * 1024 ** 2 },
+            options: { min: 1, max: 8 * 1024 ** 2 },
             errorMessage:
-              "item must be an array of uint8 integers containing a maximum of 10mb",
+              "item must be an array of uint8 integers containing a maximum of 8mb",
           },
         },
         type: {
@@ -47,9 +47,9 @@ export const commentOn = [
         attachment_data: {
           optional: true,
           isArray: {
-            options: { min: 1, max: 10 * 1024 ** 2 },
+            options: { min: 1, max: 8 * 1024 ** 2 },
             errorMessage:
-              "value must me an array of uint8 integers with a maximum of 10mb",
+              "value must me an array of uint8 integers with a maximum of 8mb",
           },
         },
       },

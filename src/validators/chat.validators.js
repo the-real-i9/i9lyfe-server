@@ -1,7 +1,7 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler } from "./miscs.js"
 
-export const createConversation = [
+export const createChat = [
   checkExact(
     checkSchema(
       {
@@ -56,9 +56,9 @@ export const createConversation = [
           },
           isArray: {
             if: (value, { req }) => req.body.init_message.type !== "text",
-            options: { min: 1, max: 10 * 1024 ** 2 },
+            options: { min: 1, max: 8 * 1024 ** 2 },
             errorMessage:
-              "value must me an array of uint8 integers with a maximum of 10mb",
+              "value must me an array of uint8 integers with a maximum of 8mb",
           },
         },
         "init_message.props.duration": {
@@ -118,7 +118,7 @@ export const createConversation = [
           isInt: {
             if: (value, { req }) =>
               !["text", "voice"].includes(req.body.init_message.type),
-            options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ },
+            options: { min: 1, max: 8 * 1024 ** 2 /* 8mb */ },
             errorMessage: "size out of range",
           },
         },
@@ -173,9 +173,9 @@ export const sendMessage = [
           },
           isArray: {
             if: (value, { req }) => req.body.msg_content.type !== "text",
-            options: { min: 1, max: 10 * 1024 ** 2 },
+            options: { min: 1, max: 8 * 1024 ** 2 },
             errorMessage:
-              "value must me an array of uint8 integers with a maximum of 10mb",
+              "value must me an array of uint8 integers with a maximum of 8mb",
           },
         },
         "msg_content.props.duration": {
@@ -235,7 +235,7 @@ export const sendMessage = [
           isInt: {
             if: (value, { req }) =>
               !["text", "voice"].includes(req.body.msg_content.type),
-            options: { min: 1, max: 10 * 1024 ** 2 /* 10mb */ },
+            options: { min: 1, max: 8 * 1024 ** 2 /* 8mb */ },
             errorMessage: "size out of range",
           },
         },

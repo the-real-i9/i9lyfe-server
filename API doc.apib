@@ -176,9 +176,9 @@ The last step of the signup process, requiring you to provide your profile infor
 
 # Group User {protected}
 
-## Session user [/api/user_private/session_user]
+## Client User [/api/user_private/session_user]
 
-### Get Session user [GET]
+### Get Session User [GET]
 
 + Request (application/json)
 
@@ -195,7 +195,7 @@ The last step of the signup process, requiring you to provide your profile infor
             }
 
 
-## User [/api/user_private/users/{userId}/follow]
+## Follow User [/api/user_private/users/{userId}/follow]
 
 + Parameters
     + userId: `1` (number) - User's unique id
@@ -1253,29 +1253,29 @@ The search is performed on the `username` and `name` properties of the user.
             [
                 {
                     "user_id": 2,
-                    "conversation_id": 4,
+                    "chat_id": 4,
                     "username": "dollyp",
                     "key4": "value4",
                 },
                 {
                     "user_id": 6,
-                    "conversation_id": 5,
+                    "chat_id": 5,
                     "username": "dolino",
                     "key4": "value4",
                 }
             ]
 
 
-## New conversation [/api/chat/create_conversation]
+## New chat [/api/chat/create_chat]
 
-### Create conversation [POST]
+### Create chat [POST]
 
-Initating a conversation requires a conversation partner and the first message from the initiator.
+Initating a chat requires a chat partner and the first message from the initiator.
 
-+ **partner** (required) - The user with whom you want to engage in conversation
++ **partner** (required) - The user with whom you want to engage in chat
     + **user_id** (number, required) - Partner's unique id.
     + **username** (string, required) - Partner's username.
-+ **init_message** (required) - The initial message that kickstarts the conversation. The format of a `message` data is quite complicated, check the `send_message` below for a detailed information.
++ **init_message** (required) - The initial message that kickstarts the chat. The format of a `message` data is quite complicated, check the `send_message` below for a detailed information.
     + **type** (required) - The type of message.
     + **text_content** - For the sake of the example request body below, `text_content` is required only if the type of `message` is `text`. Other types of `message` also have their own required fields.
 
@@ -1303,22 +1303,22 @@ Initating a conversation requires a conversation partner and the first message f
 
 + Response 200 (application/json)
 
-    The response data consists of the newly created conversation's `conversation_id`, and the initial message's `init_message_id`. The full data required to render a conversation snippet is sent do the partner (via WebSocket), but not to the client. The client is, therefore, expected to use optimistic UI rendering, as it has all the needed data.
+    The response data consists of the newly created chat's `chat_id`, and the initial message's `init_message_id`. The full data required to render a chat snippet is sent do the partner (via WebSocket), but not to the client. The client is, therefore, expected to use optimistic UI rendering, as it has all the needed data.
 
     + Body
 
             {
-                "conversation_id": 4,
+                "chat_id": 4,
                 "init_message_id": 2
             }
                 
 
 
-## Conversation [/api/chat/conversatons/{conversationId}/partner/{partnerId}/send_message]
+## Chat [/api/chat/chats/{chatId}/partner/{partnerId}/send_message]
 
 + Parameters
-    + conversationId: `1` (number) - Unique id of the target conversation in which to send message.
-    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + chatId: `1` (number) - Unique id of the target chat in which to send message.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this chat
 
 ### Send message [POST]
 
@@ -1379,9 +1379,9 @@ Initating a conversation requires a conversation partner and the first message f
             }
                 
 
-## Client conversations [/api/chat/my_conversations]
+## Client chats [/api/chat/my_chats]
 
-### Get my conversations [GET]
+### Get my chats [GET]
 
 + Request 
 
@@ -1400,7 +1400,7 @@ Initating a conversation requires a conversation partner and the first message f
                         "username": "dollyp",
                         "profile_pic_url": "https://pfpic.jpg
                     },
-                    "conversation_id": 4,
+                    "chat_id": 4,
                     "key4": "value4",
                 },
                 {
@@ -1409,18 +1409,18 @@ Initating a conversation requires a conversation partner and the first message f
                         "username": "samuel",
                         "profile_pic_url": "https://pfpic.jpg
                     },
-                    "conversation_id": 5,
+                    "chat_id": 5,
                     "key4": "value4",
                 }
             ]
 
 
-## Conversation [/api/chat/conversations/{conversationId}]
+## Chat [/api/chat/chats/{chatId}]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation to be deleted.
+    + chatId: `2` (number) - Unique id of chat to be deleted.
 
-### Delete conversation [DELETE]
+### Delete chat [DELETE]
 
 + Request 
 
@@ -1433,14 +1433,14 @@ Initating a conversation requires a conversation partner and the first message f
 
 
 
-## Conversation history [/api/chat/conversations/{conversationId}/history?limit={limit}&offset={offset}]
+## Chat history [/api/chat/chats/{chatId}/history?limit={limit}&offset={offset}]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation for which to get its history.
+    + chatId: `2` (number) - Unique id of chat for which to get its history.
     + limit: `20` (number) - A maximum of 20 messages per batch
     + offset: `0` (number) - `n * limit`, where `n` starts from zero, to scroll-request the next batch of data.
 
-### Get conversation history [GET]
+### Get chat history [GET]
 
 + Request 
 
@@ -1480,16 +1480,16 @@ Initating a conversation requires a conversation partner and the first message f
             ]
 
 
-## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/delivered]
+## Chat message [/api/chat/chats/{chatId}/partner/{partnerId}/messages/{messageId}/delivered]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation.
-    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + chatId: `2` (number) - Unique id of chat.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this chat
     + messageId: `4` (number) - Unique id of message for which to acknowledge delivered.
 
 ### Acknowledge message delivered [PUT]
 
-Acknowledge that a message has been delivered to the client. (i.e. the client has successfully received a message). This lets the conversation partner add a double-tick on the message snippet UI. 
+Acknowledge that a message has been delivered to the client. (i.e. the client has successfully received a message). This lets the chat partner add a double-tick on the message snippet UI. 
 
 The request body includes the *time of delivery*.
 
@@ -1508,16 +1508,16 @@ The request body includes the *time of delivery*.
 + Response 204
 
 
-## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/read]
+## Chat message [/api/chat/chats/{chatId}/partner/{partnerId}/messages/{messageId}/read]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation.
-    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + chatId: `2` (number) - Unique id of chat.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this chat
     + messageId: `4` (number) - Unique id of message for which to acknowledge read.
 
 ### Acknowledge message read [PUT]
 
-Acknowledge that a message has been read by the client. (i.e. the client has successfully received a message). This lets the conversation partner light up the double-tick on the message snippet UI. 
+Acknowledge that a message has been read by the client. (i.e. the client has successfully received a message). This lets the chat partner light up the double-tick on the message snippet UI. 
 
 + Request 
 
@@ -1528,11 +1528,11 @@ Acknowledge that a message has been read by the client. (i.e. the client has suc
 + Response 204
 
 
-## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/react]
+## Chat message [/api/chat/chats/{chatId}/partner/{partnerId}/messages/{messageId}/react]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation.
-    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + chatId: `2` (number) - Unique id of chat.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this chat
     + messageId: `4` (number) - Unique id of message to react to.
 
 ### React to message [POST]
@@ -1552,11 +1552,11 @@ Acknowledge that a message has been read by the client. (i.e. the client has suc
 + Response 201
 
 
-## Conversation message [/api/chat/conversations/{conversationId}/partner/{partnerId}/messages/{messageId}/remove_reaction]
+## Chat message [/api/chat/chats/{chatId}/partner/{partnerId}/messages/{messageId}/remove_reaction]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation.
-    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this conversation
+    + chatId: `2` (number) - Unique id of chat.
+    + partnerId: `2` (number) - Unique id of the partner user you're chatting with in this chat
     + messageId: `4` (number) - Unique id of message to reacted to.
 
 ### Remove reaction to message [DELETE]
@@ -1570,10 +1570,10 @@ Acknowledge that a message has been read by the client. (i.e. the client has suc
 + Response 200
 
 
-## Conversation message [/api/chat/conversations/{conversationId}/messages/{messageId}?delete_for={for}]
+## Chat message [/api/chat/chats/{chatId}/messages/{messageId}?delete_for={for}]
 
 + Parameters
-    + conversationId: `2` (number) - Unique id of conversation.
+    + chatId: `2` (number) - Unique id of chat.
     + messageId: `4` (number) - Unique id of message to reacted to.
     + for: `me` (string) - Specify whether the message should be deleted for you (`me`) or for both you and partner (`everyone`).
 
