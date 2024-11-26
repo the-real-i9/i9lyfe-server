@@ -24,7 +24,7 @@ export class Post {
     hashtags,
   }) {
     const query = {
-      text: "SELECT new_post_id, mention_notifs FROM create_post($1, $2, $3, $4, $5, $6)",
+      text: "SELECT new_post_data, mention_notifs FROM create_post($1, $2, $3, $4, $5, $6)",
       values: [
         client_user_id,
         [...media_urls],
@@ -97,7 +97,7 @@ export class Post {
     /** @type {PgQueryConfig} */
     const query = {
       text: `
-      SELECT new_comment_id, 
+      SELECT new_comment_data, 
         comment_notif, 
         mention_notifs, 
         latest_comments_count 

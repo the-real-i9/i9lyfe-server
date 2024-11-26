@@ -40,7 +40,7 @@ export class Comment {
     /** @type {PgQueryConfig} */
     const query = {
       text: `
-    SELECT new_comment_id, 
+    SELECT new_comment_data, 
       comment_notif, 
       mention_notifs, 
       latest_comments_count 
