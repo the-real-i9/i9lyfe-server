@@ -72,7 +72,7 @@ export const changeProfilePicture = async ({
   const profile_pic_url = await mediaUploadService.upload({
     media_dat: picture_data,
     extension: null,
-    pathToDestFolder: `profile_pictures/${client_username}`,
+    path_to_dest_folder: `profile_pictures/${client_username}`,
   })
 
   await User.changeProfilePicture(client_user_id, profile_pic_url)

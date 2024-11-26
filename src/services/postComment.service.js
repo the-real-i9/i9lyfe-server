@@ -24,7 +24,7 @@ export const createNewPost = async ({
   const media_urls = media_data_list.map(async (media_data) => {
     return await mediaUploadService.upload({
       media_data,
-      pathToDestFolder: `post_medias/user-${client_user_id}`,
+      path_to_dest_folder: `post_medias/user-${client_user_id}`,
     })
   })
 
@@ -96,7 +96,7 @@ export const commentOnPost = async ({
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
-    pathToDestFolder: `comment_on_post_attachments/user-${client_user_id}`,
+    path_to_dest_folder: `comment_on_post_attachments/user-${client_user_id}`,
   })
 
   const {
@@ -182,7 +182,7 @@ export const commentOnComment = async ({
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
-    pathToDestFolder: `comment_on_comment_attachments/user-${client_user_id}`,
+    path_to_dest_folder: `comment_on_comment_attachments/user-${client_user_id}`,
   })
 
   const {

@@ -12,7 +12,7 @@ export const createChat = async ({
   init_msg.media_url = await mediaUploadService.upload({
     media_data,
     extension: init_msg.extension,
-    pathToDestFolder: `message_medias/user-${client_user_id}`,
+    path_to_dest_folder: `message_medias/user-${client_user_id}`,
   })
 
   const { client_res, partner_res } = await Chat.create({

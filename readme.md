@@ -212,7 +212,7 @@ export const createNewPost = async ({ client_user_id, media_data_list, type, des
   const media_urls = media_data_list.map(async (media_data) => {
     return await mediaUploadService.upload({
       media_data,
-      pathToDestFolder: `post_medias/user-${client_user_id}`,
+      path_to_dest_folder: `post_medias/user-${client_user_id}`,
     })
   })
 

@@ -9,15 +9,15 @@ import { getStorageBucket } from "../configs/gcs.js"
  * @param {object} param0 
  * @param {number[]} param0.media_data 
  * @param {string?} param0.extension 
- * @param {string} param0.pathToDestFolder
+ * @param {string} param0.path_to_dest_folder
  * @returns 
  */
-export const upload = async ({ media_data, extension, pathToDestFolder }) => {
+export const upload = async ({ media_data, extension, path_to_dest_folder }) => {
   const fileData = new Uint8Array(Buffer.from(media_data))
 
   const ext = extension || (await fileTypeFromBuffer(fileData)).ext
 
-  const destination = `${pathToDestFolder}/_${randomUUID()}_.${ext}`
+  const destination = `${path_to_dest_folder}/_${randomUUID()}_.${ext}`
 
   fs.writeFile(os.tmpdir + `/tempfile.${ext}`, fileData, () => {
     getStorageBucket().upload(os.tmpdir + `/tempfile.${ext}`, {
