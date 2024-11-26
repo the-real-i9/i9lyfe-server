@@ -205,7 +205,7 @@ CREATE FUNCTION public.create_post(OUT new_post_id integer, OUT mention_notifs j
     LANGUAGE plpgsql
     AS $$
 DECLARE
-  ret_post_id int;
+  new_post_id int;
   
   mention_username varchar;
   ment_user_id int;
@@ -218,7 +218,7 @@ DECLARE
 BEGIN
   INSERT INTO post (user_id, type, media_urls, description)
   VALUES (client_user_id, in_type, in_media_urls, in_description)
-  RETURNING id INTO ret_post_id;
+  RETURNING id INTO new_post_id;
   
   -- populate client data
   SELECT json_build_object(
@@ -237,21 +237,21 @@ BEGIN
 
     -- create mentions
     INSERT INTO pc_mention (post_id, user_id) 
-    VALUES (ret_post_id, ment_user_id);
+    VALUES (new_post_id, ment_user_id);
     
     -- skip mention notification for client user
     CONTINUE WHEN ment_user_id = client_user_id;
     
     -- create mention notifications
     INSERT INTO notification (type, sender_user_id, receiver_user_id, via_post_id)
-    VALUES ('mention_in_post', client_user_id, ment_user_id, ret_post_id);
+    VALUES ('mention_in_post', client_user_id, ment_user_id, new_post_id);
     
     -- accumulate mention notifications
     mention_notifs_acc := array_append(mention_notifs_acc, json_build_object(
       'receiver_user_id', ment_user_id,
       'sender', client_data,
       'type', 'mention_in_post',
-      'post_id', ret_post_id
+      'post_id', new_post_id
     ));
   END LOOP;
   
@@ -260,10 +260,10 @@ BEGIN
   FOREACH hashtag_n IN ARRAY hashtags
   LOOP
     INSERT INTO pc_hashtag (post_id, hashtag_name)
-    VALUES (ret_post_id, hashtag_n);
+    VALUES (new_post_id, hashtag_n);
   END LOOP;
   
-  new_post_id := ret_post_id;
+  new_post_id := new_post_id;
   mention_notifs := mention_notifs_acc;
   
   RETURN;
