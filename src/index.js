@@ -7,6 +7,7 @@ import { Server } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken } from "./services/auth.services.js"
+import { neo4jDriver } from "./configs/graph_db.js"
 
 const server = createServer(app)
 
@@ -29,6 +30,10 @@ io.on("connection", (socket) => {
 })
 
 const PORT = process.env.PORT ?? 5000
+
+server.on("close", () => {
+  neo4jDriver.close()
+})
 
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`)

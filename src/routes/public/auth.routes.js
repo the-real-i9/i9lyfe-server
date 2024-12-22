@@ -16,7 +16,7 @@ const router = express.Router()
 router.use(
   "/signup",
   expressSessionMiddleware(
-    "ongoing_registration",
+    "ongoing_signup",
     process.env.SIGNUP_SESSION_COOKIE_SECRET,
     "/api/auth/signup"
   )

@@ -1,9 +1,9 @@
 import expressSession from "express-session"
-import pgSession from "connect-pg-simple"
-import { getDBPool } from "../configs/db.js"
+import neo4jSessStore from "connect-neo4j"
+import { neo4jDriver } from "../configs/graph_db.js"
 
 
-const PGStore = pgSession(expressSession)
+const Neo4jStore = neo4jSessStore(expressSession)
 
 /**
  * @param {string} storeTableName
@@ -17,10 +17,9 @@ export const expressSessionMiddleware = (
   cookiePath
 ) =>
   expressSession({
-    store: new PGStore({
-      pool: getDBPool(),
-      tableName: storeTableName,
-      createTableIfMissing: true,
+    store: new Neo4jStore({
+      client: neo4jDriver,
+      nodeLabel: storeTableName,
     }),
     resave: false,
     saveUninitialized: false,
