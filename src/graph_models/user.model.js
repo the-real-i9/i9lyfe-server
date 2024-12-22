@@ -97,41 +97,53 @@ export class User {
   }
 
   /**
-   * @param {number} client_user_id
-   * @param {number} to_unfollow_user_id
+   * @param {string} client_user_id
+   * @param {string} to_unfollow_user_id
    */
   static async unfollowUser(client_user_id, to_unfollow_user_id) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "DELETE FROM follow WHERE follower_user_id = $1 AND followee_user_id = $2;",
-      values: [client_user_id, to_unfollow_user_id],
-    }
-
-    await dbQuery(query)
+    await neo4jDriver.executeQuery(
+      `
+      MATCH (clientUser:User{ id: $client_user_id })-[fr:FOLLOWS]->(tounfollowUser:User{ id: $to_unfollow_user_id })
+      DELETE fr
+      `,
+      { client_user_id, to_unfollow_user_id }
+    )
   }
 
   /**
-   * @param {number} client_user_id
-   * @param {[string, any][]} updateKVPairs
+   * @param {string} client_user_id
+   * @param {Object<string, any>} updateKVs
    */
-  static async edit(client_user_id, updateKVPairs) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT edit_user($1, $2)",
-      values: [client_user_id, updateKVPairs],
+  static async edit(client_user_id, updateKVs) {
+
+    // construct SET key = $key, key = $key, ... from updateKVs keys
+    let setUpdates = ""
+
+    for (const key of Object.keys(updateKVs)) {
+      if (setUpdates) {
+        setUpdates = setUpdates + ", "
+      }
+
+      setUpdates = `${setUpdates}${key} = $${key}`
     }
 
-    await dbQuery(query)
+    await neo4jDriver.executeQuery(
+      `
+      MATCH (user:User{ id: $client_user_id })
+      SET ${setUpdates}
+      `,
+      { client_user_id, ...updateKVs /* deconstruct the key:value in params */ } 
+    )
   }
 
   static async changeProfilePicture(client_user_id, profile_pic_url) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "UPDATE i9l_user SET profile_pic_url = $2 WHERE id = $1",
-      values: [client_user_id, profile_pic_url],
-    }
-
-    await dbQuery(query)
+    await neo4jDriver.executeQuery(
+      `
+      MATCH (user:User{ id: $client_user_id })
+      SET profil_pic_url = $profile_pic_url
+      `,
+      { client_user_id, profile_pic_url } 
+    )
   }
 
   /**
