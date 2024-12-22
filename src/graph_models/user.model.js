@@ -124,7 +124,7 @@ export class User {
         setUpdates = setUpdates + ", "
       }
 
-      setUpdates = `${setUpdates}${key} = $${key}`
+      setUpdates = `${setUpdates}user.${key} = $${key}`
     }
 
     await neo4jDriver.executeQuery(
@@ -140,7 +140,7 @@ export class User {
     await neo4jDriver.executeQuery(
       `
       MATCH (user:User{ id: $client_user_id })
-      SET profil_pic_url = $profile_pic_url
+      SET user.profile_pic_url = $profile_pic_url
       `,
       { client_user_id, profile_pic_url } 
     )
@@ -248,25 +248,23 @@ export class User {
     connection_status,
     last_active,
   }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: `UPDATE i9l_user SET connection_status = $1, last_active = $2 WHERE id = $3`,
-      values: [connection_status, last_active, client_user_id],
-    }
-
-    await dbQuery(query)
+    await neo4jDriver.executeQuery(
+      `
+      MATCH (user:User{ id: $client_user_id })
+      SET user.connection_status = $connection_status, user.last_active = $last_active
+      `,
+      { client_user_id, connection_status, last_active } 
+    )
   }
 
-  static async readNotification(notification_id, client_user_id) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: `
-    UPDATE notification SET is_read = true
-    WHERE id = $1 AND receiver_user_id = $2`,
-      values: [notification_id, client_user_id],
-    }
-
-    await dbQuery(query)
+  static async readNotification(notification_id) {
+    await neo4jDriver.executeQuery(
+      `
+      MATCH (notif:Notification{ id: $notification_id })
+      SET notif.is_read = true
+      `,
+      { notification_id } 
+    )
   }
 
   // GET user notifications

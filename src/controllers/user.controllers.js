@@ -49,6 +49,10 @@ export const editProfile = async (req, res) => {
 
     const { client_user_id } = req.auth
 
+    if (updateKVPairs.birthday) {
+      updateKVPairs.birthday = new Date(updateKVPairs.birthday)
+    }
+
     const resp = await userService.editProfile(client_user_id, updateKVPairs)
 
     res.status(200).send(resp.data)
@@ -67,7 +71,7 @@ export const updateConnectionStatus = async (req, res) => {
     const resp = await userService.updateConnectionStatus({
       client_user_id,
       connection_status,
-      last_active,
+      last_active: last_active ? new Date(last_active) : null,
     })
 
     res.status(200).send(resp.data)
