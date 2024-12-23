@@ -4,10 +4,11 @@ export const createNewPost = async (req, res) => {
   try {
     const { media_data_list, type, description = "" } = req.body
 
-    const { client_user_id } = req.auth
+    const { client_user_id, client_username } = req.auth
 
     const resp = await postCommentService.createNewPost({
       client_user_id,
+      client_username,
       media_data_list,
       type,
       description,

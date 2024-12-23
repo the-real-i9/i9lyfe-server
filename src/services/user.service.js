@@ -1,6 +1,6 @@
 import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
-import { User } from "../models/user.model.js"
+import { User } from "../graph_models/user.model.js"
 
 export const getSessionUser = async (client_user_id) => {
   const sessionUser = await User.findOne(client_user_id)
@@ -196,7 +196,7 @@ export const getNotifications = async ({
 }) => {
   const notifications = await User.getNotifications({
     client_user_id,
-    from: new Date(from),
+    from,
     limit,
     offset,
   })

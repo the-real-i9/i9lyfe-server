@@ -1,7 +1,7 @@
 import * as mailService from "../mail.service.js"
 import * as securityServices from "../security.services.js"
 import * as messageBrokerService from "../messageBroker.service.js"
-import { User } from "../../models/user.model.js"
+import { User } from "../../graph_models/user.model.js"
 
 export const requestNewAccount = async (email) => {
   if (await User.exists(email))
@@ -69,7 +69,6 @@ export const registerUser = async (info) => {
   const user = await User.create({
     ...info,
     password: passwordHash,
-    birthday: new Date(info.birthday),
   })
 
   const jwt = securityServices.generateJwt({

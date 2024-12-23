@@ -45,15 +45,13 @@ export const unfollowUser = async (req, res) => {
 
 export const editProfile = async (req, res) => {
   try {
-    const updateKVPairs = req.body
+    const updateKVs = req.body
 
     const { client_user_id } = req.auth
 
-    if (updateKVPairs.birthday) {
-      updateKVPairs.birthday = new Date(updateKVPairs.birthday)
-    }
+    
 
-    const resp = await userService.editProfile(client_user_id, updateKVPairs)
+    const resp = await userService.editProfile(client_user_id, updateKVs)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -71,7 +69,7 @@ export const updateConnectionStatus = async (req, res) => {
     const resp = await userService.updateConnectionStatus({
       client_user_id,
       connection_status,
-      last_active: last_active ? new Date(last_active) : null,
+      last_active,
     })
 
     res.status(200).send(resp.data)
@@ -277,7 +275,7 @@ export const getNotifications = async (req, res) => {
 
     const resp = await userService.getNotifications({
       client_user_id,
-      from: new Date(from),
+      from,
       limit,
       offset,
     })

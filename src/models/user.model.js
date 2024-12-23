@@ -13,6 +13,7 @@ export class User {
    * @param {string} info.bio
    */
   static async create(info) {
+    
     /** @type {PgQueryConfig} */
     const query = {
       text: `SELECT * FROM create_user($1, $2, $3, $4, $5, $6)`,
@@ -233,6 +234,7 @@ export class User {
     connection_status,
     last_active,
   }) {
+    
     /** @type {PgQueryConfig} */
     const query = {
       text: `UPDATE i9l_user SET connection_status = $1, last_active = $2 WHERE id = $3`,

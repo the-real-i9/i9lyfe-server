@@ -1,6 +1,6 @@
 import * as utilServices from "../services/utility.services.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
-import { Post } from "../models/post.model.js"
+import { Post } from "../graph_models/post.model.js"
 import { Comment } from "../models/comment.model.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as realtimeService from "../services/realtime.service.js"
@@ -14,6 +14,7 @@ import * as realtimeService from "../services/realtime.service.js"
  */
 export const createNewPost = async ({
   client_user_id,
+  client_username,
   media_data_list,
   type,
   description,
@@ -29,7 +30,7 @@ export const createNewPost = async ({
   })
 
   const { new_post_data, mention_notifs } = await Post.create({
-    client_user_id,
+    client_username,
     media_urls,
     type,
     description,
@@ -40,10 +41,10 @@ export const createNewPost = async ({
   realtimeService.publishNewPost(new_post_data.post_id)
 
   mention_notifs.forEach((notif) => {
-    const { receiver_user_id, ...restData } = notif
+    const { mentioned_user_id, ...restData } = notif
 
     // replace with message broker
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(mentioned_user_id, restData)
   })
 
   return {

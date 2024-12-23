@@ -10,13 +10,15 @@ export class User {
    * @param {string} info.username
    * @param {string} info.password
    * @param {string} info.name
-   * @param {Date} info.birthday
+   * @param {string} info.birthday
    * @param {string} info.bio
    */
   static async create(info) {
+    info.birthday = new Date(info.birthday).toISOString()
+    
     const { records } = await neo4jDriver.executeQuery(
       `
-      CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: $info.birthday, bio: $info.bio, profile_pic_url: "", connection_status: "online" })
+      CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "online" })
       RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status
       `,
       { info }
@@ -31,7 +33,8 @@ export class User {
   static async findOne(uniqueIdentifier) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (user:User{ id: $uniqueIdentifier } | User{ username: $uniqueIdentifier } | User{ email: $uniqueIdentifier })
+      MATCH (user:User)
+      WHERE user.id = $uniqueIdentifier OR user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
       RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status
       `,
       { uniqueIdentifier }
@@ -46,7 +49,8 @@ export class User {
   static async findOneIncPassword(emailOrUsername) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (user:User{ username: $uniqueIdentifier } | User{ email: $uniqueIdentifier })
+      MATCH (user:User)
+      WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
       RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status, user.password AS password
       `,
       { emailOrUsername }
@@ -86,9 +90,9 @@ export class User {
     const { records } = await neo4jDriver.executeQuery(
       `
       MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
-      CREATE (followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", follower_user: { id: clientUser.id, username: clientUser.username, profile_pic_url: clientUser.profile_pic_url }, is_read: false, created_at: timestamp() }), 
-        (clientUser)-[:FOLLOWS]->(tofollowUser)<-[:RECEIVES_NOTIFICATION]-(followNotif)
-      RETURN followNotif.id AS id, followNotif.type AS type, followNotif.follower_user AS follower_user
+      CREATE (followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime() })-[:FOLLOWER_USER]->(clientUser), 
+        (clientUser)-[:FOLLOWS]->(tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif)
+      RETURN followNotif.id AS id, followNotif.type AS type, { id: clientUser.id, username: clientUser.username, profile_pic_url: clientUser.profile_pic_url } AS follower_user
       `,
       { client_user_id, to_follow_user_id }
     )
@@ -115,6 +119,9 @@ export class User {
    * @param {Object<string, any>} updateKVs
    */
   static async edit(client_user_id, updateKVs) {
+    if (updateKVs.birthday) {
+      updateKVs.birthday = new Date(updateKVs.birthday).toISOString()
+    }
 
     // construct SET key = $key, key = $key, ... from updateKVs keys
     let setUpdates = ""
@@ -122,6 +129,11 @@ export class User {
     for (const key of Object.keys(updateKVs)) {
       if (setUpdates) {
         setUpdates = setUpdates + ", "
+      }
+
+      if (key === "birthday") {
+        setUpdates = `${setUpdates}user.${key} = datetime($${key})`
+        continue
       }
 
       setUpdates = `${setUpdates}user.${key} = $${key}`
@@ -241,17 +253,21 @@ export class User {
   /**
    * @param {object} param0
    * @param {"online" | "offline"} param0.connection_status
-   * @param {Date} param0.last_active
+   * @param {string|null} param0.last_active
    */
   static async updateConnectionStatus({
     client_user_id,
     connection_status,
     last_active,
   }) {
+    last_active = last_active ? new Date(last_active).toISOString() : null
+
+    const last_active_param = last_active ? "datetime($last_active)" : "$last_active"
+
     await neo4jDriver.executeQuery(
       `
       MATCH (user:User{ id: $client_user_id })
-      SET user.connection_status = $connection_status, user.last_active = $last_active
+      SET user.connection_status = $connection_status, user.last_active = ${last_active_param}
       `,
       { client_user_id, connection_status, last_active } 
     )
@@ -271,9 +287,11 @@ export class User {
   /**
    *
    * @param {number} client_user_id
-   * @param {Date} from
+   * @param {string} from
    */
   static async getNotifications({ client_user_id, from, limit, offset }) {
+    from = new Date(from).toISOString()
+
     const query = {
       text: "SELECT * FROM get_user_notifications($1, $2, $3, $4)",
       values: [client_user_id, from, limit, offset],
