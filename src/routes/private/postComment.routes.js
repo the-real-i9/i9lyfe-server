@@ -14,7 +14,7 @@ router.delete("/posts/:post_id", ...validateIdParams, PCC.deletePost)
 /* ====== POST'S REACTION ====== */
 
 router.post(
-  "/users/:post_owner_user_id/posts/:post_id/react",
+  "/posts/:post_id/react",
   ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToPost
@@ -38,13 +38,13 @@ router.delete(
 /* ====== POST'S COMMENT ====== */
 
 router.post(
-  "/users/:post_owner_user_id/posts/:post_id/comment",
+  "/posts/:post_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
   PCC.commentOnPost
 )
 router.post(
-  "/users/:comment_owner_user_id/comments/:comment_id/comment",
+  "/comments/:comment_id/comment",
   ...validateIdParams,
   ...PCV.commentOn,
   PCC.commentOnComment
@@ -76,7 +76,7 @@ router.delete(
 /* ====== COMMENT'S REACTION====== */
 
 router.post(
-  "/users/:comment_owner_user_id/comments/:comment_id/react",
+  "/comments/:comment_id/react",
   ...validateIdParams,
   ...PCV.reactTo,
   PCC.reactToComment

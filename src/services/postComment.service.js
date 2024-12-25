@@ -13,7 +13,6 @@ import * as realtimeService from "../services/realtime.service.js"
  * @param {string} param0.description
  */
 export const createNewPost = async ({
-  client_user_id,
   client_username,
   media_data_list,
   type,
@@ -25,7 +24,7 @@ export const createNewPost = async ({
   const media_urls = media_data_list.map(async (media_data) => {
     return await mediaUploadService.upload({
       media_data,
-      path_to_dest_folder: `post_medias/user-${client_user_id}`,
+      path_to_dest_folder: `post_medias/user-${client_username}`,
     })
   })
 
@@ -38,13 +37,13 @@ export const createNewPost = async ({
     hashtags,
   })
 
-  realtimeService.publishNewPost(new_post_data.post_id)
+  realtimeService.publishNewPost(new_post_data.id)
 
   mention_notifs.forEach((notif) => {
-    const { mentioned_user_id, ...restData } = notif
+    const { receiver_user_id, ...restData } = notif
 
     // replace with message broker
-    messageBrokerService.sendNewNotification(mentioned_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_user_id, restData)
   })
 
   return {
@@ -55,7 +54,6 @@ export const createNewPost = async ({
 export const reactToPost = async ({
   client_user_id,
   post_id,
-  post_owner_user_id,
   reaction,
 }) => {
   const reaction_code_point = reaction.codePointAt()
@@ -63,7 +61,6 @@ export const reactToPost = async ({
   const { reaction_notif, latest_reactions_count } = Post.reactTo({
     client_user_id,
     post_id,
-    post_owner_user_id,
     reaction_code_point,
   })
 
@@ -86,9 +83,8 @@ export const reactToPost = async ({
 }
 
 export const commentOnPost = async ({
-  client_user_id,
+  client_username,
   post_id,
-  post_owner_user_id,
   comment_text,
   attachment_data,
 }) => {
@@ -97,7 +93,7 @@ export const commentOnPost = async ({
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
-    path_to_dest_folder: `comment_on_post_attachments/user-${client_user_id}`,
+    path_to_dest_folder: `comment_on_post_attachments/user-${client_username}`,
   })
 
   const {
@@ -107,8 +103,7 @@ export const commentOnPost = async ({
     latest_comments_count,
   } = await Post.commentOn({
     post_id,
-    post_owner_user_id,
-    client_user_id,
+    client_username,
     comment_text,
     attachment_url,
     mentions,

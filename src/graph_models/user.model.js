@@ -1,8 +1,6 @@
 import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
-/** @typedef {import("pg").QueryConfig} PgQueryConfig */
-
 export class User {
   /**
    * @param {Object} info
@@ -19,12 +17,12 @@ export class User {
     const { records } = await neo4jDriver.executeQuery(
       `
       CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "online" })
-      RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status
+      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
       `,
       { info }
     )
 
-    return records[0].toObject()
+    return records[0].get("new_user")
   }
 
   /**

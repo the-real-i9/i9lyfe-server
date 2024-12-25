@@ -4,10 +4,9 @@ export const createNewPost = async (req, res) => {
   try {
     const { media_data_list, type, description = "" } = req.body
 
-    const { client_user_id, client_username } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.createNewPost({
-      client_user_id,
       client_username,
       media_data_list,
       type,
@@ -23,7 +22,7 @@ export const createNewPost = async (req, res) => {
 
 export const reactToPost = async (req, res) => {
   try {
-    const { post_id, post_owner_user_id } = req.params
+    const { post_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id } = req.auth
@@ -31,7 +30,6 @@ export const reactToPost = async (req, res) => {
     const resp = await postCommentService.reactToPost({
       client_user_id,
       post_id,
-      post_owner_user_id,
       reaction,
     })
 
@@ -44,15 +42,14 @@ export const reactToPost = async (req, res) => {
 
 export const commentOnPost = async (req, res) => {
   try {
-    const { post_id, post_owner_user_id } = req.params
+    const { post_id } = req.params
     const { comment_text, attachment_data } = req.body
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.commentOnPost({
-      client_user_id,
+      client_username,
       post_id,
-      post_owner_user_id,
       comment_text,
       attachment_data,
     })
