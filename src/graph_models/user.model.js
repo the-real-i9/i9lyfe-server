@@ -33,12 +33,12 @@ export class User {
       `
       MATCH (user:User)
       WHERE user.id = $uniqueIdentifier OR user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
-      RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status
+      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS found_user
       `,
       { uniqueIdentifier }
     )
 
-    return records[0].toObject()
+    return records[0].get("found_user")
   }
 
   /**
@@ -49,12 +49,12 @@ export class User {
       `
       MATCH (user:User)
       WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
-      RETURN user.id AS id, user.email AS email, user.username AS username, user.name AS name, user.profile_pic_url AS profile_pic_url, user.connection_status AS connection_status, user.password AS password
+      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status, .password } AS found_user
       `,
       { emailOrUsername }
     )
 
-    return records[0].toObject()
+    return records[0].get("found_user")
   }
 
   /**
@@ -63,7 +63,10 @@ export class User {
    */
   static async exists(uniqueIdentifier) {
     const { records } = await neo4jDriver.executeQuery(
-      `RETURN EXISTS { MATCH (user:User{ id: $uniqueIdentifier } | User{ username: $uniqueIdentifier } | User{ email: $uniqueIdentifier }) } AS userExists`,
+      `RETURN EXISTS {
+        MATCH (user:User)
+        WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
+      } AS userExists`,
       { uniqueIdentifier }
     )
 
@@ -85,12 +88,16 @@ export class User {
    * @param {string} to_follow_user_id
    */
   static async followUser(client_user_id, to_follow_user_id) {
+    if (client_user_id === to_follow_user_id) {
+      return { follow_notif: null }
+    }
     const { records } = await neo4jDriver.executeQuery(
       `
       MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
       CREATE (followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime() })-[:FOLLOWER_USER]->(clientUser), 
         (clientUser)-[:FOLLOWS]->(tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif)
-      RETURN followNotif.id AS id, followNotif.type AS type, { id: clientUser.id, username: clientUser.username, profile_pic_url: clientUser.profile_pic_url } AS follower_user
+      WITH followNotif, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+      RETURN followNotif { .id, .type, follower_user: clientUserView } AS follow_notif
       `,
       { client_user_id, to_follow_user_id }
     )

@@ -11,12 +11,14 @@ export const getSessionUser = async (client_user_id) => {
 }
 
 export const followUser = async (client_user_id, to_follow_user_id) => {
-  const followNotifData = await User.followUser(
+  const { follow_notif } = await User.followUser(
     client_user_id,
     to_follow_user_id
   )
   
-  messageBrokerService.sendNewNotification(to_follow_user_id, followNotifData)
+  if (follow_notif) {
+    messageBrokerService.sendNewNotification(to_follow_user_id, follow_notif)
+  }
 
   return {
     data: { msg: "operation successful" },
