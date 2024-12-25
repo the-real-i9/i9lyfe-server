@@ -63,7 +63,7 @@ export const commentOnPost = async (req, res) => {
 
 export const reactToComment = async (req, res) => {
   try {
-    const { comment_id, comment_owner_user_id } = req.params
+    const { comment_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id } = req.auth
@@ -71,7 +71,6 @@ export const reactToComment = async (req, res) => {
     const resp = await postCommentService.reactToComment({
       client_user_id,
       comment_id,
-      comment_owner_user_id,
       reaction,
     })
 
@@ -84,15 +83,14 @@ export const reactToComment = async (req, res) => {
 
 export const commentOnComment = async (req, res) => {
   try {
-    const { comment_id, comment_owner_user_id } = req.params
+    const { comment_id } = req.params
     const { comment_text, attachment_data } = req.body
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.commentOnComment({
-      client_user_id,
+      client_username,
       comment_id,
-      comment_owner_user_id,
       comment_text,
       attachment_data,
     })

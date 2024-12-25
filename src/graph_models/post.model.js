@@ -91,7 +91,7 @@ export class Post {
       return { mention_notifs, new_post_data }
     })
 
-    await session.close()
+    session.close()
 
     return res
   }
@@ -312,7 +312,7 @@ export class Post {
       }
     })
 
-    await session.close()
+    session.close()
 
     return res
   }

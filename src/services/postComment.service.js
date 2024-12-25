@@ -1,7 +1,7 @@
 import * as utilServices from "../services/utility.services.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import { Post } from "../graph_models/post.model.js"
-import { Comment } from "../models/comment.model.js"
+import { Comment } from "../graph_models/comment.model.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as realtimeService from "../services/realtime.service.js"
 
@@ -137,7 +137,6 @@ export const commentOnPost = async ({
 export const reactToComment = async ({
   client_user_id,
   comment_id,
-  comment_owner_user_id,
   reaction,
 }) => {
   const reaction_code_point = reaction.codePointAt()
@@ -145,7 +144,6 @@ export const reactToComment = async ({
   const { reaction_notif, latest_reactions_count } = Comment.reactTo({
     client_user_id,
     comment_id,
-    comment_owner_user_id,
     reaction_code_point,
   })
 
@@ -167,9 +165,8 @@ export const reactToComment = async ({
 }
 
 export const commentOnComment = async ({
-  client_user_id,
+  client_username,
   comment_id,
-  comment_owner_user_id,
   comment_text,
   attachment_data,
 }) => {
@@ -178,7 +175,7 @@ export const commentOnComment = async ({
 
   const attachment_url = await mediaUploadService.upload({
     media_data: attachment_data,
-    path_to_dest_folder: `comment_on_comment_attachments/user-${client_user_id}`,
+    path_to_dest_folder: `comment_on_comment_attachments/user-${client_username}`,
   })
 
   const {
@@ -188,8 +185,6 @@ export const commentOnComment = async ({
     latest_comments_count,
   } = await Comment.commentOn({
     comment_id,
-    comment_owner_user_id,
-    client_user_id,
     comment_text,
     attachment_url,
     mentions,
