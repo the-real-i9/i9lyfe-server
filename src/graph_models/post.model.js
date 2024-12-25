@@ -35,7 +35,8 @@ export class Post {
         `
         MATCH (clientUser:User{ username: $client_username })
         CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: datetime() })
-        RETURN { id: post.id, ownerUser: { id: clientUser.id, username: clientUser.username, profile_pic_url: clientUser.profile_pic_url }, type: $type, media_urls: $media_urls, description: $description, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
+        WITH post, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+        RETURN post { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
         `,
         { client_username, media_urls, type, description }
       )
@@ -71,8 +72,9 @@ export class Post {
             `
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (post:Post{ id: $postId }), (clientUser:User{ username: $client_username })
-            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", mentioned_user_id: mentionUser.id, in_post_id: post.id })-[:MENTIONING_USER]->(clientUser)
-            RETURN [notif IN collect(mentionNotif) | { id: notif.id, type: notif.type, mentioned_user_id: notif.mentioned_user_id, in_post_id: notif.in_post_id, mentioning_user: { id: clientUser.id, username: clientUser.username, profile_pic_url: clientUser.profile_pic_url } }] AS mention_notifs
+            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", in_post_id: post.id })-[:MENTIONING_USER]->(clientUser)
+            WITH mentionUser, mentionNotif, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+            RETURN [notif IN collect(mentionNotif) | notif { .*, mentioned_user_id: mentionUser.id, mentioning_user: clientUserView }] AS mention_notifs
             `,
             { mentionsExcClient, postId: new_post_data.id, client_username }
           )
@@ -99,51 +101,59 @@ export class Post {
     return res
   }
 
-  static async repost(original_post_id, client_username) {
-    const query = {
-      text: `
-      INSERT INTO repost (post_id, reposter_user_id) 
-      VALUES ($1, $2)`,
-      values: [original_post_id, client_username],
-    }
+  static async repost(original_post_id, client_user_id) {
+    const { records } = await neo4jDriver.executeQuery(
+      `
+      MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ id: $client_user_id })
+      CREATE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime() })-[:REPOST_OF]->(post)
+      WITH post, clientUser, repost, clientUser {.id, .username, .profile_pic_url} AS clientUserView
+      MATCH (postOwner:User WHERE postOwner.id <> $client_user_id)-[:CREATES_POST]->(post)
+      CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", reposted_post_id: post.id, is_read: false, created_at: datetime() })-[:REPOSTER_USER]->(clientUser)
+      RETURN repost { .*, owner_user: clientUserView, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data,
+        repostNotif { .*, reposted_post_owner_user_id: postOwner.id, reposter_user: clientUserView } AS repost_notif
+      `,
+      { original_post_id, client_user_id }
+    )
 
-    await dbQuery(query)
+    return records[0].toObject()
   }
 
-  static async save(post_id, client_username) {
-    const query = {
-      text: `
-      WITH new_sp AS (
-        INSERT INTO saved_post (saver_user_id, post_id) 
-        VALUES ($1, $2)
-      )
-      SELECT saves_count + 1 AS latest_saves_count FROM "PostView" WHERE post_id = $2`,
-      values: [client_username, post_id],
-    }
-
-    return (await dbQuery(query)).rows[0]
+  static async save(post_id, client_user_id) {
+    const { records } = await neo4jDriver.executeQuery(
+      `
+      MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
+      CREATE (clientUser)-[:SAVES_POST]->(post)
+      WITH post
+      MATCH (saver:User)-[:SAVES_POST]->(post)
+      RETURN count(saver) + 1 AS latest_saves_count
+      `,
+      { post_id, client_user_id }
+    )
+    
+    return records[0].toObject()
   }
 
   static async reactTo({
-    client_username,
+    client_user_id,
     post_id,
-    post_owner_user_id,
     reaction_code_point,
   }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: `
-      SELECT reaction_notif, latest_reactions_count 
-      FROM create_reaction_to_post($1, $2, $3, $4)`,
-      values: [
-        client_username,
-        post_id,
-        post_owner_user_id,
-        reaction_code_point,
-      ],
-    }
-
-    return (await dbQuery(query)).rows[0]
+    const { records } = await neo4jDriver.executeQuery(
+      `
+      MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
+      CREATE (clientUser)-[rt:REACTS_TO { reaction_code_point: $reaction_code_point }]->(post)
+      WITH post, clientUser, rtr
+      MATCH (reactor:User)-[:REACTS_TO]->(post)
+      WITH post, clientUser, rtr, clientUser {.id, .username, .profile_pic_url} AS clientUserView
+      MATCH (postOwner:User WHERE postOwner.id <> $client_user_id)-[:CREATES_POST]->(post)
+      CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction", reaction_code_point: rtr.reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
+      RETURN count(reactor) + 1 AS latest_reactions_count,
+        reactionNotif { .*, post_owner_user_id: postOwner.id, reactor_user: clientUserView } AS reaction_notif
+      `,
+      { client_user_id, post_id, reaction_code_point }
+    )
+      
+    return records[0].toObject()
   }
 
   static async commentOn({
@@ -155,26 +165,87 @@ export class Post {
     mentions,
     hashtags,
   }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: `
-      SELECT new_comment_data, 
-        comment_notif, 
-        mention_notifs, 
-        latest_comments_count 
-      FROM create_comment_on_post($1, $2, $3, $4, $5, $6, $7)`,
-      values: [
-        post_id,
-        post_owner_user_id,
-        client_username,
-        comment_text,
-        attachment_url,
-        mentions,
-        hashtags,
-      ],
-    }
+    const session = neo4jDriver.session()
 
-    return (await dbQuery(query)).rows[0]
+    const res = await session.executeWrite(async (tx) => {
+      let mention_notifs = []
+      let new_comment_data = null
+      let comment_notif = null
+
+      const { records: commentRecords } = await tx.run(
+        `
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
+        CREATE (clientUser)-[:WRITES_COMMENT]->(comment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, created_at: datetime() })-[:COMMENT_ON]->(post)
+        WITH comment, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+        RETURN comment { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
+        `,
+        { client_username, attachment_url, comment_text, post_id }
+      )
+
+      new_comment_data = commentRecords[0].toObject().new_comment_data
+
+      if (mentions.length) {
+        const { records: mentionRecords } = await tx.run(
+          `
+          MATCH (user:User WHERE user.username IN $mentions)
+          RETURN collect(user.username) AS valid_mentions
+          `,
+          { mentions }
+        )
+
+        mentions = mentionRecords[0].toObject().valid_mentions
+
+        await tx.run(
+          `
+          UNWIND $mentions AS mentionUsername
+          MATCH (mentionUser:User{ username: mentionUsername }), (comment:Comment{ id: $commentId })
+          CREATE (post)-[:MENTIONS]->(mentionUser)
+          `,
+          { mentions, commentId: new_comment_data.id }
+        )
+
+        const mentionsExcClient = mentions.filter(
+          (uname) => uname != client_username
+        )
+
+        if (mentionsExcClient.length) {
+          const { records } = await tx.run(
+            `
+            UNWIND $mentionsExcClient AS mentionUsername
+            MATCH (mentionUser:User{ username: mentionUsername }), (comment:Comment{ id: $commentId }), (clientUser:User{ username: $client_username })
+            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", in_comment_id: comment.id })-[:MENTIONING_USER]->(clientUser)
+            WITH mentionUser, mentionNotif, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+            RETURN [notif IN collect(mentionNotif) | notif { .*, mentioned_user_id: mentionUser.id, mentioning_user: clientUserView }] AS mention_notifs
+            `,
+            { mentionsExcClient, commentId: new_comment_data.id, client_username }
+          )
+
+          mention_notifs = records[0].toObject().mention_notifs
+        }
+      }
+
+      await tx.run(
+        `
+        UNWIND $hashtags AS hashtagName
+        MATCH (comment:Comment{ id: $commentId })
+        MERGE (ht:Hashtag{name: hashtagName})
+        CREATE (comment)-[:INCLUDES_HASHTAG]->(ht)
+        `,
+        { hashtags, commentId: new_comment_data.id }
+      )
+
+      // comment notif
+      await tx.run(
+        ``,
+        
+      )
+
+      return { mention_notifs, new_comment_data }
+    })
+
+    await session.close()
+
+    return res
   }
 
   static async find({ post_id, client_username, if_recommended }) {
