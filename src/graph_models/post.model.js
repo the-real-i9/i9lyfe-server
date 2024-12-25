@@ -107,15 +107,19 @@ export class Post {
       const { records: repostRecords } = await tx.run(
         `
         MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ id: $client_user_id })
-        CREATE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime() })-[:REPOST_OF]->(post)
+        CREATE (clientUser)-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost:Repost:Post{ id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime() })-[:REPOST_OF]->(post)
 
         WITH post, repost, clientUser { .id, username, .profile_pic_url } clientUserView
-        MATCH (reposters:User)-[:CREATES_REPOST]->(:Repost)-[:REPOST_OF]->(post)
+        MATCH (reposters:User)-[:CREATES_REPOST]->()-[:REPOST_OF]->(post)
 
         RETURN count(reposters) + 1 AS latest_reposts_count,
           repost { .*, owner_user: clientUserView, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
         `,
-        { original_post_id, client_user_id }
+        {
+          original_post_id,
+          client_user_id,
+          user_to_post: `user-${client_user_id}_to_post-${original_post_id}`,
+        }
       )
 
       const rco = repostRecords[0].toObject()
@@ -148,12 +152,16 @@ export class Post {
     const { records } = await neo4jDriver.executeQuery(
       `
       MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
-      CREATE (clientUser)-[:SAVES_POST]->(post)
+      CREATE (clientUser)-[:SAVES_POST { user_to_post: $user_to_post }]->(post)
       WITH post
       MATCH (savers:User)-[:SAVES_POST]->(post)
       RETURN count(savers) + 1 AS latest_saves_count
       `,
-      { post_id, client_user_id }
+      {
+        post_id,
+        client_user_id,
+        user_to_post: `user-${client_user_id}_to_post-${post_id}`,
+      }
     )
 
     return records[0].toObject()
@@ -169,13 +177,17 @@ export class Post {
       const { records: reactionRecords } = await tx.run(
         `
         MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
-        CREATE (clientUser)-[:REACTS_TO { reaction_code_point: $reaction_code_point }]->(post)
+        CREATE (clientUser)-[:REACTS_TO_POST { user_to_post: $user_to_post, reaction_code_point: $reaction_code_point }]->(post)
 
         WITH post
-        MATCH (reactors:User)-[:REACTS_TO]->(post)
+        MATCH (reactors:User)-[:REACTS_TO_POST]->(post)
         RETURN count(reactors) + 1 AS latest_reactions_count
         `,
-        { post_id, client_user_id }
+        {
+          post_id,
+          client_user_id,
+          user_to_post: `user-${client_user_id}_to_post-${post_id}`,
+        }
       )
 
       latest_reactions_count = reactionRecords[0].get("latest_reactions_count")
@@ -376,12 +388,16 @@ export class Post {
   static async removeReaction(post_id, client_user_id) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[rxn:REACTS_TO]->(post:Post{ id: $post_id })
+      MATCH ()-[rxn:REACTS_TO_POST { user_to_post: $user_to_post }]->(post)
       DELETE rxn
-      MATCH (reactors:User)-[:REACTS_TO]->(post)
+      MATCH (reactors:User)-[:REACTS_TO_POST]->(post)
       RETURN count(reactors) - 1 AS latest_reactions_count
       `,
-      { post_id, client_user_id }
+      {
+        post_id,
+        client_user_id,
+        user_to_post: `user-${client_user_id}_to_post-${post_id}`,
+      }
     )
 
     return records[0].toObject()
@@ -404,12 +420,12 @@ export class Post {
   static async unrepost(post_id, client_user_id) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:CREATES_REPOST]->(repost)-[:REPOST_OF]->(post:Post{ id: $post_id })
+      MATCH ()-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost)-[:REPOST_OF]->(post)
       DETACH DELETE repost
       MATCH (reposters:User)-[:CREATES_REPOST]->()-[:REPOST_OF]->(post)
       RETURN count(reposters) - 1 AS latest_reposts_count
       `,
-      { post_id, client_user_id }
+      { user_to_post: `user-${client_user_id}_to_post-${post_id}` }
     )
 
     return records[0].toObject()
@@ -418,12 +434,16 @@ export class Post {
   static async unsave(post_id, client_user_id) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[save:SAVES_POST]->(post:Post{ id: $post_id })
+      MATCH ()-[save:SAVES_POST { user_to_post: $user_to_post }]->(post)
       DELETE save
       MATCH (savers:User)-[:SAVES_POST]->(post)
       RETURN count(savers) - 1 AS latest_saves_count
       `,
-      { post_id, client_user_id }
+      {
+        post_id,
+        client_user_id,
+        user_to_post: `user-${client_user_id}_to_post-${post_id}`,
+      }
     )
 
     return records[0].toObject()

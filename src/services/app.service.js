@@ -1,4 +1,4 @@
-import { App } from "../models/app.model.js"
+import { App } from "../graph_models/app.model.js"
 
 export const searchUsersToChat = async ({
   term,

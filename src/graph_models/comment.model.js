@@ -2,11 +2,7 @@ import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Comment {
-  static async reactTo({
-    client_user_id,
-    comment_id,
-    reaction_code_point,
-  }) {
+  static async reactTo({ client_user_id, comment_id, reaction_code_point }) {
     const session = neo4jDriver.session()
 
     const res = session.executeWrite(async (tx) => {
@@ -16,13 +12,17 @@ export class Comment {
       const { records: reactionRecords } = await tx.run(
         `
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
-            CREATE (clientUser)-[:REACTS_TO { reaction_code_point: $reaction_code_point }]->(comment)
+            CREATE (clientUser)-[:REACTS_TO_COMMENT { user_to_comment: $user_to_comment, reaction_code_point: $reaction_code_point }]->(comment)
     
             WITH comment
-            MATCH (reactors:User)-[:REACTS_TO]->(comment)
+            MATCH (reactors:User)-[:REACTS_TO_COMMENT]->(comment)
             RETURN count(reactors) + 1 AS latest_reactions_count
             `,
-        { comment_id, client_user_id }
+        {
+          comment_id,
+          client_user_id,
+          user_to_comment: `user-${client_user_id}_to_comment-${comment_id}`,
+        }
       )
 
       latest_reactions_count = reactionRecords[0].get("latest_reactions_count")
@@ -213,12 +213,16 @@ export class Comment {
   static async removeReaction(comment_id, client_user_id) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[rxn:REACTS_TO]->(comment:Comment{ id: $comment_id })
+      MATCH ()-[rxn:REACTS_TO_COMMENT { user_to_comment: $user_to_comment }]->(comment)
       DELETE rxn
-      MATCH (reactors:User)-[:REACTS_TO]->(comment)
+      MATCH (reactors:User)-[:REACTS_TO_COMMENT]->(comment)
       RETURN count(reactors) - 1 AS latest_reactions_count
       `,
-      { comment_id, client_user_id }
+      {
+        comment_id,
+        client_user_id,
+        user_to_comment: `user-${client_user_id}_to_comment-${comment_id}`,
+      }
     )
 
     return records[0].toObject()

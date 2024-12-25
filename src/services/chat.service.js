@@ -1,4 +1,4 @@
-import { Chat, Message } from "../models/chat.model.js"
+import { Chat, Message } from "../graph_models/chat.model.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 
