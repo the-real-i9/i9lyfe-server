@@ -1,14 +1,32 @@
 import { dbQuery } from "../configs/db.js"
+import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Chat {
   static async create({ client_user_id, partner_user_id, init_message }) {
-    const query = {
-      text: "SELECT client_res, partner_res FROM create_chat($1, $2, $3)",
-      values: [client_user_id, partner_user_id, init_message],
-    }
+    const { records } = await neo4jDriver.executeQuery(
+      `
+      MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id })
+      MERGE (clientChat:Chat{ id: $cli_to_par, updated_at: datetime() }), 
+        (partnerChat:Chat{ id: $par_to_cli, updated_at: datetime() }),
+        (message:Message{ id: randomUUID(), msg_content: $init_message, delivery_status: "sent", created_at: datetime() }),
+        (clientUser)-[:HAS_CHAT]->(clientChat)-[:WITH_USER]->(partnerUser),
+        (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser),
+        (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat)-[:TO_USER]->(partnerUser),
+        (partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)-[:FROM_USER]->(clientUser)
+      WITH clientChat.id AS ccid, partnerChat.id AS pcid, message, clientUser { .id, .username, .profile_pic_url } AS clientUserView, partnerUser { .id, .username, .profile_pic_url } AS partnerUserView
+      RETURN { chat: { id: ccid, partner: partnerUserView }, init_message: message { .*, sender: clientUserView } } AS client_res,
+        { chat: { id: pcid, partner: clientUserView }, init_message: message { .*, sender: clientUserView } } AS partner_res,
+      `,
+      {
+        client_user_id,
+        partner_user_id,
+        init_message,
+        cli_to_par: `${client_user_id}_${partner_user_id}`,
+        par_to_cli: `${partner_user_id}_${client_user_id}`,
+      }
+    )
 
-    // return needed details
-    return (await dbQuery(query)).rows[0]
+    return records[0].toObject()
   }
 
   static async delete(client_user_id, chat_id) {
@@ -43,11 +61,7 @@ export class Chat {
     return (await dbQuery(query)).rows
   }
 
-  static async sendMessage({
-    client_user_id,
-    chat_id,
-    message_content,
-  }) {
+  static async sendMessage({ client_user_id, chat_id, message_content }) {
     const query = {
       text: "SELECT client_res, partner_res FROM create_message($1, $2, $3)",
       values: [chat_id, client_user_id, message_content],
