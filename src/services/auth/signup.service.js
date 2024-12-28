@@ -76,7 +76,7 @@ export const registerUser = async (info) => {
     client_username: user.username,
   })
 
-  messageBrokerService.createTopic(`user-${user.id}-alerts`)
+  messageBrokerService.createTopic(`i9lyfe-user-${user.id}-alerts`)
 
   return {
     data: {

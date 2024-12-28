@@ -8,7 +8,7 @@ export const sendNewNotification = (receiver_user_id, data) => {
   producer.send(
     [
       {
-        topic: `user-${receiver_user_id}-alerts`,
+        topic: `i9lyfe-user-${receiver_user_id}-alerts`,
         messages: JSON.stringify({
           event: "new notification",
           data,
@@ -25,7 +25,7 @@ export const sendChatEvent = (event, partner_user_id, data) => {
   producer.send(
     [
       {
-        topic: `user-${partner_user_id}-alerts`,
+        topic: `i9lyfe-user-${partner_user_id}-alerts`,
         messages: JSON.stringify({
           event,
           data,

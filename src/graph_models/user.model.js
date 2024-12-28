@@ -26,7 +26,7 @@ export class User {
   }
 
   /**
-   * @param {number | string} uniqueIdentifier
+   * @param {string} uniqueIdentifier
    */
   static async findOne(uniqueIdentifier) {
     const { records } = await neo4jDriver.executeQuery(

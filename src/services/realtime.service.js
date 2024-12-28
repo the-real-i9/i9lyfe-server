@@ -19,7 +19,7 @@ export const initSocketRTC = (socket) => {
   const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
 
   const consumer = new Consumer(kafkaClient, [
-    { topic: `user-${client_user_id}-alerts` },
+    { topic: `i9lyfe-user-${client_user_id}-alerts` },
   ])
 
   consumer.on("message", (message) => {

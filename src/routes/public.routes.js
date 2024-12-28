@@ -25,7 +25,7 @@ router.use(
   }
 )
 
-router.use(AuthRoutes)
+router.use("/auth", AuthRoutes)
 router.use(UserPublicRoutes)
 router.use(AppRoutes)
 

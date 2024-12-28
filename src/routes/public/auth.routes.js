@@ -18,7 +18,7 @@ router.use(
   expressSessionMiddleware(
     "ongoing_signup",
     process.env.SIGNUP_SESSION_COOKIE_SECRET,
-    "/api/auth/signup"
+    "/api/public/auth/signup"
   )
 )
 
@@ -27,7 +27,7 @@ router.use(
   expressSessionMiddleware(
     "ongoing_password_reset",
     process.env.PASSWORD_RESET_SESSION_COOKIE_SECRET,
-    "/api/auth/forgot_password"
+    "/api/public/auth/forgot_password"
   )
 )
 
