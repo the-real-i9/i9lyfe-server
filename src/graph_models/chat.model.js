@@ -199,8 +199,7 @@ export class Message {
         MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[inr:IN_CHAT]-(message:Message{ id: $message_id })<-[rsmr:SENDS_MESSAGE|RECEIVES_MESSAGE]-(clientUser),
           (clientChat)-[:WITH_USER]->(partnerUser),
           (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
-        DELETE inr
-        DELETE rsmr
+        DELETE inr, rsmr
         RETURN partnerUser.id AS partner_user_id, partnerChat.id AS partner_chat_id
         `,
         { client_user_id, client_chat_id, message_id }
