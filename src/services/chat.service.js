@@ -7,7 +7,7 @@ export const createChat = async ({
   client_user_id,
   init_message,
 }) => {
-  const { media_data, ...init_msg } = init_message
+  let { media_data, ...init_msg } = init_message
 
   init_msg.media_url = await mediaUploadService.upload({
     media_data,
@@ -15,17 +15,15 @@ export const createChat = async ({
     path_to_dest_folder: `message_medias/user-${client_user_id}`,
   })
 
+  const init_msg_json = JSON.stringify(init_msg)
+
   const { client_res, partner_res } = await Chat.create({
     client_user_id,
     partner_user_id,
-    init_message: init_msg,
+    init_message: init_msg_json,
   })
 
-  messageBrokerService.sendChatEvent(
-    "new chat",
-    partner_user_id,
-    partner_res
-  )
+  messageBrokerService.sendChatEvent("new chat", partner_user_id, partner_res)
 
   return {
     data: client_res,
@@ -48,11 +46,7 @@ export const deleteChat = async (client_user_id, chat_id) => {
   }
 }
 
-export const getChatHistory = async ({
-  chat_id,
-  limit,
-  offset,
-}) => {
+export const getChatHistory = async ({ chat_id, limit, offset }) => {
   const chatHistory = await Chat.getHistory({
     chat_id,
     limit,
@@ -77,10 +71,12 @@ export const sendMessage = async ({
     extension: msg_content.extension,
   })
 
+  const message_content_json = JSON.stringify(message_content)
+
   const { client_res, partner_res } = await Chat.sendMessage({
     client_user_id,
     chat_id,
-    message_content,
+    message_content: message_content_json,
   })
 
   // replace with
@@ -151,7 +147,8 @@ export const reactToMessage = async ({
   const reaction_code_point = reaction.codePointAt()
 
   await Message.reactTo({
-    reactor_user_id: client.user_id,
+    client_user_id: client.user_id,
+    chat_id,
     message_id,
     reaction_code_point,
   })
