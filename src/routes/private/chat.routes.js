@@ -60,7 +60,7 @@ router.delete(
 )
 
 router.delete(
-  "/chats/:chat_id/partner/:partner_user_id/messages/:message_id",
+  "/chats/:chat_id/messages/:message_id",
   ...validateIdParams,
   ...chatValidators.deleteMessage,
   CC.deleteMessage

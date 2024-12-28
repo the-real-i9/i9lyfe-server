@@ -178,7 +178,7 @@ export const removeReactionToMessage = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
   try {
-    const { chat_id, partner_user_id, message_id } = req.params
+    const { chat_id, message_id } = req.params
 
     const { delete_for } = req.query
 
@@ -189,8 +189,7 @@ export const deleteMessage = async (req, res) => {
         user_id: client_user_id,
         username: client_username,
       },
-      chat_id,
-      partner_user_id,
+      client_chat_id: chat_id,
       message_id,
       delete_for,
     })

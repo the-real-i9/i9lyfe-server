@@ -190,20 +190,20 @@ export const removeReactionToMessage = async ({
 
 export const deleteMessage = async ({
   client,
-  chat_id,
-  partner_user_id,
+  client_chat_id,
   message_id,
   delete_for,
 }) => {
-  await Message.delete({
+  const { partner_user_id, partner_chat_id } = await Message.delete({
     client_user_id: client.user_id,
+    client_chat_id,
     message_id,
-    deleted_for: delete_for,
+    delete_for,
   })
 
   if (delete_for === "everyone") {
     messageBrokerService.sendChatEvent("message deleted", partner_user_id, {
-      chat_id,
+      chat_id: partner_chat_id,
       deleter_username: client.username,
       message_id,
     })

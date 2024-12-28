@@ -67,7 +67,7 @@ export class Chat {
   }) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id })
+      MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id }),
         (clientUser)-[:HAS_CHAT]->(clientChat)-[:WITH_USER]->(partnerUser),
         (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       CREATE (message:Message{ id: randomUUID(), msg_content: $message_content, delivery_status: "sent", created_at: datetime() }),
@@ -117,7 +117,7 @@ export class Message {
   }) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id, delivery_status: "sent" })<-[:RECEIVES_MESSAGE]-(clientUser)
+      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id, delivery_status: "sent" })<-[:RECEIVES_MESSAGE]-(clientUser),
         (clientChat)-[:WITH_USER]->(partnerUser),
         (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       SET message.delivery_status = "delivered", clientChat.unread_messages_count = clientChat.unread_messages_count + 1, clientChat.updated_at = datetime($delivery_time)
@@ -132,7 +132,7 @@ export class Message {
   static async ackRead({ client_user_id, client_chat_id, message_id }) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])<-[:RECEIVES_MESSAGE]-(clientUser)
+      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])<-[:RECEIVES_MESSAGE]-(clientUser),
         (clientChat)-[:WITH_USER]->(partnerUser),
         (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       SET message.delivery_status = "seen", clientChat.unread_messages_count = clientChat.unread_messages_count - 1
@@ -152,7 +152,7 @@ export class Message {
   }) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id })
+      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id }),
         (clientChat)-[:WITH_USER]->(partnerUser),
         (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       CREATE (clientUser)-[:REACTS_TO_MESSAGE { user_to_message: $user_to_message, reaction_code_point: $reaction_code_point }]->(message)
@@ -170,27 +170,58 @@ export class Message {
     return records[0].toObject()
   }
 
-  static async removeReaction({client_user_id, client_chat_id, message_id}) {
+  static async removeReaction({ client_user_id, client_chat_id, message_id }) {
     await neo4jDriver.executeQuery(
       `
       MATCH ()-[rr:REACTS_TO_MESSAGE { user_to_message: $user_to_message }]->()-[:IN_CHAT]->(clientChat:Chat{ id: $client_chat_id }),
-      (clientUser)-[:HAS_CHAT]->(clientChat)-[:WITH_USER]->(partnerUser),
-      (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
-      RETURN partnerUser.id AS partner_user_id, partnerChat.id AS partner_chat_id
+        (clientUser)-[:HAS_CHAT]->(clientChat)-[:WITH_USER]->(partnerUser),
+        (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       DELETE rr
+      RETURN partnerUser.id AS partner_user_id, partnerChat.id AS partner_chat_id
       `,
-      { client_chat_id, user_to_message: `user-${client_user_id}_to_message-${message_id}` }
+      {
+        client_chat_id,
+        user_to_message: `user-${client_user_id}_to_message-${message_id}`,
+      }
     )
   }
 
-  static async delete({ client_user_id, message_id, deleted_for }) {
-    const query = {
-      text: `
-  INSERT INTO message_deletion_log (deleter_user_id, message_id, deleted_for) 
-  VALUES ($1, $2, $3)`,
-      values: [deleter_user_id, message_id, deleted_for],
+  static async delete({
+    client_user_id,
+    client_chat_id,
+    message_id,
+    delete_for,
+  }) {
+    if (delete_for === "me") {
+      // just remove the message from my client's chat
+      const { records } = await neo4jDriver.executeQuery(
+        `
+        MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[inr:IN_CHAT]-(message:Message{ id: $message_id })<-[rsmr:SENDS_MESSAGE|RECEIVES_MESSAGE]-(clientUser),
+          (clientChat)-[:WITH_USER]->(partnerUser),
+          (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
+        DELETE inr
+        DELETE rsmr
+        RETURN partnerUser.id AS partner_user_id, partnerChat.id AS partner_chat_id
+        `,
+        { client_user_id, client_chat_id, message_id }
+      )
+
+      return records[0].toObject()
     }
 
-    await dbQuery(query)
+    // remove the message from both client's and partner's chats
+    const { records } = await neo4jDriver.executeQuery(
+      `
+      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })<-[:IN_CHAT]-(message:Message{ id: $message_id })
+        (clientChat)-[:WITH_USER]->(partnerUser),
+        (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
+      DETACH DELETE message
+      RETURN partnerUser.id AS partner_user_id, partnerChat.id AS partner_chat_id
+      `,
+      { client_user_id, client_chat_id, message_id }
+    )
+
+    return records[0].toObject()
+
   }
 }
