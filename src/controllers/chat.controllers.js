@@ -71,15 +71,14 @@ export const getChatHistory = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { chat_id, partner_user_id } = req.params
+    const { user_id } = req.params
     const { msg_content } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.sendMessage({
       client_user_id,
-      chat_id,
-      partner_user_id,
+      partner_user_id: user_id,
       msg_content,
     })
 
@@ -92,7 +91,7 @@ export const sendMessage = async (req, res) => {
 
 export const ackMessageDelivered = async (req, res) => {
   try {
-    const { chat_id, partner_user_id, message_id } = req.params
+    const { chat_id, message_id } = req.params
 
     const { delivery_time } = req.body
 
@@ -100,8 +99,7 @@ export const ackMessageDelivered = async (req, res) => {
 
     const resp = await chatService.ackMessageDelivered({
       client_user_id,
-      partner_user_id,
-      chat_id,
+      client_chat_id: chat_id,
       message_id,
       delivery_time,
     })
@@ -115,14 +113,13 @@ export const ackMessageDelivered = async (req, res) => {
 
 export const ackMessageRead = async (req, res) => {
   try {
-    const { chat_id, partner_user_id, message_id } = req.params
+    const { chat_id, message_id } = req.params
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.ackMessageRead({
       client_user_id,
-      partner_user_id,
-      chat_id,
+      client_chat_id: chat_id,
       message_id,
     })
 
@@ -135,7 +132,7 @@ export const ackMessageRead = async (req, res) => {
 
 export const reactToMessage = async (req, res) => {
   try {
-    const { chat_id, partner_user_id, message_id } = req.params
+    const { chat_id, message_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
@@ -145,8 +142,7 @@ export const reactToMessage = async (req, res) => {
         user_id: client_user_id,
         username: client_username,
       },
-      chat_id,
-      partner_user_id,
+      client_chat_id: chat_id,
       message_id,
       reaction,
     })
@@ -162,15 +158,14 @@ export const removeReactionToMessage = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
 
-    const { chat_id, partner_user_id, message_id } = req.params
+    const { chat_id, message_id } = req.params
 
     const resp = await chatService.removeReactionToMessage({
       client: {
         user_id: client_user_id,
         username: client_username,
       },
-      chat_id,
-      partner_user_id,
+      client_chat_id: chat_id,
       message_id,
     })
 

@@ -27,34 +27,34 @@ router.get(
 )
 
 router.post(
-  "/chats/:chat_id/partner/:partner_user_id/send_message",
+  "/users/:user_id/send_message",
   ...validateIdParams,
   ...chatValidators.sendMessage,
   CC.sendMessage
 )
 
 router.put(
-  "/chats/:chat_id/partner/:partner_user_id/messages/:message_id/delivered",
+  "chats/:chat_id/messages/:message_id/delivered",
   ...validateIdParams,
   ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered
 )
 
 router.put(
-  "/chats/:chat_id/partner/:partner_user_id/messages/:message_id/read",
+  "/chats/:chat_id/messages/:message_id/read",
   ...validateIdParams,
   CC.ackMessageRead
 )
 
 router.post(
-  "/chats/:chat_id/partner/:partner_user_id/messages/:message_id/react",
+  "/chats/:chat_id/messages/:message_id/react",
   ...validateIdParams,
   ...chatValidators.reactToMessage,
   CC.reactToMessage
 )
 
 router.delete(
-  "/chats/:chat_id/partner/:partner_user_id/messages/:message_id/remove_reaction",
+  "/chats/:chat_id/messages/:message_id/remove_reaction",
   ...validateIdParams,
   CC.removeReactionToMessage
 )
