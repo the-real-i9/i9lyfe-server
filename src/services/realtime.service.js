@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events"
 import { Consumer, KafkaClient } from "kafka-node"
-import { Post } from "../models/post.model"
+import { Post } from "../models/post.model.js"
 
 /** @type import("socket.io").Server */
 let sio = null

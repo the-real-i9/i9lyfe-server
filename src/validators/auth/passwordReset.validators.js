@@ -1,5 +1,5 @@
 import { checkExact, checkSchema } from "express-validator"
-import { errHandler } from "./miscs.js"
+import { errHandler } from "../miscs.js"
 
 export const requestPasswordReset = [
   checkExact(
