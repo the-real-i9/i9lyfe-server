@@ -1,6 +1,10 @@
 import { createServer } from "http"
 import jwt from "jsonwebtoken"
 
+import dotenv from "dotenv"
+
+dotenv.config()
+
 import app from "./app.js"
 
 import { Server } from "socket.io"
@@ -30,11 +34,11 @@ io.on("connection", (socket) => {
   renewJwtToken(socket)
 })
 
-const PORT = process.env.PORT ?? 5000
-
 server.on("close", () => {
   neo4jDriver.close()
 })
+
+const PORT = process.env.PORT ?? 5000
 
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`)

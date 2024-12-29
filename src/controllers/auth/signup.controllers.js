@@ -1,5 +1,9 @@
 import * as signupService from "../../services/auth/signup.service.js"
 
+/**
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const requestNewAccount = async (req, res) => {
   const { email } = req.body
 
@@ -25,6 +29,10 @@ export const requestNewAccount = async (req, res) => {
   }
 }
 
+/**
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const verifyEmail = async (req, res) => {
   const { code: inputCode } = req.body
 
@@ -53,9 +61,13 @@ export const verifyEmail = async (req, res) => {
   }
 }
 
+/**
+ * @param {import("express").Request} req 
+ * @param {import("express").Response} res 
+ */
 export const registerUser = async (req, res) => {
   try {
-    if (req.session?.signup.step != "verify email")
+    if (req.session?.signup.step != "register user")
       return res.status(400).send({ msg: "Invalid cookie at endpoint" })
 
     const { email } = req.session.signup.data

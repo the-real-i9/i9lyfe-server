@@ -19,7 +19,7 @@ export class User {
       CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "online" })
       RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
       `,
-      { info }
+      { info },
     )
 
     return records[0].get("new_user")

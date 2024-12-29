@@ -18,7 +18,7 @@ export const renewJwtToken = (socket) => {
 
 export const generateTokenWithExpiration = () => {
   const token = randomInt(100000, 999999)
-  const expires = new Date(Date.now() + 1 * 60 * 60 * 1000)
+  const expires = new Date(Date.now() + 60 * 60 * 1000)
 
   return { token, expires }
 }
