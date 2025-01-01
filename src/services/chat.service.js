@@ -60,7 +60,7 @@ export const getChatHistory = async ({ chat_id, limit, offset }) => {
 
 export const sendMessage = async ({
   client_user_id,
-  partner_user_id,
+  client_chat_id,
   msg_content,
 }) => {
   const { media_data, ...message_content } = msg_content
@@ -72,9 +72,9 @@ export const sendMessage = async ({
 
   const message_content_json = JSON.stringify(message_content)
 
-  const { client_res, partner_res } = await Chat.sendMessage({
+  const { client_res, partner_res, partner_user_id } = await Chat.sendMessage({
     client_user_id,
-    partner_user_id,
+    client_chat_id,
     message_content: message_content_json,
   })
 

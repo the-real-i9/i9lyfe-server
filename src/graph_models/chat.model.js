@@ -62,22 +62,22 @@ export class Chat {
 
   static async sendMessage({
     client_user_id,
-    partner_user_id,
+    client_chat_id,
     message_content,
   }) {
     const { records } = await neo4jDriver.executeQuery(
       `
-      MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id }),
-        (clientUser)-[:HAS_CHAT]->(clientChat)-[:WITH_USER]->(partnerUser),
+      MATCH (clientUser:User{ id: $client_user_id })-[:HAS_CHAT]->(clientChat:Chat{ id: $client_chat_id })-[:WITH_USER]->(partnerUser),
         (partnerUser)-[:HAS_CHAT]->(partnerChat)-[:WITH_USER]->(clientUser)
       CREATE (message:Message{ id: randomUUID(), msg_content: $message_content, delivery_status: "sent", created_at: datetime() }),
         (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
         (partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)
-      WITH clientChat.id AS ccid, partnerChat.id AS pcid, message, clientUser { .id, .username, .profile_pic_url, .connection_status } AS clientUserView, partnerUser { .id, .username, .profile_pic_url, .connection_status } AS partnerUserView
-      RETURN { chat_id: ccid, new_message: message { .*, sender: clientUserView } } AS client_res,
-        { chat_id: pcid, new_message: message { .*, sender: clientUserView } } AS partner_res,
+      WITH partnerChat.id AS pcid, message.id AS msgid, clientUser { .id, .username, .profile_pic_url, .connection_status } AS clientUserView, partnerUser.id AS puid
+      RETURN { new_msg_id: msgid } AS client_res,
+        { chat_id: pcid, new_message: message { .id, msg_content, sender: clientUserView } } AS partner_res,
+        puid AS partner_user_id
       `,
-      { client_user_id, partner_user_id, message_content }
+      { client_user_id, client_chat_id, message_content }
     )
 
     return records[0].toObject()

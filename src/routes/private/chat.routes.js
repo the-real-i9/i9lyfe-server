@@ -27,14 +27,14 @@ router.get(
 )
 
 router.post(
-  "/users/:user_id/send_message",
+  "/chats/:chat_id/send_message",
   ...validateIdParams,
   ...chatValidators.sendMessage,
   CC.sendMessage
 )
 
 router.put(
-  "chats/:chat_id/messages/:message_id/delivered",
+  "/chats/:chat_id/messages/:message_id/delivered",
   ...validateIdParams,
   ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered

@@ -71,14 +71,14 @@ export const getChatHistory = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { user_id } = req.params
+    const { chat_id } = req.params
     const { msg_content } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.sendMessage({
       client_user_id,
-      partner_user_id: user_id,
+      client_chat_id: chat_id,
       msg_content,
     })
 
