@@ -1,23 +1,5 @@
 import * as chatService from "../services/chat.service.js"
 
-export const createChat = async (req, res) => {
-  try {
-    const { partner_user_id, init_message } = req.body
-
-    const { client_user_id } = req.auth
-
-    const resp = chatService.createChat({
-      partner_user_id,
-      client_user_id,
-      init_message,
-    })
-
-    res.status(201).send(resp.data)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}
 
 export const getMyChats = async (req, res) => {
   try {
@@ -34,13 +16,13 @@ export const getMyChats = async (req, res) => {
 
 export const deleteChat = async (req, res) => {
   try {
-    const { chat_id } = req.params
+    const { partner_user_id } = req.params
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.deleteChat(
       client_user_id,
-      chat_id
+      partner_user_id
     )
 
     res.status(200).send(resp.data)
@@ -71,14 +53,15 @@ export const getChatHistory = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { chat_id } = req.params
-    const { msg_content } = req.body
+    const { partner_user_id } = req.params
+    const { msg_content, created_at } = req.body
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.sendMessage({
       client_user_id,
-      client_chat_id: chat_id,
+      partner_user_id,
+      created_at,
       msg_content,
     })
 
@@ -91,7 +74,7 @@ export const sendMessage = async (req, res) => {
 
 export const ackMessageDelivered = async (req, res) => {
   try {
-    const { chat_id, message_id } = req.params
+    const { partner_user_id, message_id } = req.params
 
     const { delivery_time } = req.body
 
@@ -99,7 +82,7 @@ export const ackMessageDelivered = async (req, res) => {
 
     const resp = await chatService.ackMessageDelivered({
       client_user_id,
-      client_chat_id: chat_id,
+      partner_user_id,
       message_id,
       delivery_time,
     })
@@ -113,13 +96,13 @@ export const ackMessageDelivered = async (req, res) => {
 
 export const ackMessageRead = async (req, res) => {
   try {
-    const { chat_id, message_id } = req.params
+    const { partner_user_id, message_id } = req.params
 
     const { client_user_id } = req.auth
 
     const resp = await chatService.ackMessageRead({
       client_user_id,
-      client_chat_id: chat_id,
+      partner_user_id,
       message_id,
     })
 
@@ -132,7 +115,7 @@ export const ackMessageRead = async (req, res) => {
 
 export const reactToMessage = async (req, res) => {
   try {
-    const { chat_id, message_id } = req.params
+    const { partner_user_id, message_id } = req.params
     const { reaction } = req.body
 
     const { client_user_id, client_username } = req.auth
@@ -142,7 +125,7 @@ export const reactToMessage = async (req, res) => {
         user_id: client_user_id,
         username: client_username,
       },
-      client_chat_id: chat_id,
+      partner_user_id,
       message_id,
       reaction,
     })
@@ -158,14 +141,14 @@ export const removeReactionToMessage = async (req, res) => {
   try {
     const { client_user_id, client_username } = req.auth
 
-    const { chat_id, message_id } = req.params
+    const { partner_user_id, message_id } = req.params
 
     const resp = await chatService.removeReactionToMessage({
       client: {
         user_id: client_user_id,
         username: client_username,
       },
-      client_chat_id: chat_id,
+      partner_user_id,
       message_id,
     })
 
@@ -178,7 +161,7 @@ export const removeReactionToMessage = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
   try {
-    const { chat_id, message_id } = req.params
+    const { partner_user_id, message_id } = req.params
 
     const { delete_for } = req.query
 
@@ -189,7 +172,7 @@ export const deleteMessage = async (req, res) => {
         user_id: client_user_id,
         username: client_username,
       },
-      client_chat_id: chat_id,
+      partner_user_id,
       message_id,
       delete_for,
     })

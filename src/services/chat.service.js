@@ -2,34 +2,6 @@ import { Chat, Message } from "../graph_models/chat.model.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 
-export const createChat = async ({
-  partner_user_id,
-  client_user_id,
-  init_message,
-}) => {
-  let { media_data, ...init_msg } = init_message
-
-  init_msg.media_url = await mediaUploadService.upload({
-    media_data,
-    extension: init_msg.extension,
-    path_to_dest_folder: `message_medias/user-${client_user_id}`,
-  })
-
-  const init_msg_json = JSON.stringify(init_msg)
-
-  const { client_res, partner_res } = await Chat.create({
-    client_user_id,
-    partner_user_id,
-    init_message: init_msg_json,
-  })
-
-  messageBrokerService.sendChatEvent("new chat", partner_user_id, partner_res)
-
-  return {
-    data: client_res,
-  }
-}
-
 export const getMyChats = async (client_user_id) => {
   const chats = await Chat.getAll(client_user_id)
 
@@ -38,8 +10,8 @@ export const getMyChats = async (client_user_id) => {
   }
 }
 
-export const deleteChat = async (client_user_id, chat_id) => {
-  await Chat.delete(client_user_id, chat_id)
+export const deleteChat = async (client_user_id, partner_user_id) => {
+  await Chat.delete(client_user_id, partner_user_id)
 
   return {
     data: { msg: "operation successful" },
@@ -60,8 +32,9 @@ export const getChatHistory = async ({ chat_id, limit, offset }) => {
 
 export const sendMessage = async ({
   client_user_id,
-  client_chat_id,
+  partner_user_id,
   msg_content,
+  created_at,
 }) => {
   const { media_data, ...message_content } = msg_content
 
@@ -72,10 +45,11 @@ export const sendMessage = async ({
 
   const message_content_json = JSON.stringify(message_content)
 
-  const { client_res, partner_res, partner_user_id } = await Chat.sendMessage({
+  const { client_res, partner_res } = await Chat.sendMessage({
     client_user_id,
-    client_chat_id,
+    partner_user_id,
     message_content: message_content_json,
+    created_at: new Date(created_at).toUTCString()
   })
 
   // replace with
@@ -92,20 +66,20 @@ export const sendMessage = async ({
 
 export const ackMessageDelivered = async ({
   client_user_id,
-  client_chat_id,
+  partner_user_id,
   message_id,
   delivery_time,
 }) => {
-  const { partner_user_id, partner_chat_id } = await Message.ackDelivered({
-    client_chat_id,
+  await Message.ackDelivered({
+    partner_user_id,
     client_user_id,
     message_id,
     delivery_time,
   })
 
-  // to mark message with a double-tick on the partner's side
+  // to mark message with a double-tick on the partner's side, whose own partner is the client_user
   messageBrokerService.sendChatEvent("message delivered", partner_user_id, {
-    chat_id: partner_chat_id,
+    partner_user_id: client_user_id,
     message_id,
   })
 
@@ -116,17 +90,17 @@ export const ackMessageDelivered = async ({
 
 export const ackMessageRead = async ({
   client_user_id,
-  client_chat_id,
+  partner_user_id,
   message_id,
 }) => {
-  const { partner_user_id, partner_chat_id } = await Message.ackRead({
+  await Message.ackRead({
     client_user_id,
-    client_chat_id,
+    partner_user_id,
     message_id,
   })
 
   messageBrokerService.sendChatEvent("message read", partner_user_id, {
-    chat_id: partner_chat_id,
+    partner_user_id: client_user_id, // client_user is the partner of partner_user
     message_id,
   })
 
@@ -137,22 +111,21 @@ export const ackMessageRead = async ({
 
 export const reactToMessage = async ({
   client,
-  client_chat_id,
+  partner_user_id,
   message_id,
   reaction,
 }) => {
   const reaction_code_point = reaction.codePointAt()
 
-  const { partner_user_id, partner_chat_id } = await Message.reactTo({
+  await Message.reactTo({
     client_user_id: client.user_id,
-    client_chat_id,
+    partner_user_id,
     message_id,
     reaction_code_point,
   })
 
   messageBrokerService.sendChatEvent("message reaction", partner_user_id, {
-    chat_id: partner_chat_id,
-    reactor: client,
+    partner: client,
     message_id,
     reaction_code_point,
   })
@@ -164,12 +137,12 @@ export const reactToMessage = async ({
 
 export const removeReactionToMessage = async ({
   client,
-  client_chat_id,
+  partner_user_id,
   message_id,
 }) => {
-  const { partner_user_id, partner_chat_id } = await Message.removeReaction({
+  await Message.removeReaction({
     client_user_id: client.user_id,
-    client_chat_id,
+    partner_user_id,
     message_id,
   })
 
@@ -177,8 +150,7 @@ export const removeReactionToMessage = async ({
     "message reaction removed",
     partner_user_id,
     {
-      reactor: client,
-      chat_id: partner_chat_id,
+      partner: client,
       message_id,
     }
   )
@@ -190,21 +162,20 @@ export const removeReactionToMessage = async ({
 
 export const deleteMessage = async ({
   client,
-  client_chat_id,
+  partner_user_id,
   message_id,
   delete_for,
 }) => {
-  const { partner_user_id, partner_chat_id } = await Message.delete({
+  await Message.delete({
     client_user_id: client.user_id,
-    client_chat_id,
+    partner_user_id,
     message_id,
     delete_for,
   })
 
   if (delete_for === "everyone") {
     messageBrokerService.sendChatEvent("message deleted", partner_user_id, {
-      chat_id: partner_chat_id,
-      deleter_username: client.username,
+      partner: client,
       message_id,
     })
   }
