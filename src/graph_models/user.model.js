@@ -16,7 +16,7 @@ export class User {
     
     const { records } = await neo4jDriver.executeQuery(
       `
-      CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "online" })
+      CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline" })
       RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
       `,
       { info },

@@ -1,5 +1,5 @@
 import * as securityServices from "../security.services.js"
-import { User } from "../../models/user.model.js"
+import { User } from "../../graph_models/user.model.js"
 
 export const signin = async (email_or_username, inputPassword) => {
   const userData = await User.findOneIncPassword(email_or_username)
@@ -9,7 +9,7 @@ export const signin = async (email_or_username, inputPassword) => {
       error: { msg: "Incorrect email or password" },
     }
 
-  const { pswd: storedPassword, ...user } = userData
+  const { password: storedPassword, ...user } = userData
 
   if (!(await securityServices.passwordsMatch(inputPassword, storedPassword)))
     return {

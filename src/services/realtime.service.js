@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import { Post } from "../models/post.model.js"
+import { Post } from "../graph_models/post.model.js"
 import { consumeTopics } from "./messageBroker.service.js"
 import { updateConnectionStatus } from "./user.service.js"
 
