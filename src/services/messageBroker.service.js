@@ -55,7 +55,7 @@ export const createTopic = (topic) => {
 export const consumeTopics = (topics) => {
   const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
 
-  const consumer = new Consumer(kafkaClient, topics)
+  const consumer = new Consumer(kafkaClient, topics, { autoCommit: true })
 
   return consumer
 }
