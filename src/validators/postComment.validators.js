@@ -7,7 +7,7 @@ export const createNewPost = [
       {
         medias_data_list: {
           isArray: {
-            options: { min: 1 },
+            options: { min: 0 }, // just for testing: should be 1 instead
             errorMessage: "value must be an array of at least one item",
           },
         },

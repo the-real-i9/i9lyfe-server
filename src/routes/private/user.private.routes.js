@@ -25,12 +25,6 @@ router.put(
   UC.changeProfilePicture
 )
 
-router.patch(
-  "/update_connection_status",
-  ...userValidators.updateConnectionStatus,
-  UC.updateConnectionStatus
-)
-
 router.put(
   "/my_notifications/:notification_id/read",
   ...validateIdParams,

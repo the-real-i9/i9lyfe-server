@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events"
-import { Consumer, KafkaClient } from "kafka-node"
 import { Post } from "../models/post.model.js"
+import { consumeTopics } from "./messageBroker.service.js"
+import { updateConnectionStatus } from "./user.service.js"
 
 /** @type import("socket.io").Server */
 let sio = null
@@ -16,9 +17,9 @@ export const newPostEventEmitter = new EventEmitter()
 export const initSocketRTC = (socket) => {
   const { client_user_id } = socket.jwt_payload
 
-  const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
+  updateConnectionStatus({ client_user_id, connection_status: "online" })
 
-  const consumer = new Consumer(kafkaClient, [
+  const consumer = consumeTopics([
     { topic: `i9lyfe-user-${client_user_id}-alerts` },
   ])
 
@@ -29,6 +30,11 @@ export const initSocketRTC = (socket) => {
   })
 
   socket.on("disconnect", () => {
+    updateConnectionStatus({
+      client_user_id,
+      connection_status: "offline",
+      last_active: new Date(),
+    })
     consumer.close((err) => err && console.error(err))
   })
 

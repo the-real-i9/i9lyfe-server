@@ -60,25 +60,6 @@ export const editProfile = async (req, res) => {
   }
 }
 
-export const updateConnectionStatus = async (req, res) => {
-  try {
-    const { connection_status, last_active = null } = req.body
-
-    const { client_user_id } = req.auth
-
-    const resp = await userService.updateConnectionStatus({
-      client_user_id,
-      connection_status,
-      last_active,
-    })
-
-    res.status(200).send(resp.data)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}
-
 export const readNotification = async (req, res) => {
   try {
     const { notification_id } = req.params
