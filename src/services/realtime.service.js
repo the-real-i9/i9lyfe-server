@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events"
-import { Post } from "../graph_models/post.model.js"
 import { consumeTopics } from "./messageBroker.service.js"
 import { updateConnectionStatus } from "./user.service.js"
+import { getPost } from "./contentRecommendation.service.js"
 
 /** @type import("socket.io").Server */
 let sio = null
@@ -60,11 +60,7 @@ export const initSocketRTC = (socket) => {
 
   newPostEventEmitter.on("new post", async (post_id) => {
     // get post based on "post recommendation algorithm"
-    const post = await Post.find({
-      post_id,
-      client_user_id,
-      if_recommended: true,
-    })
+    const post = await getPost(post_id, client_user_id)
 
     if (post) {
       socket.send("new post", post)
