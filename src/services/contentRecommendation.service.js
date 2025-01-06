@@ -12,7 +12,8 @@ export async function getPost(post_id, client_user_id) {
       UNION
       MATCH (:User{ id: $client_user_id })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
     }
-    RETURN post { .*, owner_user: ownerUser { .id, .username, .profile_pic_url } } AS the_post
+    WITH post, toString(post.created_at) AS created_at, ownerUser { .id, .username, .profile_pic_url } AS owner_user
+    RETURN post { .*, created_at, owner_user } AS the_post
     `,
     { post_id, client_user_id }
   )

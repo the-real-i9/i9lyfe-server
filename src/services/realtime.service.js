@@ -63,7 +63,7 @@ export const initSocketRTC = (socket) => {
     const post = await getPost(post_id, client_user_id)
 
     if (post) {
-      socket.send("new post", post)
+      socket.emit("new post", post)
     }
   })
 }
