@@ -116,18 +116,18 @@ export class Message {
     client_user_id,
     partner_user_id,
     message_id,
-    reaction_code_point,
+    reaction,
   }) {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })<-[:IN_CHAT]-(message:Message{ id: $message_id }),
-      CREATE (clientUser)-[:REACTS_TO_MESSAGE { user_to_message: $user_to_message, reaction_code_point: $reaction_code_point }]->(message)
+      CREATE (clientUser)-[:REACTS_TO_MESSAGE { user_to_message: $user_to_message, reaction: $reaction }]->(message)
       `,
       {
         client_user_id,
         partner_user_id,
         message_id,
-        reaction_code_point,
+        reaction,
         user_to_message: `user-${client_user_id}_to_message-${message_id}`,
       }
     )

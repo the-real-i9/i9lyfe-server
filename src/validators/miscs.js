@@ -18,10 +18,8 @@ export const validateIdParams = [
   checkSchema(
     {
       "*": {
-        isInt: {
+        isUUID: {
           if: (value, { path }) => path.endsWith("_id"),
-          options: { min: 0 },
-          errorMessage: "expected an integer value greater than -1",
         },
         isLength: {
           if: (value, { path }) => path === "reaction",

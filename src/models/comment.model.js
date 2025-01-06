@@ -10,7 +10,7 @@ export class Comment {
     client_user_id,
     comment_id,
     comment_owner_user_id,
-    reaction_code_point,
+    reaction,
   }) {
     /** @type {PgQueryConfig} */
     const query = {
@@ -21,7 +21,7 @@ export class Comment {
         client_user_id,
         comment_id,
         comment_owner_user_id,
-        reaction_code_point,
+        reaction,
       ],
     }
 
@@ -101,7 +101,7 @@ export class Comment {
 
   static async getReactorsWithReaction({
     comment_id,
-    reaction_code_point,
+    reaction,
     client_user_id,
     limit,
     offset,
@@ -109,7 +109,7 @@ export class Comment {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_reactors_with_reaction_to_comment($1, $2, $3, $4, $5)",
-      values: [comment_id, reaction_code_point, client_user_id, limit, offset],
+      values: [comment_id, reaction, client_user_id, limit, offset],
     }
 
     return (await dbQuery(query)).rows

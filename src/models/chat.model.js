@@ -101,12 +101,12 @@ export class Message {
     return await dbQuery(query)
   }
 
-  static async reactTo({ message_id, reactor_user_id, reaction_code_point }) {
+  static async reactTo({ message_id, reactor_user_id, reaction }) {
     const query = {
       text: `
-    INSERT INTO message_reaction (message_id, reactor_user_id, reaction_code_point) 
+    INSERT INTO message_reaction (message_id, reactor_user_id, reaction) 
     VALUES ($1, $2, $3)`,
-      values: [message_id, reactor_user_id, reaction_code_point],
+      values: [message_id, reactor_user_id, reaction],
     }
 
     await dbQuery(query)

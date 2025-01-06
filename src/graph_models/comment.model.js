@@ -2,17 +2,17 @@ import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Comment {
-  static async reactTo({ client_user_id, comment_id, reaction_code_point }) {
+  static async reactTo({ client_user_id, comment_id, reaction }) {
     const session = neo4jDriver.session()
 
-    const res = session.executeWrite(async (tx) => {
+    const res = await session.executeWrite(async (tx) => {
       let latest_reactions_count = 0
       let reaction_notif = null
 
       const { records: reactionRecords } = await tx.run(
         `
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
-            CREATE (clientUser)-[:REACTS_TO_COMMENT { user_to_comment: $user_to_comment, reaction_code_point: $reaction_code_point }]->(comment)
+            CREATE (clientUser)-[:REACTS_TO_COMMENT { user_to_comment: $user_to_comment, reaction: $reaction }]->(comment)
 
             SET comment.reactions_count = comment.reactions_count + 1
 
@@ -22,6 +22,7 @@ export class Comment {
           comment_id,
           client_user_id,
           user_to_comment: `user-${client_user_id}_to_comment-${comment_id}`,
+          reaction,
         }
       )
 
@@ -32,11 +33,11 @@ export class Comment {
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
             WITH comment, clientUser
             MATCH (commentOwner:User WHERE commentOwner.id <> $client_user_id)-[:WRITES_COMMENT]->(comment)
-            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction_code_point: $reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
+            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction: $reaction, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
             WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, commentOwner.id AS receiver_user_id, clientUser {.id, .username, .profile_pic_url} AS reactor_user
             RETURN reactionNotif { .*, created_at, receiver_user_id, reactor_user } AS reaction_notif
             `,
-        { comment_id, client_user_id, reaction_code_point }
+        { comment_id, client_user_id, reaction }
       )
 
       reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
@@ -198,7 +199,7 @@ export class Comment {
 
   static async getReactorsWithReaction({
     comment_id,
-    reaction_code_point,
+    reaction,
     client_user_id,
     limit,
     offset,
@@ -206,7 +207,7 @@ export class Comment {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_reactors_with_reaction_to_comment($1, $2, $3, $4, $5)",
-      values: [comment_id, reaction_code_point, client_user_id, limit, offset],
+      values: [comment_id, reaction, client_user_id, limit, offset],
     }
 
     return (await dbQuery(query)).rows

@@ -57,12 +57,10 @@ export const reactToPost = async ({
   post_id,
   reaction,
 }) => {
-  const reaction_code_point = reaction.codePointAt()
-
-  const { reaction_notif, latest_reactions_count } = Post.reactTo({
+  const { reaction_notif, latest_reactions_count } = await Post.reactTo({
     client_user_id,
     post_id,
-    reaction_code_point,
+    reaction,
   })
 
   // notify post owner of reaction
@@ -140,12 +138,10 @@ export const reactToComment = async ({
   comment_id,
   reaction,
 }) => {
-  const reaction_code_point = reaction.codePointAt()
-
   const { reaction_notif, latest_reactions_count } = Comment.reactTo({
     client_user_id,
     comment_id,
-    reaction_code_point,
+    reaction,
   })
 
   // notify comment owner of reaction
@@ -315,7 +311,7 @@ export const getReactorsWithReactionToPost = async ({
 }) => {
   const reactorsWithReaction = await Post.getReactorsWithReaction({
     post_id,
-    reaction_code_point: reaction.codePointAt(),
+    reaction: reaction.codePointAt(),
     client_user_id,
     limit,
     offset,
@@ -371,7 +367,7 @@ export const getReactorsWithReactionToComment = async ({
 }) => {
   const commentReactorsWithReaction = await Comment.getReactorsWithReaction({
     comment_id,
-    reaction_code_point: reaction.codePointAt(),
+    reaction: reaction.codePointAt(),
     client_user_id,
     limit,
     offset,

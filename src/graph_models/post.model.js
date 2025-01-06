@@ -169,17 +169,17 @@ export class Post {
     return records[0].toObject()
   }
 
-  static async reactTo({ client_user_id, post_id, reaction_code_point }) {
+  static async reactTo({ client_user_id, post_id, reaction }) {
     const session = neo4jDriver.session()
 
-    const res = session.executeWrite(async (tx) => {
+    const res = await session.executeWrite(async (tx) => {
       let latest_reactions_count = 0
       let reaction_notif = null
 
       const { records: reactionRecords } = await tx.run(
         `
         MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
-        CREATE (clientUser)-[:REACTS_TO_POST { user_to_post: $user_to_post, reaction_code_point: $reaction_code_point }]->(post)
+        CREATE (clientUser)-[:REACTS_TO_POST { user_to_post: $user_to_post, reaction: $reaction }]->(post)
 
         SET post.reactions_count = post.reactions_count + 1
 
@@ -189,6 +189,7 @@ export class Post {
           post_id,
           client_user_id,
           user_to_post: `user-${client_user_id}_to_post-${post_id}`,
+          reaction
         }
       )
 
@@ -199,11 +200,11 @@ export class Post {
         MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
         WITH post, clientUser
         MATCH (postOwner:User WHERE postOwner.id <> $client_user_id)-[:CREATES_POST]->(post)
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", reaction_code_point: $reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
+        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", reaction: $reaction, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
         WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.id AS receiver_user_id, clientUser {.id, .username, .profile_pic_url} AS reactor_user
         RETURN reactionNotif { .*, created_at, receiver_user_id, reactor_user } AS reaction_notif
         `,
-        { post_id, client_user_id, reaction_code_point }
+        { post_id, client_user_id, reaction }
       )
 
       reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
@@ -366,7 +367,7 @@ export class Post {
 
   static async getReactorsWithReaction({
     post_id,
-    reaction_code_point,
+    reaction,
     client_username,
     limit,
     offset,
@@ -374,7 +375,7 @@ export class Post {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_reactors_with_reaction_to_post($1, $2, $3, $4, $5)",
-      values: [post_id, reaction_code_point, client_username, limit, offset],
+      values: [post_id, reaction, client_username, limit, offset],
     }
 
     return (await dbQuery(query)).rows

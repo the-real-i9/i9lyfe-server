@@ -67,7 +67,7 @@ export class Post {
     client_user_id,
     post_id,
     post_owner_user_id,
-    reaction_code_point,
+    reaction,
   }) {
     /** @type {PgQueryConfig} */
     const query = {
@@ -78,7 +78,7 @@ export class Post {
         client_user_id,
         post_id,
         post_owner_user_id,
-        reaction_code_point,
+        reaction,
       ],
     }
 
@@ -148,7 +148,7 @@ export class Post {
 
   static async getReactorsWithReaction({
     post_id,
-    reaction_code_point,
+    reaction,
     client_user_id,
     limit,
     offset,
@@ -156,7 +156,7 @@ export class Post {
     /** @type {PgQueryConfig} */
     const query = {
       text: "SELECT * FROM get_reactors_with_reaction_to_post($1, $2, $3, $4, $5)",
-      values: [post_id, reaction_code_point, client_user_id, limit, offset],
+      values: [post_id, reaction, client_user_id, limit, offset],
     }
 
     return (await dbQuery(query)).rows

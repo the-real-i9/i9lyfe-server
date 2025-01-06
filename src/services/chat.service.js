@@ -115,19 +115,17 @@ export const reactToMessage = async ({
   message_id,
   reaction,
 }) => {
-  const reaction_code_point = reaction.codePointAt()
-
   await Message.reactTo({
     client_user_id: client.user_id,
     partner_user_id,
     message_id,
-    reaction_code_point,
+    reaction,
   })
 
   messageBrokerService.sendChatEvent("message reaction", partner_user_id, {
     partner: client,
     message_id,
-    reaction_code_point,
+    reaction,
   })
 
   return {
