@@ -33,7 +33,7 @@ export class Comment {
             WITH comment, clientUser, clientUser {.id, .username, .profile_pic_url} AS clientUserView
             MATCH (commentOwner:User WHERE commentOwner.id <> $client_user_id)-[:WRITES_COMMENT]->(comment)
             CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction_code_point: $reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
-            RETURN reactionNotif { .*, receiver_user_id: commentOwner.id, reactor_user: clientUserView } AS reaction_notif
+            RETURN reactionNotif { .*, created_at: toString(.created_at), receiver_user_id: commentOwner.id, reactor_user: clientUserView } AS reaction_notif
             `,
         { comment_id, client_user_id, reaction_code_point }
       )
@@ -74,7 +74,7 @@ export class Comment {
         SET parentComment.comments_count = parentComment.comments_count + 1
 
         RETURN parentComment.comments_count AS latest_comments_count,
-        childComment { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
+        childComment { .*, created_at: toString(.created_at), ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
         `,
         { client_username, attachment_url, comment_text, comment_id }
       )
@@ -145,7 +145,7 @@ export class Comment {
           MATCH (parentCommentOwner:User WHERE parentCommentOwner.username <> $client_username)-[:WRITES_COMMENT]->(parentComment)
           CREATE (parentCommentOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_comment", child_comment_id: $childCommentId, is_read: false, created_at: datetime() })-[:COMMENTER_USER]->(clientUser)
           WITH parentCommentOwner, clientUser {.id, .username, .proifle_pic_url} clientUserView
-          RETURN commentNotif { .*, receiver_user_id: parentCommentOwner.id, commenter_user: clientUserView } AS comment_notif
+          RETURN commentNotif { .*, created_at: (.created_at), receiver_user_id: parentCommentOwner.id, commenter_user: clientUserView } AS comment_notif
           `,
         { client_username, comment_id, childCommentId: new_comment_data.id }
       )

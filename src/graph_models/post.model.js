@@ -31,7 +31,7 @@ export class Post {
         MATCH (clientUser:User{ username: $client_username })
         CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })
         WITH post, clientUser { .id, .username, .profile_pic_url } AS clientUserView
-        RETURN post { .*, owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
+        RETURN post { .*, created_at: toString(.created_at), owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
         `,
         { client_username, media_urls, type, description }
       )
@@ -114,7 +114,7 @@ export class Post {
         SET post.reposts_count = post.reposts_count + 1
 
         RETURN post.reposts_count AS latest_reposts_count,
-          repost { .*, owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
+          repost { .*, created_at: toString(.created_at), owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
         `,
         {
           original_post_id,
@@ -134,7 +134,7 @@ export class Post {
         MATCH (postOwner:User WHERE postOwner.id <> $client_user_id)-[:CREATES_POST]->(post)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", repost_id: $repostId, is_read: false, created_at: datetime() })-[:REPOSTER_USER]->(clientUser)
         WITH repostNotif, postOwner, clientUser { .id, .username, .profile_pic_url } AS clientUserView
-        RETURN repostNotif { .*, receiver_user_id: postOwner.id, reposter_user: clientUserView } AS repost_notif
+        RETURN repostNotif { .*, created_at: toString(.created_at), receiver_user_id: postOwner.id, reposter_user: clientUserView } AS repost_notif
         `,
         { original_post_id, client_user_id, repostId: repost_data.id }
       )
@@ -200,7 +200,7 @@ export class Post {
         WITH post, clientUser, clientUser {.id, .username, .profile_pic_url} AS clientUserView
         MATCH (postOwner:User WHERE postOwner.id <> $client_user_id)-[:CREATES_POST]->(post)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", reaction_code_point: $reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
-        RETURN reactionNotif { .*, receiver_user_id: postOwner.id, reactor_user: clientUserView } AS reaction_notif
+        RETURN reactionNotif { .*, created_at: toString(.created_at), receiver_user_id: postOwner.id, reactor_user: clientUserView } AS reaction_notif
         `,
         { post_id, client_user_id, reaction_code_point }
       )
@@ -241,7 +241,7 @@ export class Post {
         SET post.comments_count = post.comments_count + 1
 
         RETURN post.comments_count AS latest_comments_count,
-        comment { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
+        comment { .*, created_at: toString(.created_at),, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
         `,
         { client_username, attachment_url, comment_text, post_id }
       )
@@ -312,7 +312,7 @@ export class Post {
           MATCH (postOwner:User WHERE postOwner.username <> $client_username)-[:CREATES_POST]->(post)
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", comment_id: $commentId, is_read: false, created_at: datetime() })-[:COMMENTER_USER]->(clientUser)
           WITH postOwner, clientUser {.id, .username, .proifle_pic_url} clientUserView
-          RETURN commentNotif { .*, receiver_user_id: postOwner.id, commenter_user: clientUserView } AS comment_notif
+          RETURN commentNotif { .*, created_at: toString(.created_at), receiver_user_id: postOwner.id, commenter_user: clientUserView } AS comment_notif
           `,
         { client_username, post_id, commentId: new_comment_data.id }
       )
