@@ -211,7 +211,7 @@ export class Comment {
   }
 
   static async removeReaction(comment_id, client_user_id) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH ()-[rxn:REACTS_TO_COMMENT { user_to_comment: $user_to_comment }]->(comment)
       DELETE rxn
@@ -233,7 +233,7 @@ export class Comment {
     comment_id,
     client_user_id,
   }) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(childComment:Comment{ id: $comment_id })-[:COMMENT_ON]->(parentComment:Comment{ id: $parent_comment_id })
       DETACH DELETE childComment

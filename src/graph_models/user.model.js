@@ -14,7 +14,7 @@ export class User {
   static async create(info) {
     info.birthday = new Date(info.birthday).toISOString()
     
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline" })
       RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
@@ -29,7 +29,7 @@ export class User {
    * @param {string} uniqueIdentifier
    */
   static async findOne(uniqueIdentifier) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (user:User)
       WHERE user.id = $uniqueIdentifier OR user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
@@ -45,7 +45,7 @@ export class User {
    * @param {string} emailOrUsername
    */
   static async findOneIncPassword(emailOrUsername) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (user:User)
       WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
@@ -62,7 +62,7 @@ export class User {
    * @returns {Promise<boolean>}
    */
   static async exists(uniqueIdentifier) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `RETURN EXISTS {
         MATCH (user:User)
         WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
@@ -74,7 +74,7 @@ export class User {
   }
 
   static async changePassword(email, newPassword) {
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (user:User{ email: $email })
       SET user.password = $newPassword
@@ -91,7 +91,7 @@ export class User {
     if (client_user_id === to_follow_user_id) {
       return { follow_notif: null }
     }
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
       CREATE (followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime() })-[:FOLLOWER_USER]->(clientUser), 
@@ -110,7 +110,7 @@ export class User {
    * @param {string} to_unfollow_user_id
    */
   static async unfollowUser(client_user_id, to_unfollow_user_id) {
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH ()-[fr:FOLLOWS { user_to_user: $user_to_user }]->()
       DELETE fr
@@ -144,7 +144,7 @@ export class User {
       setUpdates = `${setUpdates}user.${key} = $${key}`
     }
 
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (user:User{ id: $client_user_id })
       SET ${setUpdates}
@@ -154,7 +154,7 @@ export class User {
   }
 
   static async changeProfilePicture(client_user_id, profile_pic_url) {
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (user:User{ id: $client_user_id })
       SET user.profile_pic_url = $profile_pic_url
@@ -269,7 +269,7 @@ export class User {
 
     const last_active_param = last_active ? "datetime($last_active)" : "$last_active"
 
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (user:User{ id: $client_user_id })
       SET user.connection_status = $connection_status, user.last_active = ${last_active_param}
@@ -279,7 +279,7 @@ export class User {
   }
 
   static async readNotification(notification_id) {
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (notif:Notification{ id: $notification_id })
       SET notif.is_read = true

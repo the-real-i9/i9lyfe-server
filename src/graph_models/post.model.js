@@ -149,7 +149,7 @@ export class Post {
   }
 
   static async save(post_id, client_user_id) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
       CREATE (clientUser)-[:SAVES_POST { user_to_post: $user_to_post }]->(post)
@@ -329,14 +329,15 @@ export class Post {
     return res
   }
 
-  static async find({ post_id, client_username, if_recommended }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_post($1, $2, $3)",
-      values: [post_id, client_username, if_recommended],
-    }
+  static async findOne(post_id, client_user_id) {
+    const { records } = await neo4jDriver.executeRead(
+      `
 
-    return (await dbQuery(query)).rows[0]
+      `,
+      { post_id, client_user_id },
+    )
+
+    return records[0].get("found_post")
   }
 
   static async getComments({ post_id, client_username, limit, offset }) {
@@ -376,7 +377,7 @@ export class Post {
   }
 
   static async delete(post_id, client_user_id) {
-    await neo4jDriver.executeQuery(
+    await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ id: $client_user_id })-[:CREATES_POST]->(post:Post{ id: $post_id })
       DETACH DELETE post
@@ -386,7 +387,7 @@ export class Post {
   }
 
   static async removeReaction(post_id, client_user_id) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH ()-[rxn:REACTS_TO_POST { user_to_post: $user_to_post }]->(post)
       DELETE rxn
@@ -404,7 +405,7 @@ export class Post {
   }
 
   static async removeComment({ post_id, comment_id, client_user_id }) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON]->(post:Post{ id: $post_id })
       DETACH DELETE comment
@@ -418,7 +419,7 @@ export class Post {
   }
 
   static async unrepost(post_id, client_user_id) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH ()-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost)-[:REPOST_OF]->(post)
       DETACH DELETE repost
@@ -432,7 +433,7 @@ export class Post {
   }
 
   static async unsave(post_id, client_user_id) {
-    const { records } = await neo4jDriver.executeQuery(
+    const { records } = await neo4jDriver.executeWrite(
       `
       MATCH ()-[save:SAVES_POST { user_to_post: $user_to_post }]->(post)
       DELETE save

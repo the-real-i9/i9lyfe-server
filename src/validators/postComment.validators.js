@@ -5,7 +5,7 @@ export const createNewPost = [
   checkExact(
     checkSchema(
       {
-        medias_data_list: {
+        media_data_list: {
           isArray: {
             options: { min: 0 }, // just for testing: should be 1 instead
             errorMessage: "value must be an array of at least one item",

@@ -252,11 +252,9 @@ export const unsavePost = async (post_id, client_user_id) => {
 /* The GETs */
 
 export const getPost = async (post_id, client_user_id) => {
-  const post = await Post.find({
+  const post = await Post.findOne(
     post_id,
-    client_user_id,
-    if_recommended: false,
-  })
+    client_user_id)
 
   return {
     data: post,
