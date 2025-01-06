@@ -30,10 +30,11 @@ export class Comment {
       const { records: reactionNotifRecords } = await tx.run(
         `
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
-            WITH comment, clientUser, clientUser {.id, .username, .profile_pic_url} AS clientUserView
+            WITH comment, clientUser
             MATCH (commentOwner:User WHERE commentOwner.id <> $client_user_id)-[:WRITES_COMMENT]->(comment)
             CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction_code_point: $reaction_code_point, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
-            RETURN reactionNotif { .*, created_at: toString(.created_at), receiver_user_id: commentOwner.id, reactor_user: clientUserView } AS reaction_notif
+            WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, commentOwner.id AS receiver_user_id, clientUser {.id, .username, .profile_pic_url} AS reactor_user
+            RETURN reactionNotif { .*, created_at, receiver_user_id, reactor_user } AS reaction_notif
             `,
         { comment_id, client_user_id, reaction_code_point }
       )
@@ -67,14 +68,14 @@ export class Comment {
       const { records: commentRecords } = await tx.run(
         `
         MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })
-        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, created_at: datetime() })-[:COMMENT_ON]->(comment)
+        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON]->(comment)
 
-        WITH parentComment, childComment, clientUser { .id, .username, .profile_pic_url } AS clientUserView
+        WITH parentComment, childComment, toString(childComment.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url } AS owner_user
 
         SET parentComment.comments_count = parentComment.comments_count + 1
 
         RETURN parentComment.comments_count AS latest_comments_count,
-        childComment { .*, created_at: toString(.created_at), ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
+        childComment { .*, created_at, owner_user, client_reaction: "" } AS new_comment_data
         `,
         { client_username, attachment_url, comment_text, comment_id }
       )
