@@ -14,6 +14,7 @@ import * as realtimeService from "../services/realtime.service.js"
  */
 export const createNewPost = async ({
   client_username,
+  client_user_id,
   media_data_list,
   type,
   description,
@@ -37,7 +38,7 @@ export const createNewPost = async ({
     hashtags,
   })
 
-  realtimeService.publishNewPost(new_post_data.id)
+  realtimeService.publishNewPost(new_post_data.id, client_user_id)
 
   mention_notifs.forEach((notif) => {
     const { receiver_user_id, ...restData } = notif

@@ -58,7 +58,11 @@ export const initSocketRTC = (socket) => {
     socket.leave(`comment-${comment_id}-updates`)
   })
 
-  newPostEventEmitter.on("new post", async (post_id) => {
+  newPostEventEmitter.on("new post", async (post_id, owner_user_id) => {
+    if (owner_user_id === client_user_id) {
+      return
+    }
+    
     // get post based on "post recommendation algorithm"
     const post = await getPost(post_id, client_user_id)
 
@@ -76,6 +80,6 @@ export const sendCommentUpdate = (comment_id, data) => {
   sio.to(`comment-${comment_id}-updates`).emit("latest comment update", data)
 }
 
-export const publishNewPost = (post_id) => {
-  newPostEventEmitter.emit("new post", post_id)
+export const publishNewPost = (post_id, owner_user_id) => {
+  newPostEventEmitter.emit("new post", post_id, owner_user_id)
 }
