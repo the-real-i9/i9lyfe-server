@@ -13,10 +13,10 @@ export class Comment {
         `
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
             CREATE (clientUser)-[:REACTS_TO_COMMENT { user_to_comment: $user_to_comment, reaction_code_point: $reaction_code_point }]->(comment)
-    
-            WITH comment
-            MATCH (reactors:User)-[:REACTS_TO_COMMENT]->(comment)
-            RETURN count(reactors) + 1 AS latest_reactions_count
+
+            SET comment.reactions_count = comment.reactions_count + 1
+
+            RETURN comment.reactions_count AS latest_reactions_count
             `,
         {
           comment_id,
@@ -70,9 +70,10 @@ export class Comment {
         CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, created_at: datetime() })-[:COMMENT_ON]->(comment)
 
         WITH parentComment, childComment, clientUser { .id, .username, .profile_pic_url } AS clientUserView
-        MATCH (commenters:User)-[:WRITES_COMMENT]->()-[:COMMENT_ON]->(parentComment)
 
-        RETURN count(commenters) + 1 AS latest_comments_count,
+        SET parentComment.comments_count = parentComment.comments_count + 1
+
+        RETURN parentComment.comments_count AS latest_comments_count,
         childComment { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
         `,
         { client_username, attachment_url, comment_text, comment_id }
@@ -215,8 +216,10 @@ export class Comment {
       `
       MATCH ()-[rxn:REACTS_TO_COMMENT { user_to_comment: $user_to_comment }]->(comment)
       DELETE rxn
-      MATCH (reactors:User)-[:REACTS_TO_COMMENT]->(comment)
-      RETURN count(reactors) - 1 AS latest_reactions_count
+
+      SET comment.reactions_count = comment.reactions_count - 1
+
+      RETURN comment.reactions_count AS latest_reactions_count
       `,
       {
         comment_id,
@@ -237,8 +240,10 @@ export class Comment {
       `
       MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(childComment:Comment{ id: $comment_id })-[:COMMENT_ON]->(parentComment:Comment{ id: $parent_comment_id })
       DETACH DELETE childComment
-      MATCH (commenters:User)-[:WRITES_COMMENT]->()-[:COMMENT_ON]->(parentComment)
-      RETURN count(commenters) - 1 AS latest_comments_count
+
+      SET parentComment.comments_count = parentComment.comments_count - 1
+
+      RETURN parentComment.comments_count AS latest_comments_count
       `,
       { parent_comment_id, comment_id, client_user_id }
     )

@@ -29,9 +29,9 @@ export class Post {
       const { records: postRecords } = await tx.run(
         `
         MATCH (clientUser:User{ username: $client_username })
-        CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: datetime() })
+        CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })
         WITH post, clientUser { .id, .username, .profile_pic_url } AS clientUserView
-        RETURN post { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
+        RETURN post { .*, owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
         `,
         { client_username, media_urls, type, description }
       )
@@ -107,13 +107,14 @@ export class Post {
       const { records: repostRecords } = await tx.run(
         `
         MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ id: $client_user_id })
-        CREATE (clientUser)-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost:Repost:Post{ id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime() })-[:REPOST_OF]->(post)
+        CREATE (clientUser)-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost:Repost:Post{ id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })-[:REPOST_OF]->(post)
 
         WITH post, repost, clientUser { .id, username, .profile_pic_url } clientUserView
-        MATCH (reposters:User)-[:CREATES_REPOST]->()-[:REPOST_OF]->(post)
 
-        RETURN count(reposters) + 1 AS latest_reposts_count,
-          repost { .*, owner_user: clientUserView, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
+        SET post.reposts_count = post.reposts_count + 1
+
+        RETURN post.reposts_count AS latest_reposts_count,
+          repost { .*, owner_user: clientUserView, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
         `,
         {
           original_post_id,
@@ -153,9 +154,10 @@ export class Post {
       `
       MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
       CREATE (clientUser)-[:SAVES_POST { user_to_post: $user_to_post }]->(post)
-      WITH post
-      MATCH (savers:User)-[:SAVES_POST]->(post)
-      RETURN count(savers) + 1 AS latest_saves_count
+
+      SET post.saves_count = post.saves_count + 1
+
+      RETURN post.saves_count AS latest_saves_count
       `,
       {
         post_id,
@@ -179,9 +181,9 @@ export class Post {
         MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
         CREATE (clientUser)-[:REACTS_TO_POST { user_to_post: $user_to_post, reaction_code_point: $reaction_code_point }]->(post)
 
-        WITH post
-        MATCH (reactors:User)-[:REACTS_TO_POST]->(post)
-        RETURN count(reactors) + 1 AS latest_reactions_count
+        SET post.reactions_count = post.reactions_count + 1
+
+        RETURN post.reactions_count AS latest_reactions_count
         `,
         {
           post_id,
@@ -235,9 +237,10 @@ export class Post {
         CREATE (clientUser)-[:WRITES_COMMENT]->(comment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, created_at: datetime() })-[:COMMENT_ON]->(post)
 
         WITH post, comment, clientUser { .id, .username, .profile_pic_url } AS clientUserView
-        MATCH (commenters:User)-[:WRITES_COMMENT]->()-[:COMMENT_ON]->(post)
+        
+        SET post.comments_count = post.comments_count + 1
 
-        RETURN count(commenters) + 1 AS latest_comments_count,
+        RETURN post.comments_count AS latest_comments_count,
         comment { .*, ownerUser: clientUserView, reactions_count: 0, comments_count: 0, client_reaction: "" } AS new_comment_data
         `,
         { client_username, attachment_url, comment_text, post_id }
@@ -391,8 +394,10 @@ export class Post {
       `
       MATCH ()-[rxn:REACTS_TO_POST { user_to_post: $user_to_post }]->(post)
       DELETE rxn
-      MATCH (reactors:User)-[:REACTS_TO_POST]->(post)
-      RETURN count(reactors) - 1 AS latest_reactions_count
+
+      SET post.reactions_count = post.reactions_count - 1
+
+      RETURN post.reactions_count AS latest_reactions_count
       `,
       {
         post_id,
@@ -409,8 +414,10 @@ export class Post {
       `
       MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON]->(post:Post{ id: $post_id })
       DETACH DELETE comment
-      MATCH (commenters:User)-[:WRITES_COMMENT]->()-[:COMMENT_ON]->(post)
-      RETURN count(commenters) - 1 AS latest_comments_count
+
+      SET post.comments_count = post.comments_count - 1
+
+      RETURN post.comments_count AS latest_comments_count
       `,
       { post_id, comment_id, client_user_id }
     )
@@ -423,8 +430,10 @@ export class Post {
       `
       MATCH ()-[:CREATES_REPOST { user_to_post: $user_to_post }]->(repost)-[:REPOST_OF]->(post)
       DETACH DELETE repost
-      MATCH (reposters:User)-[:CREATES_REPOST]->()-[:REPOST_OF]->(post)
-      RETURN count(reposters) - 1 AS latest_reposts_count
+
+      SET post.reposts_count = post.reposts_count - 1
+
+      RETURN post.reposts_count AS latest_reposts_count
       `,
       { user_to_post: `user-${client_user_id}_to_post-${post_id}` }
     )
@@ -437,8 +446,10 @@ export class Post {
       `
       MATCH ()-[save:SAVES_POST { user_to_post: $user_to_post }]->(post)
       DELETE save
-      MATCH (savers:User)-[:SAVES_POST]->(post)
-      RETURN count(savers) - 1 AS latest_saves_count
+
+      SET post.saves_count = post.saves_count - 1
+
+      RETURN post.saves_count AS latest_saves_count
       `,
       {
         post_id,
