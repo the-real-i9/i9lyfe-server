@@ -95,7 +95,7 @@ export class User {
       `
       MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
       CREATE (followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime() })-[:FOLLOWER_USER]->(clientUser), 
-        (clientUser)-[:FOLLOWS { user_to_user: $user_to_user }]->(tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif)
+        (clientUser)-[:FOLLOWS_USER { user_to_user: $user_to_user }]->(tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif)
       WITH followNotif, clientUser { .id, .username, .profile_pic_url } AS clientUserView
       RETURN followNotif { .id, .type, follower_user: clientUserView } AS follow_notif
       `,
@@ -112,7 +112,7 @@ export class User {
   static async unfollowUser(client_user_id, to_unfollow_user_id) {
     await neo4jDriver.executeWrite(
       `
-      MATCH ()-[fr:FOLLOWS { user_to_user: $user_to_user }]->()
+      MATCH ()-[fr:FOLLOWS_USER { user_to_user: $user_to_user }]->()
       DELETE fr
       `,
       { user_to_user: `user-${client_user_id}_to_user-${to_unfollow_user_id}` }
