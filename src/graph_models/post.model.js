@@ -340,12 +340,13 @@ export class Post {
   static async findOne(post_id, client_user_id) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })
-      OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(poinst:Post{ id: $post_id })
-      OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(poinst2:Post{ id: $post_id })
-      OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(poinst3:Post{ id: $post_id })
-      WITH poinst, 
-        toString(poinst.created_at) AS created_at, 
+      MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ id: $client_user_id })
+      OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
+      OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
+      OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
+      WITH post, 
+        toString(post.created_at) AS created_at, 
+        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -358,7 +359,7 @@ export class Post {
           WHEN IS NULL false 
           ELSE true 
         END AS client_reposted
-      RETURN poinst { .*, created_at, client_reaction, client_saved, client_reposted } AS found_post
+      RETURN post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted } AS found_post
       `,
       { post_id, client_user_id },
     )
@@ -370,18 +371,19 @@ export class Post {
   static async getComments({ post_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)
+      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)<-[:CREATES_COMMENT]-(ownerUser:User)
       OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
       WITH comment, 
         toString(comment.created_at) AS created_at, 
-          CASE crxn 
-            WHEN IS NULL THEN "" 
-            ELSE crxn.reaction 
-          END AS client_reaction
+        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        CASE crxn 
+          WHEN IS NULL THEN "" 
+          ELSE crxn.reaction 
+        END AS client_reaction
       ORDER BY comment.created_at DESC, comment.reactions_count DESC, comment.comments_count DESC
       OFFSET $offset
       LIMIT $limit
-      RETURN collect(comment {.*, created_at, client_reaction }) AS res_comments
+      RETURN collect(comment {.*, owner_user, created_at, client_reaction }) AS res_comments
       `,
       { post_id, client_user_id, limit, offset }
     )

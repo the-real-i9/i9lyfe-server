@@ -83,20 +83,6 @@ export const changeProfilePicture = async ({
   }
 }
 
-/* GETs */
-
-export const getHomeFeedPosts = async ({ client_user_id, limit, offset }) => {
-  const homeFeedPosts = await User.getHomeFeedPosts({
-    client_user_id,
-    limit,
-    offset,
-  })
-
-  return {
-    data: homeFeedPosts,
-  }
-}
-
 export const getProfile = async (username, client_user_id) => {
   const profileData = await User.getProfile(username, client_user_id)
 

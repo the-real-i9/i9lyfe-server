@@ -1,3 +1,4 @@
+import { getHomeFeed } from "../services/contentRecommendation.service.js"
 import * as userService from "../services/user.service.js"
 
 export const getSessionUser = async (req, res) => {
@@ -102,7 +103,7 @@ export const getHomeFeedPosts = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const resp = await userService.getHomeFeedPosts({
+    const resp = await getHomeFeed({
       client_user_id,
       limit,
       offset,

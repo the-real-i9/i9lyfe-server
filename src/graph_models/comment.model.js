@@ -167,21 +167,42 @@ export class Comment {
     return res
   }
 
+  static async findOne(comment_id, client_user_id) {
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (clientUser:User{ id: $client_user_id })
+      OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(ownerUser:User)
+      WITH comment, 
+        toString(comment.created_at) AS created_at, 
+        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        CASE crxn 
+          WHEN IS NULL THEN "" 
+          ELSE crxn.reaction 
+        END AS client_reaction, 
+      RETURN comment { .*, owner_user, created_at, client_reaction } AS found_comment
+      `,
+      { comment_id, client_user_id },
+    )
+
+    return records[0].get("found_comment")
+  }
+
   static async getComments({ comment_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (parentComment:Comment{ id: $comment_id })<-[:COMMENT_ON_COMMENT]-(childComment:Comment)
+      MATCH (parentComment:Comment{ id: $comment_id })<-[:COMMENT_ON_COMMENT]-(childComment:Comment)<-[:WRITES_COMMENT]-(ownerUser:User)
       OPTIONAL MATCH (childComment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
       WITH childComment, 
         toString(childComment.created_at) AS created_at, 
-          CASE crxn 
-            WHEN IS NULL THEN "" 
-            ELSE crxn.reaction 
-          END AS client_reaction
+        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        CASE crxn 
+          WHEN IS NULL THEN "" 
+          ELSE crxn.reaction 
+        END AS client_reaction
       ORDER BY childComment.created_at DESC, childComment.reactions_count DESC, childComment.comments_count DESC
       OFFSET $offset
       LIMIT $limit
-      RETURN collect(childComment {.*, created_at, client_reaction }) AS res_comments
+      RETURN collect(childComment {.*, created_at, owner_user, client_reaction }) AS res_comments
       `,
       { comment_id, client_user_id, limit, offset }
     )
@@ -189,24 +210,6 @@ export class Comment {
     return records[0].get("res_comments")
   }
 
-  static async findOne(comment_id, client_user_id) {
-    const { records } = await neo4jDriver.executeRead(
-      `
-      MATCH (clientUser:User{ id: $client_user_id })
-      OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
-      WITH comment, 
-        toString(comment.created_at) AS created_at, 
-        CASE crxn 
-          WHEN IS NULL THEN "" 
-          ELSE crxn.reaction 
-        END AS client_reaction, 
-      RETURN comment { .*, created_at, client_reaction } AS found_comment
-      `,
-      { comment_id, client_user_id },
-    )
-
-    return records[0].get("found_comment")
-  }
 
   static async getReactors({ comment_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
