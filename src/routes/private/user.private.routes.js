@@ -3,7 +3,7 @@ import express from "express"
 import * as UC from "../../controllers/user.controllers.js"
 import * as userValidators from "../../validators/user.validators.js"
 import {
-  validateIdParams,
+  validateParams,
   validateLimitOffset,
 } from "../../validators/miscs.js"
 
@@ -13,9 +13,9 @@ router.get("/home_feed", ...validateLimitOffset, UC.getHomeFeedPosts)
 
 router.get("/session_user", UC.getSessionUser)
 
-router.post("/users/:user_id/follow", ...validateIdParams, UC.followUser)
+router.post("/users/:user_id/follow", ...validateParams, UC.followUser)
 
-router.delete("/users/:user_id/unfollow", ...validateIdParams, UC.unfollowUser)
+router.delete("/users/:user_id/unfollow", ...validateParams, UC.unfollowUser)
 
 router.patch("/edit_profile", ...userValidators.editProfile, UC.editProfile)
 
@@ -27,7 +27,7 @@ router.put(
 
 router.put(
   "/my_notifications/:notification_id/read",
-  ...validateIdParams,
+  ...validateParams,
   UC.readNotification
 )
 

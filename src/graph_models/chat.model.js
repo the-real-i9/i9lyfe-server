@@ -62,13 +62,12 @@ export class Chat {
   static async blockUser(client_user_id, to_block_user_id) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id }), (toblockUser:User{ id: to_block_user_id })
-      CREATE (clientUser)-[:BLOCKS_USER { user_to_user: $user_to_user }]->(toblockUser)
+      MATCH (clientUser:User{ id: $client_user_id })
+      MERGE (clientUser)-[:BLOCKS_USER]->(:User{ id: $to_block_user_id })
       `,
       {
         client_user_id,
         to_block_user_id,
-        user_to_user: `user-${client_user_id}_to_user-${to_block_user_id}`,
       }
     )
   }
@@ -76,10 +75,10 @@ export class Chat {
   static async unblockUser(client_user_id, blocked_user_id) {
     await neo4jDriver.executeWrite(
       `
-      MATCH ()-[br:BLOCKS_USER { user_to_user: $user_to_user }]->()
+      MATCH (:User{ id: $client_user_id })-[br:BLOCKS_USER]->(:User{ id: $blocked_user_id })
       DELETE br
       `,
-      { user_to_user: `user-${client_user_id}_to_user-${blocked_user_id}` }
+      { client_user_id, blocked_user_id }
     )
   }
 }
@@ -106,7 +105,8 @@ export class Message {
       `
       MATCH (clientChat:Chat{ owner_user_id: $client_chat_id, partner_user_id: $partner_user_id }),
         ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])-[:IN_CHAT]->(clientChat)
-      SET message.delivery_status = "seen", clientChat.unread_messages_count = CASE WHEN coalesce(clientChat.unread_messages_count, 0) <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END
+      WITH message, CASE coalesce(clientChat.unread_messages_count, 0) WHEN <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END AS unread_messages_count
+      SET message.delivery_status = "seen", clientChat.unread_messages_count = unread_messages_count
       `,
       { client_user_id, partner_user_id, message_id }
     )
@@ -121,14 +121,15 @@ export class Message {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })<-[:IN_CHAT]-(message:Message{ id: $message_id }),
-      CREATE (clientUser)-[:REACTS_TO_MESSAGE { user_to_message: $user_to_message, reaction: $reaction }]->(message)
+      MERGE (clientUser)-[crxn:REACTS_TO_MESSAGE]->(message)
+      ON CREATE
+        SET crxn.reaction = $reaction
       `,
       {
         client_user_id,
         partner_user_id,
         message_id,
         reaction,
-        user_to_message: `user-${client_user_id}_to_message-${message_id}`,
       }
     )
   }
@@ -136,13 +137,13 @@ export class Message {
   static async removeReaction({ client_user_id, partner_user_id, message_id }) {
     await neo4jDriver.executeWrite(
       `
-      MATCH ()-[rr:REACTS_TO_MESSAGE { user_to_message: $user_to_message }]->()-[:IN_CHAT]->(:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })
+      MATCH (:User{ id: $client_user_id })-[crxn:REACTS_TO_MESSAGE]->(:Message{ id: $message_id })-[:IN_CHAT]->(:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })
       DELETE rr
       `,
       {
         client_user_id,
         partner_user_id,
-        user_to_message: `user-${client_user_id}_to_message-${message_id}`,
+        message_id,
       }
     )
   }

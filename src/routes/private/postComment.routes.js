@@ -2,36 +2,36 @@ import express from "express"
 
 import * as PCC from "../../controllers/postComment.controllers.js"
 import * as PCV from "../../validators/postComment.validators.js"
-import { validateIdParams } from "../../validators/miscs.js"
+import { validateLimitOffset, validateParams } from "../../validators/miscs.js"
 
 const router = express.Router()
 
 /* ====== POST ====== */
 router.post("/new_post", ...PCV.createNewPost, PCC.createNewPost)
-router.get("/posts/:post_id", ...validateIdParams, PCC.getPost)
-router.delete("/posts/:post_id", ...validateIdParams, PCC.deletePost)
+router.get("/posts/:post_id", ...validateParams, PCC.getPost)
+router.delete("/posts/:post_id", ...validateParams, PCC.deletePost)
 
 /* ====== POST'S REACTION ====== */
 
 router.post(
   "/posts/:post_id/react",
-  ...validateIdParams,
+  ...validateParams,
   ...PCV.reactTo,
   PCC.reactToPost
 )
 router.get(
   "/posts/:post_id/reactors",
-  ...validateIdParams,
+  ...validateParams,
   PCC.getReactorsToPost
 )
 router.get(
   "/posts/:post_id/reactors/:reaction",
-  ...validateIdParams,
+  ...validateParams,
   PCC.getReactorsWithReactionToPost
 )
 router.delete(
   "/posts/:post_id/remove_reaction",
-  ...validateIdParams,
+  ...validateParams,
   PCC.removeReactionToPost
 )
 
@@ -39,37 +39,39 @@ router.delete(
 
 router.post(
   "/posts/:post_id/comment",
-  ...validateIdParams,
+  ...validateParams,
   ...PCV.commentOn,
   PCC.commentOnPost
 )
 router.post(
   "/comments/:comment_id/comment",
-  ...validateIdParams,
+  ...validateParams,
   ...PCV.commentOn,
   PCC.commentOnComment
 )
 
 router.get(
   "/posts/:post_id/comments",
-  ...validateIdParams,
+  ...validateParams,
+  ...validateLimitOffset,
   PCC.getCommentsOnPost
 )
 router.get(
   "/comments/:comment_id/comments",
-  ...validateIdParams,
+  ...validateParams,
+  ...validateLimitOffset,
   PCC.getCommentsOnComment
 )
-router.get("/comments/:comment_id", ...validateIdParams, PCC.getComment)
+router.get("/comments/:comment_id", ...validateParams, PCC.getComment)
 
 router.delete(
   "/posts/:post_id/comments/:comment_id",
-  ...validateIdParams,
+  ...validateParams,
   PCC.removeCommentOnPost
 )
 router.delete(
   "/comments/:parent_comment_id/comments/:comment_id",
-  ...validateIdParams,
+  ...validateParams,
   PCC.removeCommentOnComment
 )
 
@@ -77,35 +79,35 @@ router.delete(
 
 router.post(
   "/comments/:comment_id/react",
-  ...validateIdParams,
+  ...validateParams,
   ...PCV.reactTo,
   PCC.reactToComment
 )
 router.get(
   "/comments/:comment_id/reactors",
-  ...validateIdParams,
+  ...validateParams,
   PCC.getReactorsToComment
 )
 router.get(
   "/comments/:comment_id/reactors/:reaction",
-  ...validateIdParams,
+  ...validateParams,
   PCC.getReactorsWithReactionToComment
 )
 router.delete(
   "/comments/:comment_id/remove_reaction",
-  ...validateIdParams,
+  ...validateParams,
   PCC.removeReactionToComment
 )
 
 /* ====== REPOST ====== */
 
-router.post("/posts/:post_id/repost", ...validateIdParams, PCC.createRepost)
-router.delete("/posts/:post_id/unrepost", ...validateIdParams, PCC.deleteRepost)
+router.post("/posts/:post_id/repost", ...validateParams, PCC.createRepost)
+router.delete("/posts/:post_id/unrepost", ...validateParams, PCC.deleteRepost)
 
 /* ====== POST SAVE ====== */
 
-router.post("/posts/:post_id/save", ...validateIdParams, PCC.savePost)
-router.delete("/posts/:post_id/unsave", ...validateIdParams, PCC.unsavePost)
+router.post("/posts/:post_id/save", ...validateParams, PCC.savePost)
+router.delete("/posts/:post_id/unsave", ...validateParams, PCC.unsavePost)
 
 // GET insight data for a specific post
 

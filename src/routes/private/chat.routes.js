@@ -2,13 +2,13 @@ import express from "express"
 
 import * as CC from "../../controllers/chat.controllers.js"
 import * as chatValidators from "../../validators/chat.validators.js"
-import { validateIdParams } from "../../validators/miscs.js"
+import { validateParams } from "../../validators/miscs.js"
 
 const router = express.Router()
 
 router.post(
   "/chats/:partner_user_id/send_message",
-  ...validateIdParams,
+  ...validateParams,
   ...chatValidators.sendMessage,
   CC.sendMessage
 )
@@ -17,46 +17,46 @@ router.get("/my_chats", CC.getMyChats)
 
 router.delete(
   "/chats/:partner_user_id",
-  ...validateIdParams,
+  ...validateParams,
   CC.deleteChat
 )
 
 router.get(
   "/chats/:partner_user_id/history",
-  ...validateIdParams,
+  ...validateParams,
   CC.getChatHistory
 )
 
 
 router.put(
   "/chats/:partner_user_id/messages/:message_id/delivered",
-  ...validateIdParams,
+  ...validateParams,
   ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered
 )
 
 router.put(
   "/chats/:partner_user_id/messages/:message_id/read",
-  ...validateIdParams,
+  ...validateParams,
   CC.ackMessageRead
 )
 
 router.post(
   "/chats/:partner_user_id/messages/:message_id/react",
-  ...validateIdParams,
+  ...validateParams,
   ...chatValidators.reactToMessage,
   CC.reactToMessage
 )
 
 router.delete(
   "/chats/:partner_user_id/messages/:message_id/remove_reaction",
-  ...validateIdParams,
+  ...validateParams,
   CC.removeReactionToMessage
 )
 
 router.delete(
   "/chats/:partner_user_id/messages/:message_id",
-  ...validateIdParams,
+  ...validateParams,
   ...chatValidators.deleteMessage,
   CC.deleteMessage
 )

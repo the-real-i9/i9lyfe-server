@@ -11,17 +11,17 @@ export class Comment {
 
       const { records: reactionRecords } = await tx.run(
         `
-            MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
-            CREATE (clientUser)-[:REACTS_TO_COMMENT { user_to_comment: $user_to_comment, reaction: $reaction }]->(comment)
-
-            SET comment.reactions_count = comment.reactions_count + 1
+            MATCH (clientUser:User{ id: $client_user_id })
+            MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
+            ON CREATE
+              SET crxn.reaction = $reaction
+              SET comment.reactions_count = comment.reactions_count + 1
 
             RETURN comment.reactions_count AS latest_reactions_count
             `,
         {
           comment_id,
           client_user_id,
-          user_to_comment: `user-${client_user_id}_to_comment-${comment_id}`,
           reaction,
         }
       )
@@ -33,7 +33,7 @@ export class Comment {
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
             WITH comment, clientUser
             MATCH (commentOwner:User WHERE commentOwner.id <> $client_user_id)-[:WRITES_COMMENT]->(comment)
-            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction: $reaction, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
+            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", reaction: $reaction, to_comment_id: $comment_id, is_read: false, created_at: datetime() })-[:REACTOR_USER]->(clientUser)
             WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, commentOwner.id AS receiver_user_id, clientUser {.id, .username, .profile_pic_url} AS reactor_user
             RETURN reactionNotif { .*, created_at, receiver_user_id, reactor_user } AS reaction_notif
             `,
@@ -69,7 +69,7 @@ export class Comment {
       const { records: commentRecords } = await tx.run(
         `
         MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })
-        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON]->(comment)
+        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON_COMMENT]->(comment)
 
         WITH parentComment, childComment, toString(childComment.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url } AS owner_user
 
@@ -145,7 +145,7 @@ export class Comment {
         `
           MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })
           MATCH (parentCommentOwner:User WHERE parentCommentOwner.username <> $client_username)-[:WRITES_COMMENT]->(parentComment)
-          CREATE (parentCommentOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_comment", child_comment_id: $childCommentId, is_read: false, created_at: datetime() })-[:COMMENTER_USER]->(clientUser)
+          CREATE (parentCommentOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_comment", child_comment_id: $childCommentId, on_comment_id: $comment_id, is_read: false, created_at: datetime() })-[:COMMENTER_USER]->(clientUser)
           WITH parentCommentOwner, clientUser {.id, .username, .proifle_pic_url} clientUserView
           RETURN commentNotif { .*, created_at: (.created_at), receiver_user_id: parentCommentOwner.id, commenter_user: clientUserView } AS comment_notif
           `,
@@ -216,8 +216,8 @@ export class Comment {
   static async removeReaction(comment_id, client_user_id) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH ()-[rxn:REACTS_TO_COMMENT { user_to_comment: $user_to_comment }]->(comment)
-      DELETE rxn
+      MATCH (:User{ id: $client_user_id })-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
+      DELETE crxn
 
       SET comment.reactions_count = comment.reactions_count - 1
 
@@ -226,7 +226,6 @@ export class Comment {
       {
         comment_id,
         client_user_id,
-        user_to_comment: `user-${client_user_id}_to_comment-${comment_id}`,
       }
     )
 
@@ -240,7 +239,7 @@ export class Comment {
   }) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(childComment:Comment{ id: $comment_id })-[:COMMENT_ON]->(parentComment:Comment{ id: $parent_comment_id })
+      MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(childComment:Comment{ id: $comment_id })-[:COMMENT_ON_COMMENT]->(parentComment:Comment{ id: $parent_comment_id })
       DETACH DELETE childComment
 
       SET parentComment.comments_count = parentComment.comments_count - 1

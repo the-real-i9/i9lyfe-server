@@ -14,7 +14,7 @@ export const errHandler = (req, res, next) => {
   }
 }
 
-export const validateIdParams = [
+export const validateParams = [
   checkSchema(
     {
       "*": {
