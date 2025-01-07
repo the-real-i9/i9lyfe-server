@@ -277,7 +277,7 @@ export const getCommentsOnPost = async ({
 }
 
 export const getComment = async (comment_id, client_user_id) => {
-  const comment = await Comment.find(comment_id, client_user_id)
+  const comment = await Comment.findOne(comment_id, client_user_id)
 
   return {
     data: comment,

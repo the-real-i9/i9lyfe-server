@@ -1,4 +1,3 @@
-import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Comment {
@@ -169,33 +168,66 @@ export class Comment {
   }
 
   static async getComments({ comment_id, client_user_id, limit, offset }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_comments_on_comment($1, $2, $3, $4)",
-      values: [comment_id, client_user_id, limit, offset],
-    }
-
-    return (await dbQuery(query)).rows
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (parentComment:Comment{ id: $comment_id })<-[:COMMENT_ON_COMMENT]-(childComment:Comment)
+      OPTIONAL MATCH (childComment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
+      WITH childComment, 
+        toString(childComment.created_at) AS created_at, 
+          CASE crxn 
+            WHEN IS NULL THEN "" 
+            ELSE crxn.reaction 
+          END AS client_reaction
+      ORDER BY childComment.created_at DESC, childComment.reactions_count DESC, childComment.comments_count DESC
+      OFFSET $offset
+      LIMIT $limit
+      RETURN collect(childComment {.*, created_at, client_reaction }) AS res_comments
+      `,
+      { comment_id, client_user_id, limit, offset }
+    )
+    
+    return records[0].get("res_comments")
   }
 
-  static async find(comment_id, client_user_id) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_comment($1, $2)",
-      values: [comment_id, client_user_id],
-    }
+  static async findOne(comment_id, client_user_id) {
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (clientUser:User{ id: $client_user_id })
+      OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
+      WITH comment, 
+        toString(comment.created_at) AS created_at, 
+        CASE crxn 
+          WHEN IS NULL THEN "" 
+          ELSE crxn.reaction 
+        END AS client_reaction, 
+      RETURN comment { .*, created_at, client_reaction } AS found_comment
+      `,
+      { comment_id, client_user_id },
+    )
 
-    return (await dbQuery(query)).rows[0]
+    return records[0].get("found_comment")
   }
 
   static async getReactors({ comment_id, client_user_id, limit, offset }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_reactors_to_comment($1, $2, $3, $4)",
-      values: [comment_id, client_user_id, limit, offset],
-    }
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT]-(reactor:User)
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      WITH reactor, 
+        rxn, 
+        CASE fur 
+          WHEN IS NULL THEN false
+          ELSE true 
+        END AS client_follows
+      ORDER BY rxn.at DESC
+      SKIP $offset
+      LIMIT $limit
+      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      `,
+      { comment_id, client_user_id, limit, offset }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("reactors_rxn")
   }
 
   static async getReactorsWithReaction({
@@ -205,13 +237,25 @@ export class Comment {
     limit,
     offset,
   }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_reactors_with_reaction_to_comment($1, $2, $3, $4, $5)",
-      values: [comment_id, reaction, client_user_id, limit, offset],
-    }
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT { reaction: $reaction }]-(reactor:User)
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      WITH reactor, 
+        rxn, 
+        CASE fur 
+          WHEN IS NULL THEN false
+          ELSE true 
+        END AS client_follows
+      ORDER BY rxn.at DESC
+      SKIP $offset
+      LIMIT $limit
+      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      `,
+      { comment_id, client_user_id, reaction, limit, offset }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("reactors_rxn")
   }
 
   static async removeReaction(comment_id, client_user_id) {

@@ -392,7 +392,7 @@ export class Post {
   static async getReactors({ post_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
+      MATCH (:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
       OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
       WITH reactor, 
         rxn, 
