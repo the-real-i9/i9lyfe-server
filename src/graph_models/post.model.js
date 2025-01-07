@@ -1,4 +1,3 @@
-import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Post {
@@ -181,6 +180,7 @@ export class Post {
         MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post:Post{ id: $post_id })
         ON CREATE
           SET crxn.reaction = $reaction
+          SET crxn.at = datetime()
           SET post.reactions_count = post.reactions_count + 1
 
         RETURN post.reactions_count AS latest_reactions_count
@@ -266,7 +266,8 @@ export class Post {
         await tx.run(
           `
           UNWIND $mentions AS mentionUsername
-          MATCH (mentionUser:User{ username: mentionUsername }), (comment:Comment{ id: $commentId })
+          MATCH (mentionUser:User{ username: mentionUsername }), 
+            (comment:Comment{ id: $commentId })
           CREATE (comment)-[:MENTIONS]->(mentionUser)
           `,
           { mentions, commentId: new_comment_data.id }
@@ -312,7 +313,10 @@ export class Post {
           MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
           MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", comment_id: $commentId, on_post_id: $post_id, is_read: false, created_at: datetime() })-[:COMMENTER_USER]->(clientUser)
-          WITH commentNotif, toString(commentNotif.created_at) AS created_at, postOwner.id AS receiver_user_id, clientUser {.id, .username, .proifle_pic_url} commenter_user
+          WITH commentNotif, 
+            toString(commentNotif.created_at) AS created_at, 
+            postOwner.id AS receiver_user_id, 
+            clientUser {.id, .username, .proifle_pic_url} commenter_user
           RETURN commentNotif { .*, created_at, receiver_user_id, commenter_user } AS comment_notif
           `,
         { client_username, post_id, commentId: new_comment_data.id }
@@ -340,7 +344,20 @@ export class Post {
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(poinst:Post{ id: $post_id })
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(poinst2:Post{ id: $post_id })
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(poinst3:Post{ id: $post_id })
-      WITH poinst, toString(poinst.created_at) AS created_at, CASE crxn WHEN IS NULL THEN "" ELSE crxn.reaction END AS client_reaction, CASE csaves WHEN IS NULL false ELSE true END AS client_saved, CASE creposts WHEN IS NULL false ELSE true END AS client_reposted
+      WITH poinst, 
+        toString(poinst.created_at) AS created_at, 
+        CASE crxn 
+          WHEN IS NULL THEN "" 
+          ELSE crxn.reaction 
+        END AS client_reaction, 
+        CASE csaves 
+          WHEN IS NULL false 
+          ELSE true 
+        END AS client_saved, 
+        CASE creposts 
+          WHEN IS NULL false 
+          ELSE true 
+        END AS client_reposted
       RETURN poinst { .*, created_at, client_reaction, client_saved, client_reposted } AS found_post
       `,
       { post_id, client_user_id },
@@ -349,43 +366,77 @@ export class Post {
     return records[0].get("found_post")
   }
 
-  // I'm here
+  
   static async getComments({ post_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON]-(comment)
-      OPTIONAL MATCH ()<-[:REACTS_TO_COMMENT]-()
+      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)
+      OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
+      WITH comment, 
+        toString(comment.created_at) AS created_at, 
+          CASE crxn 
+            WHEN IS NULL THEN "" 
+            ELSE crxn.reaction 
+          END AS client_reaction
+      ORDER BY comment.created_at DESC, comment.reactions_count DESC, comment.comments_count DESC
+      OFFSET $offset
+      LIMIT $limit
+      RETURN collect(comment {.*, created_at, client_reaction }) AS res_comments
       `,
       { post_id, client_user_id, limit, offset }
     )
     
-    return records
+    return records[0].get("res_comments")
   }
 
-  static async getReactors({ post_id, client_username, limit, offset }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_reactors_to_post($1, $2, $3, $4)",
-      values: [post_id, client_username, limit, offset],
-    }
+  static async getReactors({ post_id, client_user_id, limit, offset }) {
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      WITH reactor, 
+        rxn, 
+        CASE fur 
+          WHEN IS NULL THEN false
+          ELSE true 
+        END AS client_follows
+      ORDER BY rxn.at DESC
+      SKIP $offset
+      LIMIT $limit
+      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      `,
+      { post_id, client_user_id, limit, offset }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("reactors_rxn")
   }
 
   static async getReactorsWithReaction({
     post_id,
     reaction,
-    client_username,
+    client_user_id,
     limit,
     offset,
   }) {
-    /** @type {PgQueryConfig} */
-    const query = {
-      text: "SELECT * FROM get_reactors_with_reaction_to_post($1, $2, $3, $4, $5)",
-      values: [post_id, reaction, client_username, limit, offset],
-    }
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: $reaction }]-(reactor:User)
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      WITH reactor, 
+        rxn, 
+        CASE fur 
+          WHEN IS NULL THEN false
+          ELSE true 
+        END AS client_follows
+      ORDER BY rxn.at DESC
+      SKIP $offset
+      LIMIT $limit
+      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      `,
+      { post_id, client_user_id, reaction, limit, offset }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("reactors_rxn")
   }
 
   static async delete(post_id, client_user_id) {
@@ -420,7 +471,7 @@ export class Post {
   static async removeComment({ post_id, comment_id, client_user_id }) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON]->(post:Post{ id: $post_id })
+      MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON_POST]->(post:Post{ id: $post_id })
       DETACH DELETE comment
 
       SET post.comments_count = post.comments_count - 1
