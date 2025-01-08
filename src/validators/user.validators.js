@@ -1,5 +1,5 @@
 import { body, checkExact, checkSchema } from "express-validator"
-import { errHandler, limitOffsetSchema } from "./miscs.js"
+import { errHandler } from "./miscs.js"
 
 export const changeProfilePicture = [
   checkExact(
@@ -79,28 +79,3 @@ export const updateConnectionStatus = [
   errHandler,
 ]
 
-export const getNotifications = [
-  checkExact(
-    checkSchema(
-      {
-        from: {
-          optional: true,
-          notEmpty: true,
-          isDate: {
-            errorMessage:
-              "invalid date format (expects: YYYY/MM/DD or YYYY-MM-DD)",
-            bail: true,
-          },
-          custom: {
-            options: (value) => new Date(value) <= new Date(),
-            errorMessage: "invalid time period",
-          },
-        },
-        ...limitOffsetSchema,
-      },
-      ["query"]
-    ),
-    { message: "request query parameters contains invalid fields" }
-  ),
-  errHandler,
-]

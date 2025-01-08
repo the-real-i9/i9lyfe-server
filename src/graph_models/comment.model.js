@@ -101,7 +101,7 @@ export class Comment {
           `
           UNWIND $mentions AS mentionUsername
           MATCH (mentionUser:User{ username: mentionUsername }), (childComment:Comment{ id: $childCommentId })
-          CREATE (childComment)-[:MENTIONS]->(mentionUser)
+          CREATE (childComment)-[:MENTIONS_USER]->(mentionUser)
           `,
           { mentions, childCommentId: new_comment_data.id }
         )

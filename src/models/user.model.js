@@ -270,33 +270,4 @@ export class User {
 
     return (await dbQuery(query)).rows
   }
-
-  static async getUnreadNotificationsCount(client_user_id) {
-    const query = {
-      text: `
-    SELECT COUNT(id) AS count 
-    FROM notification 
-    WHERE receiver_user_id = $1 AND is_read = false
-    `,
-      values: [client_user_id],
-    }
-
-    return (await dbQuery(query)).rows[0].count
-  }
-
-  /**
-   * @param {number} user_id 
-   * @returns {Promise<number[]>}
-   */
-  static async getFolloweesIds(user_id) {
-    const query = {
-      text: `
-    SELECT array_agg(followee_user_id) ids
-    FROM follow
-    WHERE follower_user_id = $1`,
-      values: [user_id],
-    }
-
-    return (await dbQuery(query)).rows[0].ids
-  }
 }

@@ -52,7 +52,7 @@ export class Post {
           `
           UNWIND $mentions AS mentionUsername
           MATCH (mentionUser:User{ username: mentionUsername }), (post:Post{ id: $postId })
-          CREATE (post)-[:MENTIONS]->(mentionUser)
+          CREATE (post)-[:MENTIONS_USER]->(mentionUser)
           `,
           { mentions, postId: new_post_data.id }
         )
@@ -268,7 +268,7 @@ export class Post {
           UNWIND $mentions AS mentionUsername
           MATCH (mentionUser:User{ username: mentionUsername }), 
             (comment:Comment{ id: $commentId })
-          CREATE (comment)-[:MENTIONS]->(mentionUser)
+          CREATE (comment)-[:MENTIONS_USER]->(mentionUser)
           `,
           { mentions, commentId: new_comment_data.id }
         )
@@ -403,7 +403,7 @@ export class Post {
           ELSE true 
         END AS client_follows
       ORDER BY rxn.at DESC
-      SKIP $offset
+      OFFSET $offset
       LIMIT $limit
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
@@ -431,7 +431,7 @@ export class Post {
           ELSE true 
         END AS client_follows
       ORDER BY rxn.at DESC
-      SKIP $offset
+      OFFSET $offset
       LIMIT $limit
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,

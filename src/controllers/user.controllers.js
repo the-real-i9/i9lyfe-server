@@ -122,7 +122,7 @@ export const getProfile = async (req, res) => {
 
     const resp = await userService.getProfile(
       username,
-      req.auth?.client_user_idd
+      req.auth?.client_user_id
     )
 
     res.status(200).send(resp.data)
@@ -152,13 +152,13 @@ export const getFollowers = async (req, res) => {
   }
 }
 
-export const getFollowing = async (req, res) => {
+export const getFollowings = async (req, res) => {
   try {
     const { username } = req.params
 
     const { limit = 50, offset = 0 } = req.query
 
-    const resp = await userService.getFollowing({
+    const resp = await userService.getFollowings({
       username,
       limit,
       offset,
@@ -251,13 +251,12 @@ export const getSavedPosts = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const { from, limit = 20, offset = 0 } = req.query
+    const { limit = 20, offset = 0 } = req.query
 
     const { client_user_id } = req.auth
 
     const resp = await userService.getNotifications({
       client_user_id,
-      from,
       limit,
       offset,
     })

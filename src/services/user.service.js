@@ -109,13 +109,13 @@ export const getFollowers = async ({
   }
 }
 
-export const getFollowing = async ({
+export const getFollowings = async ({
   username,
   limit,
   offset,
   client_user_id,
 }) => {
-  const userFollowing = await User.getFollowing({
+  const userFollowing = await User.getFollowings({
     username,
     limit,
     offset,
@@ -178,13 +178,11 @@ export const getSavedPosts = async ({ limit, offset, client_user_id }) => {
 
 export const getNotifications = async ({
   client_user_id,
-  from,
   limit,
   offset,
 }) => {
   const notifications = await User.getNotifications({
     client_user_id,
-    from,
     limit,
     offset,
   })

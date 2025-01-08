@@ -43,7 +43,7 @@ router.get("/saved_posts", ...validateLimitOffset, UC.getSavedPosts)
 // GET user notifications
 router.get(
   "/my_notifications",
-  ...userValidators.getNotifications,
+  ...validateLimitOffset,
   UC.getNotifications
 )
 

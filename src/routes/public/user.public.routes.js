@@ -13,7 +13,7 @@ router.get("/:username", UC.getProfile)
 router.get("/:username/followers", ...validateLimitOffset, UC.getFollowers)
 
 // GET user followings
-router.get("/:username/following", ...validateLimitOffset, UC.getFollowing)
+router.get("/:username/following", ...validateLimitOffset, UC.getFollowings)
 
 // GET user posts
 router.get("/:username/posts", ...validateLimitOffset, UC.getPosts)
