@@ -284,7 +284,7 @@ export class Post {
             MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", in_comment_id: $commentId })-[:MENTIONING_USER]->(clientUser)
             WITH mentionNotif, mentionUser.id AS receiver_user_id, clientUser { .id, .username, .profile_pic_url } AS mentioning_user
-            RETURN [notif IN collect(mentionNotif) | notif { .*, receiver_user_id, mentioning_user }] AS mention_notifs
+            RETURN collect(mentionNotif { .*, receiver_user_id, mentioning_user }) AS mention_notifs
             `,
             {
               mentionsExcClient,
@@ -316,7 +316,7 @@ export class Post {
           WITH commentNotif, 
             toString(commentNotif.created_at) AS created_at, 
             postOwner.id AS receiver_user_id, 
-            clientUser {.id, .username, .proifle_pic_url} commenter_user
+            clientUser {.id, .username, .proifle_pic_url} AS commenter_user
           RETURN commentNotif { .*, created_at, receiver_user_id, commenter_user } AS comment_notif
           `,
         { client_username, post_id, commentId: new_comment_data.id }

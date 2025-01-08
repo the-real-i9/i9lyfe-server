@@ -52,11 +52,7 @@ export const createNewPost = async ({
   }
 }
 
-export const reactToPost = async ({
-  client_user_id,
-  post_id,
-  reaction,
-}) => {
+export const reactToPost = async ({ client_user_id, post_id, reaction }) => {
   const { reaction_notif, latest_reactions_count } = await Post.reactTo({
     client_user_id,
     post_id,
@@ -90,10 +86,12 @@ export const commentOnPost = async ({
   const mentions = utilServices.extractMentions(comment_text)
   const hashtags = utilServices.extractHashtags(comment_text)
 
-  const attachment_url = await mediaUploadService.upload({
-    media_data: attachment_data,
-    path_to_dest_folder: `comment_on_post_attachments/user-${client_username}`,
-  })
+  const attachment_url = attachment_data
+    ? await mediaUploadService.upload({
+        media_data: attachment_data,
+        path_to_dest_folder: `comment_on_post_attachments/user-${client_username}`,
+      })
+    : ""
 
   const {
     new_comment_data,
@@ -249,9 +247,7 @@ export const unsavePost = async (post_id, client_user_id) => {
 /* The GETs */
 
 export const getPost = async (post_id, client_user_id) => {
-  const post = await Post.findOne(
-    post_id,
-    client_user_id)
+  const post = await Post.findOne(post_id, client_user_id)
 
   return {
     data: post,
@@ -446,10 +442,7 @@ export const removeCommentOnComment = async ({
   }
 }
 
-export const removeReactionToComment = async (
-  comment_id,
-  client_user_id
-) => {
+export const removeReactionToComment = async (comment_id, client_user_id) => {
   const { latest_reactions_count } = await Comment.removeReaction(
     comment_id,
     client_user_id
