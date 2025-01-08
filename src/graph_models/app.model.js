@@ -88,7 +88,7 @@ export class App {
   }) {
     let applyFilter = ""
 
-    if (filter != "alll") {
+    if (filter != "all") {
       applyFilter = " WHERE post.type = $filter"
     }
 
