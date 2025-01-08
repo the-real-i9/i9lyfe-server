@@ -1,4 +1,4 @@
-import { getHomeFeed } from "../services/contentRecommendation.service.js"
+import { getHomePosts } from "../services/contentRecommendation.service.js"
 import * as userService from "../services/user.service.js"
 
 export const getSessionUser = async (req, res) => {
@@ -103,10 +103,31 @@ export const getHomeFeedPosts = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const resp = await getHomeFeed({
+    const resp = await getHomePosts({
       client_user_id,
       limit,
       offset,
+      types: ["photo", "videos"]
+    })
+
+    res.status(200).send(resp.data)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+export const getHomeStoryPosts = async (req, res) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query
+
+    const { client_user_id } = req.auth
+
+    const resp = await getHomePosts({
+      client_user_id,
+      limit,
+      offset,
+      types: ["story"]
     })
 
     res.status(200).send(resp.data)

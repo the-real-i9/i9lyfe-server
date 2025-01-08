@@ -1,15 +1,6 @@
 import { dbQuery } from "../configs/db.js"
 
 export class App {
-  static async getExplorePosts({ limit, offset, client_user_id }) {
-    const query = {
-      text: "SELECT * FROM get_explore_posts($1, $2, $3)",
-      values: [limit, offset, client_user_id],
-    }
-
-    return (await dbQuery(query)).rows
-  }
-
   static async searchAndFilterPosts({
     term,
     filter,

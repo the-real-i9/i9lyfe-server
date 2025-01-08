@@ -18,11 +18,28 @@ export const searchUsersToChat = async (req, res) => {
   }
 }
 
-export const getExplorePosts = async (req, res) => {
+export const getExploreFeed = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
-    const resp = await appService.getExplorePosts({
+    const resp = await appService.getExploreFeed({
+      limit,
+      offset,
+      client_user_id: req.auth?.client_user_id,
+    })
+
+    res.status(200).send(resp.data)
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
+export const getExploreReels = async (req, res) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query
+
+    const resp = await appService.getExploreReels({
       limit,
       offset,
       client_user_id: req.auth?.client_user_id,

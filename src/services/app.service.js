@@ -1,4 +1,5 @@
 import { App } from "../graph_models/app.model.js"
+import * as CRS from "../services/contentRecommendation.service.js"
 
 export const searchUsersToChat = async ({
   term,
@@ -18,11 +19,25 @@ export const searchUsersToChat = async ({
   }
 }
 
-export const getExplorePosts = async ({ limit, offset, client_user_id }) => {
-  const explorePosts = await App.getExplorePosts({
+export const getExploreFeed = async ({ limit, offset, client_user_id }) => {
+  const explorePosts = await CRS.getExplorePosts({
     limit,
     offset,
     client_user_id,
+    types: ["photo", "video"],
+  })
+
+  return {
+    data: explorePosts,
+  }
+}
+
+export const getExploreReels = async ({ limit, offset, client_user_id }) => {
+  const explorePosts = await CRS.getExplorePosts({
+    limit,
+    offset,
+    client_user_id,
+    types: ["reel"],
   })
 
   return {

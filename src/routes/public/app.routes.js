@@ -12,7 +12,9 @@ router.get(
   AC.searchUsersToChat
 )
 
-router.get("/explore", ...validateLimitOffset, AC.getExplorePosts)
+router.get("/explore_feed", ...validateLimitOffset, AC.getExploreFeed)
+
+router.get("/explore_reels", ...validateLimitOffset, AC.getExploreReels)
 
 router.get(
   "/explore/search",

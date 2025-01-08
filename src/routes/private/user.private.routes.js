@@ -11,6 +11,8 @@ const router = express.Router()
 
 router.get("/home_feed", ...validateLimitOffset, UC.getHomeFeedPosts)
 
+router.get("/home_stories", ...validateLimitOffset, UC.getHomeStoryPosts)
+
 router.get("/session_user", UC.getSessionUser)
 
 router.post("/users/:user_id/follow", ...validateParams, UC.followUser)
