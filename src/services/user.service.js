@@ -1,5 +1,6 @@
 import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
+import * as CRS from "../services/contentRecommendation.service.js"
 import { User } from "../graph_models/user.model.js"
 
 export const getSessionUser = async (client_user_id) => {
@@ -15,7 +16,7 @@ export const followUser = async (client_user_id, to_follow_user_id) => {
     client_user_id,
     to_follow_user_id
   )
-  
+
   if (follow_notif) {
     messageBrokerService.sendNewNotification(to_follow_user_id, follow_notif)
   }
@@ -80,6 +81,32 @@ export const changeProfilePicture = async ({
 
   return {
     data: { msg: "operation successful" },
+  }
+}
+
+export const getHomeFeedPosts = async ({ limit, offset, client_user_id }) => {
+  const homeFeedPosts = await CRS.getHomePosts({
+    limit,
+    offset,
+    client_user_id,
+    types: ["photo", "video"],
+  })
+
+  return {
+    data: homeFeedPosts,
+  }
+}
+
+export const getHomeStoryPosts = async ({ limit, offset, client_user_id }) => {
+  const homeStoryPosts = await CRS.getHomePosts({
+    limit,
+    offset,
+    client_user_id,
+    types: ["story"],
+  })
+
+  return {
+    data: homeStoryPosts,
   }
 }
 
@@ -176,11 +203,7 @@ export const getSavedPosts = async ({ limit, offset, client_user_id }) => {
   }
 }
 
-export const getNotifications = async ({
-  client_user_id,
-  limit,
-  offset,
-}) => {
+export const getNotifications = async ({ client_user_id, limit, offset }) => {
   const notifications = await User.getNotifications({
     client_user_id,
     limit,

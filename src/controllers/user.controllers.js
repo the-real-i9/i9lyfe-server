@@ -1,4 +1,3 @@
-import { getHomePosts } from "../services/contentRecommendation.service.js"
 import * as userService from "../services/user.service.js"
 
 export const getSessionUser = async (req, res) => {
@@ -103,11 +102,10 @@ export const getHomeFeedPosts = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const resp = await getHomePosts({
+    const resp = await userService.getHomeFeedPosts({
       client_user_id,
       limit,
       offset,
-      types: ["photo", "videos"]
     })
 
     res.status(200).send(resp.data)
@@ -123,11 +121,10 @@ export const getHomeStoryPosts = async (req, res) => {
 
     const { client_user_id } = req.auth
 
-    const resp = await getHomePosts({
+    const resp = await userService.getHomeStoryPosts({
       client_user_id,
       limit,
       offset,
-      types: ["story"]
     })
 
     res.status(200).send(resp.data)

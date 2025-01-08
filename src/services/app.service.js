@@ -20,7 +20,7 @@ export const searchUsersToChat = async ({
 }
 
 export const getExploreFeed = async ({ limit, offset, client_user_id }) => {
-  const explorePosts = await CRS.getExplorePosts({
+  const exploreFeedPosts = await CRS.getExplorePosts({
     limit,
     offset,
     client_user_id,
@@ -28,12 +28,12 @@ export const getExploreFeed = async ({ limit, offset, client_user_id }) => {
   })
 
   return {
-    data: explorePosts,
+    data: exploreFeedPosts,
   }
 }
 
 export const getExploreReels = async ({ limit, offset, client_user_id }) => {
-  const explorePosts = await CRS.getExplorePosts({
+  const exploreReelPosts = await CRS.getExplorePosts({
     limit,
     offset,
     client_user_id,
@@ -41,7 +41,7 @@ export const getExploreReels = async ({ limit, offset, client_user_id }) => {
   })
 
   return {
-    data: explorePosts,
+    data: exploreReelPosts,
   }
 }
 
