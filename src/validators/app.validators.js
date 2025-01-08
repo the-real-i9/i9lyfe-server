@@ -1,14 +1,21 @@
 import { checkExact, checkSchema } from "express-validator"
 import { errHandler, limitOffsetSchema } from "./miscs.js"
 
-export const searchUsersToChat = [
+export const searchAndFilter = [
   checkExact(
     checkSchema(
       {
         term: {
-          matches: {
-            options: /^[a-zA-Z0-9][\w-]+[a-zA-Z0-9]$/,
-            errorMessage: "invalid username pattern",
+          optional: true,
+          notEmpty: {
+            errorMessage: "what do you want to search?"
+          },
+        },
+        filter: {
+          optional: true,
+          isIn: {
+            options: [["user", "photo", "video", "reel", "story", "hashtag"]],
+            errorMessage: "invalid filter value",
           },
         },
         ...limitOffsetSchema,
@@ -20,21 +27,15 @@ export const searchUsersToChat = [
   errHandler,
 ]
 
-export const searchAndFilter = [
+export const getHashtagPosts = [
   checkExact(
     checkSchema(
       {
-        term: {
-          optional: true,
-          notEmpty: {
-            errorMessage: "what do you wanna search"
-          },
-        },
         filter: {
           optional: true,
           isIn: {
-            options: [["user", "photo", "video", "reel", "story", "hashtag"]],
-            errorMessage: "invalid filter value",
+            options: [["photo", "video", "reel", "story"]],
+            errorMessage: "invalid post type filter",
           },
         },
         ...limitOffsetSchema,

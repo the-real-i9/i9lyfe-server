@@ -66,7 +66,7 @@ export async function getHomePosts({ client_user_id, limit, offset, types }) {
 export async function getExplorePosts({ client_user_id, types, limit, offset }) {
   const { records } = await neo4jDriver.executeRead(
     `
-    MATCH (clientUser:User{ id: $client_user_id }), (ownerUser:User)-[:CREATES_POST]->(post:Post WHERE post.type IN $types)
+    MATCH (ownerUser:User)-[:CREATES_POST]->(post:Post WHERE post.type IN $types), (clientUser:User{ id: $client_user_id })
 
     OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
     OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
