@@ -151,8 +151,8 @@ export class Post {
   static async save(post_id, client_user_id) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })
-      MERGE (clientUser)-[:SAVES_POST]->(post:Post{ id: $post_id })
+      MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
+      MERGE (clientUser)-[:SAVES_POST]->(post)
       ON CREATE
         SET post.saves_count = post.saves_count + 1
 
@@ -176,8 +176,8 @@ export class Post {
 
       const { records: reactionRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ id: $client_user_id })
-        MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post:Post{ id: $post_id })
+        MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
+        MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
         ON CREATE
           SET crxn.reaction = $reaction
           SET crxn.at = datetime()

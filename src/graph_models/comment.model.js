@@ -10,8 +10,8 @@ export class Comment {
 
       const { records: reactionRecords } = await tx.run(
         `
-            MATCH (clientUser:User{ id: $client_user_id })
-            MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
+            MATCH (clientUser:User{ id: $client_user_id }), (comment:Comment{ id: $comment_id })
+            MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment)
             ON CREATE
               SET crxn.reaction = $reaction
               SET crxn.at = datetime()
@@ -33,7 +33,7 @@ export class Comment {
             MATCH (comment:Comment{ id: $comment_id }), (clientUser:User{ id: $client_user_id })
             WITH comment, clientUser
             MATCH (commentOwner:User WHERE commentOwner.id <> $client_user_id)-[:WRITES_COMMENT]->(comment)
-            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_comment_id", $comment_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+            CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_comment_id", $comment_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
             WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, commentOwner.id AS receiver_user_id
             RETURN reactionNotif { .*, created_at, receiver_user_id } AS reaction_notif
             `,
@@ -69,7 +69,7 @@ export class Comment {
       const { records: commentRecords } = await tx.run(
         `
         MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })
-        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON_COMMENT]->(comment)
+        CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON_COMMENT]->(parentComment)
 
         WITH parentComment, childComment, toString(childComment.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url } AS owner_user
 
@@ -116,8 +116,8 @@ export class Comment {
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (childComment:Comment{ id: $childCommentId }), (clientUser:User{ username: $client_username })
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", childComment.id], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-            WITH mentionNotif, mentionUser.id AS receiver_user_id
-            RETURN collect(mentionNotif { .*, receiver_user_id }) AS mention_notifs
+            WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.id AS receiver_user_id
+            RETURN collect(mentionNotif { .*, created_at, receiver_user_id }) AS mention_notifs
             `,
             {
               mentionsExcClient,

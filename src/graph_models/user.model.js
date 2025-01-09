@@ -92,8 +92,8 @@ export class User {
     }
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })
-      MERGE (clientUser)-[:FOLLOWS_USER]->(tofollowUser:User{ id: $to_follow_user_id })
+      MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
+      MERGE (clientUser)-[:FOLLOWS_USER]->(tofollowUser)
       
       CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime(), follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
 

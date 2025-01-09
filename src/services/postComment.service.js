@@ -136,7 +136,7 @@ export const reactToComment = async ({
   comment_id,
   reaction,
 }) => {
-  const { reaction_notif, latest_reactions_count } = Comment.reactTo({
+  const { reaction_notif, latest_reactions_count } = await Comment.reactTo({
     client_user_id,
     comment_id,
     reaction,
