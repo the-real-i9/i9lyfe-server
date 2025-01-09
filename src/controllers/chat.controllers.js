@@ -54,7 +54,7 @@ export const getChatHistory = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { partner_user_id } = req.params
-    const { msg_content, created_at } = req.body
+    const { msg_content, at: created_at } = req.body
 
     const { client_user_id } = req.auth
 
@@ -76,7 +76,7 @@ export const ackMessageDelivered = async (req, res) => {
   try {
     const { partner_user_id, message_id } = req.params
 
-    const { delivery_time } = req.body
+    const { delivered_at } = req.body
 
     const { client_user_id } = req.auth
 
@@ -84,7 +84,7 @@ export const ackMessageDelivered = async (req, res) => {
       client_user_id,
       partner_user_id,
       message_id,
-      delivery_time,
+      delivered_at,
     })
 
     res.status(200).send(resp.data)
@@ -98,12 +98,15 @@ export const ackMessageRead = async (req, res) => {
   try {
     const { partner_user_id, message_id } = req.params
 
+    const { read_at } = req.body
+
     const { client_user_id } = req.auth
 
     const resp = await chatService.ackMessageRead({
       client_user_id,
       partner_user_id,
       message_id,
+      read_at,
     })
 
     res.status(200).send(resp.data)

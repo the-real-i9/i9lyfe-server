@@ -38,6 +38,7 @@ router.put(
 router.put(
   "/chats/:partner_user_id/messages/:message_id/read",
   ...validateParams,
+  ...chatValidators.ackMessageRead,
   CC.ackMessageRead
 )
 

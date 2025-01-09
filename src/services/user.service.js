@@ -7,7 +7,7 @@ export const getSessionUser = async (client_user_id) => {
   const sessionUser = await User.findOne(client_user_id)
 
   return {
-    data: { sessionUser },
+    data: sessionUser,
   }
 }
 

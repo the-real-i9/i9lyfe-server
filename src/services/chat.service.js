@@ -36,12 +36,14 @@ export const sendMessage = async ({
   msg_content,
   created_at,
 }) => {
-  const { media_data, ...message_content } = msg_content
+  const { media_data = null, ...message_content } = msg_content
 
-  message_content.media_url = await mediaUploadService.upload({
-    media_data,
-    extension: msg_content.extension,
-  })
+  message_content.media_url = media_data
+    ? await mediaUploadService.upload({
+        media_data,
+        extension: msg_content.extension,
+      })
+    : ""
 
   const message_content_json = JSON.stringify(message_content)
 
@@ -49,7 +51,7 @@ export const sendMessage = async ({
     client_user_id,
     partner_user_id,
     message_content: message_content_json,
-    created_at: new Date(created_at).toUTCString()
+    created_at,
   })
 
   // replace with
@@ -68,18 +70,19 @@ export const ackMessageDelivered = async ({
   client_user_id,
   partner_user_id,
   message_id,
-  delivery_time,
+  delivered_at,
 }) => {
   await Message.ackDelivered({
     partner_user_id,
     client_user_id,
     message_id,
-    delivery_time,
+    delivered_at,
   })
 
   // to mark message with a double-tick on the partner's side, whose own partner is the client_user
   messageBrokerService.sendChatEvent("message delivered", partner_user_id, {
     partner_user_id: client_user_id,
+    delivered_at,
     message_id,
   })
 
@@ -92,16 +95,19 @@ export const ackMessageRead = async ({
   client_user_id,
   partner_user_id,
   message_id,
+  read_at,
 }) => {
   await Message.ackRead({
     client_user_id,
     partner_user_id,
     message_id,
+    read_at,
   })
 
   messageBrokerService.sendChatEvent("message read", partner_user_id, {
     partner_user_id: client_user_id, // client_user is the partner of partner_user
     message_id,
+    read_at,
   })
 
   return {

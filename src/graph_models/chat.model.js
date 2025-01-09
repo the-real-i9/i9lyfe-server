@@ -8,20 +8,20 @@ export class Chat {
     message_content,
     created_at,
   }) {
+    created_at = new Date(created_at).toISOString()
+
     const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id })
       MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })-[:WITH_USER]->(partnerUser)
-        ON MATCH
-          SET updated_at = datetime($created_at)
       MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_user_id: $partner_user_id, partner_user_id: $client_user_id })-[:WITH_USER]->(clientUser)
       WITH clientUser, clientChat, partnerUser, partnerChat
       CREATE (message:Message{ id: randomUUID(), content: $message_content, delivery_status: "sent", created_at: datetime($created_at) }),
         (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
         (partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)
-      WITH message, clientUser { .id, .username, .profile_pic_url, .connection_status } AS clientUserView
+      WITH message, toString(message.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url, .connection_status } AS sender
       RETURN { new_msg_id: message.id } AS client_res,
-        { message: message { .id, .content }, sender: clientUserView } AS partner_res
+        message { .*, created_at, sender } AS partner_res
       `,
       { client_user_id, partner_user_id, message_content, created_at }
     )
@@ -88,27 +88,27 @@ export class Message {
     client_user_id,
     partner_user_id,
     message_id,
-    delivery_time,
+    delivered_at,
   }) {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id }),
         ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id, delivery_status: "sent" })-[:IN_CHAT]->(clientChat)
-      SET message.delivery_status = "delivered", clientChat.unread_messages_count = coalesce(clientChat.unread_messages_count, 0) + 1, clientChat.updated_at = datetime($delivery_time)
+      SET message.delivery_status = "delivered", message.delivered_at = datetime($delivered_at), clientChat.unread_messages_count = coalesce(clientChat.unread_messages_count, 0) + 1
       `,
-      { client_user_id, partner_user_id, message_id, delivery_time }
+      { client_user_id, partner_user_id, message_id, delivered_at }
     )
   }
 
-  static async ackRead({ client_user_id, partner_user_id, message_id }) {
+  static async ackRead({ client_user_id, partner_user_id, message_id, read_at }) {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_user_id: $client_chat_id, partner_user_id: $partner_user_id }),
         ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])-[:IN_CHAT]->(clientChat)
       WITH message, CASE coalesce(clientChat.unread_messages_count, 0) WHEN <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END AS unread_messages_count
-      SET message.delivery_status = "seen", clientChat.unread_messages_count = unread_messages_count
+      SET message.delivery_status = "seen", message.read_at = datetime($read_at), clientChat.unread_messages_count = unread_messages_count
       `,
-      { client_user_id, partner_user_id, message_id }
+      { client_user_id, partner_user_id, message_id, read_at }
     )
   }
 

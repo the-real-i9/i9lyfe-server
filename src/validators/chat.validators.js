@@ -239,6 +239,12 @@ export const sendMessage = [
             errorMessage: "size out of range",
           },
         },
+        at: {
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date specified"
+          }
+        }
       },
       ["body"]
     ),
@@ -251,7 +257,26 @@ export const ackMessageDelivered = [
   checkExact(
     checkSchema(
       {
-        delivery_time: {
+        delivered_at: {
+          notEmpty: true,
+          custom: {
+            options: (value) => !isNaN(Date.parse(value)),
+            errorMessage: "invalid date",
+          },
+        },
+      },
+      ["body"]
+    ),
+    { message: "request body contains invalid fields" }
+  ),
+  errHandler,
+]
+
+export const ackMessageRead = [
+  checkExact(
+    checkSchema(
+      {
+        read_at: {
           notEmpty: true,
           custom: {
             options: (value) => !isNaN(Date.parse(value)),
