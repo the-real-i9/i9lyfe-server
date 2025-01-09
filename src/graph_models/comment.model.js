@@ -115,7 +115,7 @@ export class Comment {
             `
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (childComment:Comment{ id: $childCommentId }), (clientUser:User{ username: $client_username })
-            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", childComment.id], "mentioning_user": ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", childComment.id], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
             WITH mentionNotif, mentionUser.id AS receiver_user_id
             RETURN collect(mentionNotif { .*, receiver_user_id }) AS mention_notifs
             `,

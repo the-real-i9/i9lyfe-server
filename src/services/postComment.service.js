@@ -168,10 +168,12 @@ export const commentOnComment = async ({
   const mentions = utilServices.extractMentions(comment_text)
   const hashtags = utilServices.extractHashtags(comment_text)
 
-  const attachment_url = await mediaUploadService.upload({
-    media_data: attachment_data,
-    path_to_dest_folder: `comment_on_comment_attachments/user-${client_username}`,
-  })
+  const attachment_url = attachment_data
+    ? await mediaUploadService.upload({
+        media_data: attachment_data,
+        path_to_dest_folder: `comment_on_comment_attachments/user-${client_username}`,
+      })
+    : ""
 
   const {
     new_comment_data,
@@ -181,6 +183,7 @@ export const commentOnComment = async ({
   } = await Comment.commentOn({
     comment_id,
     comment_text,
+    client_username,
     attachment_url,
     mentions,
     hashtags,
