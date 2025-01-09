@@ -66,7 +66,7 @@ export class Post {
             `
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
-            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", is_read: false, created_at: datetime(), details: [["in_post_id", $postId], ["mentioning_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", is_read: false, created_at: datetime(), details: ["in_post_id", $postId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
             WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.id AS receiver_user_id
             RETURN collect(mentionNotif { .*, created_at, receiver_user_id }) AS mention_notifs
             `,
@@ -131,7 +131,7 @@ export class Post {
         `
         MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ id: $client_user_id })
         MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_user_id)
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: [["repost_id", $repostId], ["original_post_id", $original_post_id], ["reposter_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "original_post_id", $original_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
         WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.id AS receiver_user_id
         RETURN repostNotif { .*, created_at, receiver_user_id } AS repost_notif
         `,
@@ -199,7 +199,7 @@ export class Post {
         MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
         WITH post, clientUser
         MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_user_id)
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: [["reaction", $reaction], ["to_post_id", $post_id], ["reactor_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
         WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.id AS receiver_user_id
         RETURN reactionNotif { .*, created_at, receiver_user_id } AS reaction_notif
         `,
@@ -282,7 +282,7 @@ export class Post {
             `
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
-            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: [["in_comment_id", $commentId], ["mentioning_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+            CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", $commentId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
             WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.id AS receiver_user_id
             RETURN collect(mentionNotif { .*, receiver_user_id, created_at }) AS mention_notifs
             `,
@@ -312,7 +312,7 @@ export class Post {
         `
           MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
           MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
-          CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: datetime(), details: [["on_post_id", $post_id], ["comment_id", $commentId], ["comment_text", $comment_text], ["attachment_url", $attachment_url], ["commenter_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+          CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: datetime(), details: ["on_post_id", $post_id, "comment_id", $commentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
           WITH commentNotif, 
             toString(commentNotif.created_at) AS created_at, 
             postOwner.id AS receiver_user_id

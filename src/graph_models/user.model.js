@@ -95,7 +95,7 @@ export class User {
       MATCH (clientUser:User{ id: $client_user_id })
       MERGE (clientUser)-[:FOLLOWS_USER]->(tofollowUser:User{ id: $to_follow_user_id })
       
-      CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime(), details: [["follower_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
+      CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime(), follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
 
       WITH followNotif, toString(followNotif.created_at) AS created_at
       RETURN followNotif { .*,  created_at } AS follow_notif
