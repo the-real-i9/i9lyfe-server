@@ -103,9 +103,9 @@ export class Message {
   static async ackRead({ client_user_id, partner_user_id, message_id, read_at }) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (clientChat:Chat{ owner_user_id: $client_chat_id, partner_user_id: $partner_user_id }),
+      MATCH (clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id }),
         ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])-[:IN_CHAT]->(clientChat)
-      WITH message, CASE coalesce(clientChat.unread_messages_count, 0) WHEN <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END AS unread_messages_count
+      WITH clientChat, message, CASE coalesce(clientChat.unread_messages_count, 0) WHEN <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END AS unread_messages_count
       SET message.delivery_status = "seen", message.read_at = datetime($read_at), clientChat.unread_messages_count = unread_messages_count
       `,
       { client_user_id, partner_user_id, message_id, read_at }
@@ -124,6 +124,7 @@ export class Message {
       MERGE (clientUser)-[crxn:REACTS_TO_MESSAGE]->(message)
       ON CREATE
         SET crxn.reaction = $reaction
+        SET crxn.at = datetime()
       `,
       {
         client_user_id,
