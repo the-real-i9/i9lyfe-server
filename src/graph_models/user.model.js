@@ -205,8 +205,8 @@ export class User {
           ELSE true 
         END AS client_follows,
         ORDER BY follower.username
-        OFFSET $offset
-        LIMIT $limit
+        OFFSET toInteger($offset)
+        LIMIT toInteger($limit)
       RETURN collect(follower { .id, .username, .profile_pic_url, client_follows }) AS user_followers
       `,
       { username, client_user_id, limit, offset }
@@ -229,8 +229,8 @@ export class User {
           ELSE true 
         END AS client_follows
       ORDER BY following.username
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(following { .id, .username, .profile_pic_url, client_follows }) AS user_followings
       `,
       { username, client_user_id, limit, offset }
@@ -264,8 +264,8 @@ export class User {
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_posts
       `,
       { username, client_user_id, limit, offset }
@@ -298,8 +298,8 @@ export class User {
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_mentioned_posts
       `,
       { client_user_id, limit, offset }
@@ -328,8 +328,8 @@ export class User {
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_reacted_posts
       `,
       { client_user_id, limit, offset }
@@ -358,8 +358,8 @@ export class User {
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_saved_posts
       `,
       { client_user_id, limit, offset }
@@ -417,8 +417,8 @@ export class User {
       MATCH (clientUser:User{ id: $client_user_id })-[:RECEIVES_NOTIFICATION]->(notif:Notification)
       WITH notif, toString(notif.created_at) AS created_at
       ORDER BY notif.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(notif { .*, created_at }) AS notifications
       `,
       { client_user_id, limit, offset }

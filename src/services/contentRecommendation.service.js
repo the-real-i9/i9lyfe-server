@@ -53,8 +53,8 @@ export async function getHomePosts({ client_user_id, limit, offset, types }) {
         ELSE true 
       END AS client_reposted
     ORDER BY post.created_at
-    OFFSET $offset
-    LIMIT $limit
+    OFFSET toInteger($offset)
+    LIMIT toInteger($limit)
     RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS feed_posts
     `,
     { types, client_user_id, limit, offset }
@@ -88,8 +88,8 @@ export async function getExplorePosts({ client_user_id, types, limit, offset }) 
         ELSE true 
       END AS client_reposted
     ORDER BY post.created_at DESC, post.reactions_count DESC, post.comments_count DESC
-    OFFSET $offset
-    LIMIT $limit
+    OFFSET toInteger($offset)
+    LIMIT toInteger($limit)
     RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS explore_posts
     `,
     { types, client_user_id, limit, offset }

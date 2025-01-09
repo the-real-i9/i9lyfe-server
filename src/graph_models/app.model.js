@@ -38,8 +38,8 @@ export class App {
             ELSE true 
           END AS client_reposted
         ORDER BY post.created_at DESC
-        OFFSET $offset
-        LIMIT $limit
+        OFFSET toInteger($offset)
+        LIMIT toInteger($limit)
         RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS search_results
         `,
       { term, filter, client_user_id, limit, offset }
@@ -54,8 +54,8 @@ export class App {
       MATCH (ht:Hashtag WHERE ht.name CONTAINS $term)<-[:INCLUDES_HASHTAG]-(post:Post)
       WITH ht.name AS hashtag, count(post) AS posts_count
       ORDER BY post_count DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect({ hashtag, posts_count }) AS search_results
       `,
       { term, limit, offset }
@@ -69,8 +69,8 @@ export class App {
       `
       MATCH (user:User WHERE user.username CONTAINS $term OR user.name CONTAINS $term)
       ORDER BY user.username, user.name
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(user { .username, .name, .profile_pic_url, .bio }) AS search_results
       `,
       { term, limit, offset }
@@ -116,8 +116,8 @@ export class App {
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS search_results
       `,
       { filter, hashtag_name, limit, offset, client_user_id }

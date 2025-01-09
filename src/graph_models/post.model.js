@@ -346,9 +346,11 @@ export class Post {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ id: $client_user_id })
+
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
+      
       WITH post, 
         toString(post.created_at) AS created_at, 
         ownerUser { .id, .username, .profile_pic_url } AS owner_user,
@@ -375,7 +377,7 @@ export class Post {
   static async getComments({ post_id, client_user_id, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)<-[:CREATES_COMMENT]-(ownerUser:User)
+      MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)<-[:WRITES_COMMENT]-(ownerUser:User)
       OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
       WITH comment, 
         toString(comment.created_at) AS created_at, 
@@ -385,8 +387,8 @@ export class Post {
           ELSE crxn.reaction 
         END AS client_reaction
       ORDER BY comment.created_at DESC, comment.reactions_count DESC, comment.comments_count DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(comment {.*, owner_user, created_at, client_reaction }) AS res_comments
       `,
       { post_id, client_user_id, limit, offset }
@@ -407,8 +409,8 @@ export class Post {
           ELSE true 
         END AS client_follows
       ORDER BY rxn.at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
       { post_id, client_user_id, limit, offset }
@@ -435,8 +437,8 @@ export class Post {
           ELSE true 
         END AS client_follows
       ORDER BY rxn.at DESC
-      OFFSET $offset
-      LIMIT $limit
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
       { post_id, client_user_id, reaction, limit, offset }
