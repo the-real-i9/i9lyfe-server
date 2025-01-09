@@ -95,10 +95,10 @@ export class User {
       MATCH (clientUser:User{ id: $client_user_id })
       MERGE (clientUser)-[:FOLLOWS_USER]->(tofollowUser:User{ id: $to_follow_user_id })
       
-      CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime() })-[:FOLLOWER_USER]->(clientUser)
+      CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime(), details: [["follower_user", [["username", clientUser.username], ["profile_pic_url", clientUser.profile_pic_url]]]] })
 
-      WITH followNotif, clientUser { .id, .username, .profile_pic_url } AS follower_user
-      RETURN followNotif { .id, .type, follower_user } AS follow_notif
+      WITH followNotif, toString(followNotif.created_at) AS created_at
+      RETURN followNotif { .*,  created_at } AS follow_notif
       `,
       { client_user_id, to_follow_user_id }
     )
@@ -414,13 +414,12 @@ export class User {
 
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })
-      MATCH (clientUser)-[:RECEIVES_NOTIFICATION]->(notif:Notification)-->(actionUser:User)
-      WITH notif, toString(notif.created_at) AS created_at, actionUser { .username, .profile_pic_url } AS action_user
+      MATCH (clientUser:User{ id: $client_user_id })-[:RECEIVES_NOTIFICATION]->(notif:Notification)
+      WITH notif, toString(notif.created_at) AS created_at
       ORDER BY notif.created_at DESC
       OFFSET $offset
       LIMIT $limit
-      RETURN collect(notif { .*, created_at, action_user }) AS notifications
+      RETURN collect(notif { .*, created_at }) AS notifications
       `,
       { client_user_id, limit, offset }
     )
