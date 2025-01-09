@@ -256,11 +256,11 @@ export class User {
           ELSE crxn.reaction 
         END AS client_reaction, 
         CASE csaves 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
@@ -290,11 +290,11 @@ export class User {
           ELSE crxn.reaction 
         END AS client_reaction, 
         CASE csaves 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
@@ -320,11 +320,11 @@ export class User {
         clientUser { .id, .username, .profile_pic_url } AS owner_user,
         crxn.reaction AS client_reaction, 
         CASE csaves 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
@@ -354,7 +354,7 @@ export class User {
         END AS client_reaction, 
         true AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC

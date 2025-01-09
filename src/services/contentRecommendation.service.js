@@ -45,11 +45,11 @@ export async function getHomePosts({ client_user_id, limit, offset, types }) {
         ELSE crxn.reaction 
       END AS client_reaction, 
       CASE csaves 
-        WHEN IS NULL false 
+        WHEN IS NULL THEN false 
         ELSE true 
       END AS client_saved, 
       CASE creposts 
-        WHEN IS NULL false 
+        WHEN IS NULL THEN false 
         ELSE true 
       END AS client_reposted
     ORDER BY post.created_at
@@ -80,11 +80,11 @@ export async function getExplorePosts({ client_user_id, types, limit, offset }) 
         ELSE crxn.reaction 
       END AS client_reaction, 
       CASE csaves 
-        WHEN IS NULL false 
+        WHEN IS NULL THEN false 
         ELSE true 
       END AS client_saved, 
       CASE creposts 
-        WHEN IS NULL false 
+        WHEN IS NULL THEN false 
         ELSE true 
       END AS client_reposted
     ORDER BY post.created_at DESC, post.reactions_count DESC, post.comments_count DESC

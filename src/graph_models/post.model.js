@@ -357,11 +357,11 @@ export class Post {
           ELSE crxn.reaction 
         END AS client_reaction, 
         CASE csaves 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       RETURN post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted } AS found_post

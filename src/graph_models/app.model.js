@@ -30,11 +30,11 @@ export class App {
             ELSE crxn.reaction 
           END AS client_reaction, 
           CASE csaves 
-            WHEN IS NULL false 
+            WHEN IS NULL THEN false 
             ELSE true 
           END AS client_saved, 
           CASE creposts 
-            WHEN IS NULL false 
+            WHEN IS NULL THEN false 
             ELSE true 
           END AS client_reposted
         ORDER BY post.created_at DESC
@@ -108,11 +108,11 @@ export class App {
           ELSE crxn.reaction 
         END AS client_reaction, 
         CASE csaves 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_saved, 
         CASE creposts 
-          WHEN IS NULL false 
+          WHEN IS NULL THEN false 
           ELSE true 
         END AS client_reposted
       ORDER BY post.created_at DESC
