@@ -20,6 +20,15 @@ If your needs require more features than this API server currently supports, fee
 
 ## Technologies
 
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/express-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/javascript-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/postgresql-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/neo4j-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/socketio-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
+<img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
+
 ## Table of Contents
 
 - [Intro](#intro)
