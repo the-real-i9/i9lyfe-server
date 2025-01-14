@@ -16,7 +16,7 @@ The API documentation provides a detailed usage guide. It doesn't follow the Ope
 
 ### Open to suggestions
 
-If your needs require more features than this API server currently supports, feel free to suggest them, and it will be added as soon as possible.
+If you need a feature this API server does not currently support, feel free to suggest them, and it will be added as soon as possible.
 
 ## Technologies
 
@@ -28,6 +28,11 @@ If your needs require more features than this API server currently supports, fee
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/socketio-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
+
+### More
+
+- JWT
+- express-validator
 
 ## Table of Contents
 
@@ -42,56 +47,69 @@ If your needs require more features than this API server currently supports, fee
 
 ## Features
 
+The following is a summary of the features supported by this API. Visit the API documentation to see the full features and their implementation details.
+
 ### Content Creation & Sharing
 
-- **Create Post:** Supports post types such as *Photo*, *Video*, *Story*, and *Reel*. Each post can include a description with optional @mentions and #hashtags.
+- **Create Post:** Create post types inspired by Instagram including *Photo*, *Video*, *Story*, and *Reel*.
 
 ### Interactivity
 
-- **Comment on Posts or Comments:** Comments can include text, media, or both, with optional @mentions and #hashtags.  
-  > In this API, the concept of a *reply* is modeled as a *comment-on-comment* to simplify API and database design.  
+- **Comment on Posts or Comments:** Write comments on posts and replies to comments. 
+
 - **React to Posts or Comments:** Reactions are represented as non-surrogate pair emojis.  
 - **Repost:** Share posts on your feed.  
-- **View Interactions:** Access comments on posts and replies to comments. View a list of users who reacted to a post or comment.
+- **View Interactions:** Access comments on posts and replies to comments. View the list of users who have reacted to a post or comment.
+- Save posts
 
 ### User Profile
 
 - Edit your profile information.  
-- Delete your contents.
+- Manage your posts.
 - View saved posts.  
-- Access posts you’ve reacted to or commented on.
+- Access posts you’ve reacted to, posts you've commented on, posts you were mentioned in and more.
+- View saved posts
 
 ### Networking
 
 - Follow or unfollow other users.  
 - Explore content suggestions and recommendations tailored to your interests.  
-- View user profiles and their associated content.
+- View user profiles and their content.
 
-### Home Feed & Explore
+### Home Feed
 
-- **Infinite Scrolling:** Seamless pagination for browsing.  
-- **Real-Time Updates:** New, relevant posts and interactions, including reactions, comments, reposts, and saves, are delivered and updated in real-time.
+Get posts feed based on your interests and your follow network.
 
-### Messaging
+### Stories
 
-- **Direct Messaging (DM):** Initiate private chats with other users.  
-- **Message Types:** Supports text, voice notes, images, videos, audio files, and file attachments. Media files (images, videos, and audio) can include optional descriptions.  
-- **Reactions:** React to messages and view reactions.  
-- **Real-Time Experience:** Ensures seamless and instant communication.
+Get updates of moments shared by those you follow in stories.
 
-### Discovery & Search
+### Explore
 
-- **Search and Filter:** Find accounts, hashtags, content, or topics of interest.  
-- **Hashtags:** Categorize and organize posts under themes for easy discovery.
+Explore top (trending) content of different post types
 
-### Content Curation
+### Reels
 
-- Save specific posts for future reference.  
-- Retrieve and view your saved posts.
+Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing list of reel videos.
+
+### Chatting and Messaging
+
+- Chat with users in the application
+- Supported message types include text, voice notes, images, videos, audio files, and file attachments (with description).
+
+### Search
+
+- **Search and Filter:** Find users, hashtags, posts (photo, video, reel), or topics of interest.  
+- **Hashtags:** View top posts with specific hashtags
 
 ### Notifications
 
 - **Activity Updates:** Receive notifications about likes, comments, shares, and mentions.
+
+### Real-Time Updates
+
+- New posts arrive on top of your home feed in realtime.
+- Individual posts receive real-time interaction updates.
 
 ## API Documentation
 
