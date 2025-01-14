@@ -20,6 +20,7 @@ If you need a feature this API server does not currently support, feel free to s
 
 ## Technologies
 
+<div style="display: flex;">
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/javascript-original.svg" />
@@ -28,6 +29,7 @@ If you need a feature this API server does not currently support, feel free to s
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/socketio-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
 <img style="margin-right: 5px" alt="nodejs" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
+</div>
 
 ### More
 
