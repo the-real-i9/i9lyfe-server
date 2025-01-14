@@ -1,16 +1,18 @@
 # i9lyfe (API Server)
 
+Build your Social Network Application
+
 ## Intro
 
-i9lyfe-server is an API server for a Social Network Application, built with Node.js. It supports major social network application features.
+i9lyfe-server is an API server for a Social Network Application, built with Node.js. It supports major social network application features that can be used to implement a mordern social network application.
 
 ### Who is this project for?
 
-If you're a frontend developer looking to build a Chat Application UI, not just to have it static, but to also make it function.
+If you're a frontend developer looking to build a Social Network Application, not just to have it static, but to also make it function.
 
-The goal of this API server is to support as many Chat Application features as possible.
+The goal of this API server is to support as many Social Network features as possible.
 
-The API documentation provides a detailed integration guide. It doesn't follow the Open API specification, rather it follows Google's API documentation style sturcured in a simple markdown table, which I consider simple, comprehensive, flexible, and easier to follow.
+The API documentation provides a detailed usage guide. It doesn't follow the Open API specification, rather it follows Google's API documentation style sturcured in a simple markdown table, which I consider easier to work with.
 
 ### Open to suggestions
 
@@ -25,12 +27,11 @@ If your needs require more features than this API server currently supports, fee
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [API Documentation](#api-documentation)
-- [Notable Features and their Algorithms](#notable-featurea-and-their-algorithms)
-- [Running the Application](#running-the-application)
+- [Notable Features and their Algorithms](#notable-features-and-their-algorithms)
+- [Building & Running the Application (Locally)](#building--running-the-application-locally)
+- [Deploying the Application](#deploying-the-application)
 
 ## Features
-
-Coming up with a completely new social media platform idea is challenging, and deciding which features to include or exclude is just as difficult. So, I chose to model my platform after a popular one—Instagram. While it may not yet include all of Instagram's features, my goal is to eventually incorporate them. This approach presents more problems to solve, making the journey even more rewarding.
 
 ### Content Creation & Sharing
 
@@ -82,3 +83,11 @@ Coming up with a completely new social media platform idea is challenging, and d
 ### Notifications
 
 - **Activity Updates:** Receive notifications about likes, comments, shares, and mentions.
+
+## API Documentation
+
+## Notable Features and their Algorithms
+
+## Building & Running the Application (Locally)
+
+## Deploying the Application
