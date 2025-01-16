@@ -57,7 +57,7 @@ The following is a summary of the features supported by this API. Visit the API 
 
 ### Interactivity
 
-- **Comment on Posts or Comments:** Write comments on posts and replies to comments. 
+- **Comment on Posts or Comments:** Write comments on posts and replies to comments.
 
 - **React to Posts or Comments:** Reactions are represented as non-surrogate pair emojis.  
 - **Repost:** Share posts on your feed.  
