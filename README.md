@@ -28,7 +28,7 @@ If you need a feature this API server does not currently support, feel free to s
 <img style="margin-right: 10px" alt="socket.io" width="50" src="./attachments/tech-icons/socketio-original.svg" />
 <img style="margin-right: 10px" alt="apachekafka" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
 <img style="margin-right: 10px" alt="googlecloud" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
-<span style="margin-right: 10px; display: flex; justify-content: center; align-items: center;">
+<span style="margin-right: 10px; display: flex; align-items: center;">
   <img alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" />
   ❌ (old)
 </span>
