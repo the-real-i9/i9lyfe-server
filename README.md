@@ -24,14 +24,11 @@ If you need a feature this API server does not currently support, feel free to s
 <img style="margin-right: 10px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />
 <img style="margin-right: 10px" alt="express" width="50" src="./attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/javascript-original.svg" />
-<img style="margin-right: 10px" alt="neo4j" width="70" src="./attachments/tech-icons/neo4j-original.svg" />
+<img style="margin-right: 10px" alt="neo4j" width="50" src="./attachments/tech-icons/neo4j-original.svg" />
 <img style="margin-right: 10px" alt="socket.io" width="50" src="./attachments/tech-icons/socketio-original.svg" />
 <img style="margin-right: 10px" alt="apachekafka" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
 <img style="margin-right: 10px" alt="googlecloud" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
-<span style="margin-right: 10px; display: flex; align-items: center;">
-  <img alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" />
-  ❌ (old)
-</span>
+<img style="margin-right: 10px; alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
 </div>
 
 ### More
