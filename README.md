@@ -33,11 +33,6 @@ If you need a feature this API server does not currently support, feel free to s
 <img style="margin-right: 10px; alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
 </div>
 
-### More
-
-- JWT
-- express-validator
-
 ## Table of Contents
 
 - [Intro](#intro)
