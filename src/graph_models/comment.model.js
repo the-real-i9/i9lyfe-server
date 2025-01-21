@@ -13,9 +13,9 @@ export class Comment {
             MATCH (clientUser:User{ id: $client_user_id }), (comment:Comment{ id: $comment_id })
             MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment)
             ON CREATE
-              SET crxn.reaction = $reaction
-              SET crxn.at = datetime()
-              SET comment.reactions_count = comment.reactions_count + 1
+              SET crxn.reaction = $reaction,
+                crxn.at = datetime(),
+                comment.reactions_count = comment.reactions_count + 1
 
             RETURN comment.reactions_count AS latest_reactions_count
             `,

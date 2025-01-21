@@ -34,12 +34,15 @@ export const deleteChat = async (req, res) => {
 
 export const getChatHistory = async (req, res) => {
   try {
-    const { chat_id } = req.params
+    const { partner_user_id } = req.params
+
+    const { client_user_id } = req.auth
 
     const { limit = 50, offset = 0 } = req.query
 
     const resp = await chatService.getChatHistory({
-      chat_id,
+      client_user_id,
+      partner_user_id,
       limit,
       offset,
     })

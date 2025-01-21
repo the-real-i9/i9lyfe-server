@@ -18,9 +18,15 @@ export const deleteChat = async (client_user_id, partner_user_id) => {
   }
 }
 
-export const getChatHistory = async ({ chat_id, limit, offset }) => {
+export const getChatHistory = async ({
+  client_user_id,
+  partner_user_id,
+  limit,
+  offset,
+}) => {
   const chatHistory = await Chat.getHistory({
-    chat_id,
+    client_user_id,
+    partner_user_id,
     limit,
     offset,
   })

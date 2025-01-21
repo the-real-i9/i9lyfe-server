@@ -1,4 +1,3 @@
-import { dbQuery } from "../configs/db.js"
 import { neo4jDriver } from "../configs/graph_db.js"
 
 export class Chat {
@@ -15,6 +14,10 @@ export class Chat {
       MATCH (clientUser:User{ id: $client_user_id }), (partnerUser:User{ id: $partner_user_id })
       MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })-[:WITH_USER]->(partnerUser)
       MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_user_id: $partner_user_id, partner_user_id: $client_user_id })-[:WITH_USER]->(clientUser)
+      SET clientChat.last_activity_type = "message", 
+        partnerChat.last_activity_type = "message"
+        clientChat.last_message_at = datetime($created_at), 
+        partnerChat.last_message_at = datetime($created_at),
       WITH clientUser, clientChat, partnerUser, partnerChat
       CREATE (message:Message{ id: randomUUID(), content: $message_content, delivery_status: "sent", created_at: datetime($created_at) }),
         (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
@@ -33,30 +36,47 @@ export class Chat {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })
-      DETACH DELETE clientChat;
+      DETACH DELETE clientChat
       `,
       { client_user_id, partner_user_id }
     )
   }
 
   static async getAll(client_user_id) {
-    const query = {
-      text: "SELECT * FROM get_user_chats($1)",
-      values: [client_user_id],
-    }
+    // I'm here
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (clientChat:Chat{ owner_user_id: $client_user_id })-[:WITH_USER]->(partnerUser),
+        (clientChat)<-[:IN_CHAT]-(lmsg:Message WHERE lmsg.created_at = clientChat.last_message_at),
+        (clientChat)<-[:IN_CHAT]-(:Message)<-[lrxn:REACTS_TO_MESSAGE WHERE lrxn.at = clientChat.last_reaction_at]-(reactor)
+      WITH clientChat, toString(clientChat.last_message_at) AS last_message_at, partnerUser { .id, .username, .profile_pic_url, .connection_status } AS partner,
+        CASE clientChat.last_activity_type 
+          WHEN "message" THEN lmsg { type: "message", .content, .delivery_status }
+          WHEN "reaction" THEN lrxn { type: "reaction", .reaction, reactor: reactor.username }
+        END AS last_activity
+      ORDER BY clientChat.last_message_at DESC
+      RETURN collect(clientChat { partner, .unread_messages_count, last_message_at, last_activity }) AS my_chats
+      `,
+      { client_user_id }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("my_chats")
   }
 
-  static async getHistory({ chat_id, limit, offset }) {
-    const query = {
-      text: `
-    SELECT * FROM get_chat_history($1, $2, $3)
-    `,
-      values: [chat_id, limit, offset],
-    }
+  static async getHistory({ client_user_id, partner_user_id, limit, offset }) {
+    const { records } = await neo4jDriver.executeRead(
+      `
+      MATCH (clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })<-[:IN_CHAT]-(message:Message)<-[rxn:REACTS_TO_MESSAGE]-(reactor)
+      WITH message, toString(message.created_at) AS created_at, collect({ user: reactor { .username, .profile_pic_url }, reaction: rxn.reaction }) AS reactions
+      ORDER BY message.created_at DESC
+      OFFSET toInteger($offset)
+      LIMIT toInteger($limit)
+      RETURN collect(message { .*, created_at, reactions }) AS chat_history
+      `,
+      { client_user_id, partner_user_id, limit, offset }
+    )
 
-    return (await dbQuery(query)).rows
+    return records[0].get("chat_history")
   }
 
   static async blockUser(client_user_id, to_block_user_id) {
@@ -100,7 +120,12 @@ export class Message {
     )
   }
 
-  static async ackRead({ client_user_id, partner_user_id, message_id, read_at }) {
+  static async ackRead({
+    client_user_id,
+    partner_user_id,
+    message_id,
+    read_at,
+  }) {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id }),
@@ -118,19 +143,27 @@ export class Message {
     message_id,
     reaction,
   }) {
+    const reaction_at = new Date().toISOString()
+
     await neo4jDriver.executeWrite(
       `
       MATCH (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })<-[:IN_CHAT]-(message:Message{ id: $message_id }),
+        (clientChat)-[:WITH_USER]->(partnerChat)
       MERGE (clientUser)-[crxn:REACTS_TO_MESSAGE]->(message)
       ON CREATE
-        SET crxn.reaction = $reaction
-        SET crxn.at = datetime()
+        SET crxn.reaction = $reaction, 
+          crxn.at = datetime($reaction_at),
+          clientChat.last_activity_type = "reaction", 
+          partnerChat.last_activity_type = "reaction"
+          clientChat.last_reaction_at = datetime($reaction_at),
+          partnerChat.last_reaction_at = datetime($reaction_at),
       `,
       {
         client_user_id,
         partner_user_id,
         message_id,
         reaction,
+        reaction_at,
       }
     )
   }

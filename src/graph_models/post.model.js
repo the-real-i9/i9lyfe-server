@@ -108,8 +108,8 @@ export class Post {
         MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
         MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_user_id: $client_user_id, reposted_post_id: $post_id })-[:REPOST_OF]->(post)
         ON CREATE
-          SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 }
-          SET post.reposts_count = post.reposts_count + 1
+          SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 },
+            post.reposts_count = post.reposts_count + 1
 
         WITH post, repost, toString(repost.created_at) AS created_at, clientUser { .id, username, .profile_pic_url } owner_user
 
@@ -179,9 +179,9 @@ export class Post {
         MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
         MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
         ON CREATE
-          SET crxn.reaction = $reaction
-          SET crxn.at = datetime()
-          SET post.reactions_count = post.reactions_count + 1
+          SET crxn.reaction = $reaction,
+            crxn.at = datetime(),
+            post.reactions_count = post.reactions_count + 1
 
         RETURN post.reactions_count AS latest_reactions_count
         `,
