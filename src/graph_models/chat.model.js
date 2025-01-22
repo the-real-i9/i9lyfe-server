@@ -15,9 +15,9 @@ export class Chat {
       MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_user_id: $client_user_id, partner_user_id: $partner_user_id })-[:WITH_USER]->(partnerUser)
       MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_user_id: $partner_user_id, partner_user_id: $client_user_id })-[:WITH_USER]->(clientUser)
       SET clientChat.last_activity_type = "message", 
-        partnerChat.last_activity_type = "message"
+        partnerChat.last_activity_type = "message",
         clientChat.last_message_at = datetime($created_at), 
-        partnerChat.last_message_at = datetime($created_at),
+        partnerChat.last_message_at = datetime($created_at)
       WITH clientUser, clientChat, partnerUser, partnerChat
       CREATE (message:Message{ id: randomUUID(), content: $message_content, delivery_status: "sent", created_at: datetime($created_at) }),
         (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
@@ -154,9 +154,9 @@ export class Message {
         SET crxn.reaction = $reaction, 
           crxn.at = datetime($reaction_at),
           clientChat.last_activity_type = "reaction", 
-          partnerChat.last_activity_type = "reaction"
+          partnerChat.last_activity_type = "reaction",
           clientChat.last_reaction_at = datetime($reaction_at),
-          partnerChat.last_reaction_at = datetime($reaction_at),
+          partnerChat.last_reaction_at = datetime($reaction_at)
       `,
       {
         client_user_id,
@@ -197,6 +197,8 @@ export class Message {
         `,
         { client_user_id, partner_user_id, message_id }
       )
+
+      return
     }
 
     // remove the message from both client's and partner's chats
