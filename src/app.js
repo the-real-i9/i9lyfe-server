@@ -1,11 +1,14 @@
 import express from "express"
 import cors from "cors"
+import helmet from "helmet"
 
 import PrivateRoutes from "./routes/private.routes.js"
 import PublicRoutes from "./routes/public.routes.js"
 
 
 const app = express()
+
+app.use(helmet())
 
 app.use(cors())
 

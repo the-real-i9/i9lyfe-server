@@ -40,7 +40,7 @@ If you need a feature this API server does not currently support, feel free to s
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [API Documentation](#api-documentation)
-- [Notable Features and their Algorithms](#notable-features-and-their-algorithms)
+- [Features Showcase (UI*)](#features-showcase-ui)
 - [Building & Running the Application (Locally)](#building--running-the-application-locally)
 - [Deploying the Application](#deploying-the-application)
 
@@ -112,7 +112,7 @@ Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing 
 
 ## API Documentation
 
-## Notable Features and their Algorithms
+## Features Showcase (UI*)
 
 ## Building & Running the Application (Locally)
 
