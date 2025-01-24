@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "@jest/globals"
 
 import server from ".."
 import { neo4jDriver } from "../configs/graph_db.js"
+import { registerUser } from "../services/auth/signup.service.js"
 
 beforeAll((done) => {
   server.listen(0, "localhost", done)
@@ -66,6 +67,35 @@ describe("user signup", () => {
         bio: "I'm a genius lawyer with no degree",
       })
 
+    expect(res.status).toBe(201)
+    expect(res.body).toHaveProperty("jwt")
+  })
+})
+
+describe("user signin", () => {
+  afterAll(async () => {
+    await neo4jDriver.executeWrite(`MATCH (n) DETACH DELETE n`)
+  })
+
+  it("should sign in user", async () => {
+    const pre_res = await registerUser({
+      username: "mike",
+      name: "Mike Ross",
+      password: "blablabla",
+      birthday: "2000-11-07",
+      bio: "I'm a genius lawyer with no degree",
+    })
+  
+    expect(pre_res).toHaveProperty("data.msg")
+
+    const res = await request(server)
+    .post(`${baseURL}/signin`)
+    .send({
+      email_or_username: "mike",
+      password: "blablabla",
+    })
+
+    expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("jwt")
   })
 })
