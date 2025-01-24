@@ -15,10 +15,7 @@ export const neo4jDriver = {
 
     await session.executeWrite(async (tx) => {
       await tx.run(
-        `CREATE CONSTRAINT unique_user_id IF NOT EXISTS FOR (u:User) REQUIRE (u.id) IS UNIQUE`
-      )
-      await tx.run(
-        `CREATE CONSTRAINT unique_user_username IF NOT EXISTS FOR (u:User) REQUIRE (u.username) IS UNIQUE`
+        `CREATE CONSTRAINT unique_username IF NOT EXISTS FOR (u:User) REQUIRE (u.username) IS UNIQUE`
       )
       await tx.run(
         `CREATE CONSTRAINT unique_user_email IF NOT EXISTS FOR (u:User) REQUIRE (u.email) IS UNIQUE`
