@@ -4,11 +4,10 @@ export const createNewPost = async (req, res) => {
   try {
     const { media_data_list, type, description = "" } = req.body
 
-    const { client_user_id, client_username } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.createNewPost({
       client_username,
-      client_user_id,
       media_data_list,
       type,
       description,
@@ -26,10 +25,10 @@ export const reactToPost = async (req, res) => {
     const { post_id } = req.params
     const { reaction } = req.body
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.reactToPost({
-      client_user_id,
+      client_username,
       post_id,
       reaction,
     })
@@ -67,10 +66,10 @@ export const reactToComment = async (req, res) => {
     const { comment_id } = req.params
     const { reaction } = req.body
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.reactToComment({
-      client_user_id,
+      client_username,
       comment_id,
       reaction,
     })
@@ -106,9 +105,9 @@ export const commentOnComment = async (req, res) => {
 export const createRepost = async (req, res) => {
   try {
     const { post_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.createRepost(post_id, client_user_id)
+    const resp = await postCommentService.createRepost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -121,9 +120,9 @@ export const savePost = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.savePost(post_id, client_user_id)
+    const resp = await postCommentService.savePost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -135,9 +134,9 @@ export const savePost = async (req, res) => {
 export const unsavePost = async (req, res) => {
   try {
     const { post_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.unsavePost(post_id, client_user_id)
+    const resp = await postCommentService.unsavePost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -152,9 +151,9 @@ export const getPost = async (req, res) => {
   try {
     const { post_id } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.getPost(post_id, client_user_id)
+    const resp = await postCommentService.getPost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -169,11 +168,11 @@ export const getCommentsOnPost = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getCommentsOnPost({
       post_id,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -189,9 +188,9 @@ export const getComment = async (req, res) => {
   try {
     const { comment_id } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.getComment(comment_id, client_user_id)
+    const resp = await postCommentService.getComment(comment_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -206,11 +205,11 @@ export const getReactorsToPost = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getReactorsToPost({
       post_id,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -228,12 +227,12 @@ export const getReactorsWithReactionToPost = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getReactorsWithReactionToPost({
       post_id,
       reaction,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -251,11 +250,11 @@ export const getCommentsOnComment = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getCommentsOnComment({
       comment_id,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -273,11 +272,11 @@ export const getReactorsToComment = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getReactorsToComment({
       comment_id,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -295,12 +294,12 @@ export const getReactorsWithReactionToComment = async (req, res) => {
 
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.getReactorsWithReactionToComment({
       comment_id,
       reaction,
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -317,9 +316,9 @@ export const getReactorsWithReactionToComment = async (req, res) => {
 export const deletePost = async (req, res) => {
   try {
     const { post_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.deletePost(post_id, client_user_id)
+    const resp = await postCommentService.deletePost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -331,11 +330,11 @@ export const deletePost = async (req, res) => {
 export const removeReactionToPost = async (req, res) => {
   try {
     const { post_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.removeReactionToPost(
       post_id,
-      client_user_id
+      client_username
     )
 
     res.status(200).send(resp.data)
@@ -348,12 +347,12 @@ export const removeReactionToPost = async (req, res) => {
 export const removeCommentOnPost = async (req, res) => {
   try {
     const { post_id, comment_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.removeCommentOnPost({
       post_id,
       comment_id,
-      client_user_id,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -366,12 +365,12 @@ export const removeCommentOnPost = async (req, res) => {
 export const removeCommentOnComment = async (req, res) => {
   try {
     const { parent_comment_id, comment_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.removeCommentOnComment({
       parent_comment_id,
       comment_id,
-      client_user_id,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -384,11 +383,11 @@ export const removeCommentOnComment = async (req, res) => {
 export const removeReactionToComment = async (req, res) => {
   try {
     const { comment_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await postCommentService.removeReactionToComment(
       comment_id,
-      client_user_id
+      client_username
     )
 
     res.status(200).send(resp.data)
@@ -401,9 +400,9 @@ export const removeReactionToComment = async (req, res) => {
 export const deleteRepost = async (req, res) => {
   try {
     const { post_id } = req.params
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await postCommentService.deletePost(post_id, client_user_id)
+    const resp = await postCommentService.deletePost(post_id, client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {

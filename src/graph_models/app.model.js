@@ -6,7 +6,7 @@ export class App {
     filter,
     limit,
     offset,
-    client_user_id,
+    client_username,
   }) {
     let applyFilter = ""
 
@@ -16,7 +16,7 @@ export class App {
 
     const { records } = await neo4jDriver.executeRead(
       `
-        MATCH (post:Post WHERE ${applyFilter}post.description CONTAINS $term)<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ id: $client_user_id })
+        MATCH (post:Post WHERE ${applyFilter}post.description CONTAINS $term)<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
     
         OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
         OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
@@ -24,7 +24,7 @@ export class App {
     
         WITH post, 
           toString(post.created_at) AS created_at, 
-          ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+          ownerUser { .username, .profile_pic_url } AS owner_user,
           CASE crxn 
             WHEN IS NULL THEN "" 
             ELSE crxn.reaction 
@@ -42,7 +42,7 @@ export class App {
         LIMIT toInteger($limit)
         RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS search_results
         `,
-      { term, filter, client_user_id, limit, offset }
+      { term, filter, client_username, limit, offset }
     )
 
     return records[0].get("search_results")
@@ -84,7 +84,7 @@ export class App {
     filter,
     limit,
     offset,
-    client_user_id,
+    client_username,
   }) {
     let applyFilter = ""
 
@@ -94,7 +94,7 @@ export class App {
 
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (ht:Hashtag{ name: $hashtag_name })<-[:INCLUDES_HASHTAG]-(post:Post${applyFilter})<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ id: $client_user_id })
+      MATCH (ht:Hashtag{ name: $hashtag_name })<-[:INCLUDES_HASHTAG]-(post:Post${applyFilter})<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
 
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
@@ -102,7 +102,7 @@ export class App {
   
       WITH post, 
         toString(post.created_at) AS created_at, 
-        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        ownerUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -120,7 +120,7 @@ export class App {
       LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS search_results
       `,
-      { filter, hashtag_name, limit, offset, client_user_id }
+      { filter, hashtag_name, limit, offset, client_username }
     )
 
     return records[0].get("search_results")

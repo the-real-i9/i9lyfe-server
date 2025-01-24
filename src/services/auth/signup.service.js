@@ -72,11 +72,10 @@ export const registerUser = async (info) => {
   })
 
   const jwt = securityServices.generateJwt({
-    client_user_id: user.id,
     client_username: user.username,
   })
 
-  messageBrokerService.createTopic(`i9lyfe-user-${user.id}-alerts`)
+  messageBrokerService.createTopic(`i9lyfe-user-${user.username}-alerts`)
 
   return {
     data: {

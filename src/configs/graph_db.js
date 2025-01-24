@@ -30,7 +30,7 @@ export const neo4jDriver = {
         `CREATE CONSTRAINT unique_comment IF NOT EXISTS FOR (comment:Comment) REQUIRE (comment.id) IS UNIQUE`
       )
       await tx.run(
-        `CREATE CONSTRAINT unique_repost IF NOT EXISTS FOR (repost:Repost) REQUIRE (repost.reposter_user_id, repost.reposted_post_id) IS UNIQUE`
+        `CREATE CONSTRAINT unique_repost IF NOT EXISTS FOR (repost:Repost) REQUIRE (repost.reposter_username, repost.reposted_post_id) IS UNIQUE`
       )
       await tx.run(
         `CREATE CONSTRAINT unique_hashtag IF NOT EXISTS FOR (ht:Hashtag) REQUIRE (ht.name) IS UNIQUE`
@@ -39,7 +39,7 @@ export const neo4jDriver = {
         `CREATE CONSTRAINT unique_notification IF NOT EXISTS FOR (notif:Notification) REQUIRE (notif.id) IS UNIQUE`
       )
       await tx.run(
-        `CREATE CONSTRAINT unique_chat IF NOT EXISTS FOR (chat:Chat) REQUIRE (chat.owner_user_id, chat.partner_user_id) IS UNIQUE`
+        `CREATE CONSTRAINT unique_chat IF NOT EXISTS FOR (chat:Chat) REQUIRE (chat.owner_username, chat.partner_username) IS UNIQUE`
       )
       await tx.run(
         `CREATE CONSTRAINT unique_message IF NOT EXISTS FOR (msg:Message) REQUIRE (msg.id) IS UNIQUE`

@@ -1,11 +1,11 @@
 import { App } from "../graph_models/app.model.js"
 import * as CRS from "../services/contentRecommendation.service.js"
 
-export const getExploreFeed = async ({ limit, offset, client_user_id }) => {
+export const getExploreFeed = async ({ limit, offset, client_username }) => {
   const exploreFeedPosts = await CRS.getExplorePosts({
     limit,
     offset,
-    client_user_id,
+    client_username,
     types: ["photo", "video"],
   })
 
@@ -14,11 +14,11 @@ export const getExploreFeed = async ({ limit, offset, client_user_id }) => {
   }
 }
 
-export const getExploreReels = async ({ limit, offset, client_user_id }) => {
+export const getExploreReels = async ({ limit, offset, client_username }) => {
   const exploreReelPosts = await CRS.getExplorePosts({
     limit,
     offset,
-    client_user_id,
+    client_username,
     types: ["reel"],
   })
 
@@ -28,7 +28,7 @@ export const getExploreReels = async ({ limit, offset, client_user_id }) => {
 }
 
 export const searchAndFilter = async ({
-  client_user_id,
+  client_username,
   term,
   filter,
   limit,
@@ -44,7 +44,7 @@ export const searchAndFilter = async ({
           filter,
           limit,
           offset,
-          client_user_id,
+          client_username,
         })
 
   return {
@@ -57,14 +57,14 @@ export const getHashtagPosts = async ({
   filter,
   limit,
   offset,
-  client_user_id,
+  client_username,
 }) => {
   const hashtagPosts = await App.getHashtagPosts({
     hashtag_name,
     filter,
     limit,
     offset,
-    client_user_id,
+    client_username,
   })
 
   return {

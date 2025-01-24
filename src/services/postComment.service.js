@@ -7,14 +7,13 @@ import * as realtimeService from "../services/realtime.service.js"
 
 /**
  * @param {object} param0
- * @param {number} param0.client_user_id
+ * @param {number} param0.client_username
  * @param {number[][]} param0.media_data_list
  * @param {"photo" | "video" | "story" | "reel"} param0.type
  * @param {string} param0.description
  */
 export const createNewPost = async ({
   client_username,
-  client_user_id,
   media_data_list,
   type,
   description,
@@ -38,13 +37,13 @@ export const createNewPost = async ({
     hashtags,
   })
 
-  realtimeService.publishNewPost(new_post_data.id, client_user_id)
+  realtimeService.publishNewPost(new_post_data.id, client_username)
 
   mention_notifs.forEach((notif) => {
-    const { receiver_user_id, ...restData } = notif
+    const { receiver_username, ...restData } = notif
 
     // replace with message broker
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   })
 
   return {
@@ -52,18 +51,18 @@ export const createNewPost = async ({
   }
 }
 
-export const reactToPost = async ({ client_user_id, post_id, reaction }) => {
+export const reactToPost = async ({ client_username, post_id, reaction }) => {
   const { reaction_notif, latest_reactions_count } = await Post.reactTo({
-    client_user_id,
+    client_username,
     post_id,
     reaction,
   })
 
   // notify post owner of reaction
   if (reaction_notif) {
-    const { receiver_user_id, ...restData } = reaction_notif
+    const { receiver_username, ...restData } = reaction_notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 
   // update metrics for post for all post watchers
@@ -109,16 +108,16 @@ export const commentOnPost = async ({
 
   // notify mentioned users
   mention_notifs.forEach((notif) => {
-    const { receiver_user_id, ...restData } = notif
+    const { receiver_username, ...restData } = notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   })
 
   // notify post owner of comment
   if (comment_notif) {
-    const { receiver_user_id, ...restData } = comment_notif
+    const { receiver_username, ...restData } = comment_notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 
   realtimeService.sendPostUpdate(post_id, {
@@ -132,21 +131,21 @@ export const commentOnPost = async ({
 }
 
 export const reactToComment = async ({
-  client_user_id,
+  client_username,
   comment_id,
   reaction,
 }) => {
   const { reaction_notif, latest_reactions_count } = await Comment.reactTo({
-    client_user_id,
+    client_username,
     comment_id,
     reaction,
   })
 
   // notify comment owner of reaction
   if (reaction_notif) {
-    const { receiver_user_id, ...restData } = reaction_notif
+    const { receiver_username, ...restData } = reaction_notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 
   realtimeService.sendCommentUpdate(comment_id, {
@@ -191,16 +190,16 @@ export const commentOnComment = async ({
 
   // notify mentioned users
   mention_notifs.forEach((notif) => {
-    const { receiver_user_id, ...restData } = notif
+    const { receiver_username, ...restData } = notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   })
 
   // notify comment owner of comment
   if (comment_notif) {
-    const { receiver_user_id, ...restData } = comment_notif
+    const { receiver_username, ...restData } = comment_notif
 
-    messageBrokerService.sendNewNotification(receiver_user_id, restData)
+    messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 
   realtimeService.sendCommentUpdate(comment_id, {
@@ -213,16 +212,16 @@ export const commentOnComment = async ({
   }
 }
 
-export const createRepost = async (post_id, client_user_id) => {
-  await Post.repost(post_id, client_user_id)
+export const createRepost = async (post_id, client_username) => {
+  await Post.repost(post_id, client_username)
 
   return {
     data: { msg: "operation successful" },
   }
 }
 
-export const savePost = async (post_id, client_user_id) => {
-  const { latest_saves_count } = await Post.save(post_id, client_user_id)
+export const savePost = async (post_id, client_username) => {
+  const { latest_saves_count } = await Post.save(post_id, client_username)
 
   realtimeService.sendPostUpdate(post_id, {
     post_id,
@@ -234,8 +233,8 @@ export const savePost = async (post_id, client_user_id) => {
   }
 }
 
-export const unsavePost = async (post_id, client_user_id) => {
-  const { latest_saves_count } = await Post.unsave(post_id, client_user_id)
+export const unsavePost = async (post_id, client_username) => {
+  const { latest_saves_count } = await Post.unsave(post_id, client_username)
 
   realtimeService.sendPostUpdate(post_id, {
     post_id,
@@ -249,8 +248,8 @@ export const unsavePost = async (post_id, client_user_id) => {
 
 /* The GETs */
 
-export const getPost = async (post_id, client_user_id) => {
-  const post = await Post.findOne(post_id, client_user_id)
+export const getPost = async (post_id, client_username) => {
+  const post = await Post.findOne(post_id, client_username)
 
   return {
     data: post,
@@ -259,13 +258,13 @@ export const getPost = async (post_id, client_user_id) => {
 
 export const getCommentsOnPost = async ({
   post_id,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const commentsOnPost = await Post.getComments({
     post_id,
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -275,8 +274,8 @@ export const getCommentsOnPost = async ({
   }
 }
 
-export const getComment = async (comment_id, client_user_id) => {
-  const comment = await Comment.findOne(comment_id, client_user_id)
+export const getComment = async (comment_id, client_username) => {
+  const comment = await Comment.findOne(comment_id, client_username)
 
   return {
     data: comment,
@@ -285,13 +284,13 @@ export const getComment = async (comment_id, client_user_id) => {
 
 export const getReactorsToPost = async ({
   post_id,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const postReactors = await Post.getReactors({
     post_id,
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -304,14 +303,14 @@ export const getReactorsToPost = async ({
 export const getReactorsWithReactionToPost = async ({
   post_id,
   reaction,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const reactorsWithReaction = await Post.getReactorsWithReaction({
     post_id,
     reaction: reaction.codePointAt(),
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -323,13 +322,13 @@ export const getReactorsWithReactionToPost = async ({
 
 export const getCommentsOnComment = async ({
   comment_id,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const commentsOnComment = await Comment.getComments({
     comment_id,
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -341,13 +340,13 @@ export const getCommentsOnComment = async ({
 
 export const getReactorsToComment = async ({
   comment_id,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const commentReactors = await Comment.getReactors({
     comment_id,
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -360,14 +359,14 @@ export const getReactorsToComment = async ({
 export const getReactorsWithReactionToComment = async ({
   comment_id,
   reaction,
-  client_user_id,
+  client_username,
   limit,
   offset,
 }) => {
   const commentReactorsWithReaction = await Comment.getReactorsWithReaction({
     comment_id,
     reaction: reaction.codePointAt(),
-    client_user_id,
+    client_username,
     limit,
     offset,
   })
@@ -379,18 +378,18 @@ export const getReactorsWithReactionToComment = async ({
 
 /* DELETEs */
 
-export const deletePost = async (post_id, client_user_id) => {
-  await Post.delete(post_id, client_user_id)
+export const deletePost = async (post_id, client_username) => {
+  await Post.delete(post_id, client_username)
 
   return {
     data: { msg: "operation successful" },
   }
 }
 
-export const removeReactionToPost = async (post_id, client_user_id) => {
+export const removeReactionToPost = async (post_id, client_username) => {
   const { latest_reactions_count } = await Post.removeReaction(
     post_id,
-    client_user_id
+    client_username
   )
 
   realtimeService.sendPostUpdate(post_id, {
@@ -406,12 +405,12 @@ export const removeReactionToPost = async (post_id, client_user_id) => {
 export const removeCommentOnPost = async ({
   post_id,
   comment_id,
-  client_user_id,
+  client_username,
 }) => {
   const { latest_comments_count } = await Post.removeComment({
     post_id,
     comment_id,
-    client_user_id,
+    client_username,
   })
 
   realtimeService.sendPostUpdate(post_id, {
@@ -427,12 +426,12 @@ export const removeCommentOnPost = async ({
 export const removeCommentOnComment = async ({
   parent_comment_id,
   comment_id,
-  client_user_id,
+  client_username,
 }) => {
   const { latest_comments_count } = await Comment.removeChildComment({
     parent_comment_id,
     comment_id,
-    client_user_id,
+    client_username,
   })
 
   realtimeService.sendCommentUpdate(parent_comment_id, {
@@ -445,10 +444,10 @@ export const removeCommentOnComment = async ({
   }
 }
 
-export const removeReactionToComment = async (comment_id, client_user_id) => {
+export const removeReactionToComment = async (comment_id, client_username) => {
   const { latest_reactions_count } = await Comment.removeReaction(
     comment_id,
-    client_user_id
+    client_username
   )
 
   realtimeService.sendCommentUpdate(comment_id, {
@@ -461,8 +460,8 @@ export const removeReactionToComment = async (comment_id, client_user_id) => {
   }
 }
 
-export const deleteRepost = async (post_id, client_user_id) => {
-  await Post.unrepost(post_id, client_user_id)
+export const deleteRepost = async (post_id, client_username) => {
+  await Post.unrepost(post_id, client_username)
 
   return {
     data: { msg: "operation successful" },

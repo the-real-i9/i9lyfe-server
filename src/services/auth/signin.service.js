@@ -2,7 +2,7 @@ import * as securityServices from "../security.services.js"
 import { User } from "../../graph_models/user.model.js"
 
 export const signin = async (email_or_username, inputPassword) => {
-  const userData = await User.findOneIncPassword(email_or_username)
+  const userData = await User.findOne(email_or_username)
 
   if (!userData)
     return {
@@ -17,7 +17,6 @@ export const signin = async (email_or_username, inputPassword) => {
     }
 
   const jwt = securityServices.generateJwt({
-    client_user_id: user.id,
     client_username: user.username,
   })
 

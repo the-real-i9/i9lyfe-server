@@ -15,8 +15,8 @@ export class User {
 
     const { records } = await neo4jDriver.executeWrite(
       `
-      CREATE (user:User{ id: randomUUID(), email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline" })
-      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
+      CREATE (user:User{ email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline" })
+      RETURN user { .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
       `,
       { info }
     )
@@ -31,26 +31,10 @@ export class User {
     const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (user:User)
-      WHERE user.id = $uniqueIdentifier OR user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
-      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status } AS found_user
+      WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
+      RETURN user { .email, .username, .name, .profile_pic_url, .connection_status, .password } AS found_user
       `,
       { uniqueIdentifier }
-    )
-
-    return records[0].get("found_user")
-  }
-
-  /**
-   * @param {string} emailOrUsername
-   */
-  static async findOneIncPassword(emailOrUsername) {
-    const { records } = await neo4jDriver.executeWrite(
-      `
-      MATCH (user:User)
-      WHERE user.username = $uniqueIdentifier OR user.email = $uniqueIdentifier
-      RETURN user {.id, .email, .username, .name, .profile_pic_url, .connection_status, .password } AS found_user
-      `,
-      { emailOrUsername }
     )
 
     return records[0].get("found_user")
@@ -83,16 +67,16 @@ export class User {
   }
 
   /**
-   * @param {string} client_user_id
-   * @param {string} to_follow_user_id
+   * @param {string} client_username
+   * @param {string} to_follow_username
    */
-  static async followUser(client_user_id, to_follow_user_id) {
-    if (client_user_id === to_follow_user_id) {
+  static async followUser(client_username, to_follow_username) {
+    if (client_username === to_follow_username) {
       return { follow_notif: null }
     }
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id }), (tofollowUser:User{ id: $to_follow_user_id })
+      MATCH (clientUser:User{ username: $client_username }), (tofollowUser:User{ username: $to_follow_username })
       MERGE (clientUser)-[:FOLLOWS_USER]->(tofollowUser)
       
       CREATE (tofollowUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: datetime(), follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
@@ -100,31 +84,31 @@ export class User {
       WITH followNotif, toString(followNotif.created_at) AS created_at
       RETURN followNotif { .*,  created_at } AS follow_notif
       `,
-      { client_user_id, to_follow_user_id }
+      { client_username, to_follow_username }
     )
 
     return records[0].toObject()
   }
 
   /**
-   * @param {string} client_user_id
-   * @param {string} to_unfollow_user_id
+   * @param {string} client_username
+   * @param {string} to_unfollow_username
    */
-  static async unfollowUser(client_user_id, to_unfollow_user_id) {
+  static async unfollowUser(client_username, to_unfollow_username) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (:User{ id: $client_user_id })-[fr:FOLLOWS_USER]->(:User{ id: $to_unfollow_user_id })
+      MATCH (:User{ username: $client_username })-[fr:FOLLOWS_USER]->(:User{ username: $to_unfollow_username })
       DELETE fr
       `,
-      { client_user_id, to_unfollow_user_id }
+      { client_username, to_unfollow_username }
     )
   }
 
   /**
-   * @param {string} client_user_id
+   * @param {string} client_username
    * @param {Object<string, any>} updateKVs
    */
-  static async edit(client_user_id, updateKVs) {
+  static async edit(client_username, updateKVs) {
     if (updateKVs.birthday) {
       updateKVs.birthday = new Date(updateKVs.birthday).toISOString()
     }
@@ -147,25 +131,25 @@ export class User {
 
     await neo4jDriver.executeWrite(
       `
-      MATCH (user:User{ id: $client_user_id })
+      MATCH (user:User{ username: $client_username })
       SET ${setUpdates}
       `,
-      { client_user_id, ...updateKVs /* deconstruct the key:value in params */ }
+      { client_username, ...updateKVs /* deconstruct the key:value in params */ }
     )
   }
 
-  static async changeProfilePicture(client_user_id, profile_pic_url) {
+  static async changeProfilePicture(client_username, profile_pic_url) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (user:User{ id: $client_user_id })
+      MATCH (user:User{ username: $client_username })
       SET user.profile_pic_url = $profile_pic_url
       `,
-      { client_user_id, profile_pic_url }
+      { client_username, profile_pic_url }
     )
   }
 
   /** @param {string} username */
-  static async getProfile(username, client_user_id) {
+  static async getProfile(username, client_username) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (profUser:User{ username: $username })
@@ -173,7 +157,7 @@ export class User {
       MATCH (follower:User)-[:FOLLOWS_USER]->(profUser)-[:FOLLOWS_USER]->(following:User),
         (profUser)-[:CREATES_POST]->(post:Post)
 
-      OPTIONAL MATCH (profUser)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (profUser)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
 
       WITH profUser,
         count(post) AS posts_count,
@@ -183,21 +167,21 @@ export class User {
           WHEN IS NULL THEN false
           ELSE true 
         END AS client_follows
-      RETURN profUser { .id, .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
+      RETURN profUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
       `,
-      { username, client_user_id }
+      { username, client_username }
     )
 
     return records[0].get("user_profile")
   }
 
   // GET user followers
-  static async getFollowers({ username, limit, offset, client_user_id }) {
+  static async getFollowers({ username, limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (follower:User)-[:FOLLOWS_USER]->(:User{ username: $username })
 
-      OPTIONAL MATCH (follower)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (follower)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
 
       WITH follower,
         CASE fur 
@@ -209,19 +193,19 @@ export class User {
         LIMIT toInteger($limit)
       RETURN collect(follower { .id, .username, .profile_pic_url, client_follows }) AS user_followers
       `,
-      { username, client_user_id, limit, offset }
+      { username, client_username, limit, offset }
     )
 
     return records[0].get("user_followers")
   }
 
   // GET user following
-  static async getFollowings({ username, limit, offset, client_user_id }) {
+  static async getFollowings({ username, limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (:User{ username: $username })-[:FOLLOWS_USER]->(following:User)
 
-      OPTIONAL MATCH (following)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (following)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
 
       WITH following,
         CASE fur 
@@ -233,7 +217,7 @@ export class User {
       LIMIT toInteger($limit)
       RETURN collect(following { .id, .username, .profile_pic_url, client_follows }) AS user_followings
       `,
-      { username, client_user_id, limit, offset }
+      { username, client_username, limit, offset }
     )
 
     return records[0].get("user_followings")
@@ -241,16 +225,16 @@ export class User {
 
   // GET user posts
   /** @param {string} username */
-  static async getPosts({ username, limit, offset, client_user_id }) {
+  static async getPosts({ username, limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (ownerUser:User{ username: $username })-[:CREATES_POST]->(post:Post), (clientUser:User{ id: $client_user_id })
+      MATCH (ownerUser:User{ username: $username })-[:CREATES_POST]->(post:Post), (clientUser:User{ username: $client_username })
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
       WITH post, 
         toString(post.created_at) AS created_at, 
-        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        ownerUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -268,23 +252,23 @@ export class User {
       LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_posts
       `,
-      { username, client_user_id, limit, offset }
+      { username, client_username, limit, offset }
     )
 
     return records[0].get("user_posts")
   }
 
   // GET posts user has been mentioned in
-  static async getMentionedPosts({ limit, offset, client_user_id }) {
+  static async getMentionedPosts({ limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })<-[:MENTIONS_USER]-(post:Post)
+      MATCH (clientUser:User{ username: $client_username })<-[:MENTIONS_USER]-(post:Post)
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
       WITH post, 
         toString(post.created_at) AS created_at, 
-        clientUser { .id, .username, .profile_pic_url } AS owner_user,
+        clientUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -302,22 +286,22 @@ export class User {
       LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_mentioned_posts
       `,
-      { client_user_id, limit, offset }
+      { client_username, limit, offset }
     )
 
     return records[0].get("user_mentioned_posts")
   }
 
   // GET posts reacted by user
-  static async getReactedPosts({ limit, offset, client_user_id }) {
+  static async getReactedPosts({ limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[cxrn:REACTS_TO_POST]->(post:Post)
+      MATCH (clientUser:User{ username: $client_username })-[cxrn:REACTS_TO_POST]->(post:Post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
       WITH post, 
         toString(post.created_at) AS created_at, 
-        clientUser { .id, .username, .profile_pic_url } AS owner_user,
+        clientUser { .username, .profile_pic_url } AS owner_user,
         crxn.reaction AS client_reaction, 
         CASE csaves 
           WHEN IS NULL THEN false 
@@ -332,22 +316,22 @@ export class User {
       LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_reacted_posts
       `,
-      { client_user_id, limit, offset }
+      { client_username, limit, offset }
     )
 
     return records[0].get("user_reacted_posts")
   }
 
   // GET posts saved by this user
-  static async getSavedPosts({ limit, offset, client_user_id }) {
+  static async getSavedPosts({ limit, offset, client_username }) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:SAVES_POST]->(post:Post)
+      MATCH (clientUser:User{ username: $client_username })-[:SAVES_POST]->(post:Post)
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
       WITH post, 
         toString(post.created_at) AS created_at, 
-        clientUser { .id, .username, .profile_pic_url } AS owner_user,
+        clientUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -362,7 +346,7 @@ export class User {
       LIMIT toInteger($limit)
       RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_saved_posts
       `,
-      { client_user_id, limit, offset }
+      { client_username, limit, offset }
     )
 
     return records[0].get("user_saved_posts")
@@ -374,7 +358,7 @@ export class User {
    * @param {string|null} param0.last_active
    */
   static async updateConnectionStatus({
-    client_user_id,
+    client_username,
     connection_status,
     last_active,
   }) {
@@ -386,10 +370,10 @@ export class User {
 
     await neo4jDriver.executeWrite(
       `
-      MATCH (user:User{ id: $client_user_id })
+      MATCH (user:User{ username: $client_username })
       SET user.connection_status = $connection_status, user.last_active = ${last_active_param}
       `,
-      { client_user_id, connection_status, last_active }
+      { client_username, connection_status, last_active }
     )
   }
 
@@ -406,22 +390,22 @@ export class User {
   // GET user notifications
   /**
    *
-   * @param {number} client_user_id
+   * @param {number} client_username
    * @param {string} from
    */
-  static async getNotifications({ client_user_id, limit, offset }) {
+  static async getNotifications({ client_username, limit, offset }) {
     // from = new Date(from).toISOString()
 
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:RECEIVES_NOTIFICATION]->(notif:Notification)
+      MATCH (clientUser:User{ username: $client_username })-[:RECEIVES_NOTIFICATION]->(notif:Notification)
       WITH notif, toString(notif.created_at) AS created_at
       ORDER BY notif.created_at DESC
       OFFSET toInteger($offset)
       LIMIT toInteger($limit)
       RETURN collect(notif { .*, created_at }) AS notifications
       `,
-      { client_user_id, limit, offset }
+      { client_username, limit, offset }
     )
 
     return records[0].get("notifications")

@@ -15,9 +15,9 @@ router.get("/home_stories", ...validateLimitOffset, UC.getHomeStoryPosts)
 
 router.get("/session_user", UC.getSessionUser)
 
-router.post("/users/:user_id/follow", ...validateParams, UC.followUser)
+router.post("/users/:username/follow", ...validateParams, UC.followUser)
 
-router.delete("/users/:user_id/unfollow", ...validateParams, UC.unfollowUser)
+router.delete("/users/:username/unfollow", ...validateParams, UC.unfollowUser)
 
 router.patch("/edit_profile", ...userValidators.editProfile, UC.editProfile)
 

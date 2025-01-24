@@ -29,7 +29,7 @@ export class Post {
         `
         MATCH (clientUser:User{ username: $client_username })
         CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })
-        WITH post, toString(post.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url } AS owner_user
+        WITH post, toString(post.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
         RETURN post { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
         `,
         { client_username, media_urls, type, description }
@@ -67,8 +67,8 @@ export class Post {
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", is_read: false, created_at: datetime(), details: ["in_post_id", $postId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-            WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.id AS receiver_user_id
-            RETURN collect(mentionNotif { .*, created_at, receiver_user_id }) AS mention_notifs
+            WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
+            RETURN collect(mentionNotif { .*, created_at, receiver_username }) AS mention_notifs
             `,
             { mentionsExcClient, postId: new_post_data.id, client_username }
           )
@@ -95,7 +95,7 @@ export class Post {
     return res
   }
 
-  static async repost(original_post_id, client_user_id) {
+  static async repost(original_post_id, client_username) {
     const session = neo4jDriver.session()
 
     const res = await session.executeWrite(async (tx) => {
@@ -105,20 +105,20 @@ export class Post {
 
       const { records: repostRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
-        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_user_id: $client_user_id, reposted_post_id: $post_id })-[:REPOST_OF]->(post)
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
+        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, reposted_post_id: $post_id })-[:REPOST_OF]->(post)
         ON CREATE
           SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 },
             post.reposts_count = post.reposts_count + 1
 
-        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { .id, username, .profile_pic_url } owner_user
+        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { username, .profile_pic_url } owner_user
 
         RETURN post.reposts_count AS latest_reposts_count,
           repost { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
         `,
         {
           original_post_id,
-          client_user_id,
+          client_username,
         }
       )
 
@@ -129,13 +129,13 @@ export class Post {
 
       const { records: repostNotifRecords } = await tx.run(
         `
-        MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ id: $client_user_id })
-        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_user_id)
+        MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ username: $client_username })
+        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_username)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "original_post_id", $original_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-        WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.id AS receiver_user_id
-        RETURN repostNotif { .*, created_at, receiver_user_id } AS repost_notif
+        WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.id AS receiver_username
+        RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
         `,
-        { original_post_id, client_user_id, repostId: repost_data.id }
+        { original_post_id, client_username, repostId: repost_data.id }
       )
 
       repost_notif = repostNotifRecords[0]?.get("repost_notif")
@@ -148,10 +148,10 @@ export class Post {
     return res
   }
 
-  static async save(post_id, client_user_id) {
+  static async save(post_id, client_username) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
+      MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
       MERGE (clientUser)-[:SAVES_POST]->(post)
       ON CREATE
         SET post.saves_count = post.saves_count + 1
@@ -160,14 +160,14 @@ export class Post {
       `,
       {
         post_id,
-        client_user_id,
+        client_username,
       }
     )
 
     return records[0].toObject()
   }
 
-  static async reactTo({ client_user_id, post_id, reaction }) {
+  static async reactTo({ client_username, post_id, reaction }) {
     const session = neo4jDriver.session()
 
     const res = await session.executeWrite(async (tx) => {
@@ -176,7 +176,7 @@ export class Post {
 
       const { records: reactionRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ id: $client_user_id }), (post:Post{ id: $post_id })
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
         MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
         ON CREATE
           SET crxn.reaction = $reaction,
@@ -187,7 +187,7 @@ export class Post {
         `,
         {
           post_id,
-          client_user_id,
+          client_username,
           reaction,
         }
       )
@@ -196,14 +196,14 @@ export class Post {
 
       const { records: reactionNotifRecords } = await tx.run(
         `
-        MATCH (post:Post{ id: $post_id }), (clientUser:User{ id: $client_user_id })
+        MATCH (post:Post{ id: $post_id }), (clientUser:User{ username: $client_username })
         WITH post, clientUser
-        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_user_id)
+        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_username)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-        WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.id AS receiver_user_id
-        RETURN reactionNotif { .*, created_at, receiver_user_id } AS reaction_notif
+        WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.id AS receiver_username
+        RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
         `,
-        { post_id, client_user_id, reaction }
+        { post_id, client_username, reaction }
       )
 
       reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
@@ -237,7 +237,7 @@ export class Post {
         MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
         CREATE (clientUser)-[:WRITES_COMMENT]->(comment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON_POST]->(post)
 
-        WITH post, comment, toString(comment.created_at) AS created_at, clientUser { .id, .username, .profile_pic_url } AS owner_user
+        WITH post, comment, toString(comment.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
         
         SET post.comments_count = post.comments_count + 1
 
@@ -283,8 +283,8 @@ export class Post {
             UNWIND $mentionsExcClient AS mentionUsername
             MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", $commentId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-            WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.id AS receiver_user_id
-            RETURN collect(mentionNotif { .*, receiver_user_id, created_at }) AS mention_notifs
+            WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
+            RETURN collect(mentionNotif { .*, receiver_username, created_at }) AS mention_notifs
             `,
             {
               mentionsExcClient,
@@ -315,8 +315,8 @@ export class Post {
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: datetime(), details: ["on_post_id", $post_id, "comment_id", $commentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
           WITH commentNotif, 
             toString(commentNotif.created_at) AS created_at, 
-            postOwner.id AS receiver_user_id
-          RETURN commentNotif { .*, created_at, receiver_user_id } AS comment_notif
+            postOwner.id AS receiver_username
+          RETURN commentNotif { .*, created_at, receiver_username } AS comment_notif
           `,
         {
           client_username,
@@ -342,10 +342,10 @@ export class Post {
     return res
   }
 
-  static async findOne(post_id, client_user_id) {
+  static async findOne(post_id, client_username) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ id: $client_user_id })
+      MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
 
       OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
       OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
@@ -353,7 +353,7 @@ export class Post {
       
       WITH post, 
         toString(post.created_at) AS created_at, 
-        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        ownerUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -368,20 +368,20 @@ export class Post {
         END AS client_reposted
       RETURN post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted } AS found_post
       `,
-      { post_id, client_user_id }
+      { post_id, client_username }
     )
 
     return records[0].get("found_post")
   }
 
-  static async getComments({ post_id, client_user_id, limit, offset }) {
+  static async getComments({ post_id, client_username, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)<-[:WRITES_COMMENT]-(ownerUser:User)
-      OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ username: $client_username })
       WITH comment, 
         toString(comment.created_at) AS created_at, 
-        ownerUser { .id, .username, .profile_pic_url } AS owner_user,
+        ownerUser { .username, .profile_pic_url } AS owner_user,
         CASE crxn 
           WHEN IS NULL THEN "" 
           ELSE crxn.reaction 
@@ -391,17 +391,17 @@ export class Post {
       LIMIT toInteger($limit)
       RETURN collect(comment {.*, owner_user, created_at, client_reaction }) AS res_comments
       `,
-      { post_id, client_user_id, limit, offset }
+      { post_id, client_username, limit, offset }
     )
 
     return records[0].get("res_comments")
   }
 
-  static async getReactors({ post_id, client_user_id, limit, offset }) {
+  static async getReactors({ post_id, client_username, limit, offset }) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
-      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
       WITH reactor, 
         rxn, 
         CASE fur 
@@ -413,7 +413,7 @@ export class Post {
       LIMIT toInteger($limit)
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
-      { post_id, client_user_id, limit, offset }
+      { post_id, client_username, limit, offset }
     )
 
     return records[0].get("reactors_rxn")
@@ -422,14 +422,14 @@ export class Post {
   static async getReactorsWithReaction({
     post_id,
     reaction,
-    client_user_id,
+    client_username,
     limit,
     offset,
   }) {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: $reaction }]-(reactor:User)
-      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ id: $client_user_id })
+      OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
       WITH reactor, 
         rxn, 
         CASE fur 
@@ -441,26 +441,26 @@ export class Post {
       LIMIT toInteger($limit)
       RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
-      { post_id, client_user_id, reaction, limit, offset }
+      { post_id, client_username, reaction, limit, offset }
     )
 
     return records[0].get("reactors_rxn")
   }
 
-  static async delete(post_id, client_user_id) {
+  static async delete(post_id, client_username) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:CREATES_POST]->(post:Post{ id: $post_id })
+      MATCH (clientUser:User{ username: $client_username })-[:CREATES_POST]->(post:Post{ id: $post_id })
       DETACH DELETE post
       `,
-      { post_id, client_user_id }
+      { post_id, client_username }
     )
   }
 
-  static async removeReaction(post_id, client_user_id) {
+  static async removeReaction(post_id, client_username) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (:User{ id: $client_user_id })-[rxn:REACTS_TO_POST]->(post:Post{ id: $post_id })
+      MATCH (:User{ username: $client_username })-[rxn:REACTS_TO_POST]->(post:Post{ id: $post_id })
       DELETE rxn
 
       SET post.reactions_count = post.reactions_count - 1
@@ -469,49 +469,49 @@ export class Post {
       `,
       {
         post_id,
-        client_user_id,
+        client_username,
       }
     )
 
     return records[0].toObject()
   }
 
-  static async removeComment({ post_id, comment_id, client_user_id }) {
+  static async removeComment({ post_id, comment_id, client_username }) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ id: $client_user_id })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON_POST]->(post:Post{ id: $post_id })
+      MATCH (clientUser:User{ username: $client_username })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON_POST]->(post:Post{ id: $post_id })
       DETACH DELETE comment
 
       SET post.comments_count = post.comments_count - 1
 
       RETURN post.comments_count AS latest_comments_count
       `,
-      { post_id, comment_id, client_user_id }
+      { post_id, comment_id, client_username }
     )
 
     return records[0].toObject()
   }
 
-  static async unrepost(post_id, client_user_id) {
+  static async unrepost(post_id, client_username) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (:User{ id: $client_user_id })-[:CREATES_REPOST]->(repost)-[:REPOST_OF]->(post:Post{ id: $post_id })
+      MATCH (:User{ username: $client_username })-[:CREATES_REPOST]->(repost)-[:REPOST_OF]->(post:Post{ id: $post_id })
       DETACH DELETE repost
 
       SET post.reposts_count = post.reposts_count - 1
 
       RETURN post.reposts_count AS latest_reposts_count
       `,
-      { client_user_id, post_id }
+      { client_username, post_id }
     )
 
     return records[0].toObject()
   }
 
-  static async unsave(post_id, client_user_id) {
+  static async unsave(post_id, client_username) {
     const { records } = await neo4jDriver.executeWrite(
       `
-      MATCH (:User{ id: $client_user_id })-[csave:SAVES_POST]->(post:Post{ id: $post_id })
+      MATCH (:User{ username: $client_username })-[csave:SAVES_POST]->(post:Post{ id: $post_id })
 
       DELETE csave
 
@@ -521,7 +521,7 @@ export class Post {
       `,
       {
         post_id,
-        client_user_id,
+        client_username,
       }
     )
 

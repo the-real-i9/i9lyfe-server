@@ -7,7 +7,7 @@ export const getExploreFeed = async (req, res) => {
     const resp = await appService.getExploreFeed({
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)
@@ -24,7 +24,7 @@ export const getExploreReels = async (req, res) => {
     const resp = await appService.getExploreReels({
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)
@@ -39,7 +39,7 @@ export const searchAndFilter = async (req, res) => {
     const { term, filter = "all", limit = 20, offset = 0 } = req.query
 
     const resp = await appService.searchAndFilter({
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
       term,
       filter,
       limit,
@@ -64,7 +64,7 @@ export const getHashtagPosts = async (req, res) => {
       filter,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)

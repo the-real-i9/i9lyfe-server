@@ -20,11 +20,12 @@ export const validateParams = [
       "*": {
         isUUID: {
           if: (value, { path }) => path.endsWith("_id"),
+          errorMessage: "expected a UUID string",
         },
         isLength: {
-          if: (value, { path }) => path === "reaction",
-          options: { min: 1, max: 1 },
-          errorMessage: "one reaction required",
+          if: (value, { path }) => path.endsWith("_username"),
+          options: { min: 3 },
+          errorMessage: "suspected incorrect username: too short"
         },
         isSurrogatePair: {
           if: (value, { path }) => path === "reaction",

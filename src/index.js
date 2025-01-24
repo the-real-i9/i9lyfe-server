@@ -38,8 +38,12 @@ server.on("close", () => {
   neo4jDriver.close()
 })
 
-const PORT = process.env.PORT ?? 5000
+if (process.env.NODE_ENV != "test") {
+  const PORT = process.env.PORT ?? 5000
+  
+  server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`)
+  })
+}
 
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`)
-})
+export default server

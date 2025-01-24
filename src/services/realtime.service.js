@@ -15,12 +15,12 @@ export const newPostEventEmitter = new EventEmitter()
 
 /** @param {import("socket.io").Socket} socket */
 export const initSocketRTC = (socket) => {
-  const { client_user_id } = socket.jwt_payload
+  const { client_username } = socket.jwt_payload
 
-  updateConnectionStatus({ client_user_id, connection_status: "online" })
+  updateConnectionStatus({ client_username, connection_status: "online" })
 
   const consumer = consumeTopics([
-    { topic: `i9lyfe-user-${client_user_id}-alerts` },
+    { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
   consumer.on("message", (message) => {
@@ -31,7 +31,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("disconnect", () => {
     updateConnectionStatus({
-      client_user_id,
+      client_username,
       connection_status: "offline",
       last_active: new Date(),
     })
@@ -58,13 +58,13 @@ export const initSocketRTC = (socket) => {
     socket.leave(`comment-${comment_id}-updates`)
   })
 
-  newPostEventEmitter.on("new post", async (post_id, owner_user_id) => {
-    if (owner_user_id === client_user_id) {
+  newPostEventEmitter.on("new post", async (post_id, owner_username) => {
+    if (owner_username === client_username) {
       return
     }
     
     // get post based on "post recommendation algorithm"
-    const post = await getPost(post_id, client_user_id)
+    const post = await getPost(post_id, client_username)
 
     if (post) {
       socket.emit("new post", post)
@@ -80,6 +80,6 @@ export const sendCommentUpdate = (comment_id, data) => {
   sio.to(`comment-${comment_id}-updates`).emit("latest comment update", data)
 }
 
-export const publishNewPost = (post_id, owner_user_id) => {
-  newPostEventEmitter.emit("new post", post_id, owner_user_id)
+export const publishNewPost = (post_id, owner_username) => {
+  newPostEventEmitter.emit("new post", post_id, owner_username)
 }

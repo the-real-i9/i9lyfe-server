@@ -4,11 +4,11 @@ const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
 
 const producer = new Producer(kafkaClient)
 
-export const sendNewNotification = (receiver_user_id, data) => {
+export const sendNewNotification = (receiver_username, data) => {
   producer.send(
     [
       {
-        topic: `i9lyfe-user-${receiver_user_id}-alerts`,
+        topic: `i9lyfe-user-${receiver_username}-alerts`,
         messages: JSON.stringify({
           event: "new notification",
           data,
@@ -21,11 +21,11 @@ export const sendNewNotification = (receiver_user_id, data) => {
   )
 }
 
-export const sendChatEvent = (event, partner_user_id, data) => {
+export const sendChatEvent = (event, partner_username, data) => {
   producer.send(
     [
       {
-        topic: `i9lyfe-user-${partner_user_id}-alerts`,
+        topic: `i9lyfe-user-${partner_username}-alerts`,
         messages: JSON.stringify({
           event,
           data,

@@ -9,9 +9,9 @@ export const generateJwt = (payload) =>
   jwt.sign(payload, process.env.JWT_SECRET)
 
 export const renewJwtToken = (socket) => {
-  const { client_user_id, client_username } = socket.jwt_payload
+  const { client_username } = socket.jwt_payload
 
-  const newJwtToken = generateJwt({ client_user_id, client_username })
+  const newJwtToken = generateJwt({ client_username })
 
   socket.emit("renewed jwt", newJwtToken)
 }

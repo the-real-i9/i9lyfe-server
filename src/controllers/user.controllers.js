@@ -2,9 +2,9 @@ import * as userService from "../services/user.service.js"
 
 export const getSessionUser = async (req, res) => {
   try {
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await userService.getSessionUser(client_user_id)
+    const resp = await userService.getSessionUser(client_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -15,11 +15,11 @@ export const getSessionUser = async (req, res) => {
 
 export const followUser = async (req, res) => {
   try {
-    const { user_id: to_follow_user_id } = req.params
+    const { username: to_follow_username } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await userService.followUser(client_user_id, to_follow_user_id)
+    const resp = await userService.followUser(client_username, to_follow_username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -30,11 +30,11 @@ export const followUser = async (req, res) => {
 
 export const unfollowUser = async (req, res) => {
   try {
-    const { user_id } = req.params
+    const { username } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
-    const resp = await userService.unfollowUser(client_user_id, user_id)
+    const resp = await userService.unfollowUser(client_username, username)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -47,11 +47,11 @@ export const editProfile = async (req, res) => {
   try {
     const updateKVs = req.body
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     
 
-    const resp = await userService.editProfile(client_user_id, updateKVs)
+    const resp = await userService.editProfile(client_username, updateKVs)
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -64,11 +64,11 @@ export const readNotification = async (req, res) => {
   try {
     const { notification_id } = req.params
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await userService.readNotification(
       notification_id,
-      client_user_id
+      client_username
     )
 
     res.status(200).send(resp.data)
@@ -82,9 +82,11 @@ export const changeProfilePicture = async (req, res) => {
   try {
     const { picture_data } = req.body
 
+    const { client_username } = req.auth
+
     const resp = await userService.changeProfilePicture({
       picture_data,
-      ...req.auth,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -100,10 +102,10 @@ export const getHomeFeedPosts = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await userService.getHomeFeedPosts({
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -119,10 +121,10 @@ export const getHomeStoryPosts = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await userService.getHomeStoryPosts({
-      client_user_id,
+      client_username,
       limit,
       offset,
     })
@@ -140,7 +142,7 @@ export const getProfile = async (req, res) => {
 
     const resp = await userService.getProfile(
       username,
-      req.auth?.client_user_id
+      req.auth?.client_username
     )
 
     res.status(200).send(resp.data)
@@ -160,7 +162,7 @@ export const getFollowers = async (req, res) => {
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)
@@ -180,7 +182,7 @@ export const getFollowings = async (req, res) => {
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)
@@ -200,7 +202,7 @@ export const getPosts = async (req, res) => {
       username,
       limit,
       offset,
-      client_user_id: req.auth?.client_user_id,
+      client_username: req.auth?.client_username,
     })
 
     res.status(200).send(resp.data)
@@ -212,14 +214,14 @@ export const getPosts = async (req, res) => {
 
 export const getMentionedPosts = async (req, res) => {
   try {
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const { limit = 20, offset = 0 } = req.query
 
     const resp = await userService.getMentionedPosts({
       limit,
       offset,
-      client_user_id,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -231,14 +233,14 @@ export const getMentionedPosts = async (req, res) => {
 
 export const getReactedPosts = async (req, res) => {
   try {
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const { limit = 20, offset = 0 } = req.query
 
     const resp = await userService.getReactedPosts({
       limit,
       offset,
-      client_user_id,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -250,14 +252,14 @@ export const getReactedPosts = async (req, res) => {
 
 export const getSavedPosts = async (req, res) => {
   try {
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const { limit = 20, offset = 0 } = req.query
 
     const resp = await userService.getSavedPosts({
       limit,
       offset,
-      client_user_id,
+      client_username,
     })
 
     res.status(200).send(resp.data)
@@ -271,10 +273,10 @@ export const getNotifications = async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query
 
-    const { client_user_id } = req.auth
+    const { client_username } = req.auth
 
     const resp = await userService.getNotifications({
-      client_user_id,
+      client_username,
       limit,
       offset,
     })

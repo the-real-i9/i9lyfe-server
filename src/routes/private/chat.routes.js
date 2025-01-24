@@ -7,7 +7,7 @@ import { validateParams } from "../../validators/miscs.js"
 const router = express.Router()
 
 router.post(
-  "/chats/:partner_user_id/send_message",
+  "/chats/:partner_username/send_message",
   ...validateParams,
   ...chatValidators.sendMessage,
   CC.sendMessage
@@ -16,47 +16,47 @@ router.post(
 router.get("/my_chats", CC.getMyChats)
 
 router.delete(
-  "/chats/:partner_user_id",
+  "/chats/:partner_username",
   ...validateParams,
   CC.deleteChat
 )
 
 router.get(
-  "/chats/:partner_user_id/history",
+  "/chats/:partner_username/history",
   ...validateParams,
   CC.getChatHistory
 )
 
 
 router.put(
-  "/chats/:partner_user_id/messages/:message_id/delivered",
+  "/chats/:partner_username/messages/:message_id/delivered",
   ...validateParams,
   ...chatValidators.ackMessageDelivered,
   CC.ackMessageDelivered
 )
 
 router.put(
-  "/chats/:partner_user_id/messages/:message_id/read",
+  "/chats/:partner_username/messages/:message_id/read",
   ...validateParams,
   ...chatValidators.ackMessageRead,
   CC.ackMessageRead
 )
 
 router.post(
-  "/chats/:partner_user_id/messages/:message_id/react",
+  "/chats/:partner_username/messages/:message_id/react",
   ...validateParams,
   ...chatValidators.reactToMessage,
   CC.reactToMessage
 )
 
 router.delete(
-  "/chats/:partner_user_id/messages/:message_id/remove_reaction",
+  "/chats/:partner_username/messages/:message_id/remove_reaction",
   ...validateParams,
   CC.removeReactionToMessage
 )
 
 router.delete(
-  "/chats/:partner_user_id/messages/:message_id",
+  "/chats/:partner_username/messages/:message_id",
   ...validateParams,
   ...chatValidators.deleteMessage,
   CC.deleteMessage
