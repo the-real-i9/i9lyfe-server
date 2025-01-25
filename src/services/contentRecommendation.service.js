@@ -1,4 +1,4 @@
-import { neo4jDriver } from "../configs/graph_db.js"
+import { neo4jDriver } from "../configs/db.js"
 
 export async function getPost(post_id, client_username) {
   const { records } = await neo4jDriver.executeRead(

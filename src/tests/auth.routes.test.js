@@ -2,7 +2,7 @@ import request from "superwstest"
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals"
 
 import server from ".."
-import { neo4jDriver } from "../configs/graph_db.js"
+import { neo4jDriver } from "../configs/db.js"
 import { registerUser } from "../services/auth/signup.service.js"
 
 beforeAll((done) => {

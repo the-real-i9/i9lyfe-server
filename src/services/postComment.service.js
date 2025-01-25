@@ -1,7 +1,7 @@
 import * as utilServices from "../services/utility.services.js"
 import * as mediaUploadService from "../services/mediaUpload.service.js"
-import { Post } from "../graph_models/post.model.js"
-import { Comment } from "../graph_models/comment.model.js"
+import { Post } from "../models/post.model.js"
+import { Comment } from "../models/comment.model.js"
 import * as messageBrokerService from "../services/messageBroker.service.js"
 import * as realtimeService from "../services/realtime.service.js"
 

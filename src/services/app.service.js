@@ -1,4 +1,4 @@
-import { App } from "../graph_models/app.model.js"
+import { App } from "../models/app.model.js"
 import * as CRS from "../services/contentRecommendation.service.js"
 
 export const getExploreFeed = async ({ limit, offset, client_username }) => {

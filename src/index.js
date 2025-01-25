@@ -11,7 +11,7 @@ import { Server } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken } from "./services/security.services.js"
-import { neo4jDriver } from "./configs/graph_db.js"
+import { neo4jDriver } from "./configs/db.js"
 
 
 const server = createServer(app)

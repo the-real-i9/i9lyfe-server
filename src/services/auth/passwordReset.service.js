@@ -1,6 +1,6 @@
 import * as mailService from "../mail.service.js"
 import * as securityServices from "../security.services.js"
-import { User } from "../../graph_models/user.model.js"
+import { User } from "../../models/user.model.js"
 
 export const requestPasswordReset = async (email) => {
   if (!(await User.exists(email)))
