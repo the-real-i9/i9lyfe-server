@@ -39,7 +39,7 @@ If you need a feature this API server does not currently support, feel free to s
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [API Documentation](#api-documentation)
+- [API Documentation](./API%20doc.md)
 - [Features Showcase (UI*)](#features-showcase-ui)
 - [Building & Running the Application (Locally)](#building--running-the-application-locally)
 - [Deploying the Application](#deploying-the-application)
