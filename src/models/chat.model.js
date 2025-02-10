@@ -16,12 +16,14 @@ export class Chat {
       MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_username: $partner_username, partner_username: $client_username })-[:WITH_USER]->(clientUser)
       SET clientChat.last_activity_type = "message", 
         partnerChat.last_activity_type = "message",
-        clientChat.last_message_at = datetime($created_at), 
-        partnerChat.last_message_at = datetime($created_at)
+        clientChat.updated_at = datetime($created_at), 
+        partnerChat.updated_at = datetime($created_at)
       WITH clientUser, clientChat, partnerUser, partnerChat
       CREATE (message:Message{ id: randomUUID(), content: $message_content, delivery_status: "sent", created_at: datetime($created_at) }),
         (clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
         (partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)
+      SET clientChat.last_message_id = message.id,
+        partnerChat.last_message_id = message.id
       WITH message, toString(message.created_at) AS created_at, clientUser { .username, .profile_pic_url, .connection_status } AS sender
       RETURN { new_msg_id: message.id } AS client_res,
         message { .*, created_at, sender } AS partner_res
@@ -47,15 +49,15 @@ export class Chat {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (clientChat:Chat{ owner_username: $client_username })-[:WITH_USER]->(partnerUser),
-        (clientChat)<-[:IN_CHAT]-(lmsg:Message WHERE lmsg.created_at = clientChat.last_message_at),
+        (clientChat)<-[:IN_CHAT]-(lmsg:Message WHERE lmsg.id = clientChat.last_message_id),
         (clientChat)<-[:IN_CHAT]-(:Message)<-[lrxn:REACTS_TO_MESSAGE WHERE lrxn.at = clientChat.last_reaction_at]-(reactor)
-      WITH clientChat, toString(clientChat.last_message_at) AS last_message_at, partnerUser { .username, .profile_pic_url, .connection_status } AS partner,
+      WITH clientChat, toString(clientChat.updated_at) AS updated_at, partnerUser { .username, .profile_pic_url, .connection_status } AS partner,
         CASE clientChat.last_activity_type 
           WHEN "message" THEN lmsg { type: "message", .content, .delivery_status }
           WHEN "reaction" THEN lrxn { type: "reaction", .reaction, reactor: reactor.username }
         END AS last_activity
-      ORDER BY clientChat.last_message_at DESC
-      RETURN collect(clientChat { partner, .unread_messages_count, last_message_at, last_activity }) AS my_chats
+      ORDER BY clientChat.updated_at DESC
+      RETURN collect(clientChat { partner, .unread_messages_count, updated_at, last_activity }) AS my_chats
       `,
       { client_username }
     )
@@ -113,7 +115,7 @@ export class Message {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username }),
-        ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id, delivery_status: "sent" })-[:IN_CHAT]->(clientChat)
+        (clientChat)<-[:IN_CHAT]-(message:Message{ id: $message_id, delivery_status: "sent" })<-[:RECEIVES_MESSAGE]-()
       SET message.delivery_status = "delivered", message.delivered_at = datetime($delivered_at), clientChat.unread_messages_count = coalesce(clientChat.unread_messages_count, 0) + 1
       `,
       { client_username, partner_username, message_id, delivered_at }
@@ -129,7 +131,7 @@ export class Message {
     await neo4jDriver.executeWrite(
       `
       MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username }),
-        ()-[:RECEIVES_MESSAGE]->(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])-[:IN_CHAT]->(clientChat)
+        (clientchat)<-[:IN_CHAT]-(message:Message{ id: $message_id } WHERE message.delivery_status IN ["sent", "delivered"])<-[:RECEIVES_MESSAGE]-()
       WITH clientChat, message, CASE coalesce(clientChat.unread_messages_count, 0) WHEN <> 0 THEN clientChat.unread_messages_count - 1 ELSE 0 END AS unread_messages_count
       SET message.delivery_status = "read", message.read_at = datetime($read_at), clientChat.unread_messages_count = unread_messages_count
       `,

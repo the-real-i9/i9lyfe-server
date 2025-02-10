@@ -122,20 +122,20 @@ export const ackMessageRead = async ({
 }
 
 export const reactToMessage = async ({
-  client,
+  client_username,
   partner_username,
   message_id,
   reaction,
 }) => {
   await Message.reactTo({
-    client_username: client.username,
+    client_username,
     partner_username,
     message_id,
     reaction,
   })
 
   messageBrokerService.sendChatEvent("message reaction", partner_username, {
-    partner: client,
+    partner_username: client_username,
     message_id,
     reaction,
   })
@@ -146,12 +146,12 @@ export const reactToMessage = async ({
 }
 
 export const removeReactionToMessage = async ({
-  client,
+  client_username,
   partner_username,
   message_id,
 }) => {
   await Message.removeReaction({
-    client_username: client.username,
+    client_username,
     partner_username,
     message_id,
   })
@@ -160,7 +160,7 @@ export const removeReactionToMessage = async ({
     "message reaction removed",
     partner_username,
     {
-      partner: client,
+      partner_username: client_username,
       message_id,
     }
   )
@@ -171,13 +171,13 @@ export const removeReactionToMessage = async ({
 }
 
 export const deleteMessage = async ({
-  client,
+  client_username,
   partner_username,
   message_id,
   delete_for,
 }) => {
   await Message.delete({
-    client_username: client.username,
+    client_username,
     partner_username,
     message_id,
     delete_for,
@@ -185,7 +185,7 @@ export const deleteMessage = async ({
 
   if (delete_for === "everyone") {
     messageBrokerService.sendChatEvent("message deleted", partner_username, {
-      partner: client,
+      partner_username: client_username,
       message_id,
     })
   }
