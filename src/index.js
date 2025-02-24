@@ -20,7 +20,7 @@ const io = new Server(server)
 
 io.use((socket, next) => {
   const token = socket.handshake.headers.authorization
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.AUTH_JWT_SECRET, (err, decoded) => {
     if (err) return next(new Error(err.message))
     socket.jwt_payload = decoded
     next()

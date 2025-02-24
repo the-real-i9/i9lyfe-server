@@ -5,7 +5,7 @@ import { randomInt } from "node:crypto"
 /**
  * @returns {string}
  */
-export const signJwt = (payload) => jwt.sign(payload, process.env.JWT_SECRET)
+export const signJwt = (payload) => jwt.sign(payload, process.env.AUTH_JWT_SECRET)
 
 export const verifyJwt = (token, secret) => jwt.verify(token, secret)
 
@@ -20,7 +20,7 @@ export const renewJwtToken = (socket) => {
 export const generateTokenWithExpiration = () => {
   let token = randomInt(100000, 999999)
 
-  if (process.env.GO_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production") {
     token = Number(process.env.DUMMY_VERF_TOKEN)
   }
 

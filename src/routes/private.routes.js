@@ -26,7 +26,7 @@ router.use(
 
     const { authJwt } = req.session.user
 
-    req.auth = verifyJwt(authJwt, process.env.JWT_SECRET)
+    req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
 
     return next()
   }

@@ -1,6 +1,6 @@
 import { Consumer, KafkaClient, Producer } from "kafka-node"
 
-const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
+const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_BROKER_ADDRESS })
 
 const producer = new Producer(kafkaClient)
 
@@ -53,7 +53,7 @@ export const createTopic = (topic) => {
  * @returns {Consumer}
  */
 export const consumeTopics = (topics) => {
-  const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_HOST })
+  const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_BROKER_ADDRESS })
 
   const consumer = new Consumer(kafkaClient, topics, { autoCommit: true })
 

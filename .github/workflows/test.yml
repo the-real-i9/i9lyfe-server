@@ -1,0 +1,41 @@
+on:
+  push:
+    branches:
+      - main
+name: "Test i9lyfe"
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: 'neo4j:5.26'
+        ports:
+          - '7687:7687'
+        env:
+          NEO4J_AUTH: "neo4j/pa@sw$!d"
+    steps:
+      - name: Fetch Repository
+        uses: actions/checkout@v4
+
+      - name: Start kafka broker
+        uses: spicyparrot/kafka-kraft-action@v1.1.0
+        with:
+          kafka-version: "3.7.0"
+          kafka-topics: ${{ secrets.KAFKA_TOPICS }}
+
+      - name: Install Go
+        uses: actions/setup-node@v5
+
+      - name: Run Test
+        run: cd ./src/tests && npm run test
+        env:
+          NEO4J_URL: "neo4j://localhost"
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: "pa@sw$*d"
+          KAFKA_BROKER_ADDRESS: "localhost:9092"
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
+          MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
+          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+          GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
+          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
