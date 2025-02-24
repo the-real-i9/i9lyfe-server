@@ -7,6 +7,10 @@ import nodemailer from "nodemailer"
  * @param {string} mailInfo.html
  */
 export const sendMail = ({ to, subject, html }) => {
+  if (process.env.NODE_ENV == "test") {
+    return
+  }
+
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",

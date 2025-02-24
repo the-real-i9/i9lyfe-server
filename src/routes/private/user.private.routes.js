@@ -15,7 +15,7 @@ router.get("/home_stories", ...validateLimitOffset, UC.getHomeStoryPosts)
 
 router.get("/session_user", UC.getSessionUser)
 
-router.post("/signout", UC.signout)
+router.get("/signout", UC.signout)
 
 router.post("/users/:username/follow", ...validateParams, UC.followUser)
 

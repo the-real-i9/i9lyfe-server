@@ -14,9 +14,9 @@ afterAll((done) => {
   server.close(done)
 })
 
-const signupPath = "/api/public/auth/signup"
-const signinPath = "/api/public/auth/signin"
-const signoutPath = "/api/private/app/signout"
+const signupPath = "/api/auth/signup"
+const signinPath = "/api/auth/signin"
+const signoutPath = "/api/app/private/signout"
 
 describe("test user authentication", () => {
   let signupSessionCookie = ""
@@ -41,6 +41,7 @@ describe("test user authentication", () => {
       .send({ code: verfCode })
 
     expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty("msg")
   })
 
   it("User1 sends the correct email verf code", async () => {
