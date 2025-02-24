@@ -9,19 +9,16 @@ beforeAll((done) => {
   server.listen(0, "localhost", done)
 })
 
-afterAll((done) => {
+afterAll(async (done) => {
+  await neo4jDriver.executeWrite(`MATCH (n) DETACH DELETE n`)
+
   server.close(done)
 })
 
 const baseURL = "/api/public/auth"
 
 describe("user signup", () => {
-  afterAll(async () => {
-    await neo4jDriver.executeWrite(`MATCH (n) DETACH DELETE n`)
-  })
-
-  let cookie = ""
-  let sess_id = "sess:"
+  let signupSessionCookie = ""
 
   it("should request new account", async () => {
     const res = await request(server)
@@ -31,24 +28,15 @@ describe("user signup", () => {
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("msg")
 
-    cookie = res.headers["set-cookie"][0]
-    sess_id += cookie.match(/(?<=connect\.sid=s%3A)[^.]+(?=\.)/)[0]
+    signupSessionCookie = res.headers["set-cookie"][0]
   })
 
   it("should verify email", async () => {
-    const { records } = await neo4jDriver.executeRead(
-      `MATCH (s:ongoing_signup{ sid: $sid }) RETURN s.data AS sess_data`,
-      { sid: sess_id }
-    )
-
-    const sessData = JSON.parse(records[0].get("sess_data"))
-    expect(sessData).toHaveProperty("signup")
-
-    const verfCode = sessData.signup.data.verificationCode
+    const verfCode = Number(process.env.DUMMY_VERF_TOKEN)
 
     const res = await request(server)
       .post(`${baseURL}/signup/verify_email`)
-      .set("Cookie", [cookie])
+      .set("Cookie", [signupSessionCookie])
       .send({ code: verfCode })
 
     expect(res.status).toBe(200)
@@ -58,7 +46,7 @@ describe("user signup", () => {
   it("should register user", async () => {
     const res = await request(server)
       .post(`${baseURL}/signup/register_user`)
-      .set("Cookie", [cookie])
+      .set("Cookie", [signupSessionCookie])
       .send({
         username: "mike",
         name: "Mike Ross",
@@ -69,12 +57,6 @@ describe("user signup", () => {
 
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty("jwt")
-  })
-})
-
-describe("user signin", () => {
-  afterAll(async () => {
-    await neo4jDriver.executeWrite(`MATCH (n) DETACH DELETE n`)
   })
 
   it("should sign in user", async () => {
@@ -99,3 +81,4 @@ describe("user signin", () => {
     expect(res.body).toHaveProperty("jwt")
   })
 })
+

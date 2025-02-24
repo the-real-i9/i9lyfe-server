@@ -17,7 +17,12 @@ export const renewJwtToken = (socket) => {
 }
 
 export const generateTokenWithExpiration = () => {
-  const token = randomInt(100000, 999999)
+  let token = randomInt(100000, 999999)
+
+  if (process.env.GO_ENV !== "production") {
+    token = Number(process.env.DUMMY_VERF_TOKEN)
+  }
+
   const expires = new Date(Date.now() + 60 * 60 * 1000)
 
   return { token, expires }

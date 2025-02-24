@@ -38,7 +38,7 @@ server.on("close", () => {
   neo4jDriver.close()
 })
 
-if (process.env.NODE_ENV != "test") {
+if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT ?? 5000
   
   server.listen(PORT, () => {
