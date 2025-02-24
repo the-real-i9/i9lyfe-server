@@ -126,7 +126,7 @@ export class Comment {
             }
           )
 
-          mention_notifs = records[0].get("mention_notifs")
+          mention_notifs = records[0]?.get("mention_notifs")
         }
       }
 
@@ -184,7 +184,7 @@ export class Comment {
       { comment_id, client_username },
     )
 
-    return records[0].get("found_comment")
+    return records[0]?.get("found_comment")
   }
 
   static async getComments({ comment_id, client_username, limit, offset }) {
@@ -207,7 +207,7 @@ export class Comment {
       { comment_id, client_username, limit, offset }
     )
     
-    return records[0].get("res_comments")
+    return records[0]?.get("res_comments")
   }
 
 
@@ -230,7 +230,7 @@ export class Comment {
       { comment_id, client_username, limit, offset }
     )
 
-    return records[0].get("reactors_rxn")
+    return records[0]?.get("reactors_rxn")
   }
 
   static async getReactorsWithReaction({
@@ -258,7 +258,7 @@ export class Comment {
       { comment_id, client_username, reaction, limit, offset }
     )
 
-    return records[0].get("reactors_rxn")
+    return records[0]?.get("reactors_rxn")
   }
 
   static async removeReaction(comment_id, client_username) {

@@ -62,7 +62,7 @@ export class Chat {
       { client_username }
     )
 
-    return records[0].get("my_chats")
+    return records[0]?.get("my_chats")
   }
 
   static async getHistory({ client_username, partner_username, limit, offset }) {
@@ -78,7 +78,7 @@ export class Chat {
       { client_username, partner_username, limit, offset }
     )
 
-    return records[0].get("chat_history")
+    return records[0]?.get("chat_history")
   }
 
   static async blockUser(client_username, to_block_username) {

@@ -15,13 +15,13 @@ export class User {
 
     const { records } = await neo4jDriver.executeWrite(
       `
-      CREATE (user:User{ email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline" })
+      CREATE (user:User{ email: $info.email, username: $info.username, password: $info.password, name: $info.name, birthday: datetime($info.birthday), bio: $info.bio, profile_pic_url: "", connection_status: "offline", last_seen: datetime() })
       RETURN user { .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
       `,
       { info }
     )
 
-    return records[0].get("new_user")
+    return records[0]?.get("new_user")
   }
 
   /**
@@ -37,7 +37,7 @@ export class User {
       { uniqueIdentifier }
     )
 
-    return records[0].get("found_user")
+    return records[0]?.get("found_user")
   }
 
   /**
@@ -53,7 +53,7 @@ export class User {
       { uniqueIdentifier }
     )
 
-    return records[0].get("userExists")
+    return records[0]?.get("userExists")
   }
 
   static async changePassword(email, newPassword) {
@@ -152,14 +152,14 @@ export class User {
   static async getProfile(username, client_username) {
     const { records } = await neo4jDriver.executeRead(
       `
-      MATCH (profUser:User{ username: $username })
+      MATCH (profileUser:User{ username: $username })
 
-      MATCH (follower:User)-[:FOLLOWS_USER]->(profUser)-[:FOLLOWS_USER]->(following:User),
-        (profUser)-[:CREATES_POST]->(post:Post)
+      MATCH (follower:User)-[:FOLLOWS_USER]->(profileUser)-[:FOLLOWS_USER]->(following:User),
+        (profileUser)-[:CREATES_POST]->(post:Post)
 
-      OPTIONAL MATCH (profUser)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
+      OPTIONAL MATCH (profileUser)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
 
-      WITH profUser,
+      WITH profileUser,
         count(post) AS posts_count,
         count(follower) AS followers_count,
         count(following) AS followings_count,
@@ -167,12 +167,12 @@ export class User {
           WHEN IS NULL THEN false
           ELSE true 
         END AS client_follows
-      RETURN profUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
+      RETURN profileUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
       `,
       { username, client_username }
     )
 
-    return records[0].get("user_profile")
+    return records[0]?.get("user_profile")
   }
 
   // GET user followers
@@ -196,7 +196,7 @@ export class User {
       { username, client_username, limit, offset }
     )
 
-    return records[0].get("user_followers")
+    return records[0]?.get("user_followers")
   }
 
   // GET user following
@@ -220,7 +220,7 @@ export class User {
       { username, client_username, limit, offset }
     )
 
-    return records[0].get("user_followings")
+    return records[0]?.get("user_followings")
   }
 
   // GET user posts
@@ -255,7 +255,7 @@ export class User {
       { username, client_username, limit, offset }
     )
 
-    return records[0].get("user_posts")
+    return records[0]?.get("user_posts")
   }
 
   // GET posts user has been mentioned in
@@ -289,7 +289,7 @@ export class User {
       { client_username, limit, offset }
     )
 
-    return records[0].get("user_mentioned_posts")
+    return records[0]?.get("user_mentioned_posts")
   }
 
   // GET posts reacted by user
@@ -319,7 +319,7 @@ export class User {
       { client_username, limit, offset }
     )
 
-    return records[0].get("user_reacted_posts")
+    return records[0]?.get("user_reacted_posts")
   }
 
   // GET posts saved by this user
@@ -349,7 +349,7 @@ export class User {
       { client_username, limit, offset }
     )
 
-    return records[0].get("user_saved_posts")
+    return records[0]?.get("user_saved_posts")
   }
 
   /**
@@ -408,6 +408,6 @@ export class User {
       { client_username, limit, offset }
     )
 
-    return records[0].get("notifications")
+    return records[0]?.get("notifications")
   }
 }

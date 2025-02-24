@@ -73,7 +73,7 @@ export class Post {
             { mentionsExcClient, postId: new_post_data.id, client_username }
           )
 
-          mention_notifs = records[0].get("mention_notifs")
+          mention_notifs = records[0]?.get("mention_notifs")
         }
       }
 
@@ -293,7 +293,7 @@ export class Post {
             }
           )
 
-          mention_notifs = records[0].get("mention_notifs")
+          mention_notifs = records[0]?.get("mention_notifs")
         }
       }
 
@@ -371,7 +371,7 @@ export class Post {
       { post_id, client_username }
     )
 
-    return records[0].get("found_post")
+    return records[0]?.get("found_post")
   }
 
   static async getComments({ post_id, client_username, limit, offset }) {
@@ -394,7 +394,7 @@ export class Post {
       { post_id, client_username, limit, offset }
     )
 
-    return records[0].get("res_comments")
+    return records[0]?.get("res_comments")
   }
 
   static async getReactors({ post_id, client_username, limit, offset }) {
@@ -416,7 +416,7 @@ export class Post {
       { post_id, client_username, limit, offset }
     )
 
-    return records[0].get("reactors_rxn")
+    return records[0]?.get("reactors_rxn")
   }
 
   static async getReactorsWithReaction({
@@ -444,7 +444,7 @@ export class Post {
       { post_id, client_username, reaction, limit, offset }
     )
 
-    return records[0].get("reactors_rxn")
+    return records[0]?.get("reactors_rxn")
   }
 
   static async delete(post_id, client_username) {

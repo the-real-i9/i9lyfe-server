@@ -45,7 +45,7 @@ export class App {
       { term, filter, client_username, limit, offset }
     )
 
-    return records[0].get("search_results")
+    return records[0]?.get("search_results")
   }
 
   static async searchHashtags({ term, limit, offset }) {
@@ -61,7 +61,7 @@ export class App {
       { term, limit, offset }
     )
 
-    return records[0].get("search_results")
+    return records[0]?.get("search_results")
   }
 
   static async searchUsers({ term, limit, offset }) {
@@ -76,7 +76,7 @@ export class App {
       { term, limit, offset }
     )
 
-    return records[0].get("search_results")
+    return records[0]?.get("search_results")
   }
 
   static async getHashtagPosts({
@@ -123,6 +123,6 @@ export class App {
       { filter, hashtag_name, limit, offset, client_username }
     )
 
-    return records[0].get("search_results")
+    return records[0]?.get("search_results")
   }
 }

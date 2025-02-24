@@ -17,7 +17,7 @@ export async function getPost(post_id, client_username) {
     { post_id, client_username }
   )
 
-  return records[0].get("the_post")
+  return records[0]?.get("the_post")
 }
 
 export async function getHomePosts({ client_username, limit, offset, types }) {
@@ -60,7 +60,7 @@ export async function getHomePosts({ client_username, limit, offset, types }) {
     { types, client_username, limit, offset }
   )
 
-  return records[0].get("feed_posts")
+  return records[0]?.get("feed_posts")
 }
 
 export async function getExplorePosts({ client_username, types, limit, offset }) {
@@ -95,5 +95,5 @@ export async function getExplorePosts({ client_username, types, limit, offset })
     { types, client_username, limit, offset }
   )
 
-  return records[0].get("explore_posts")
+  return records[0]?.get("explore_posts")
 }
