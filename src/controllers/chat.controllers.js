@@ -25,7 +25,7 @@ export const deleteChat = async (req, res) => {
       partner_username
     )
 
-    res.status(201).send(resp.data)
+    res.status(200).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

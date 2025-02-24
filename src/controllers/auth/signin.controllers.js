@@ -9,7 +9,7 @@ export const signin = async (req, res) => {
       inputPassword
     )
 
-    if (resp.error) return res.status(400).send(resp.error)
+    if (resp.error) return res.status(404).send(resp.error)
 
     req.session.user = { authJwt: resp.jwt }
 

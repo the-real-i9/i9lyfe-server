@@ -59,19 +59,22 @@ describe("test user authentication", () => {
       .post(`${signupPath}/register_user`)
       .set("Cookie", [signupSessionCookie])
       .send({
-        username: "mike",
-        name: "Mike Ross",
-        password: "blablabla",
-        birthday: "2000-11-07",
-        bio: "I'm a genius lawyer with no degree",
+        username: "suberu",
+        name: "Suberu Garuda",
+        password: "sketeppy",
+        birthday: "1993-11-07",
+        bio: "Whatever!",
       })
 
     expect(res.status).toBe(201)
+
+    userSessionCookie = res.headers["set-cookie"][0]
   })
 
   it("User1 signs out", async () => {
     const res = await request(server)
     .get(signoutPath)
+    .set("Cookie", [userSessionCookie])
 
     expect(res.status).toBe(200)
   })
@@ -80,11 +83,30 @@ describe("test user authentication", () => {
     const res = await request(server)
     .post(signinPath)
     .send({
-      email_or_username: "mike",
-      password: "blablabla",
+      email_or_username: "suberu@gmail.com",
+      password: "millini",
     })
 
-    expect(res.status).toBe(402)
+    expect(res.status).toBe(404)
+  })
+
+  it("User1 signs in with correct credentials", async () => {
+    const res = await request(server)
+    .post(signinPath)
+    .send({
+      email_or_username: "suberu@gmail.com",
+      password: "sketeppy",
+    })
+
+    expect(res.status).toBe(200)
+  })
+
+  it("User2 requests a new account with already existing email", async () => {
+    const res = await request(server)
+      .post(`${signupPath}/request_new_account`)
+      .send({ email: "suberu@gmail.com" })
+
+    expect(res.status).toBe(400)
   })
 })
 
