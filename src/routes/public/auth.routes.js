@@ -49,6 +49,7 @@ router.post(
 
 router.post("/signin", ...signinValidators.signin, signinControllers.signin)
 
+
 router.post(
   "/forgot_password/request_password_reset",
   ...passwordResetValidators.requestPasswordReset,

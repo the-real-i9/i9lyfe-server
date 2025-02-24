@@ -16,7 +16,7 @@ export const signin = async (email_or_username, inputPassword) => {
       error: { msg: "Incorrect email or password" },
     }
 
-  const jwt = securityServices.generateJwt({
+  const jwt = securityServices.signJwt({
     client_username: user.username,
   })
 
@@ -24,7 +24,7 @@ export const signin = async (email_or_username, inputPassword) => {
     data: {
       msg: "Signin success!",
       user,
-      jwt,
     },
+    jwt,
   }
 }

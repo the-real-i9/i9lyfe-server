@@ -12,7 +12,8 @@ const Neo4jStore = neo4jSessStore(expressSession)
 export const expressSessionMiddleware = (
   storeTableName,
   sessionSecret,
-  cookiePath
+  cookiePath,
+  maxAge = 60 * 60 * 1000
 ) =>
   expressSession({
     store: new Neo4jStore({
@@ -24,7 +25,7 @@ export const expressSessionMiddleware = (
     saveUninitialized: false,
     secret: sessionSecret,
     cookie: {
-      maxAge: 60 * 60 * 1000,
+      maxAge,
       secure: false,
       path: cookiePath,
     },

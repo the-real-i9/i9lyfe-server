@@ -1,8 +1,8 @@
 import * as signupService from "../../services/auth/signup.service.js"
 
 /**
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const requestNewAccount = async (req, res) => {
   const { email } = req.body
@@ -30,8 +30,8 @@ export const requestNewAccount = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const verifyEmail = async (req, res) => {
   const { code: inputCode } = req.body
@@ -62,8 +62,8 @@ export const verifyEmail = async (req, res) => {
 }
 
 /**
- * @param {import("express").Request} req 
- * @param {import("express").Response} res 
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
  */
 export const registerUser = async (req, res) => {
   try {
@@ -72,11 +72,16 @@ export const registerUser = async (req, res) => {
 
     const { email } = req.session.signup.data
 
-    const resp = await signupService.registerUser({ email, ...req.body })
+    const resp = await signupService.registerUser({
+      email,
+      ...req.body,
+    })
 
     if (resp.error) return res.status(400).send(resp.error)
 
     req.session.destroy()
+
+    req.session.user = { authJwt: resp.jwt }
 
     res.status(201).send(resp.data)
   } catch (error) {

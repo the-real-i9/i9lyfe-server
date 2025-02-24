@@ -1,32 +1,37 @@
 import express from "express"
-import { expressjwt } from "express-jwt"
 import dotenv from "dotenv"
 
 import AuthRoutes from "./public/auth.routes.js"
 import UserPublicRoutes from "./public/user.public.routes.js"
 import AppRoutes from "./public/app.routes.js"
+import { verifyJwt } from "../services/security.services.js"
+import { expressSessionMiddleware } from "../middlewares/auth.middlewares.js"
 
 dotenv.config()
 
 const router = express.Router()
 
 router.use(
-  expressjwt({
-    secret: process.env.JWT_SECRET,
-    algorithms: ["HS256"],
-    credentialsRequired: false,
-  }),
-  (err, req, res, next) => {
-    if (err) {
-      res.status(err.status).send({ msg: err.inner.message })
-    } else {
-      next(err)
+  "/app",
+  expressSessionMiddleware(
+    "user_session_private",
+    process.env.USER_SESSION_COOKIE_SECRET,
+    "/api/public/app",
+    10 * 24 * 60 * 60 * 1000
+  ),
+  (req, res, next) => {
+    if (req.session?.user) {
+      const { authJwt } = req.session.user
+  
+      req.auth = verifyJwt(authJwt, process.env.JWT_SECRET)
     }
+
+    return next()
   }
 )
 
 router.use("/auth", AuthRoutes)
-router.use(UserPublicRoutes)
-router.use(AppRoutes)
+router.use("/app", UserPublicRoutes)
+router.use("/app", AppRoutes)
 
 export default router

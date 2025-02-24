@@ -13,6 +13,24 @@ export const getSessionUser = async (req, res) => {
   }
 }
 
+/**
+ * 
+ * @param {import("express").Request} req 
+ * @param {} res 
+ * @returns 
+ */
+export const signout = async (req, res) => {
+  try {
+
+    req.session?.destroy()
+
+    return res.status(200).send("You've signed out!")
+  } catch (error) {
+    console.error(error)
+    res.sendStatus(500)
+  }
+}
+
 export const followUser = async (req, res) => {
   try {
     const { username: to_follow_username } = req.params

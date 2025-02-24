@@ -71,7 +71,7 @@ export const registerUser = async (info) => {
     password: passwordHash,
   })
 
-  const jwt = securityServices.generateJwt({
+  const jwt = securityServices.signJwt({
     client_username: user.username,
   })
 
@@ -81,7 +81,7 @@ export const registerUser = async (info) => {
     data: {
       msg: "Signup success! You're automatically logged in.",
       user,
-      jwt,
     },
+    jwt,
   }
 }
