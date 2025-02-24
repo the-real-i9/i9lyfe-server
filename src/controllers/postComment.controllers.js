@@ -13,7 +13,7 @@ export const createNewPost = async (req, res) => {
       description,
     })
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -33,7 +33,7 @@ export const reactToPost = async (req, res) => {
       reaction,
     })
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -74,7 +74,7 @@ export const reactToComment = async (req, res) => {
       reaction,
     })
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -109,7 +109,7 @@ export const createRepost = async (req, res) => {
 
     const resp = await postCommentService.createRepost(post_id, client_username)
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

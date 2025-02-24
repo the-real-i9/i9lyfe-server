@@ -39,7 +39,7 @@ export const followUser = async (req, res) => {
 
     const resp = await userService.followUser(client_username, to_follow_username)
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -54,7 +54,7 @@ export const unfollowUser = async (req, res) => {
 
     const resp = await userService.unfollowUser(client_username, username)
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -71,7 +71,7 @@ export const editProfile = async (req, res) => {
 
     const resp = await userService.editProfile(client_username, updateKVs)
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)
@@ -107,7 +107,7 @@ export const changeProfilePicture = async (req, res) => {
       client_username,
     })
 
-    res.status(200).send(resp.data)
+    res.status(201).send(resp.data)
   } catch (error) {
     console.error(error)
     res.sendStatus(500)

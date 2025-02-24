@@ -13,10 +13,5 @@ router.delete(
   CC.deleteChat
 )
 
-router.get(
-  "/chats/:partner_username/history",
-  ...validateParams,
-  CC.getChatHistory
-)
 
 export default router

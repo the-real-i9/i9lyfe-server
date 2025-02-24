@@ -16,7 +16,7 @@ afterAll(async (done) => {
 
 const signupPath = "/api/public/auth/signup"
 const signinPath = "/api/public/auth/signin"
-const signoutPath = "/api/public/auth/signout"
+const signoutPath = "/api/private/app/signout"
 
 describe("test user authentication", () => {
   let signupSessionCookie = ""
@@ -33,7 +33,7 @@ describe("test user authentication", () => {
   })
 
   it("User1 sends an incorrect email verf code", async () => {
-    const verfCode = 123456
+    const verfCode = Number(process.env.DUMMY_VERF_TOKEN)+1
 
     const res = await request(server)
       .post(`${signupPath}/verify_email`)

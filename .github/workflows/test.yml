@@ -34,6 +34,9 @@ jobs:
           NEO4J_PASSWORD: "pa@sw$*d"
           KAFKA_BROKER_ADDRESS: "localhost:9092"
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          SIGNUP_SESSION_COOKIE_SECRET: ${{ secrets.SIGNUP_SESSION_COOKIE_SECRET }}
+          PASSWORD_RESET_SESSION_COOKIE_SECRET: ${{ secrets.PASSWORD_RESET_SESSION_COOKIE_SECRET }}
+          USER_SESSION_COOKIE_SECRET: ${{ secrets.USER_SESSION_COOKIE_SECRET }}
           MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
