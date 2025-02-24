@@ -22,7 +22,7 @@ export const getSessionUser = async (req, res) => {
 export const signout = async (req, res) => {
   try {
 
-    req.session?.destroy()
+    req.session.destroy()
 
     return res.status(200).send("You've signed out!")
   } catch (error) {

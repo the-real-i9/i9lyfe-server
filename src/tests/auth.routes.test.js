@@ -4,13 +4,13 @@ import { afterAll, beforeAll, describe, expect, it } from "@jest/globals"
 import server from ".."
 import { neo4jDriver } from "../configs/db.js"
 
-beforeAll((done) => {
-  server.listen(0, "localhost", done)
+beforeAll(async () => {
+  server.listen(0, "localhost")
+
+  await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")
 })
 
-afterAll(async (done) => {
-  await neo4jDriver.executeWrite(`MATCH (n) DETACH DELETE n`)
-
+afterAll((done) => {
   server.close(done)
 })
 

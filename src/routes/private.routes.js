@@ -12,12 +12,9 @@ dotenv.config()
 const router = express.Router()
 
 router.use(
-  "/app",
   expressSessionMiddleware(
-    "user_session_private",
-    process.env.USER_SESSION_COOKIE_SECRET,
-    "/api/private/app",
-    10 * 24 * 60 * 60 * 1000
+    "session_store",
+    process.env.SESSION_COOKIE_SECRET,
   ),
   (req, res, next) => {
     if (!req.session?.user) {
@@ -32,8 +29,8 @@ router.use(
   }
 )
 
-router.use("/app", PostCommentRoutes)
-router.use("/app", ChatRoutes)
-router.use("/app", UserPrivateRoutes)
+router.use(PostCommentRoutes)
+router.use(ChatRoutes)
+router.use(UserPrivateRoutes)
 
 export default router

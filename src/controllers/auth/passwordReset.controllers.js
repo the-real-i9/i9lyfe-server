@@ -8,14 +8,14 @@ export const requestPasswordReset = async (req, res) => {
     if (resp.error) return res.status(400).send(resp.error)
 
     req.session.passwordReset = {
-      step: "confirm email",
-      data: {
-        email,
-        emailConfirmed: false,
-        passwordResetToken: resp.passwordResetToken,
-        passwordResetTokenExpires: resp.passwordResetTokenExpires,
-      },
+      email,
+      emailConfirmed: false,
+      passwordResetToken: resp.passwordResetToken,
+      passwordResetTokenExpires: resp.passwordResetTokenExpires,
     }
+
+    req.session.cookie.maxAge = 60 * 60 * 1000
+    req.session.cookie.path = "/api/auth/forgot_password/confirm_email"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -28,10 +28,9 @@ export const confirmEmail = async (req, res) => {
   const { token: inputToken } = req.body
 
   try {
-    if (req.session?.passwordReset.step != "confirm email")
-      return res.status(400).send({ msg: "Invalid cookie at endpoint" })
+    if (req.session?.passwordReset) return res.status(401)
 
-    const passwordResetSessionData = req.session.passwordReset.data
+    const passwordResetSessionData = req.session.passwordReset
 
     const resp = passwordResetService.confirmEmail({
       inputToken,
@@ -41,12 +40,12 @@ export const confirmEmail = async (req, res) => {
     if (resp.error) return res.status(400).send(resp.error)
 
     req.session.passwordReset = {
-      step: "reset password",
-      data: {
-        email: passwordResetSessionData.email,
-        emailConfirmed: true,
-      },
+      email: passwordResetSessionData.email,
+      emailConfirmed: true,
     }
+
+    req.session.cookie.maxAge = 60 * 60 * 1000
+    req.session.cookie.path = "/api/auth/forgot_password/reset_password"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -57,10 +56,9 @@ export const confirmEmail = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    if (req.session?.passwordReset.step != "reset password")
-      return res.status(400).send({ msg: "Invalid cookie at endpoint" })
+    if (req.session?.passwordReset) return res.status(401)
 
-    const { email } = req.session.passwordReset.data
+    const { email } = req.session.passwordReset
 
     const { newPassword } = req.body
 

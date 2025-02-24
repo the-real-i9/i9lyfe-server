@@ -14,7 +14,9 @@ app.use(cors())
 
 app.use(express.json({ limit: "10mb" }))
 
-app.use("/api/private", PrivateRoutes)
-app.use("/api/public", PublicRoutes)
+app.use("/api/auth", )
+
+app.use("/api/app/private", PrivateRoutes)
+app.use("/api/app/public", PublicRoutes)
 
 export default app
