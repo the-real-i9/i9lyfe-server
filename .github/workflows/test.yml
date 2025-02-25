@@ -31,7 +31,7 @@ jobs:
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
-          NEO4J_PASSWORD: "pa@sw$*d"
+          NEO4J_PASSWORD: "pa@sw$!d"
           KAFKA_BROKER_ADDRESS: "localhost:9092"
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
           SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET }}
