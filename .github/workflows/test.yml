@@ -24,7 +24,7 @@ jobs:
           kafka-topics: ${{ secrets.KAFKA_TOPICS }}
 
       - name: Install Go
-        uses: actions/setup-node@v5
+        uses: actions/setup-node
 
       - name: Run Test
         run: cd ./src/tests && npm run test
@@ -40,3 +40,4 @@ jobs:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
           DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
