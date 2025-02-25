@@ -12,6 +12,8 @@ beforeAll(async () => {
 
 afterAll((done) => {
   server.close(done)
+
+  console.log("all tests ran!")
 })
 
 const signupPath = "/api/auth/signup"
