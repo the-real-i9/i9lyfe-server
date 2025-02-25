@@ -36,6 +36,15 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Wait for Kafka to be ready
+        run: |
+          echo "Waiting for Kafka to be ready..."
+          while ! nc -z localhost 9092; do
+            echo "Kafka is not ready yet. Retrying in 2 seconds..."
+            sleep 2
+          done
+          echo "Kafka is ready!"
+
       - name: Run Test
         run: cd ./src/tests && npm run test
         env:
