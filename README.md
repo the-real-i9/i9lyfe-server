@@ -1,5 +1,7 @@
 # i9lyfe (API Server)
 
+[![Test i9lyfe](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml/badge.svg)](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml)
+
 Build your Social Network Application
 
 ## Intro
