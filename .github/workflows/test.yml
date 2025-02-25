@@ -16,6 +16,7 @@ jobs:
       kafka-kraft:
         image: 'confluentinc/cp-kafka:latest'
         ports:
+          - 9091:9091
           - 9092:9092
     steps:
       - name: Fetch Repository
@@ -39,7 +40,7 @@ jobs:
       - name: Wait for Kafka to be ready
         run: |
           echo "Waiting for Kafka to be ready..."
-          while ! nc -z kafka-kraft 9092; do
+          while ! nc -z localhost 9092; do
             echo "Kafka is not ready yet. Retrying in 2 seconds..."
             sleep 2
           done
@@ -51,7 +52,7 @@ jobs:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
           NEO4J_PASSWORD: "pa@sw$!d"
-          KAFKA_BROKER_ADDRESS: "kafka-kraft:9092"
+          KAFKA_BROKER_ADDRESS: "localhost:9092"
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
           SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET }}
           MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
