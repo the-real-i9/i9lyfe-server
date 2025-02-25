@@ -12,8 +12,6 @@ beforeAll(async () => {
 
 afterAll((done) => {
   server.close(done)
-
-  throw new Error("close")
 })
 
 const signupPath = "/api/auth/signup"
