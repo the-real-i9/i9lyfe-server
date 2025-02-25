@@ -14,9 +14,8 @@ jobs:
         env:
           NEO4J_AUTH: "neo4j/pa@sw$!d"
       kafka-kraft:
-        image: 'confluentinc/cp-kafka:latest'
+        image: 'confluentinc/confluent-local:latest'
         ports:
-          - 9091:9091
           - 9092:9092
     steps:
       - name: Fetch Repository
