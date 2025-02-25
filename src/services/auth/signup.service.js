@@ -1,6 +1,5 @@
 import * as mailService from "../mail.service.js"
 import * as securityServices from "../security.services.js"
-import * as messageBrokerService from "../messageBroker.service.js"
 import { User } from "../../models/user.model.js"
 
 export const requestNewAccount = async (email) => {
@@ -74,8 +73,6 @@ export const registerUser = async (info) => {
   const jwt = securityServices.signJwt({
     client_username: user.username,
   })
-
-  messageBrokerService.createTopic(`i9lyfe-user-${user.username}-alerts`)
 
   return {
     data: {

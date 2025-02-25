@@ -39,20 +39,15 @@ export const sendChatEvent = (event, partner_username, data) => {
 }
 
 /**
- * @param {string} topic
- */
-export const createTopic = (topic) => {
-  producer.createTopics([topic], (err) => {
-    err && console.error(err)
-  })
-}
-
-/**
  * 
  * @param {Array<import("kafka-node").OffsetFetchRequest | string>} topics 
  * @returns {Consumer}
  */
 export const consumeTopics = (topics) => {
+  producer.createTopics(topics, (err) => {
+    err && console.error(err)
+  })
+
   const kafkaClient = new KafkaClient({ kafkaHost: process.env.KAFKA_BROKER_ADDRESS })
 
   const consumer = new Consumer(kafkaClient, topics, { autoCommit: true })

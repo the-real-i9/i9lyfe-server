@@ -13,19 +13,15 @@ jobs:
           - '7687:7687'
         env:
           NEO4J_AUTH: "neo4j/pa@sw$!d"
+
       kafka-kraft:
         image: 'confluentinc/confluent-local:latest'
         ports:
           - 9092:9092
+          
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v4
-
-      # - name: Start kafka broker
-      #   uses: spicyparrot/kafka-kraft-action@v1.1.0
-      #   with:
-      #     kafka-version: "3.7.0"
-      #     kafka-topics: ${{ secrets.KAFKA_TOPICS }}
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -35,15 +31,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-
-      - name: Wait for Kafka to be ready
-        run: |
-          echo "Waiting for Kafka to be ready..."
-          while ! nc -z localhost 9092; do
-            echo "Kafka is not ready yet. Retrying in 2 seconds..."
-            sleep 2
-          done
-          echo "Kafka is ready!"
 
       - name: Run Test
         run: cd ./src/tests && npm run test
