@@ -8,6 +8,7 @@ beforeAll(async () => {
   server.listen(0, "localhost")
 
   await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")
+  console.log("db cleaned up!")
 })
 
 afterAll((done) => {
