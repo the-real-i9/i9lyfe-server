@@ -24,7 +24,10 @@ jobs:
           kafka-topics: ${{ secrets.KAFKA_TOPICS }}
 
       - name: Install Go
-        uses: actions/setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+          cache: 'npm'
 
       - name: Run Test
         run: cd ./src/tests && npm run test
