@@ -19,8 +19,7 @@ const signinPath = "/api/auth/signin"
 const signoutPath = "/api/app/private/signout"
 
 describe("test user authentication", () => {
-  let signupSessionCookie = ""
-  let userSessionCookie = ""
+  let sessionCookie = ""
 
   it("User1 requests a new account", async () => {
     const res = await request(server)
@@ -29,7 +28,7 @@ describe("test user authentication", () => {
 
     expect(res.status).toBe(200)
 
-    signupSessionCookie = res.headers["set-cookie"][0]
+    sessionCookie = res.headers["set-cookie"][0]
   })
 
   it("User1 sends an incorrect email verf code", async () => {
@@ -37,7 +36,7 @@ describe("test user authentication", () => {
 
     const res = await request(server)
       .post(`${signupPath}/verify_email`)
-      .set("Cookie", [signupSessionCookie])
+      .set("Cookie", [sessionCookie])
       .send({ code: verfCode })
 
     expect(res.status).toBe(400)
@@ -49,16 +48,18 @@ describe("test user authentication", () => {
 
     const res = await request(server)
       .post(`${signupPath}/verify_email`)
-      .set("Cookie", [signupSessionCookie])
+      .set("Cookie", [sessionCookie])
       .send({ code: verfCode })
 
     expect(res.status).toBe(200)
+
+    sessionCookie = res.headers["set-cookie"][0]
   })
 
   it("User1 submits her credentials", async () => {
     const res = await request(server)
       .post(`${signupPath}/register_user`)
-      .set("Cookie", [signupSessionCookie])
+      .set("Cookie", [sessionCookie])
       .send({
         username: "suberu",
         name: "Suberu Garuda",
@@ -69,13 +70,13 @@ describe("test user authentication", () => {
 
     expect(res.status).toBe(201)
 
-    userSessionCookie = res.headers["set-cookie"][0]
+    sessionCookie = res.headers["set-cookie"][0]
   })
 
   it("User1 signs out", async () => {
     const res = await request(server)
     .get(signoutPath)
-    .set("Cookie", [userSessionCookie])
+    .set("Cookie", [sessionCookie])
 
     expect(res.status).toBe(200)
   })
