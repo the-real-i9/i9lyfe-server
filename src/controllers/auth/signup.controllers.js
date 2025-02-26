@@ -29,10 +29,6 @@ export const requestNewAccount = async (req, res) => {
   }
 }
 
-/**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
 export const verifyEmail = async (req, res) => {
   const { code: inputCode } = req.body
 
@@ -60,10 +56,6 @@ export const verifyEmail = async (req, res) => {
   }
 }
 
-/**
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- */
 export const registerUser = async (req, res) => {
   try {
     if (!req.session?.signup) return res.sendStatus(401)

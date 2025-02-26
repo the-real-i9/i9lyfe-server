@@ -28,7 +28,7 @@ export const confirmEmail = async (req, res) => {
   const { token: inputToken } = req.body
 
   try {
-    if (req.session?.passwordReset) return res.status(401)
+    if (!req.session?.passwordReset) return res.sendStatus(401)
 
     const passwordResetSessionData = req.session.passwordReset
 
@@ -56,7 +56,7 @@ export const confirmEmail = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    if (req.session?.passwordReset) return res.status(401)
+    if (!req.session?.passwordReset) return res.sendStatus(401)
 
     const { email } = req.session.passwordReset
 
