@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import { consumeTopics } from "./messageBroker.service.js"
+import { consumeTopics, userAlertEventEmitter } from "./messageBroker.service.js"
 import { updateConnectionStatus } from "./user.service.js"
 import { getPost } from "./contentRecommendation.service.js"
 import * as chatService from "./chat.service.js"
@@ -15,25 +15,29 @@ export const initRTC = (io) => {
 export const newPostEventEmitter = new EventEmitter()
 
 /** @param {import("socket.io").Socket} socket */
-export const initSocketRTC = (socket) => {
+export const initSocketRTC = async (socket) => {
   const { client_username } = socket.auth
 
   updateConnectionStatus({ client_username, connection_status: "online" })
 
   // CONSUME EVENTS IN TOPICS
-  const consumer = consumeTopics([
+  const consumer = await consumeTopics([
     { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
-  consumer.run({
-    async eachMessage({ message }) {
-      const { event, data } = JSON.parse(message.value.toString())
-    
-      socket.emit(event, data)
-    }
+  userAlertEventEmitter.on("new user alert", async () => {
+    await consumer.run({
+      eachMessage: async ({ message }) => {
+        const { event, data } = JSON.parse(message.value.toString())
+
+        socket.emit(event, data)
+      },
+    })
   })
 
-  socket.on("disconnect", () => {
+  userAlertEventEmitter.emit("new user alert")
+
+  socket.on("disconnect", async () => {
     updateConnectionStatus({
       client_username,
       connection_status: "offline",
@@ -42,8 +46,6 @@ export const initSocketRTC = (socket) => {
 
     consumer.disconnect()
   })
-
-  
 
   // REALTIME POST AND COMMENT UPDATES
   socket.on("start receiving post updates", (post_id) => {
@@ -79,7 +81,7 @@ export const initSocketRTC = (socket) => {
   // CLIENT USER ACTIONS
   socket.on("send message", async (data) => {
     try {
-      const resp = await chatService.sendMessage({ client_username, ... data })
+      const resp = await chatService.sendMessage({ client_username, ...data })
 
       socket.emit("server reply", { toEvent: "send message", reply: resp.data })
     } catch (error) {
@@ -89,9 +91,15 @@ export const initSocketRTC = (socket) => {
 
   socket.on("get chat history", async (data) => {
     try {
-      const resp = await chatService.getChatHistory({ client_username, ... data })
+      const resp = await chatService.getChatHistory({
+        client_username,
+        ...data,
+      })
 
-      socket.emit("server reply", { toEvent: "get chat history", reply: resp.data })
+      socket.emit("server reply", {
+        toEvent: "get chat history",
+        reply: resp.data,
+      })
     } catch (error) {
       socket.emit("server error", { onEvent: "get chat history", error })
     }
@@ -99,7 +107,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("ack message delivered", async (data) => {
     try {
-      await chatService.ackMessageDelivered({ client_username, ... data })
+      await chatService.ackMessageDelivered({ client_username, ...data })
     } catch (error) {
       socket.emit("server error", { onEvent: "ack message delivered", error })
     }
@@ -107,7 +115,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("ack message read", async (data) => {
     try {
-      await chatService.ackMessageRead({ client_username, ... data })
+      await chatService.ackMessageRead({ client_username, ...data })
     } catch (error) {
       socket.emit("server error", { onEvent: "ack message read", error })
     }
@@ -115,7 +123,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("react to message", async (data) => {
     try {
-      await chatService.reactToMessage({ client_username, ... data })
+      await chatService.reactToMessage({ client_username, ...data })
     } catch (error) {
       socket.emit("server error", { onEvent: "react to message", error })
     }
@@ -123,7 +131,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("remove reaction to message", async (data) => {
     try {
-      await chatService.removeReactionToMessage({ client_username, ... data })
+      await chatService.removeReactionToMessage({ client_username, ...data })
     } catch (error) {
       socket.emit("server error", {
         onEvent: "remove reaction to message",
@@ -134,7 +142,7 @@ export const initSocketRTC = (socket) => {
 
   socket.on("delete message", async (data) => {
     try {
-      await chatService.deleteMessage({ client_username, ... data })
+      await chatService.deleteMessage({ client_username, ...data })
     } catch (error) {
       socket.emit("server error", { onEvent: "delete message", error })
     }
@@ -152,3 +160,4 @@ export const sendCommentUpdate = (comment_id, data) => {
 export const publishNewPost = (post_id, owner_username) => {
   newPostEventEmitter.emit("new post", post_id, owner_username)
 }
+
