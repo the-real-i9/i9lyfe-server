@@ -8,7 +8,7 @@ export const signin = async (req, res) => {
 
     if (resp.error) return res.status(404).send(resp.error)
 
-    req.session.cookie.path = "/api/app"
+    req.session.cookie.path = "/"
     req.session.cookie.maxAge = 10 * 24 * 60 * 60 * 1000
 
     req.session.user = { authJwt: resp.jwt }

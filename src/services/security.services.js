@@ -5,12 +5,14 @@ import { randomInt } from "node:crypto"
 /**
  * @returns {string}
  */
-export const signJwt = (payload) => jwt.sign(payload, process.env.AUTH_JWT_SECRET)
+export const signJwt = (payload) =>
+  jwt.sign(payload, process.env.AUTH_JWT_SECRET, { algorithm: "HS256" })
 
-export const verifyJwt = (token, secret) => jwt.verify(token, secret)
+export const verifyJwt = (token, secret) =>
+  jwt.verify(token, secret, { algorithms: ["HS256"] })
 
 export const renewJwtToken = (socket) => {
-  const { client_username } = socket.jwt_payload
+  const { client_username } = socket.auth
 
   const newJwtToken = signJwt({ client_username })
 

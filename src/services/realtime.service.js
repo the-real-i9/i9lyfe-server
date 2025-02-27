@@ -16,7 +16,7 @@ export const newPostEventEmitter = new EventEmitter()
 
 /** @param {import("socket.io").Socket} socket */
 export const initSocketRTC = (socket) => {
-  const { client_username } = socket.jwt_payload
+  const { client_username } = socket.auth
 
   updateConnectionStatus({ client_username, connection_status: "online" })
 
@@ -25,10 +25,12 @@ export const initSocketRTC = (socket) => {
     { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
-  consumer.on("message", (message) => {
-    const { event, data } = JSON.parse(message.value.toString())
-
-    socket.emit(event, data)
+  consumer.run({
+    async eachMessage({ message }) {
+      const { event, data } = JSON.parse(message.value.toString())
+    
+      socket.emit(event, data)
+    }
   })
 
   socket.on("disconnect", () => {
@@ -37,12 +39,11 @@ export const initSocketRTC = (socket) => {
       connection_status: "offline",
       last_active: new Date(),
     })
-    consumer.close((err) => err && console.error(err))
+
+    consumer.disconnect()
   })
 
-  consumer.on("error", (err) => console.error(err))
-
-  consumer.on("offsetOutOfRange", (err) => console.error(err))
+  
 
   // REALTIME POST AND COMMENT UPDATES
   socket.on("start receiving post updates", (post_id) => {

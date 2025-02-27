@@ -9,10 +9,7 @@ const Neo4jStore = neo4jSessStore(expressSession)
  * @param {string} sessionSecret
  * @param {string} cookiePath
  */
-export const expressSessionMiddleware = (
-  storeTableName,
-  sessionSecret,
-) =>
+export const expressSessionMiddleware = (storeTableName, sessionSecret) =>
   expressSession({
     store: new Neo4jStore({
       client: neo4jDriver,

@@ -4,7 +4,11 @@ export const errHandler = (req, res, next) => {
   try {
     const result = validationResult(req)
     if (!result.isEmpty()) {
-      return res.status(400).send({ error: result.mapped() })
+      return res.status(400).send({
+        validation_error: result
+          .formatWith((err) => `${err.msg}`)
+          .mapped(),
+      })
     }
 
     return next()
@@ -25,7 +29,7 @@ export const validateParams = [
         isLength: {
           if: (value, { path }) => path.endsWith("_username"),
           options: { min: 3 },
-          errorMessage: "suspected incorrect username: too short"
+          errorMessage: "suspected incorrect username: too short",
         },
         isSurrogatePair: {
           if: (value, { path }) => path === "reaction",

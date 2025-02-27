@@ -71,7 +71,7 @@ export const registerUser = async (req, res) => {
 
     req.session.signup = undefined
 
-    req.session.cookie.path = "/api/app"
+    req.session.cookie.path = "/"
     req.session.cookie.maxAge = 10 * 24 * 60 * 60 * 1000
 
     req.session.user = { authJwt: resp.jwt }

@@ -7,8 +7,8 @@ export const createNewPost = [
       {
         media_data_list: {
           isArray: {
-            options: { min: 0 }, // just for testing: should be 1 instead
-            errorMessage: "value must be an array of at least one item",
+            options: { min: 1 },
+            errorMessage: "value must be an array of at least one length",
           },
         },
         "media_data_list.*": {
@@ -24,6 +24,11 @@ export const createNewPost = [
             options: [["photo", "video", "reel", "story"]],
             errorMessage: "invalid post type",
           },
+          custom: {
+            if: (value) => value != "photo",
+            options: (value, { req }) => req.body.media_data_list.length === 1,
+            errorMessage: (value) => `you can't post more than one ${value} at a time`
+          }
         },
         description: {
           optional: true,

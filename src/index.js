@@ -1,5 +1,4 @@
 import { createServer } from "http"
-import jwt from "jsonwebtoken"
 
 import dotenv from "dotenv"
 
@@ -7,24 +6,41 @@ dotenv.config()
 
 import app from "./app.js"
 
-import { Server } from "socket.io"
+import { Server as WSServer } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
-import { renewJwtToken } from "./services/security.services.js"
+import { renewJwtToken, verifyJwt } from "./services/security.services.js"
 import { neo4jDriver } from "./configs/db.js"
+import { expressSessionMiddleware } from "./middlewares/auth.middlewares.js"
 
+const httpServer = createServer(app)
 
-const server = createServer(app)
+const io = new WSServer(httpServer)
 
-const io = new Server(server)
+io.engine.use(
+  expressSessionMiddleware("session_store", process.env.SESSION_COOKIE_SECRET)
+)
+
+io.engine.use((req, res, next) => {
+  if (!req.session?.user) {
+    return next(new Error("authentication required"))
+  }
+
+  const { authJwt } = req.session.user
+
+  try {
+    req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
+  } catch (error) {
+    return next(error)
+  }
+
+  next()
+})
 
 io.use((socket, next) => {
-  const token = socket.handshake.headers.authorization
-  jwt.verify(token, process.env.AUTH_JWT_SECRET, (err, decoded) => {
-    if (err) return next(new Error(err.message))
-    socket.jwt_payload = decoded
-    next()
-  })
+  socket.auth = socket.request.auth
+
+  next()
 })
 
 realtimeService.initRTC(io)
@@ -34,16 +50,16 @@ io.on("connection", (socket) => {
   renewJwtToken(socket)
 })
 
-server.on("close", () => {
+httpServer.on("close", () => {
   neo4jDriver.close()
 })
 
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT ?? 5000
-  
-  server.listen(PORT, () => {
+
+  httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`)
   })
 }
 
-export default server
+export default httpServer

@@ -19,10 +19,14 @@ router.use(
     if (req.session?.user) {
       const { authJwt } = req.session.user
   
-      req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
+      try {
+        req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
+      } catch (error) {
+        return res.status(401).send(error)
+      }
     }
 
-    return next()
+    next()
   }
 )
 

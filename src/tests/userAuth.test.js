@@ -1,7 +1,7 @@
 import request from "superwstest"
 import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
 
-import server from ".."
+import server from "../index.js"
 import { neo4jDriver } from "../configs/db.js"
 
 beforeAll(async () => {
@@ -150,8 +150,6 @@ describe("test user authentication", () => {
       .post(`${forgotPasswordPath}/reset_password`)
       .set("Cookie", sessionCookie)
       .send({ newPassword: "millinie", confirmNewPassword: "millinie" })
-
-
 
     expect(res.status).toBe(200)
   })
