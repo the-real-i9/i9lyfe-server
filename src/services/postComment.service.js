@@ -21,11 +21,15 @@ export const createNewPost = async ({
   const hashtags = utilServices.extractHashtags(description)
   const mentions = utilServices.extractMentions(description)
 
-  const media_urls = media_data_list.map(async (media_data) => {
-    return await mediaUploadService.upload({
+  const media_urls = []
+
+  media_data_list.forEach(async (media_data, i) => {
+    const murl = await mediaUploadService.upload({
       media_data,
       path_to_dest_folder: `post_medias/user-${client_username}`,
     })
+
+    media_urls[i] = murl
   })
 
   const { new_post_data, mention_notifs } = await Post.create({

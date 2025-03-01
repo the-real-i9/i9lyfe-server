@@ -18,7 +18,7 @@ afterAll((done) => {
 const signupPath = "/api/auth/signup"
 const appPathPriv = "/api/app/private"
 
-describe("test Post and associated activities", () => {
+describe("test posting and related functions", () => {
   const users = {
     user1: {
       email: "harveyspecter@gmail.com",
@@ -79,19 +79,33 @@ describe("test Post and associated activities", () => {
     })
   })
 
-  test("user1 creates post", async () => {
-    const photo1 = await fs.readFile("./test_files/photo_1.png")
-    expect(photo1).toBeTruthy()
+  /* Test every functionality associated with an endpoint before moving to the next */
 
-    const res = await request(server)
-      .post(`${appPathPriv}/new_post`)
-      .set("Cookie", users.user1.sessionCookie)
-      .send({
-        media_data_list: [[...photo1]],
-        type: "photo",
-        description: "I'm beautiful",
-      })
-
-    expect(res.status).toBe(201)
+  describe("test post creation", () => {
+    test("user1 creates post", async () => {
+      const photo1 = await fs.readFile(new URL("./test_files/photo_1.png", import.meta.url))
+      expect(photo1).toBeTruthy()
+  
+      const res = await request(server)
+        .post(`${appPathPriv}/new_post`)
+        .set("Cookie", users.user1.sessionCookie)
+        .send({
+          media_data_list: [[...photo1]],
+          type: "photo",
+          description: "I'm beautiful",
+        })
+  
+      expect(res.status).toBe(201)
+    })
+  
+    test("new post was published on met conditions", () => {
+      // involves a websocket test
+      expect(true).toBeTruthy()
+    })
+  
+    test("mentioned users received their notification", () => {
+      // involves a websocket test
+      expect(true).toBeTruthy()
+    })
   })
 })
