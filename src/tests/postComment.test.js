@@ -96,6 +96,7 @@ describe("test posting and related functions", () => {
         })
   
       expect(res.status).toBe(201)
+      expect(res.body).toHaveProperty("owner_user.username", users.user1.username)
     })
   
     test("new post was published on met conditions", () => {
