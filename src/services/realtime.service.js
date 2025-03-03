@@ -25,7 +25,7 @@ export const initSocketRTC = async (socket) => {
     { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
-  consumer.run({
+  await consumer.run({
     eachMessage: async ({ message }) => {
       const { event, data } = JSON.parse(message.value.toString())
 
