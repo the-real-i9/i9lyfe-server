@@ -46,7 +46,6 @@ export const createNewPost = async ({
   mention_notifs.forEach((notif) => {
     const { receiver_username, ...restData } = notif
 
-    // replace with message broker
     messageBrokerService.sendNewNotification(receiver_username, restData)
   })
 

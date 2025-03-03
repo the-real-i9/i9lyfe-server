@@ -25,7 +25,7 @@ export const sendNewNotification = (receiver_username, data) => {
             event: "new notification",
             data,
           }),
-          partition: 0,
+          partition: 1,
         },
       ],
     })
@@ -44,7 +44,7 @@ export const sendChatEvent = (event, partner_username, data) => {
             event,
             data,
           }),
-          partition: 0,
+          partition: 1,
         },
       ],
     })

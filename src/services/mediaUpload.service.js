@@ -23,7 +23,7 @@ export const upload = async ({
 
   const destination = `${path_to_dest_folder}/_${randomUUID()}_.${ext}`
 
-  const tmpFile = `/i9lyfe_tempfile.${ext}`
+  const tmpFile = `/i9lyfe_tempfile_${randomBytes(6).toString("hex")}_.${ext}`
 
   fs.writeFile(os.tmpdir + tmpFile, fileData)
     .then(() => {
