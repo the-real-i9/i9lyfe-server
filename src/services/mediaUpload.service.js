@@ -23,7 +23,7 @@ export const upload = async ({
 
   const destination = `${path_to_dest_folder}/_${randomUUID()}_.${ext}`
 
-  const tmpFile = `/i9lyfe_tempfile_${randomBytes(6).toString()}_.${ext}`
+  const tmpFile = `/i9lyfe_tempfile.${ext}`
 
   fs.writeFile(os.tmpdir + tmpFile, fileData)
     .then(() => {
@@ -31,7 +31,7 @@ export const upload = async ({
         .upload(os.tmpdir + tmpFile, {
           destination,
         })
-        .catch(() => null)
+        .catch((err) => console.error(err))
         .finally(() => {
           fs.rm(os.tmpdir + tmpFile).catch((err) => console.error(err))
         })
