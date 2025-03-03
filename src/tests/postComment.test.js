@@ -178,7 +178,6 @@ describe("test posting and related functions", () => {
       expect(res.status).toBe(201)
 
       const recvNotif = await new Promise((resolve) => {
-        console.log()
         users.user2.cliSocket.once("new notification", resolve)
       })
 

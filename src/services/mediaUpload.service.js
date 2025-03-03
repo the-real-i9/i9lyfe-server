@@ -19,7 +19,7 @@ export const upload = async ({
 }) => {
   const fileData = new Uint8Array(Buffer.from(media_data))
 
-  const ext = extension || (await fileTypeFromBuffer(fileData)).ext
+  const ext = extension || (await fileTypeFromBuffer(fileData))?.ext
 
   const destination = `${path_to_dest_folder}/_${randomUUID()}_.${ext}`
 
