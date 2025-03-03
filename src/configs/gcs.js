@@ -8,5 +8,6 @@ const bucket = new Storage({
 }).bucket(process.env.GCS_BUCKET)
 
 export const getStorageBucket = () => {
+  console.log(process.env.GCS_API_KEY)
   return bucket
 }
