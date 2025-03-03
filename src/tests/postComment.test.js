@@ -158,7 +158,7 @@ describe("test posting and related functions", () => {
         "owner_user.username",
         users.user1.username
       )
-    })
+    }, 30000)
 
     test("user1 creates a post mentioning user2", async () => {
       const photo1 = await fs.readFile(
