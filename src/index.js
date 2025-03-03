@@ -38,17 +38,14 @@ io.engine.use((req, res, next) => {
   next()
 })
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   socket.auth = socket.request.auth
 
-  next()
-})
-
-realtimeService.initRTC(io)
-
-io.on("connection", (socket) => {
-  realtimeService.initSocketRTC(socket)
+  realtimeService.initRTC(io)
+  await realtimeService.initSocketRTC(socket)
   renewJwtToken(socket)
+
+  next()
 })
 
 httpServer.on("close", () => {
