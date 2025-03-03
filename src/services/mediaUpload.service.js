@@ -31,7 +31,7 @@ export const upload = async ({
         .upload(os.tmpdir + tmpFile, {
           destination,
         })
-        .catch((err) => console.error(err))
+        .catch(() => null)
         .finally(() => {
           fs.rm(os.tmpdir + tmpFile).catch((err) => console.error(err))
         })
