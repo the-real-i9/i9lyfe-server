@@ -160,9 +160,31 @@ describe("test posting and related functions", () => {
       )
     })
 
-    test("mentioned users received their notification", () => {
-      // involves a websocket test
-      expect(true).toBeTruthy()
-    })
+    test("user1 creates a post mentioning user2", async () => {
+      const photo1 = await fs.readFile(
+        new URL("./test_files/photo_1.png", import.meta.url)
+      )
+      expect(photo1).toBeTruthy()
+
+      const res = await request(server)
+        .post(`${appPathPriv}/new_post`)
+        .set("Cookie", users.user1.sessionCookie)
+        .send({
+          media_data_list: [[...photo1]],
+          type: "photo",
+          description: `This is a post mentioning @${users.user2.username}`,
+        })
+
+      expect(res.status).toBe(201)
+
+      const recvNotif = await new Promise((resolve) => {
+        console.log()
+        users.user2.cliSocket.once("new notification", resolve)
+      })
+
+      expect(recvNotif).toBeTruthy()
+      expect(recvNotif).toHaveProperty("id")
+      expect(recvNotif).toHaveProperty("type", "mention_in_post")
+    }, 30000)
   })
 })
