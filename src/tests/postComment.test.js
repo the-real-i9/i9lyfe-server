@@ -158,7 +158,6 @@ describe("test posting and related functions", () => {
         "owner_user.username",
         users.user1.username
       )
-      console.log(recvPost)
     })
 
     test("mentioned users received their notification", () => {
