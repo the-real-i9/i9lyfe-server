@@ -1,64 +1,44 @@
-import { EventEmitter } from "node:events"
-import { Kafka, logLevel, Partitioners } from "kafkajs"
+import { kafkaProducer as producer, kafkaClient } from "../configs/broker.js"
 
-export const userAlertEventEmitter = new EventEmitter()
-
-const kafkaClient = new Kafka({
-  clientId: "i9lyfe-server",
-  logLevel: logLevel.NOTHING,
-  brokers: [process.env.KAFKA_BROKER_ADDRESS],
-})
-
-const producer = kafkaClient.producer({
-  createPartitioner: Partitioners.DefaultPartitioner,
-})
-
-await producer.connect()
 
 export const sendNewNotification = (receiver_username, data) => {
-  producer
-    .send({
-      topic: `i9lyfe-user-${receiver_username}-alerts`,
-      messages: [
-        {
-          value: JSON.stringify({
-            event: "new notification",
-            data,
-          }),
-          partition: 1,
-        },
-      ],
-    })
-    .then(() => {
-      userAlertEventEmitter.emit("new user alert")
-    })
+  producer.send({
+    topic: `i9lyfe-user-${receiver_username}-alerts`,
+    messages: [
+      {
+        value: JSON.stringify({
+          event: "new notification",
+          data,
+        }),
+        partition: 0,
+      },
+    ],
+  })
 }
 
 export const sendChatEvent = (event, partner_username, data) => {
-  producer
-    .send({
-      topic: `i9lyfe-user-${partner_username}-alerts`,
-      messages: [
-        {
-          value: JSON.stringify({
-            event,
-            data,
-          }),
-          partition: 1,
-        },
-      ],
-    })
-    .then(() => {
-      userAlertEventEmitter.emit("new user alert")
-    })
+  producer.send({
+    topic: `i9lyfe-user-${partner_username}-alerts`,
+    messages: [
+      {
+        value: JSON.stringify({
+          event,
+          data,
+        }),
+        partition: 0,
+      },
+    ],
+  })
 }
 
 /**
- * @param {import("kafkajs").ITopicConfig[]} topics
+ * @param {import("@confluentinc/kafka-javascript").KafkaJS.ITopicConfig[]} topics
  */
 export const consumeTopics = async (topics) => {
   const admin = kafkaClient.admin()
-  const consumer = kafkaClient.consumer({ groupId: "i9lyfe-topics" })
+  const consumer = kafkaClient.consumer({
+    kafkaJS: { groupId: "i9lyfe-topics" },
+  })
 
   await admin.connect()
   await admin.createTopics({ topics })

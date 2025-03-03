@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import { consumeTopics, userAlertEventEmitter } from "./messageBroker.service.js"
+import { consumeTopics } from "./messageBroker.service.js"
 import { updateConnectionStatus } from "./user.service.js"
 import { getPost } from "./contentRecommendation.service.js"
 import * as chatService from "./chat.service.js"
@@ -25,19 +25,16 @@ export const initSocketRTC = async (socket) => {
     { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
-  userAlertEventEmitter.on("new user alert", async () => {
-    await consumer.run({
-      eachMessage: async ({ message }) => {
-        const { event, data } = JSON.parse(message.value.toString())
+  consumer.run({
+    eachMessage: async ({ message }) => {
+      const { event, data } = JSON.parse(message.value.toString())
 
-        socket.emit(event, data)
-      },
-    })
+      socket.emit(event, data)
+    },
   })
 
-  userAlertEventEmitter.emit("new user alert")
-
   socket.on("disconnect", async () => {
+    if (socket.disconnected) return
     updateConnectionStatus({
       client_username,
       connection_status: "offline",
@@ -160,4 +157,3 @@ export const sendCommentUpdate = (comment_id, data) => {
 export const publishNewPost = (post_id, owner_username) => {
   newPostEventEmitter.emit("new post", post_id, owner_username)
 }
-
