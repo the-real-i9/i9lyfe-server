@@ -1,5 +1,6 @@
 import fs from "node:fs/promises"
 import request from "superwstest"
+import { io } from "socket.io-client"
 import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
 
 import server from "../index.js"
@@ -19,6 +20,18 @@ const signupPath = "/api/auth/signup"
 const appPathPriv = "/api/app/private"
 
 describe("test posting and related functions", () => {
+  /**
+   * @typedef {Object} User
+   * @property {string} email
+   * @property {string} username
+   * @property {string} name
+   * @property {string} password
+   * @property {string} [bio]
+   * @property {string[]} [sessionCookie]
+   * @property {import("socket.io-client").Socket} [cliSocket]
+   */
+
+  /** @type {Object<string, User>} */
   const users = {
     user1: {
       email: "harveyspecter@gmail.com",
@@ -38,7 +51,7 @@ describe("test posting and related functions", () => {
     },
   }
 
-  describe("signup two users", () => {
+  describe("signup two users and connect their RTC sockets", () => {
     Object.entries(users).forEach(([user, info], i) => {
       test(`user${i + 1} requests a new account`, async () => {
         const res = await request(server)
@@ -76,16 +89,33 @@ describe("test posting and related functions", () => {
 
         users[user].sessionCookie = res.headers["set-cookie"]
       })
+
+      test(`connect user${i + 1} socket`, async () => {
+        const sock = io("ws://localhost:5000", {
+          extraHeaders: { Cookie: info.sessionCookie },
+        })
+
+        expect(sock).toBeTruthy()
+
+        users[user].cliSocket = sock
+      })
     })
+  })
+
+  afterAll(() => {
+    users.user1.cliSocket.close()
+    users.user2.cliSocket.close()
   })
 
   /* Test every functionality associated with an endpoint before moving to the next */
 
   describe("test post creation", () => {
     test("user1 creates post", async () => {
-      const photo1 = await fs.readFile(new URL("./test_files/photo_1.png", import.meta.url))
+      const photo1 = await fs.readFile(
+        new URL("./test_files/photo_1.png", import.meta.url)
+      )
       expect(photo1).toBeTruthy()
-  
+
       const res = await request(server)
         .post(`${appPathPriv}/new_post`)
         .set("Cookie", users.user1.sessionCookie)
@@ -94,16 +124,43 @@ describe("test posting and related functions", () => {
           type: "photo",
           description: "I'm beautiful",
         })
-  
+
       expect(res.status).toBe(201)
-      expect(res.body).toHaveProperty("owner_user.username", users.user1.username)
+      expect(res.body).toHaveProperty(
+        "owner_user.username",
+        users.user1.username
+      )
     })
-  
-    test("new post was published on met conditions", () => {
-      // involves a websocket test
-      expect(true).toBeTruthy()
+
+    test("user1 creates a trending post received by user2", async () => {
+      const photo1 = await fs.readFile(
+        new URL("./test_files/photo_1.png", import.meta.url)
+      )
+      expect(photo1).toBeTruthy()
+
+      const res = await request(server)
+        .post(`${appPathPriv}/new_post`)
+        .set("Cookie", users.user1.sessionCookie)
+        .send({
+          media_data_list: [[...photo1]],
+          type: "photo",
+          description: "This is No.1 #trending",
+        })
+
+      expect(res.status).toBe(201)
+
+      const recvPost = await new Promise((resolve) => {
+        users.user2.cliSocket.once("new post", resolve)
+      })
+
+      expect(recvPost).toBeTruthy()
+      expect(recvPost).toHaveProperty(
+        "owner_user.username",
+        users.user1.username
+      )
+      console.log(recvPost)
     })
-  
+
     test("mentioned users received their notification", () => {
       // involves a websocket test
       expect(true).toBeTruthy()

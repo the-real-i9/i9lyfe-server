@@ -10,7 +10,6 @@ import { Server as WSServer } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken, verifyJwt } from "./services/security.services.js"
-import { neo4jDriver } from "./configs/db.js"
 import { expressSessionMiddleware } from "./middlewares/auth.middlewares.js"
 
 const httpServer = createServer(app)
@@ -48,10 +47,6 @@ realtimeService.initRTC(io)
 io.on("connection", (socket) => {
   realtimeService.initSocketRTC(socket)
   renewJwtToken(socket)
-})
-
-httpServer.on("close", () => {
-  neo4jDriver.close()
 })
 
 if (process.env.NODE_ENV !== "test") {

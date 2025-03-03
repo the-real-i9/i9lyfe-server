@@ -25,17 +25,18 @@ export const upload = async ({
 
   const tmpFile = `/i9lyfe_tempfile_${randomBytes(6).toString()}_.${ext}`
 
-  await fs.writeFile(os.tmpdir + tmpFile, fileData)
-  getStorageBucket()
-    .upload(os.tmpdir + tmpFile, {
-      destination,
+  fs.writeFile(os.tmpdir + tmpFile, fileData)
+    .then(() => {
+      getStorageBucket()
+        .upload(os.tmpdir + tmpFile, {
+          destination,
+        })
+        .catch((err) => console.error(err))
+        .finally(() => {
+          fs.rm(os.tmpdir + tmpFile).catch((err) => console.error(err))
+        })
     })
-    .catch((err) => {
-      console.error(err)
-    })
-    .finally(() => {
-      fs.rm(os.tmpdir + tmpFile).catch((err) => console.error(err))
-    })
+    .catch((err) => console.error(err))
 
   return `https://storage.googleapis.com/${process.env.GCS_BUCKET}/${destination}`
 }
