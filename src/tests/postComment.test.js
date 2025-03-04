@@ -133,6 +133,10 @@ describe("test posting and related functions", () => {
     })
 
     test("user1 creates a trending post received by user2", async () => {
+      const recvPostProm = new Promise((resolve) => {
+        users.user2.cliSocket.once("new post", resolve)
+      })
+
       const photo1 = await fs.readFile(
         new URL("./test_files/photo_1.png", import.meta.url)
       )
@@ -149,18 +153,20 @@ describe("test posting and related functions", () => {
 
       expect(res.status).toBe(201)
 
-      const recvPost = await new Promise((resolve) => {
-        users.user2.cliSocket.once("new post", resolve)
-      })
+      const recvPost = await recvPostProm
 
       expect(recvPost).toBeTruthy()
       expect(recvPost).toHaveProperty(
         "owner_user.username",
         users.user1.username
       )
-    }, 30000)
+    })
 
     test("user1 creates a post mentioning user2", async () => {
+      const recvNotifProm = new Promise((resolve) => {
+        users.user2.cliSocket.once("new notification", resolve)
+      })
+
       const photo1 = await fs.readFile(
         new URL("./test_files/photo_1.png", import.meta.url)
       )
@@ -177,13 +183,11 @@ describe("test posting and related functions", () => {
 
       expect(res.status).toBe(201)
 
-      const recvNotif = await new Promise((resolve) => {
-        users.user2.cliSocket.once("new notification", resolve)
-      })
+      const recvNotif = await recvNotifProm
 
       expect(recvNotif).toBeTruthy()
       expect(recvNotif).toHaveProperty("id")
       expect(recvNotif).toHaveProperty("type", "mention_in_post")
-    }, 30000)
+    })
   })
 })
