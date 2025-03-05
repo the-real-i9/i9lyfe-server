@@ -94,7 +94,7 @@ describe("test posting and related functions", () => {
         const sock = io("ws://localhost:5000", {
           extraHeaders: { Cookie: info.sessionCookie },
         })
-
+        
         expect(sock).toBeTruthy()
 
         users[user].cliSocket = sock

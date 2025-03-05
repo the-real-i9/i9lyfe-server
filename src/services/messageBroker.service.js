@@ -1,51 +1,61 @@
-import { kafkaProducer as producer, kafkaClient } from "../configs/broker.js"
+import { Consumer, KafkaClient } from "kafka-node"
+import { kafkaProducer as producer } from "../configs/broker.js"
 
-
-export const sendNewNotification = (receiver_username, data) => {
-  producer.send({
-    topic: `i9lyfe-user-${receiver_username}-alerts`,
-    messages: [
+export const sendNewNotification = async (receiver_username, data) => {
+  producer.send(
+    [
       {
-        value: JSON.stringify({
+        topic: `i9lyfe-user-${receiver_username}-alerts`,
+        messages: JSON.stringify({
           event: "new notification",
           data,
         }),
-        partition: 0,
       },
     ],
-  })
+    (err) => {
+      err && console.error(err)
+    }
+  )
 }
 
 export const sendChatEvent = (event, partner_username, data) => {
-  producer.send({
-    topic: `i9lyfe-user-${partner_username}-alerts`,
-    messages: [
+  producer.send(
+    [
       {
-        value: JSON.stringify({
+        topic: `i9lyfe-user-${partner_username}-alerts`,
+        messages: JSON.stringify({
           event,
           data,
         }),
-        partition: 0,
       },
     ],
-  })
+    (err) => {
+      err && console.error(err)
+    }
+  )
 }
 
 /**
- * @param {import("@confluentinc/kafka-javascript").KafkaJS.ITopicConfig[]} topics
+ *
+ * @param {Array<import("kafka-node").OffsetFetchRequest | string>} topics
  */
 export const consumeTopics = async (topics) => {
-  const admin = kafkaClient.admin()
-  const consumer = kafkaClient.consumer({
-    kafkaJS: { groupId: "i9lyfe-topics" },
+  const kafkaClient = new KafkaClient({
+    kafkaHost: process.env.KAFKA_BROKER_ADRESS,
   })
 
-  await admin.connect()
-  await admin.createTopics({ topics })
-  await admin.disconnect()
+  await new Promise((resolve) => {
+    kafkaClient.createTopics(topics, (err, result) => {
+      if (err) {
+        console.error(err)
+        return resolve()
+      }
 
-  await consumer.connect()
-  await consumer.subscribe({ topics: topics.map((v) => v.topic) })
+      resolve(result)
+    })
+  })
+
+  const consumer = new Consumer(kafkaClient, topics, { autoCommit: true })
 
   return consumer
 }

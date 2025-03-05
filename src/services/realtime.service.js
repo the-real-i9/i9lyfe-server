@@ -25,24 +25,25 @@ export const initSocketRTC = async (socket) => {
     { topic: `i9lyfe-user-${client_username}-alerts` },
   ])
 
-  await consumer.run({
-    eachMessage: async ({ message }) => {
-      const { event, data } = JSON.parse(message.value.toString())
+  consumer.on("message", (message) => {
+    const { event, data } = JSON.parse(message.value.toString())
 
-      socket.emit(event, data)
-    },
+    socket.emit(event, data)
   })
 
   socket.on("disconnect", async () => {
-    if (socket.disconnected) return
     updateConnectionStatus({
       client_username,
       connection_status: "offline",
       last_active: new Date(),
     })
 
-    consumer.disconnect()
+    consumer.close((err) => err && console.error(err))
   })
+
+  consumer.on("error", (err) => err && console.error(err))
+
+  consumer.on("offsetOutOfRange", (err) => err && console.error(err))
 
   // REALTIME POST AND COMMENT UPDATES
   socket.on("start receiving post updates", (post_id) => {

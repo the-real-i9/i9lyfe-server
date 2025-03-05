@@ -11,7 +11,7 @@ import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken, verifyJwt } from "./services/security.services.js"
 import { expressSessionMiddleware } from "./middlewares/auth.middlewares.js"
-import { neo4jDriver } from "./configs/db.js"
+// import { neo4jDriver } from "./configs/db.js"
 import { kafkaProducer } from "./configs/broker.js"
 
 const httpServer = createServer(app)
@@ -49,8 +49,8 @@ io.use(async (socket, next) => {
 })
 
 httpServer.on("close", () => {
-  neo4jDriver.close()
-  kafkaProducer.disconnect()
+  // neo4jDriver.close()
+  kafkaProducer.close()
 })
 
 if (process.env.NODE_ENV !== "test") {
