@@ -19,8 +19,8 @@ export const requestNewAccount = async (req, res) => {
         verificationCodeExpires: resp.verificationCodeExpires,
     }
 
-    req.session.cookie.maxAge = 60 * 60 * 1000
-    req.session.cookie.path = "/api/auth/signup/verify_email"
+    req.sessionOptions.maxAge = 60 * 60 * 1000
+    req.sessionOptions.path = "/api/auth/signup/verify_email"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -46,8 +46,8 @@ export const verifyEmail = async (req, res) => {
         verified: true,
     }
 
-    req.session.cookie.maxAge = 60 * 60 * 1000
-    req.session.cookie.path = "/api/auth/signup/register_user"
+    req.sessionOptions.maxAge = 60 * 60 * 1000
+    req.sessionOptions.path = "/api/auth/signup/register_user"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -70,11 +70,12 @@ export const registerUser = async (req, res) => {
     if (resp.error) return res.status(400).send(resp.error)
 
     req.session.signup = undefined
-
-    req.session.cookie.path = "/"
-    req.session.cookie.maxAge = 10 * 24 * 60 * 60 * 1000
-
+    
     req.session.user = { authJwt: resp.jwt }
+
+    req.sessionOptions.path = "/"
+    req.sessionOptions.maxAge = 10 * 24 * 60 * 60 * 1000
+
     
 
     res.status(201).send(resp.data)

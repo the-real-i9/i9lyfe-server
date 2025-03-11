@@ -13,9 +13,13 @@ export const getSessionUser = async (req, res) => {
   }
 }
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const signout = async (req, res) => {
   try {
-    req.session.destroy()
+    req.session = null
 
     return res.status(200).send("You've signed out!")
   } catch (error) {

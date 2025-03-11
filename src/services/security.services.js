@@ -8,8 +8,8 @@ import { randomInt } from "node:crypto"
 export const signJwt = (payload) =>
   jwt.sign(payload, process.env.AUTH_JWT_SECRET, { algorithm: "HS256" })
 
-export const verifyJwt = (token, secret) =>
-  jwt.verify(token, secret, { algorithms: ["HS256"] })
+export const verifyJwt = (token) =>
+  jwt.verify(token, process.env.AUTH_JWT_SECRET, { algorithms: ["HS256"] })
 
 export const renewJwtToken = (socket) => {
   const { client_username } = socket.auth

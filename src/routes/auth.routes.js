@@ -6,11 +6,11 @@ import * as signupControllers from "../controllers/auth/signup.controllers.js"
 import * as signupValidators from "../validators/auth/signup.validators.js"
 import * as signinValidators from "../validators/auth/signin.validators.js"
 import * as passwordResetValidators from "../validators/auth/passwordReset.validators.js"
-import { expressSessionMiddleware } from "../middlewares/auth.middlewares.js"
+import { expressSession } from "../middlewares/auth.middlewares.js"
 
 const router = express.Router()
 
-router.use(expressSessionMiddleware("session_store", process.env.SESSION_COOKIE_SECRET))
+router.use(expressSession())
 
 router.post(
   "/signup/request_new_account",

@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 import PostCommentRoutes from "./private/postComment.routes.js"
 import UserPrivateRoutes from "./private/user.private.routes.js"
 import ChatRoutes from "./private/chat.routes.js"
-import { expressSessionMiddleware } from "../middlewares/auth.middlewares.js"
+import { expressSession } from "../middlewares/auth.middlewares.js"
 import { verifyJwt } from "../services/security.services.js"
 
 dotenv.config()
@@ -12,10 +12,7 @@ dotenv.config()
 const router = express.Router()
 
 router.use(
-  expressSessionMiddleware(
-    "session_store",
-    process.env.SESSION_COOKIE_SECRET,
-  ),
+  expressSession(),
   (req, res, next) => {
     if (!req.session?.user) {
       return res.status(401).send("authentication required")
@@ -24,7 +21,7 @@ router.use(
     const { authJwt } = req.session.user
 
     try {
-      req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
+      req.auth = verifyJwt(authJwt)
     } catch (error) {
       return res.status(401).send(error)
     }

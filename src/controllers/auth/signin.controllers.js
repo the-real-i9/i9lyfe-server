@@ -8,10 +8,10 @@ export const signin = async (req, res) => {
 
     if (resp.error) return res.status(404).send(resp.error)
 
-    req.session.cookie.path = "/"
-    req.session.cookie.maxAge = 10 * 24 * 60 * 60 * 1000
-
     req.session.user = { authJwt: resp.jwt }
+    
+    req.sessionOptions.path = "/"
+    req.sessionOptions.maxAge = 10 * 24 * 60 * 60 * 1000
 
     res.status(200).send(resp.data)
   } catch (error) {

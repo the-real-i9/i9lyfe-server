@@ -1,5 +1,9 @@
 import * as passwordResetService from "../../services/auth/passwordReset.service.js"
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body
   try {
@@ -14,8 +18,8 @@ export const requestPasswordReset = async (req, res) => {
       passwordResetTokenExpires: resp.passwordResetTokenExpires,
     }
 
-    req.session.cookie.maxAge = 60 * 60 * 1000
-    req.session.cookie.path = "/api/auth/forgot_password/confirm_email"
+    req.sessionOptions.maxAge = 60 * 60 * 1000
+    req.sessionOptions.path = "/api/auth/forgot_password/confirm_email"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -41,11 +45,10 @@ export const confirmEmail = async (req, res) => {
 
     req.session.passwordReset = {
       email: passwordResetSessionData.email,
-      emailConfirmed: true,
     }
 
-    req.session.cookie.maxAge = 60 * 60 * 1000
-    req.session.cookie.path = "/api/auth/forgot_password/reset_password"
+    req.sessionOptions.maxAge = 60 * 60 * 1000
+    req.sessionOptions.path = "/api/auth/forgot_password/reset_password"
 
     res.status(200).send(resp.data)
   } catch (error) {
@@ -64,7 +67,7 @@ export const resetPassword = async (req, res) => {
 
     const resp = await passwordResetService.resetPassword(email, newPassword)
 
-    req.session.destroy()
+    req.session = null
 
     res.status(200).send(resp.data)
   } catch (error) {

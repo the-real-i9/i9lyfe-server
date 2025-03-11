@@ -10,7 +10,7 @@ import { Server as WSServer } from "socket.io"
 import * as realtimeService from "./services/realtime.service.js"
 
 import { renewJwtToken, verifyJwt } from "./services/security.services.js"
-import { expressSessionMiddleware } from "./middlewares/auth.middlewares.js"
+import { expressSession } from "./middlewares/auth.middlewares.js"
 // import { neo4jDriver } from "./configs/db.js"
 import { kafkaProducer } from "./configs/broker.js"
 
@@ -18,9 +18,7 @@ const httpServer = createServer(app)
 
 const io = new WSServer(httpServer)
 
-io.engine.use(
-  expressSessionMiddleware("session_store", process.env.SESSION_COOKIE_SECRET)
-)
+io.engine.use(expressSession())
 
 io.engine.use((req, res, next) => {
   if (!req.session?.user) {
@@ -30,7 +28,7 @@ io.engine.use((req, res, next) => {
   const { authJwt } = req.session.user
 
   try {
-    req.auth = verifyJwt(authJwt, process.env.AUTH_JWT_SECRET)
+    req.auth = verifyJwt(authJwt)
   } catch (error) {
     return next(error)
   }
