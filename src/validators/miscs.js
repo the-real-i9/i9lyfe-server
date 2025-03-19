@@ -5,9 +5,7 @@ export const errHandler = (req, res, next) => {
     const result = validationResult(req)
     if (!result.isEmpty()) {
       return res.status(400).send({
-        validation_error: result
-          .formatWith((err) => `${err.msg}`)
-          .mapped(),
+        validation_error: result.formatWith((err) => `${err.msg}`).mapped(),
       })
     }
 
@@ -60,14 +58,8 @@ export const limitOffsetSchema = {
 }
 
 export const validateLimitOffset = [
-  checkExact(
-    checkSchema(
-      {
-        ...limitOffsetSchema,
-      },
-      ["query"]
-    ),
-    { message: "request query parameters contains invalid fields" }
-  ),
+  checkExact(checkSchema(limitOffsetSchema, ["query"]), {
+    message: "request query parameters contains invalid fields",
+  }),
   errHandler,
 ]
