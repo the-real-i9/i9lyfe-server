@@ -6,50 +6,44 @@ import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
 import server from "../index.js"
 import { neo4jDriver } from "../configs/db.js"
 
+const signupPath = "/api/auth/signup"
+const appPathPriv = "/api/app/private"
+
+/**
+ * @typedef {Object} User
+ * @property {string} email
+ * @property {string} username
+ * @property {string} name
+ * @property {string} password
+ * @property {string} [bio]
+ * @property {string[]} [sessionCookie]
+ * @property {import("socket.io-client").Socket} [cliSocket]
+ */
+
+/** @type {Object<string, User>} */
+const users = {
+  user1: {
+    email: "harveyspecter@gmail.com",
+    username: "harvey",
+    name: "Harvey Specter",
+    password: "harvey_psl",
+    birthday: "1993-11-07",
+    bio: "Whatever!",
+  },
+  user2: {
+    email: "mikeross@gmail.com",
+    username: "mikeross",
+    name: "Mike Ross",
+    password: "mikeross_psl",
+    birthday: "1999-11-07",
+    bio: "Whatever!",
+  },
+}
+
 beforeAll(async () => {
   server.listen(5000, "localhost")
 
   await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")
-})
-
-afterAll((done) => {
-  server.close(done)
-})
-
-const signupPath = "/api/auth/signup"
-const appPathPriv = "/api/app/private"
-
-describe("test posting and related functions", () => {
-  /**
-   * @typedef {Object} User
-   * @property {string} email
-   * @property {string} username
-   * @property {string} name
-   * @property {string} password
-   * @property {string} [bio]
-   * @property {string[]} [sessionCookie]
-   * @property {import("socket.io-client").Socket} [cliSocket]
-   */
-
-  /** @type {Object<string, User>} */
-  const users = {
-    user1: {
-      email: "harveyspecter@gmail.com",
-      username: "harvey",
-      name: "Harvey Specter",
-      password: "harvey_psl",
-      birthday: "1993-11-07",
-      bio: "Whatever!",
-    },
-    user2: {
-      email: "mikeross@gmail.com",
-      username: "mikeross",
-      name: "Mike Ross",
-      password: "mikeross_psl",
-      birthday: "1999-11-07",
-      bio: "Whatever!",
-    },
-  }
 
   describe("signup two users and connect their RTC sockets", () => {
     Object.entries(users).forEach(([user, info], i) => {
@@ -94,19 +88,23 @@ describe("test posting and related functions", () => {
         const sock = io("ws://localhost:5000", {
           extraHeaders: { Cookie: info.sessionCookie },
         })
-        
+
         expect(sock).toBeTruthy()
 
         users[user].cliSocket = sock
       })
     })
   })
+})
 
-  afterAll(() => {
-    users.user1.cliSocket.close()
-    users.user2.cliSocket.close()
-  })
+afterAll((done) => {
+  users.user1.cliSocket.close()
+  users.user2.cliSocket.close()
 
+  server.close(done)
+})
+
+describe("test posting and related functions", () => {
   /* Test every functionality associated with an endpoint before moving to the next */
 
   describe("test post creation", () => {
