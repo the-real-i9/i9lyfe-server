@@ -6,7 +6,7 @@ A Social Media API Server
 
 ## Intro
 
-i9lyfe-server is an API server for Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
+i9lyfe is an API server for Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
 ### Target Audience
 
@@ -18,7 +18,9 @@ The API documentation provides a detailed usage guide, following the OpenAPI spe
 
 #### HRMs, Startup Founders, Project Teams, Hiring Managers etc
 
-If you're in need of a passionate, highly-skilled, expert-level backend engineer/developer. The codebase is easily accessible, as it follows a `(Routes)-->(Controllers)-->(Services)-->((Services) | (Model))` pattern.
+If you're in need of a passionate, highly-skilled, expert-level backend engineer/developer, you've found the right one for the job.
+
+The codebase is easily accessible, as it follows a (Routes)-->(Controllers)-->(Services)-->((Services) | (Model)) pattern. Nonetheless, I provide an easy-to-follow graphical map for navigating the codebase in [this section](#codebase-map).
 
 ### Open to suggestions
 
@@ -38,6 +40,13 @@ If you need a feature that this API server currently doesn't support, feel free 
 <img style="margin-right: 10px" alt="googlecloud" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
 <img style="margin-right: 10px; alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
 </div>
+<br>
+
+### A note on the "❌ (old)" label on Postgres
+
+Initially, I wrote i9lyfe's database entirely with Postgres, a relational database.
+
+Later on, when I was about implementing more advanced features, I found out that a Graph database better suits these features. This led me exploring deeper into the world of Graph databases, and that's when I realized that the whole database is even better written in a Graph database, and chose Neo4j as a replacement.
 
 ## Table of Contents
 
@@ -45,10 +54,11 @@ If you need a feature that this API server currently doesn't support, feel free 
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [API Documentation](./API%20doc.md)
-- [Features Showcase (UI*)](#features-showcase-ui)
-- [Building & Running the Application (Locally)](#building--running-the-application-locally)
-- [Deploying the Application](#deploying-the-application)
+- [API Documentation](#api-documentation)
+- [Codebase Map](#codebase-map)
+- [Feature Building Tutorials (Blog Posts)](#feature-building-tutorials-blog-posts)
+- [Building & Running i9lyfe Locally](#building--running-i9lyfe-locally)
+- [Deploying & Running i9lyfe Remotely](#deploying--running-i9lyfe-remotely)
 
 ## Features
 
@@ -118,8 +128,18 @@ Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing 
 
 ## API Documentation
 
-## Features Showcase (UI*)
+For all **HTTP request/response communication**: [Here](./apidoc/openapi.json)'s a well-written OpenAPI JSON document. Drop or Import it into a [Swagger Editor](https://editor.swagger.io/?_gl=1*1numedn*_gcl_au*MTUxNDUxNjEuMTc0MjY1MTg5Nw..) to access it.
 
-## Building & Running the Application (Locally)
+For all **WebSocket real-time communication**: [Here](./apidoc/websocketsapi.md)'s a written markdown document.
 
-## Deploying the Application
+## Codebase Map
+
+Here's a graphical map of the code base for easy navigation.
+
+## Feature Building Tutorials (Blog Posts)
+
+The following are links to blog posts discussing and walking you through the build process of major features of the application.
+
+## Building & Running i9lyfe Locally
+
+## Deploying & Running i9lyfe Remotely
