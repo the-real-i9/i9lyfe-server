@@ -15,7 +15,7 @@ jobs:
           NEO4J_AUTH: "neo4j/pa@sw$!d"
 
       broker:
-        image: 'apache/kafka:latest'
+        image: 'confluentinc/confluent-local:latest'
         ports:
           - 9092:9092
           
