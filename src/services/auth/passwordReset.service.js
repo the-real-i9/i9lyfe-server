@@ -32,7 +32,7 @@ export const confirmEmail = ({
   passwordResetToken,
   passwordResetTokenExpires,
 }) => {
-  if (passwordResetToken !== Number(inputToken)) {
+  if (passwordResetToken !== inputToken) {
     return {
       error: {
         msg: "Incorrect password reset token! Check or Re-submit your email.",

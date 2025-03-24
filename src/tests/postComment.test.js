@@ -61,7 +61,7 @@ beforeAll(async () => {
       }
 
       {
-        const verfCode = Number(process.env.DUMMY_VERF_TOKEN)
+        const verfCode = process.env.DUMMY_VERF_TOKEN
 
         const res = await request(server)
           .post(`${signupPath}/verify_email`)

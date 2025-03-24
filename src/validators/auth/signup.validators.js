@@ -53,7 +53,7 @@ export const registerUser = [
         password: {
           isLength: {
             options: { min: 8 },
-            errorMessage: "password too short",
+            errorMessage: "password too short. minimun of 8 characters",
           },
         },
         name: {

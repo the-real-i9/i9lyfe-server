@@ -36,7 +36,7 @@ describe("test user authentication", () => {
   })
 
   test("User1 sends an incorrect email verf code", async () => {
-    const verfCode = Number(process.env.DUMMY_VERF_TOKEN) + 1
+    const verfCode = (Number(process.env.DUMMY_VERF_TOKEN) + 1).toString()
 
     const res = await request(server)
       .post(`${signupPath}/verify_email`)
@@ -48,7 +48,7 @@ describe("test user authentication", () => {
   })
 
   test("User1 sends the correct email verf code", async () => {
-    const verfCode = Number(process.env.DUMMY_VERF_TOKEN)
+    const verfCode = process.env.DUMMY_VERF_TOKEN
 
     const res = await request(server)
       .post(`${signupPath}/verify_email`)
@@ -124,7 +124,7 @@ describe("test user authentication", () => {
   })
 
   test("User1 sends an incorrect email confirmation token", async () => {
-    const token = Number(process.env.DUMMY_VERF_TOKEN) + 1
+    const token = (Number(process.env.DUMMY_VERF_TOKEN) + 1).toString()
 
     const res = await request(server)
       .post(`${forgotPasswordPath}/confirm_email`)
@@ -136,7 +136,7 @@ describe("test user authentication", () => {
   })
 
   test("User1 sends the correct email confirmation token", async () => {
-    const token = Number(process.env.DUMMY_VERF_TOKEN)
+    const token = process.env.DUMMY_VERF_TOKEN
 
     const res = await request(server)
       .post(`${forgotPasswordPath}/confirm_email`)

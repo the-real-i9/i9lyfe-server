@@ -32,7 +32,7 @@ export const verifyEmail = ({
   verificationCode,
   verificationCodeExpires,
 }) => {
-  if (Number(verificationCode) !== Number(inputCode)) {
+  if (verificationCode !== inputCode) {
     return {
       error: {
         msg: "Incorrect verification code! Check or Re-submit your email.",
@@ -61,7 +61,7 @@ export const verifyEmail = ({
 
 export const registerUser = async (info) => {
   if (await User.exists(info.username))
-    return { error: { msg: "Username already taken. Try another." } }
+    return { error: { msg: "Username not available" } }
 
   const passwordHash = await securityServices.hashPassword(info.password)
 

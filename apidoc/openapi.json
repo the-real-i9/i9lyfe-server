@@ -44,9 +44,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["email"],
+                "required": [
+                  "email"
+                ],
                 "properties": {
-                  "email":{
+                  "email": {
                     "description": "Person email address",
                     "type": "string",
                     "format": "email"
@@ -64,11 +66,17 @@
           "200": {
             "description": "Email verification code sent",
             "headers": {
-              "Set-Cookie":{
+              "Set-Cookie": {
                 "description": "A cookie that keeps the signup process in session. MUST be sent with the request on its specified path, provided you're not using a browser client.",
-                "schema":{
-                  "type": "string"
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 },
+                "example": [
+                  "key1=value1, path=/api/auth/signup/verify_email, ..."
+                ],
                 "required": true
               }
             },
@@ -76,10 +84,13 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["msg"],
+                  "required": [
+                    "msg"
+                  ],
                   "properties": {
-                    "msg":{
-                      "type": "string"
+                    "msg": {
+                      "type": "string",
+                      "enum": ["Enter the 6-digit code sent to ${yourEmail} to verify your email."]
                     }
                   },
                   "example": {
@@ -95,10 +106,13 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["msg"],
+                  "required": [
+                    "msg"
+                  ],
                   "properties": {
-                    "msg":{
-                      "type": "string"
+                    "msg": {
+                      "type": "string",
+                      "enum": ["A user with this email already exists."]
                     }
                   },
                   "example": {
@@ -117,7 +131,7 @@
           "auth"
         ],
         "summary": "Signup: Step 2",
-        "description": "**Signup**: **Step 2** of 3: Verify your Email -- The user submits the verificatioin code sent to their email from the last step",
+        "description": "**Signup**: **Step 2** of 3: Verify your Email -- The user submits the verification code sent to their email from the last step",
         "operationId": "verifyYourEmail",
         "requestBody": {
           "description": "Enter the 6-digit code sent to your email",
@@ -125,13 +139,15 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["code"],
+                "required": [
+                  "code"
+                ],
                 "properties": {
-                  "code":{
-                    "description": "Verification code",
+                  "code": {
                     "type": "number",
-                    "minLength": 6,
-                    "maxLength": 6
+                    "description": "Verification code",
+                    "minimum": 100000,
+                    "maximum": 999999
                   }
                 },
                 "example": {
@@ -144,13 +160,20 @@
         },
         "responses": {
           "200": {
-            "description": "Email verification code sent",
+            "description": "Email verification success",
             "headers": {
-              "Set-Cookie":{
+              "Set-Cookie": {
                 "description": "A cookie that keeps the signup process in session. MUST be sent with the request on its specified path, provided you're not using a browser client.",
-                "schema":{
-                  "type": "string"
+                "explode": true,
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 },
+                "example": [
+                  "key1=value1, path=/api/auth/signup/register_user, ..."
+                ],
                 "required": true
               }
             },
@@ -158,33 +181,195 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["msg"],
+                  "required": [
+                    "msg"
+                  ],
                   "properties": {
-                    "msg":{
-                      "type": "string"
+                    "msg": {
+                      "type": "string",
+                      "enum": ["Your email ${email} has been verified!"]
                     }
                   },
                   "example": {
-                    "msg": "Enter the 6-digit code sent to ${yourEmail} to verify your email."
+                    "msg": "Your email ${email} has been verified!"
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "User already exists",
+            "description": "Email verification error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["msg"],
+                  "required": [
+                    "msg"
+                  ],
                   "properties": {
-                    "msg":{
-                      "type": "string"
+                    "msg": {
+                      "type": "string",
+                      "enum": [
+                        "Incorrect verification code! Check or Re-submit your email.",
+                        "Verification code expired! Re-submit your email."
+                      ]
                     }
                   },
                   "example": {
-                    "msg": "A user with this email already exists."
+                    "msg": "Incorrect verification code! Check or Re-submit your email."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/signup/register_user": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signup: Step 3",
+        "description": "**Signup**: **Step 3** of 3: Register User -- The user completes their profile after their email has been verified",
+        "operationId": "registerUser",
+        "requestBody": {
+          "description": "The remaining user information to complete their profile",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password",
+                  "name",
+                  "birthday"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "User's unique username",
+                    "minLength": 3,
+                    "pattern": "^[a-zA-Z0-9][\\w-]+[a-zA-Z0-9]$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "User's strong password",
+                    "minLength": 8
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "User's display name"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "pattern": "\\d{4}-\\d{2}-\\d{2}|\\d{4}\/\\d{2}\/\\d{2}"
+                  },
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "default": "Hi there! I'm using i9lyfe"
+                  }
+                },
+                "example": {
+                  "username": "johndoe",
+                  "password": "^johndoe&",
+                  "name": "John Doe",
+                  "birthday": "2000-02-12"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Registration successful",
+            "headers": {
+              "Set-Cookie": {
+                "description": "A cookie that keeps the user in session until it expires or the user explicitly logs out",
+                "explode": true,
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": [
+                  "key1=value1, path=/, ..."
+                ],
+                "required": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "msg",
+                    "user"
+                  ],
+                  "properties": {
+                    "msg": {
+                      "type": "string",
+                      "description": "Registration success message",
+                      "enum": ["Signup success! You're automatically logged in."]
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "profile_pic_url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "connection_status": {
+                          "type": "string",
+                          "pattern": "online|offline"
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "msg": "Signup success! You're automatically logged in.",
+                    "user": {
+                      "email": "johndoe@gmail.com",
+                      "username": "johndoe",
+                      "name": "John Doe",
+                      "profile_pic_url": "",
+                      "connection_status": "online"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Choosen username not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "msg"
+                  ],
+                  "properties": {
+                    "msg": {
+                      "type": "string",
+                      "enum": ["Username not available."]
+                    }
+                  },
+                  "example": {
+                    "msg": "Username not available."
                   }
                 }
               }
