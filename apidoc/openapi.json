@@ -47,12 +47,95 @@
                 "required": ["email"],
                 "properties": {
                   "email":{
+                    "description": "Person email address",
                     "type": "string",
                     "format": "email"
                   }
                 },
                 "example": {
                   "email": "myemailaddress@gmail.com"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email verification code sent",
+            "headers": {
+              "Set-Cookie":{
+                "description": "A cookie that keeps the signup process in session. MUST be sent with the request on its specified path, provided you're not using a browser client.",
+                "schema":{
+                  "type": "string"
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["msg"],
+                  "properties": {
+                    "msg":{
+                      "type": "string"
+                    }
+                  },
+                  "example": {
+                    "msg": "Enter the 6-digit code sent to ${yourEmail} to verify your email."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "User already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["msg"],
+                  "properties": {
+                    "msg":{
+                      "type": "string"
+                    }
+                  },
+                  "example": {
+                    "msg": "A user with this email already exists."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/signup/verify_email": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signup: Step 2",
+        "description": "**Signup**: **Step 2** of 3: Verify your Email -- The user submits the verificatioin code sent to their email from the last step",
+        "operationId": "verifyYourEmail",
+        "requestBody": {
+          "description": "Enter the 6-digit code sent to your email",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code":{
+                    "description": "Verification code",
+                    "type": "number",
+                    "minLength": 6,
+                    "maxLength": 6
+                  }
+                },
+                "example": {
+                  "code": 123456
                 }
               }
             }

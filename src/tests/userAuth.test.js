@@ -5,9 +5,12 @@ import server from "../index.js"
 import { neo4jDriver } from "../configs/db.js"
 
 beforeAll(async () => {
-  server.listen(5000, "localhost")
-
   await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")
+
+  await new Promise((res) => {
+    server.listen(5000, "localhost", res)
+  })
+
 })
 
 afterAll((done) => {
