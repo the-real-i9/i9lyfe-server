@@ -8,7 +8,7 @@ import * as realtimeService from "./services/realtime.service.js"
 import { renewJwtToken, verifyJwt } from "./services/security.services.js"
 import { expressSession } from "./middlewares/auth.middlewares.js"
 // import { neo4jDriver } from "./configs/db.js"
-import { kafkaProducer } from "./configs/broker.js"
+import { kafkaProducer } from "./initializers/broker.js"
 
 const httpServer = createServer(app)
 

@@ -2,23 +2,27 @@
 
 [![Test i9lyfe](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml/badge.svg)](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml)
 
-Build your Social Network Application
+A Social Media API Server
 
 ## Intro
 
-i9lyfe-server is an API server for a Social Network Application, built with Node.js. It supports major social network application features that can be used to implement a mordern social network application.
+i9lyfe-server is an API server for Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
-### Who is this project for?
+### Target Audience
 
-If you're a frontend developer looking to build a Social Network Application, not just to have it static, but to also make it function.
+#### Frontend Developers
 
-The goal of this API server is to support as many Social Network features as possible.
+If you're a frontend developer looking to build a Social Media Application, not just to have it static UI, but to also make it function.
 
-The API documentation provides a detailed usage guide. It doesn't follow the Open API specification, rather it follows Google's API documentation style sturcured in a simple markdown table, which I consider easier to work with.
+The API documentation provides a detailed usage guide, following the OpenAPI specification.
+
+#### HRMs, Startup Founders, Project Teams, Hiring Managers etc
+
+If you're in need of a passionate, highly-skilled, expert-level backend engineer/developer. The codebase is easily accessible, as it follows a `(Routes)-->(Controllers)-->(Services)-->((Services) | (Model))` pattern.
 
 ### Open to suggestions
 
-If you need a feature this API server does not currently support, feel free to suggest them, and it will be added as soon as possible.
+If you need a feature that this API server currently doesn't support, feel free to suggest them in the issues and it will be added as soon as possible.
 
 ## Technologies
 

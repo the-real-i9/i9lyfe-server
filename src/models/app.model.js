@@ -1,4 +1,4 @@
-import { neo4jDriver } from "../configs/db.js"
+import { neo4jDriver } from "../initializers/db.js"
 
 export class App {
   static async searchAndFilterPosts({

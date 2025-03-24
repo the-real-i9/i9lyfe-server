@@ -1,5 +1,5 @@
 import { Consumer, KafkaClient } from "kafka-node"
-import { kafkaProducer as producer } from "../configs/broker.js"
+import { kafkaProducer as producer } from "../initializers/broker.js"
 
 export const sendNewNotification = async (receiver_username, data) => {
   producer.send(

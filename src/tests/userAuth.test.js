@@ -2,7 +2,7 @@ import request from "superwstest"
 import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
 
 import server from "../index.js"
-import { neo4jDriver } from "../configs/db.js"
+import { neo4jDriver } from "../initializers/db.js"
 
 beforeAll(async () => {
   await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")

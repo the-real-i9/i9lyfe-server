@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import { Buffer } from "node:buffer"
 import { fileTypeFromBuffer } from "file-type"
 import { randomBytes, randomUUID } from "node:crypto"
-import { getStorageBucket } from "../configs/gcs.js"
+import { getStorageBucket } from "../initializers/gcs.js"
 
 /**
  * @param {object} param0
