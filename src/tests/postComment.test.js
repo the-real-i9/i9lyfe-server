@@ -1,7 +1,14 @@
 import fs from "node:fs/promises"
 import request from "superwstest"
 import { io } from "socket.io-client"
-import { afterAll, beforeAll, describe, expect, test, xtest } from "@jest/globals"
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  test,
+  xtest,
+} from "@jest/globals"
 
 import server from "../index.js"
 import { neo4jDriver } from "../initializers/db.js"
@@ -135,8 +142,6 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(res.body).toHaveProperty("owner_user.username", users.user1.username)
   })
 
-  
-
   let user1Post2Id = ""
 
   test("user1 creates a post mentioning user2 | user2 is notified", async () => {
@@ -172,8 +177,8 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
   test("user2 views post2 in which she was mentioned by user1", async () => {
     const res = await request(server)
-    .get(`${appPathPriv}/posts/${user1Post2Id}`)
-    .set("Cookie", users.user2.sessionCookie)
+      .get(`${appPathPriv}/posts/${user1Post2Id}`)
+      .set("Cookie", users.user2.sessionCookie)
 
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("id", user1Post2Id)
@@ -211,8 +216,14 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
     expect(recvPost2).toBeTruthy()
     expect(recvPost3).toBeTruthy()
-    expect(recvPost2).toHaveProperty("owner_user.username", users.user1.username)
-    expect(recvPost3).toHaveProperty("owner_user.username", users.user1.username)
+    expect(recvPost2).toHaveProperty(
+      "owner_user.username",
+      users.user1.username
+    )
+    expect(recvPost3).toHaveProperty(
+      "owner_user.username",
+      users.user1.username
+    )
 
     user1Post3Id = res.body.id
   })
@@ -223,11 +234,11 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     })
 
     const res = await request(server)
-    .post(`${appPathPriv}/posts/${user1Post3Id}/react`)
-    .set("Cookie", users.user2.sessionCookie)
-    .send({
-      reaction: "🤔"
-    })
+      .post(`${appPathPriv}/posts/${user1Post3Id}/react`)
+      .set("Cookie", users.user2.sessionCookie)
+      .send({
+        reaction: "🤔",
+      })
 
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty("msg")
@@ -246,11 +257,11 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     })
 
     const res = await request(server)
-    .post(`${appPathPriv}/posts/${user1Post3Id}/react`)
-    .set("Cookie", users.user3.sessionCookie)
-    .send({
-      reaction: "🤔"
-    })
+      .post(`${appPathPriv}/posts/${user1Post3Id}/react`)
+      .set("Cookie", users.user3.sessionCookie)
+      .send({
+        reaction: "😀",
+      })
 
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty("msg")
@@ -265,8 +276,8 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
   test("user1 checks reactors to her post3", async () => {
     const res = await request(server)
-    .get(`${appPathPriv}/posts/${user1Post3Id}/reactors`)
-    .set("Cookie", users.user1.sessionCookie)
+      .get(`${appPathPriv}/posts/${user1Post3Id}/reactors`)
+      .set("Cookie", users.user1.sessionCookie)
 
     expect(res.status).toBe(200)
     expect(res.body).toBeInstanceOf(Array)
@@ -275,7 +286,30 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     for (const ri of res.body) {
       expect(ri).toHaveProperty("username")
 
-      expect([users.user2.username, users.user3.username].includes(ri.username)).toBe(true)
+      expect(
+        [users.user2.username, users.user3.username].includes(ri.username)
+      ).toBe(true)
+
+      if (ri.username === users.user2.username) {
+        expect(ri.reaction).toBe("🤔")
+      }
+
+      if (ri.username === users.user3.username) {
+        expect(ri.reaction).toBe("😀")
+      }
     }
+  })
+
+  test("user1 filters reactors by a certain reaction", async () => {
+    
+    const rxn = encodeURIComponent("🤔")
+    
+    const res = await request(server)
+      .get(`${appPathPriv}/posts/${user1Post3Id}/reactors/${rxn}`)
+      .set("Cookie", users.user1.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+    expect(res.body[0]).toHaveProperty("username", users.user2.username)
   })
 })

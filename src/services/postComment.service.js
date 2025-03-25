@@ -312,7 +312,7 @@ export const getReactorsWithReactionToPost = async ({
 }) => {
   const reactorsWithReaction = await Post.getReactorsWithReaction({
     post_id,
-    reaction: reaction.codePointAt(),
+    reaction,
     client_username,
     limit,
     offset,
