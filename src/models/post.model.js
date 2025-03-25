@@ -50,8 +50,7 @@ export class Post {
 
         await tx.run(
           `
-          UNWIND $mentions AS mentionUsername
-          MATCH (mentionUser:User{ username: mentionUsername }), (post:Post{ id: $postId })
+          MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (post:Post{ id: $postId })
           CREATE (post)-[:MENTIONS_USER]->(mentionUser)
           `,
           { mentions, postId: new_post_data.id }
@@ -64,9 +63,10 @@ export class Post {
         if (mentionsExcClient.length) {
           const { records } = await tx.run(
             `
-            UNWIND $mentionsExcClient AS mentionUsername
-            MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
+            MATCH (mentionUser:User WHERE mentionUser.username IN $mentionsExcClient), (clientUser:User{ username: $client_username })
+
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", is_read: false, created_at: datetime(), details: ["in_post_id", $postId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+
             WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
             RETURN collect(mentionNotif { .*, created_at, receiver_username }) AS mention_notifs
             `,
@@ -79,8 +79,9 @@ export class Post {
 
       await tx.run(
         `
-        UNWIND $hashtags AS hashtagName
         MATCH (post:Post{ id: $postId })
+
+        UNWIND $hashtags AS hashtagName
         MERGE (ht:Hashtag{name: hashtagName})
         CREATE (post)-[:INCLUDES_HASHTAG]->(ht)
         `,
@@ -105,16 +106,18 @@ export class Post {
 
       const { records: repostRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
-        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, reposted_post_id: $post_id })-[:REPOST_OF]->(post)
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $original_post_id })<-[CREATES_POST]-(postOwner)
+
+        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, reposted_post_id: $original_post_id })-[:REPOST_OF]->(post)
         ON CREATE
           SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 },
             post.reposts_count = post.reposts_count + 1
 
-        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { username, .profile_pic_url } owner_user
+        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { username, .profile_pic_url } owner_user, postOwner.username AS post_owner_username
 
         RETURN post.reposts_count AS latest_reposts_count,
-          repost { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data
+          repost { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data,
+          post_owner_username
         `,
         {
           original_post_id,
@@ -122,23 +125,24 @@ export class Post {
         }
       )
 
-      const rco = repostRecords[0]?.toObject()
+      latest_reposts_count = repostRecords[0]?.get("latest_reposts_count")
+      repost_data = repostRecords[0]?.get("repost_data")
+      const post_owner_username = repostRecords[0]?.get("post_owner_username")
 
-      latest_reposts_count = rco.latest_reposts_count
-      repost_data = rco.repost_data
+      if (post_owner_username !== client_username) {
+        const { records: repostNotifRecords } = await tx.run(
+          `
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $original_post_id })<-[:CREATES_POST]-(postOwner)
 
-      const { records: repostNotifRecords } = await tx.run(
-        `
-        MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ username: $client_username })
-        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "original_post_id", $original_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
         WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.username AS receiver_username
         RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
         `,
-        { original_post_id, client_username, repostId: repost_data.id }
-      )
+          { original_post_id, client_username, repostId: repost_data.id }
+        )
 
-      repost_notif = repostNotifRecords[0]?.get("repost_notif")
+        repost_notif = repostNotifRecords[0]?.get("repost_notif")
+      }
 
       return { repost_data, latest_reposts_count, repost_notif }
     })
@@ -177,6 +181,7 @@ export class Post {
       const { records: reactionRecords } = await tx.run(
         `
         MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
+
         MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
         ON CREATE
           SET crxn.reaction = $reaction,
@@ -195,14 +200,11 @@ export class Post {
       latest_reactions_count = reactionRecords[0]?.get("latest_reactions_count")
       const post_owner_username = reactionRecords[0]?.get("post_owner_username")
 
-
       if (post_owner_username !== client_username) {
         const { records: reactionNotifRecords } = await tx.run(
           `
-          MATCH (post:Post{ id: $post_id }), (clientUser:User{ username: $client_username })
+          MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
   
-          WITH post, clientUser
-          MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
   
           WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.username AS receiver_username
@@ -212,7 +214,6 @@ export class Post {
         )
 
         reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
-
       }
 
       return { reaction_notif, latest_reactions_count }
@@ -241,23 +242,23 @@ export class Post {
 
       const { records: commentRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
         CREATE (clientUser)-[:WRITES_COMMENT]->(comment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, reactions_count: 0, comments_count: 0, created_at: datetime() })-[:COMMENT_ON_POST]->(post)
 
-        WITH post, comment, toString(comment.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
+        WITH post, comment, toString(comment.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user, postOwner.username AS post_owner_username
         
         SET post.comments_count = post.comments_count + 1
 
         RETURN post.comments_count AS latest_comments_count,
-        comment { .*, created_at, owner_user, client_reaction: "" } AS new_comment_data
+          comment { .*, created_at, owner_user, client_reaction: "" } AS new_comment_data,
+          post_owner_username
         `,
         { client_username, attachment_url, comment_text, post_id }
       )
 
-      const cro = commentRecords[0]?.toObject()
-
-      new_comment_data = cro.new_comment_data
-      latest_comments_count = cro.latest_comments_count
+      new_comment_data = commentRecords[0]?.get("new_comment_data")
+      latest_comments_count = commentRecords[0]?.get("latest_comments_count")
+      const post_owner_username = commentRecords[0]?.get("post_owner_username")
 
       if (mentions.length) {
         const { records: mentionRecords } = await tx.run(
@@ -272,9 +273,8 @@ export class Post {
 
         await tx.run(
           `
-          UNWIND $mentions AS mentionUsername
-          MATCH (mentionUser:User{ username: mentionUsername }), 
-            (comment:Comment{ id: $commentId })
+          MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (comment:Comment{ id: $commentId })
+
           CREATE (comment)-[:MENTIONS_USER]->(mentionUser)
           `,
           { mentions, commentId: new_comment_data.id }
@@ -287,9 +287,10 @@ export class Post {
         if (mentionsExcClient.length) {
           const { records } = await tx.run(
             `
-            UNWIND $mentionsExcClient AS mentionUsername
-            MATCH (mentionUser:User{ username: mentionUsername }), (clientUser:User{ username: $client_username })
+            MATCH (mentionUser:User WHERE mentionUser.username IN $mentionsExcClient), (clientUser:User{ username: $client_username })
+
             CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: datetime(), details: ["in_comment_id", $commentId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+
             WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
             RETURN collect(mentionNotif { .*, receiver_username, created_at }) AS mention_notifs
             `,
@@ -306,8 +307,9 @@ export class Post {
 
       await tx.run(
         `
-        UNWIND $hashtags AS hashtagName
         MATCH (comment:Comment{ id: $commentId })
+
+        UNWIND $hashtags AS hashtagName
         MERGE (ht:Hashtag{name: hashtagName})
         CREATE (comment)-[:INCLUDES_HASHTAG]->(ht)
         `,
@@ -315,26 +317,29 @@ export class Post {
       )
 
       // comment notif
-      const { records: commentNotifRecords } = await tx.run(
-        `
-          MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
-          MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
+      if (post_owner_username !== client_username) {
+        const { records: commentNotifRecords } = await tx.run(
+          `
+          MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
+          
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: datetime(), details: ["on_post_id", $post_id, "comment_id", $commentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+
           WITH commentNotif, 
             toString(commentNotif.created_at) AS created_at, 
             postOwner.username AS receiver_username
           RETURN commentNotif { .*, created_at, receiver_username } AS comment_notif
           `,
-        {
-          client_username,
-          post_id,
-          commentId: new_comment_data.id,
-          comment_text,
-          attachment_url,
-        }
-      )
+          {
+            client_username,
+            post_id,
+            commentId: new_comment_data.id,
+            comment_text,
+            attachment_url,
+          }
+        )
 
-      comment_notif = commentNotifRecords[0]?.get("comment_notif")
+        comment_notif = commentNotifRecords[0]?.get("comment_notif")
+      }
 
       return {
         mention_notifs,

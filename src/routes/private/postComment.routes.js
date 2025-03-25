@@ -44,18 +44,24 @@ router.post(
   PCC.commentOnPost
 )
 
-router.post(
-  "/comments/:comment_id/comment",
-  ...validateParams,
-  ...PCV.commentOn,
-  PCC.commentOnComment
-)
-
 router.get(
   "/posts/:post_id/comments",
   ...validateParams,
   ...validateLimitOffset,
   PCC.getCommentsOnPost
+)
+
+router.delete(
+  "/posts/:post_id/comments/:comment_id",
+  ...validateParams,
+  PCC.removeCommentOnPost
+)
+
+router.post(
+  "/comments/:comment_id/comment",
+  ...validateParams,
+  ...PCV.commentOn,
+  PCC.commentOnComment
 )
 router.get(
   "/comments/:comment_id/comments",
@@ -64,12 +70,6 @@ router.get(
   PCC.getCommentsOnComment
 )
 router.get("/comments/:comment_id", ...validateParams, PCC.getComment)
-
-router.delete(
-  "/posts/:post_id/comments/:comment_id",
-  ...validateParams,
-  PCC.removeCommentOnPost
-)
 router.delete(
   "/comments/:parent_comment_id/comments/:comment_id",
   ...validateParams,
