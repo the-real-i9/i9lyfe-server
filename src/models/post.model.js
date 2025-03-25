@@ -418,7 +418,7 @@ export class Post {
       ORDER BY rxn.at DESC
       OFFSET toInteger($offset)
       LIMIT toInteger($limit)
-      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
       { post_id, client_username, limit, offset }
     )
@@ -446,7 +446,7 @@ export class Post {
       ORDER BY rxn.at DESC
       OFFSET toInteger($offset)
       LIMIT toInteger($limit)
-      RETURN collect(reactor { .id, .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
+      RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_rxn
       `,
       { post_id, client_username, reaction, limit, offset }
     )

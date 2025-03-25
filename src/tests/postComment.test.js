@@ -262,4 +262,20 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(recvNotif).toHaveProperty("type", "reaction_to_post")
     expect(recvNotif).toHaveProperty("reactor_user[1]", users.user3.username)
   })
+
+  test("user1 checks reactors to her post3", async () => {
+    const res = await request(server)
+    .get(`${appPathPriv}/posts/${user1Post3Id}/reactors`)
+    .set("Cookie", users.user1.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(2) // two users reacted
+
+    for (const ri of res.body) {
+      expect(ri).toHaveProperty("username")
+
+      expect([users.user2.username, users.user3.username].includes(ri.username)).toBe(true)
+    }
+  })
 })
