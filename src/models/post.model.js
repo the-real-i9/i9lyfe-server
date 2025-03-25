@@ -35,7 +35,7 @@ export class Post {
         { client_username, media_urls, type, description }
       )
 
-      new_post_data = postRecords[0].toObject().new_post_data
+      new_post_data = postRecords[0]?.toObject().new_post_data
 
       if (mentions.length) {
         const { records: mentionRecords } = await tx.run(
@@ -46,7 +46,7 @@ export class Post {
           { mentions }
         )
 
-        mentions = mentionRecords[0].get("valid_mentions")
+        mentions = mentionRecords[0]?.get("valid_mentions")
 
         await tx.run(
           `
@@ -122,7 +122,7 @@ export class Post {
         }
       )
 
-      const rco = repostRecords[0].toObject()
+      const rco = repostRecords[0]?.toObject()
 
       latest_reposts_count = rco.latest_reposts_count
       repost_data = rco.repost_data
@@ -130,9 +130,9 @@ export class Post {
       const { records: repostNotifRecords } = await tx.run(
         `
         MATCH (post:Post{ id: $original_post_id}), (clientUser:User{ username: $client_username })
-        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_username)
+        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
         CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "original_post_id", $original_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-        WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.id AS receiver_username
+        WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.username AS receiver_username
         RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
         `,
         { original_post_id, client_username, repostId: repost_data.id }
@@ -164,7 +164,7 @@ export class Post {
       }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async reactTo({ client_username, post_id, reaction }) {
@@ -176,14 +176,14 @@ export class Post {
 
       const { records: reactionRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
         MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
         ON CREATE
           SET crxn.reaction = $reaction,
             crxn.at = datetime(),
             post.reactions_count = post.reactions_count + 1
 
-        RETURN post.reactions_count AS latest_reactions_count
+        RETURN post.reactions_count AS latest_reactions_count, postOwner.username AS post_owner_username
         `,
         {
           post_id,
@@ -192,21 +192,28 @@ export class Post {
         }
       )
 
-      latest_reactions_count = reactionRecords[0].get("latest_reactions_count")
+      latest_reactions_count = reactionRecords[0]?.get("latest_reactions_count")
+      const post_owner_username = reactionRecords[0]?.get("post_owner_username")
 
-      const { records: reactionNotifRecords } = await tx.run(
-        `
-        MATCH (post:Post{ id: $post_id }), (clientUser:User{ username: $client_username })
-        WITH post, clientUser
-        MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.id <> $client_username)
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-        WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.id AS receiver_username
-        RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
-        `,
-        { post_id, client_username, reaction }
-      )
 
-      reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
+      if (post_owner_username !== client_username) {
+        const { records: reactionNotifRecords } = await tx.run(
+          `
+          MATCH (post:Post{ id: $post_id }), (clientUser:User{ username: $client_username })
+  
+          WITH post, clientUser
+          MATCH (post)<-[:CREATES_POST]-(postOwner:User WHERE postOwner.username <> $client_username)
+          CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+  
+          WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.username AS receiver_username
+          RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
+          `,
+          { post_id, client_username, reaction }
+        )
+
+        reaction_notif = reactionNotifRecords[0]?.get("reaction_notif")
+
+      }
 
       return { reaction_notif, latest_reactions_count }
     })
@@ -247,7 +254,7 @@ export class Post {
         { client_username, attachment_url, comment_text, post_id }
       )
 
-      const cro = commentRecords[0].toObject()
+      const cro = commentRecords[0]?.toObject()
 
       new_comment_data = cro.new_comment_data
       latest_comments_count = cro.latest_comments_count
@@ -261,7 +268,7 @@ export class Post {
           { mentions }
         )
 
-        mentions = mentionRecords[0].get("valid_mentions")
+        mentions = mentionRecords[0]?.get("valid_mentions")
 
         await tx.run(
           `
@@ -315,7 +322,7 @@ export class Post {
           CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: datetime(), details: ["on_post_id", $post_id, "comment_id", $commentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
           WITH commentNotif, 
             toString(commentNotif.created_at) AS created_at, 
-            postOwner.id AS receiver_username
+            postOwner.username AS receiver_username
           RETURN commentNotif { .*, created_at, receiver_username } AS comment_notif
           `,
         {
@@ -473,7 +480,7 @@ export class Post {
       }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async removeComment({ post_id, comment_id, client_username }) {
@@ -489,7 +496,7 @@ export class Post {
       { post_id, comment_id, client_username }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async unrepost(post_id, client_username) {
@@ -505,7 +512,7 @@ export class Post {
       { client_username, post_id }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async unsave(post_id, client_username) {
@@ -525,6 +532,6 @@ export class Post {
       }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 }

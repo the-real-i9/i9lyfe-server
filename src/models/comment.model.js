@@ -26,7 +26,7 @@ export class Comment {
         }
       )
 
-      latest_reactions_count = reactionRecords[0].get("latest_reactions_count")
+      latest_reactions_count = reactionRecords[0]?.get("latest_reactions_count")
 
       const { records: reactionNotifRecords } = await tx.run(
         `
@@ -81,7 +81,7 @@ export class Comment {
         { client_username, attachment_url, comment_text, comment_id }
       )
 
-      const cro = commentRecords[0].toObject()
+      const cro = commentRecords[0]?.toObject()
 
       new_comment_data = cro.new_comment_data
       latest_comments_count = cro.latest_comments_count
@@ -95,7 +95,7 @@ export class Comment {
           { mentions }
         )
 
-        mentions = mentionRecords[0].get("valid_mentions")
+        mentions = mentionRecords[0]?.get("valid_mentions")
 
         await tx.run(
           `
@@ -277,7 +277,7 @@ export class Comment {
       }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async removeChildComment({
@@ -297,6 +297,6 @@ export class Comment {
       { parent_comment_id, comment_id, client_username }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 }

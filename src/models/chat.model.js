@@ -31,7 +31,7 @@ export class Chat {
       { client_username, partner_username, message_content, created_at }
     )
 
-    return records[0].toObject()
+    return records[0]?.toObject()
   }
 
   static async delete(client_username, partner_username) {
