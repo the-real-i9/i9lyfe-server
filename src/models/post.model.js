@@ -96,7 +96,7 @@ export class Post {
     return res
   }
 
-  static async repost(original_post_id, client_username) {
+  static async repost(origin_post_id, client_username) {
     const session = neo4jDriver.session()
 
     const res = await session.executeWrite(async (tx) => {
@@ -106,39 +106,39 @@ export class Post {
 
       const { records: repostRecords } = await tx.run(
         `
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $original_post_id })<-[CREATES_POST]-(postOwner)
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $origin_post_id })<-[:CREATES_POST]-(originPostOwner)
 
-        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, reposted_post_id: $original_post_id })-[:REPOST_OF]->(post)
+        MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, origin_post_id: $origin_post_id })-[:REPOST_OF]->(post)
         ON CREATE
           SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: datetime(), reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 },
             post.reposts_count = post.reposts_count + 1
 
-        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { username, .profile_pic_url } owner_user, postOwner.username AS post_owner_username
+        WITH post, repost, toString(repost.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user, originPostOwner.username AS origin_post_owner_username
 
         RETURN post.reposts_count AS latest_reposts_count,
           repost { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data,
-          post_owner_username
+          origin_post_owner_username
         `,
         {
-          original_post_id,
+          origin_post_id,
           client_username,
         }
       )
 
       latest_reposts_count = repostRecords[0]?.get("latest_reposts_count")
       repost_data = repostRecords[0]?.get("repost_data")
-      const post_owner_username = repostRecords[0]?.get("post_owner_username")
+      const origin_post_owner_username = repostRecords[0]?.get("origin_post_owner_username")
 
-      if (post_owner_username !== client_username) {
+      if (origin_post_owner_username !== client_username) {
         const { records: repostNotifRecords } = await tx.run(
           `
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $original_post_id })<-[:CREATES_POST]-(postOwner)
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $origin_post_id })<-[:CREATES_POST]-(postOwner)
 
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "original_post_id", $original_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: datetime(), details: ["repost_id", $repostId, "origin_post_id", $origin_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
         WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.username AS receiver_username
         RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
         `,
-          { original_post_id, client_username, repostId: repost_data.id }
+          { origin_post_id, client_username, repostId: repost_data.id }
         )
 
         repost_notif = repostNotifRecords[0]?.get("repost_notif")
@@ -454,8 +454,12 @@ export class Post {
   static async delete(post_id, client_username) {
     await neo4jDriver.executeWrite(
       `
-      MATCH (clientUser:User{ username: $client_username })-[:CREATES_POST]->(post:Post{ id: $post_id })
-      DETACH DELETE post
+      MATCH (clientUser:User{ username: $client_username })
+
+      OPTIONAL MATCH (clientUser)-[:CREATES_POST]->(post:Post{ id: $post_id }),
+        (clientUser)-[:CREATES_REPOST]->(repost:Repost{ id: $post_id })
+
+      DETACH DELETE post, repost
       `,
       { post_id, client_username }
     )

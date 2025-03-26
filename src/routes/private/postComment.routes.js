@@ -108,7 +108,6 @@ router.delete(
 /* ====== REPOST ====== */
 
 router.post("/posts/:post_id/repost", ...validateParams, PCC.createRepost)
-router.delete("/posts/:post_id/unrepost", ...validateParams, PCC.deleteRepost)
 
 /* ====== POST SAVE ====== */
 

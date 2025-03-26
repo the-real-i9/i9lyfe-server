@@ -396,17 +396,3 @@ export const removeReactionToComment = async (req, res) => {
     res.sendStatus(500)
   }
 }
-
-export const deleteRepost = async (req, res) => {
-  try {
-    const { post_id } = req.params
-    const { client_username } = req.auth
-
-    const resp = await postCommentService.deletePost(post_id, client_username)
-
-    res.status(200).send(resp.data)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}

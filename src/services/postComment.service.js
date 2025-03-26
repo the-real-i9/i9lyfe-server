@@ -201,7 +201,7 @@ export const commentOnComment = async ({
   // notify comment owner of comment
   if (comment_notif) {
     const { receiver_username, ...restData } = comment_notif
-    
+
     messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 
@@ -216,10 +216,24 @@ export const commentOnComment = async ({
 }
 
 export const createRepost = async (post_id, client_username) => {
-  await Post.repost(post_id, client_username)
+  const { repost_data, latest_reposts_count, repost_notif } = await Post.repost(
+    post_id,
+    client_username
+  )
+
+  if (repost_notif) {
+    const { receiver_username, ...restData } = repost_notif
+
+    messageBrokerService.sendNewNotification(receiver_username, restData)
+  }
+
+  realtimeService.sendPostUpdate(post_id, {
+    post_id,
+    latest_reposts_count,
+  })
 
   return {
-    data: { msg: "operation successful" },
+    data: repost_data,
   }
 }
 
