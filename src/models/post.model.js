@@ -261,16 +261,6 @@ export class Post {
       const post_owner_username = commentRecords[0]?.get("post_owner_username")
 
       if (mentions.length) {
-        const { records: mentionRecords } = await tx.run(
-          `
-          MATCH (user:User WHERE user.username IN $mentions)
-          RETURN collect(user.username) AS valid_mentions
-          `,
-          { mentions }
-        )
-
-        mentions = mentionRecords[0]?.get("valid_mentions")
-
         await tx.run(
           `
           MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (comment:Comment{ id: $commentId })
@@ -390,7 +380,9 @@ export class Post {
     const { records } = await neo4jDriver.executeRead(
       `
       MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment)<-[:WRITES_COMMENT]-(ownerUser:User)
+
       OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ username: $client_username })
+
       WITH comment, 
         toString(comment.created_at) AS created_at, 
         ownerUser { .username, .profile_pic_url } AS owner_user,

@@ -201,7 +201,7 @@ export const commentOnComment = async ({
   // notify comment owner of comment
   if (comment_notif) {
     const { receiver_username, ...restData } = comment_notif
-
+    
     messageBrokerService.sendNewNotification(receiver_username, restData)
   }
 

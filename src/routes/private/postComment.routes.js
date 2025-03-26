@@ -69,7 +69,9 @@ router.get(
   ...validateLimitOffset,
   PCC.getCommentsOnComment
 )
+
 router.get("/comments/:comment_id", ...validateParams, PCC.getComment)
+
 router.delete(
   "/comments/:parent_comment_id/comments/:comment_id",
   ...validateParams,
