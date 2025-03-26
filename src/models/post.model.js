@@ -35,7 +35,7 @@ export class Post {
         { client_username, media_urls, type, description }
       )
 
-      new_post_data = postRecords[0]?.toObject().new_post_data
+      new_post_data = postRecords[0]?.get("new_post_data")
 
       if (mentions.length) {
         const { records: mentionRecords } = await tx.run(
@@ -168,7 +168,7 @@ export class Post {
       }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_saves_count: null }
   }
 
   static async reactTo({ client_username, post_id, reaction }) {
@@ -477,7 +477,7 @@ export class Post {
       }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_reactions_count: null }
   }
 
   static async removeComment({ post_id, comment_id, client_username }) {
@@ -493,7 +493,7 @@ export class Post {
       { post_id, comment_id, client_username }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_comments_count: null }
   }
 
   static async unrepost(post_id, client_username) {
@@ -509,7 +509,7 @@ export class Post {
       { client_username, post_id }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_reposts_count: null }
   }
 
   static async unsave(post_id, client_username) {
@@ -529,6 +529,6 @@ export class Post {
       }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_saves_count: null }
   }
 }

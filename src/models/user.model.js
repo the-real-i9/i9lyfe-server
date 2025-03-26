@@ -74,6 +74,7 @@ export class User {
     if (client_username === to_follow_username) {
       return { follow_notif: null }
     }
+
     const { records } = await neo4jDriver.executeWrite(
       `
       MATCH (clientUser:User{ username: $client_username }), (tofollowUser:User{ username: $to_follow_username })
@@ -87,7 +88,7 @@ export class User {
       { client_username, to_follow_username }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { follow_notif: null }
   }
 
   /**

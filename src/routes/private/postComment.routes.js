@@ -51,6 +51,8 @@ router.get(
   PCC.getCommentsOnPost
 )
 
+router.get("/comments/:comment_id", ...validateParams, PCC.getComment)
+
 router.delete(
   "/posts/:post_id/comments/:comment_id",
   ...validateParams,
@@ -70,8 +72,6 @@ router.get(
   PCC.getCommentsOnComment
 )
 
-router.get("/comments/:comment_id", ...validateParams, PCC.getComment)
-
 router.delete(
   "/comments/:parent_comment_id/comments/:comment_id",
   ...validateParams,
@@ -86,16 +86,19 @@ router.post(
   ...PCV.reactTo,
   PCC.reactToComment
 )
+
 router.get(
   "/comments/:comment_id/reactors",
   ...validateParams,
   PCC.getReactorsToComment
 )
+
 router.get(
   "/comments/:comment_id/reactors/:reaction",
   ...validateParams,
   PCC.getReactorsWithReactionToComment
 )
+
 router.delete(
   "/comments/:comment_id/remove_reaction",
   ...validateParams,

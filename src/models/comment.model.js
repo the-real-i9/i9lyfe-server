@@ -287,7 +287,7 @@ export class Comment {
       }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_reactions_count: null }
   }
 
   static async removeChildComment({
@@ -307,6 +307,6 @@ export class Comment {
       { parent_comment_id, comment_id, client_username }
     )
 
-    return records[0]?.toObject()
+    return records[0]?.toObject() ?? { latest_comments_count: null }
   }
 }

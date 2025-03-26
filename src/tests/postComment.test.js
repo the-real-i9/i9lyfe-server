@@ -228,7 +228,7 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     user1Post3Id = res.body.id
   })
 
-  test("user2 reacts to post3 from user1 | user1 is notified", async () => {
+  test("user2 reacts to user1's post3 | user1 is notified", async () => {
     const recvNotifProm = new Promise((resolve) => {
       users.user1.cliSocket.on("new notification", resolve)
     })
@@ -251,7 +251,7 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(recvNotif).toHaveProperty("reactor_user[1]", users.user2.username)
   })
 
-  test("user3 reacts to post3 from user1 | user1 is notified", async () => {
+  test("user3 reacts to user1's post3 | user1 is notified", async () => {
     const recvNotifProm = new Promise((resolve) => {
       users.user1.cliSocket.on("new notification", resolve)
     })
@@ -300,7 +300,7 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     }
   })
 
-  test("user1 filters reactors by a certain reaction", async () => {
+  test("user1 filters reactors to her post3 by a certain reaction", async () => {
     const rxn = encodeURIComponent("🤔")
 
     const res = await request(server)
@@ -309,6 +309,8 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
     expect(res.status).toBe(200)
     expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(1)
+
     expect(res.body[0]).toHaveProperty("username", users.user2.username)
   })
 
@@ -395,6 +397,7 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
     expect(res.status).toBe(200)
     expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(2)
 
     for (const ci of res.body) {
       expect(ci).toHaveProperty("owner_user.username")
@@ -421,7 +424,9 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
   test("user3 removes her comment on user1's post3", async () => {
     const res = await request(server)
-      .delete(`${appPathPriv}/posts/${user1Post3Id}/comments/${user3Comment1User1Post3Id}`)
+      .delete(
+        `${appPathPriv}/posts/${user1Post3Id}/comments/${user3Comment1User1Post3Id}`
+      )
       .set("Cookie", users.user3.sessionCookie)
 
     expect(res.status).toBe(200)
@@ -441,7 +446,7 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     )
   })
 
-  test("user1 views user2's comment on her post3", async() => {
+  test("user1 views user2's comment on her post3", async () => {
     const res = await request(server)
       .get(`${appPathPriv}/comments/${user2Comment1User1Post3Id}`)
       .set("Cookie", users.user1.sessionCookie)
@@ -449,6 +454,8 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty("id", user2Comment1User1Post3Id)
   })
+
+  let user1Reply1User2Comment1User1Post3 = ""
 
   test("user1 replied to user2's comment on her post3 | user2 is notified", async () => {
     const recvNotifProm = new Promise((resolve) => {
@@ -471,7 +478,11 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(recvNotif).toHaveProperty("id")
     expect(recvNotif).toHaveProperty("type", "comment_on_comment")
     expect(recvNotif).toHaveProperty("commenter_user[1]", users.user1.username)
+
+    user1Reply1User2Comment1User1Post3 = res.body.id
   })
+
+  let user3Reply1User2Comment1User1Post3 = ""
 
   test("user3 replied to user2's comment on user1's post3 | user2 is notified", async () => {
     const recvNotifProm = new Promise((resolve) => {
@@ -494,15 +505,18 @@ describe("test content sharing and interaction: a story between 3 users", () => 
     expect(recvNotif).toHaveProperty("id")
     expect(recvNotif).toHaveProperty("type", "comment_on_comment")
     expect(recvNotif).toHaveProperty("commenter_user[1]", users.user3.username)
+
+    user3Reply1User2Comment1User1Post3 = res.body.id
   })
 
-  test("user2 views comments on her comment1 on user1's post3", async () => {
+  test("user2 checks replies to her comment1 on user1's post3", async () => {
     const res = await request(server)
       .get(`${appPathPriv}/comments/${user2Comment1User1Post3Id}/comments`)
       .set("Cookie", users.user2.sessionCookie)
 
     expect(res.status).toBe(200)
     expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(2)
 
     for (const ci of res.body) {
       expect(ci).toHaveProperty("owner_user.username")
@@ -525,5 +539,147 @@ describe("test content sharing and interaction: a story between 3 users", () => 
         )
       }
     }
+  })
+
+  test("user3 removes her reply to user2's comment1 on user1's post3", async () => {
+    const res = await request(server)
+      .delete(
+        `${appPathPriv}/comments/${user2Comment1User1Post3Id}/comments/${user3Reply1User2Comment1User1Post3}`
+      )
+      .set("Cookie", users.user3.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("msg")
+  })
+
+  test("user2 rechecks replies to her comment1 on user1's post3 | user3's reply is gone", async () => {
+    const res = await request(server)
+      .get(`${appPathPriv}/comments/${user2Comment1User1Post3Id}/comments`)
+      .set("Cookie", users.user2.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+
+    expect(res.body.some((v) => v.username === users.user3.username)).toBe(
+      false
+    )
+  })
+
+  test("user2 reacts to user1's reply to her comment1 on user1's post3 | user1 is notified", async () => {
+    const recvNotifProm = new Promise((resolve) => {
+      users.user1.cliSocket.on("new notification", resolve)
+    })
+
+    const res = await request(server)
+      .post(
+        `${appPathPriv}/comments/${user1Reply1User2Comment1User1Post3}/react`
+      )
+      .set("Cookie", users.user2.sessionCookie)
+      .send({
+        reaction: "😆",
+      })
+
+    expect(res.status).toBe(201)
+    expect(res.body).toHaveProperty("msg")
+
+    const recvNotif = await recvNotifProm
+
+    expect(recvNotif).toBeTruthy()
+    expect(recvNotif).toHaveProperty("id")
+    expect(recvNotif).toHaveProperty("type", "reaction_to_comment")
+    expect(recvNotif).toHaveProperty("reactor_user[1]", users.user2.username)
+  })
+
+  test("user3 reacts to user1's reply to user2's comment1 on user1's post3 | user1 is notified", async () => {
+    const recvNotifProm = new Promise((resolve) => {
+      users.user1.cliSocket.on("new notification", resolve)
+    })
+
+    const res = await request(server)
+      .post(
+        `${appPathPriv}/comments/${user1Reply1User2Comment1User1Post3}/react`
+      )
+      .set("Cookie", users.user3.sessionCookie)
+      .send({
+        reaction: "😂",
+      })
+
+    expect(res.status).toBe(201)
+    expect(res.body).toHaveProperty("msg")
+
+    const recvNotif = await recvNotifProm
+
+    expect(recvNotif).toBeTruthy()
+    expect(recvNotif).toHaveProperty("id")
+    expect(recvNotif).toHaveProperty("type", "reaction_to_comment")
+    expect(recvNotif).toHaveProperty("reactor_user[1]", users.user3.username)
+  })
+
+  test("user1 checks reactors to her reply to user2's comment1 on her post3", async () => {
+    const res = await request(server)
+      .get(
+        `${appPathPriv}/comments/${user1Reply1User2Comment1User1Post3}/reactors`
+      )
+      .set("Cookie", users.user1.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(2) // two users reacted
+
+    for (const ri of res.body) {
+      expect(ri).toHaveProperty("username")
+
+      expect(
+        [users.user2.username, users.user3.username].includes(ri.username)
+      ).toBe(true)
+
+      if (ri.username === users.user2.username) {
+        expect(ri.reaction).toBe("😆")
+      }
+
+      if (ri.username === users.user3.username) {
+        expect(ri.reaction).toBe("😂")
+      }
+    }
+  })
+
+  test("user1 filters reactors to her reply to user2's comment1 on her post3 by a certain reaction", async () => {
+    const rxn = encodeURIComponent("😆")
+
+    const res = await request(server)
+      .get(
+        `${appPathPriv}/comments/${user1Reply1User2Comment1User1Post3}/reactors/${rxn}`
+      )
+      .set("Cookie", users.user1.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+    expect(res.body).toHaveLength(1)
+
+    expect(res.body[0]).toHaveProperty("username", users.user2.username)
+  })
+
+  test("user3 removes her reaction to user1's reply to user2's comment1 on user1's post3", async () => {
+    const res = await request(server)
+      .delete(
+        `${appPathPriv}/comments/${user1Reply1User2Comment1User1Post3}/remove_reaction`
+      )
+      .set("Cookie", users.user3.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty("msg")
+  })
+
+  test("user1 rechecks reactors to her reply to user2's comment1 on her post3 | user3's reaction gone", async () => {
+    const res = await request(server)
+      .get(`${appPathPriv}/comments/${user1Post3Id}/reactors`)
+      .set("Cookie", users.user1.sessionCookie)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toBeInstanceOf(Array)
+
+    expect(res.body.some((v) => v.username === users.user3.username)).toBe(
+      false
+    )
   })
 })

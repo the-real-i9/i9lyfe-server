@@ -368,7 +368,7 @@ export const getReactorsWithReactionToComment = async ({
 }) => {
   const commentReactorsWithReaction = await Comment.getReactorsWithReaction({
     comment_id,
-    reaction: reaction.codePointAt(),
+    reaction,
     client_username,
     limit,
     offset,
