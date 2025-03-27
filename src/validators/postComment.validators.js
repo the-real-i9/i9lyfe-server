@@ -6,16 +6,24 @@ export const createNewPost = [
     checkSchema(
       {
         media_data_list: {
+          notEmpty: true,
           isArray: {
-            options: { min: 1 },
-            errorMessage: "value must be an array of at least one length",
+            options: { min: 1, max: 10 },
+            errorMessage: (value) => {
+              if (value.length > 10) {
+                return "too many values. maximum of 10"
+              }
+            },
           },
         },
         "media_data_list.*": {
           isArray: {
             options: { min: 1, max: 8 * 1024 ** 2 },
-            errorMessage:
-              "item must be an array of uint8 integers containing a maximum of 8mb",
+            errorMessage: (value) => {
+              if (value.length > 8 * 1024 ** 2) {
+                return "a media size is too large. maximum of 8 megabytes"
+              }
+            },
           },
         },
         type: {
@@ -25,7 +33,7 @@ export const createNewPost = [
             errorMessage: "invalid post type",
           },
           custom: {
-            if: (value) => value != "photo",
+            if: (value) => value == "reel",
             options: (value, { req }) => req.body.media_data_list.length === 1,
             errorMessage: (value) => `you can't post more than one ${value} at a time`
           }

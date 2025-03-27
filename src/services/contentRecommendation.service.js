@@ -5,8 +5,6 @@ export async function getPost(post_id, client_username) {
     `
     MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User)
     WHERE EXISTS {
-      MATCH (post)-[:INCLUDES_HASHTAG]->(:Hashtag{ name: "trending" })
-      UNION
       MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(ownerUser)
       UNION
       MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
@@ -26,8 +24,6 @@ export async function getHomePosts({ client_username, limit, offset, types }) {
     MATCH (clientUser:User{ username: $client_username })
     MATCH (ownerUser:User)-[:CREATES_POST]->(post:Post WHERE post.type IN $types)
     WHERE EXISTS {
-      MATCH (post)-[:INCLUDES_HASHTAG]->(:Hashtag{ name: "trending" })
-      UNION
       MATCH (clientUser)-[:FOLLOWS_USER]->(ownerUser)
       UNION
       MATCH (clientUser)-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)

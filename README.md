@@ -95,10 +95,6 @@ The following is a summary of the features supported by this API. Visit the API 
 
 Get posts feed based on your interests and your follow network.
 
-### Stories
-
-Get updates of moments shared by those you follow in stories.
-
 ### Explore
 
 Explore top (trending) content of different post types

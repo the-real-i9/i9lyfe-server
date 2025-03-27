@@ -27,12 +27,6 @@ router.put(
   UC.changeProfilePicture
 )
 
-router.put(
-  "/my_notifications/:notification_id/read",
-  ...validateParams,
-  UC.readNotification
-)
-
 // GET posts user has been mentioned in
 router.get("/mentioned_posts", ...validateLimitOffset, UC.getMentionedPosts)
 
@@ -47,6 +41,12 @@ router.get(
   "/my_notifications",
   ...validateLimitOffset,
   UC.getNotifications
+)
+
+router.put(
+  "/my_notifications/:notification_id/read",
+  ...validateParams,
+  UC.readNotification
 )
 
 export default router
