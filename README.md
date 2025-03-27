@@ -97,7 +97,7 @@ Get posts feed based on your interests and your follow network.
 
 ### Explore
 
-Explore top (trending) content of different post types
+Explore different post types based on a content recommendation algorithm.
 
 ### Reels
 
