@@ -1,5 +1,11 @@
 import { neo4jDriver } from "../initializers/db.js"
 
+/* 
+- I acknowledge that there should be more sophistication to this content recommendation algorithm
+- But for now, this is where it's it.
+- It'll get its improvement gradually
+ */
+
 export async function getPost(post_id, client_username) {
   const { records } = await neo4jDriver.executeRead(
     `
@@ -59,7 +65,12 @@ export async function getHomePosts({ client_username, limit, offset, types }) {
   return records[0]?.get("feed_posts")
 }
 
-export async function getExplorePosts({ client_username, types, limit, offset }) {
+export async function getExplorePosts({
+  client_username,
+  types,
+  limit,
+  offset,
+}) {
   const { records } = await neo4jDriver.executeRead(
     `
     MATCH (ownerUser:User)-[:CREATES_POST]->(post:Post WHERE post.type IN $types), (clientUser:User{ username: $client_username })
