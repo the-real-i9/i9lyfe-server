@@ -66,7 +66,7 @@ The following is a summary of the features supported by this API. Visit the API 
 
 ### Content Creation & Sharing
 
-- **Create Post:** Create post types inspired by Instagram including *Photo*, *Video*, *Story*, and *Reel*.
+- **Create Post:** Create post of different types (inspired by Instagram) including *Photo*, *Video*, and *Reel*.
 
 ### Interactivity
 

@@ -8,7 +8,7 @@ export class Post {
    * @param {string[]} post.media_urls
    * @param {string[]} post.mentions
    * @param {string[]} post.hashtags
-   * @param {"photo" | "video" | "reel" | "story"} post.type
+   * @param {"photo" | "video" | "reel"} post.type
    * @param {string} post.description
    */
   static async create({

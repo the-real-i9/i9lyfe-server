@@ -133,25 +133,6 @@ export const getHomeFeedPosts = async (req, res) => {
   }
 }
 
-export const getHomeStoryPosts = async (req, res) => {
-  try {
-    const { limit = 20, offset = 0 } = req.query
-
-    const { client_username } = req.auth
-
-    const resp = await userService.getHomeStoryPosts({
-      client_username,
-      limit,
-      offset,
-    })
-
-    res.status(200).send(resp.data)
-  } catch (error) {
-    console.error(error)
-    res.sendStatus(500)
-  }
-}
-
 export const getProfile = async (req, res) => {
   try {
     const { username } = req.params

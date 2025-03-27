@@ -21,7 +21,7 @@ export const createNewPost = [
         type: {
           notEmpty: true,
           isIn: {
-            options: [["photo", "video", "reel", "story"]],
+            options: [["photo", "video", "reel"]],
             errorMessage: "invalid post type",
           },
           custom: {

@@ -14,7 +14,7 @@ export const searchAndFilter = [
         filter: {
           optional: true,
           isIn: {
-            options: [["user", "photo", "video", "reel", "story", "hashtag"]],
+            options: [["user", "photo", "video", "reel", "hashtag"]],
             errorMessage: "invalid filter value",
           },
         },
@@ -34,7 +34,7 @@ export const getHashtagPosts = [
         filter: {
           optional: true,
           isIn: {
-            options: [["photo", "video", "reel", "story"]],
+            options: [["photo", "video", "reel"]],
             errorMessage: "invalid post type filter",
           },
         },

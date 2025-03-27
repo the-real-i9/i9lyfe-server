@@ -98,19 +98,6 @@ export const getHomeFeedPosts = async ({ limit, offset, client_username }) => {
   }
 }
 
-export const getHomeStoryPosts = async ({ limit, offset, client_username }) => {
-  const homeStoryPosts = await CRS.getHomePosts({
-    limit,
-    offset,
-    client_username,
-    types: ["story"],
-  })
-
-  return {
-    data: homeStoryPosts,
-  }
-}
-
 export const getProfile = async (username, client_username) => {
   const profileData = await User.getProfile(username, client_username)
 

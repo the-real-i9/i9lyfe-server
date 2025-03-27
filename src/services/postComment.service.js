@@ -9,7 +9,7 @@ import * as realtimeService from "../services/realtime.service.js"
  * @param {object} param0
  * @param {number} param0.client_username
  * @param {number[][]} param0.media_data_list
- * @param {"photo" | "video" | "story" | "reel"} param0.type
+ * @param {"photo" | "video" | "reel"} param0.type
  * @param {string} param0.description
  */
 export const createNewPost = async ({
