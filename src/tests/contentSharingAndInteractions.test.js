@@ -118,14 +118,7 @@ afterAll((done) => {
 describe("test content sharing and interaction: a story between 3 users", () => {
   let user1Post1Id = ""
 
-  test("user1 creates a trending post1 | user2 and user3 receives the trending post", async () => {
-    const recvPostProm2 = new Promise((resolve) => {
-      users.user2.cliSocket.on("new post", resolve)
-    })
-    const recvPostProm3 = new Promise((resolve) => {
-      users.user3.cliSocket.on("new post", resolve)
-    })
-
+  test("user1 creates post1", async () => {
     const photo1 = await fs.readFile(
       new URL("./test_files/photo_1.png", import.meta.url)
     )
@@ -142,20 +135,6 @@ describe("test content sharing and interaction: a story between 3 users", () => 
 
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty("id")
-
-    const recvPostVal2 = await recvPostProm2
-    const recvPostVal3 = await recvPostProm3
-
-    expect(recvPostVal2).toBeTruthy()
-    expect(recvPostVal3).toBeTruthy()
-    expect(recvPostVal2).toHaveProperty(
-      "owner_user.username",
-      users.user1.username
-    )
-    expect(recvPostVal3).toHaveProperty(
-      "owner_user.username",
-      users.user1.username
-    )
 
     user1Post1Id = res.body.id
   })

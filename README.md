@@ -137,7 +137,7 @@ The following are links to blog posts discussing and walking you through the bui
 
 Upcoming...
 
-## Get i9lyfe Up and Running (Local)
+## Get "i9lyfe" Up and Running (Local)
 
 ### Install & Setup Node
 
@@ -148,6 +148,14 @@ Upcoming...
 ### Clone the Repository
 
 ### Environment Variables
+
+### Install Project Dependencies
+
+### Start Neo4j Service
+
+### Start Kafka
+
+### Start i9lyfe Server
 
 ---
 
