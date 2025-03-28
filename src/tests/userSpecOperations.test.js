@@ -1,9 +1,129 @@
+import fs from "node:fs/promises"
+import request from "superwstest"
+import { io } from "socket.io-client"
+import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
 
-// Create 3 users
+import server from "../index.js"
+import { neo4jDriver } from "../initializers/db.js"
+
+const signupPath = "/api/auth/signup"
+const appPathPriv = "/api/app/private"
+const appPathPubl = "/api/app/public"
+
+/**
+ * @typedef {Object} User
+ * @property {string} email
+ * @property {string} username
+ * @property {string} name
+ * @property {string} password
+ * @property {string} [bio]
+ * @property {string[]} [sessionCookie]
+ * @property {import("socket.io-client").Socket} [cliSocket]
+ */
+
+/** @type {Object<string, User>} */
+const users = {
+  user1: {
+    email: "harveyspecter@gmail.com",
+    username: "harvey",
+    name: "Harvey Specter",
+    password: "harvey_psl",
+    birthday: "1993-11-07",
+    bio: "Whatever!",
+  },
+  user2: {
+    email: "mikeross@gmail.com",
+    username: "mikeross",
+    name: "Mike Ross",
+    password: "mikeross_psl",
+    birthday: "1999-11-07",
+    bio: "Whatever!",
+  },
+  user3: {
+    email: "alexwilliams@gmail.com",
+    username: "alex",
+    name: "Alex Williams",
+    password: "williams_psl",
+    birthday: "1999-11-07",
+    bio: "Whatever!",
+  },
+}
+
+beforeAll(async () => {
+  await neo4jDriver.executeWrite("MATCH (n) DETACH DELETE n")
+
+  await new Promise((res) => {
+    server.listen(5000, "localhost", res)
+  })
+
+  // Create 3 users
+  await Promise.all(
+    Object.entries(users).map(async ([user, info]) => {
+      {
+        const res = await request(server)
+          .post(`${signupPath}/request_new_account`)
+          .send({ email: info.email })
+
+        expect(res.status).toBe(200)
+
+        users[user].sessionCookie = res.headers["set-cookie"]
+      }
+
+      {
+        const verfCode = process.env.DUMMY_VERF_TOKEN
+
+        const res = await request(server)
+          .post(`${signupPath}/verify_email`)
+          .set("Cookie", info.sessionCookie)
+          .send({ code: verfCode })
+
+        expect(res.status).toBe(200)
+
+        users[user].sessionCookie = res.headers["set-cookie"]
+      }
+
+      {
+        // eslint-disable-next-line no-unused-vars
+        const { email, sessionCookie, ...restInfo } = info
+
+        const res = await request(server)
+          .post(`${signupPath}/register_user`)
+          .set("Cookie", sessionCookie)
+          .send(restInfo)
+
+        expect(res.status).toBe(201)
+
+        users[user].sessionCookie = res.headers["set-cookie"]
+      }
+
+      {
+        const sock = io("ws://localhost:5000", {
+          extraHeaders: { Cookie: info.sessionCookie },
+        })
+
+        expect(sock).toBeTruthy()
+
+        users[user].cliSocket = sock
+      }
+    })
+  )
+})
+
+afterAll((done) => {
+  users.user1.cliSocket.close()
+  users.user2.cliSocket.close()
+  users.user3.cliSocket.close()
+
+  server.close(done)
+})
+
+describe("test user specific operations", () => {
+  // -- Edit user profile
+
+})
 
 // Story
-// -- Edit your profile
-// -- Change your profile picture
+// -- Change user profile picture
 // -- Check user profile
 // -- Follow a user(s)
 // -- Check user followers and followings
