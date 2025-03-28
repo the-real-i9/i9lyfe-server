@@ -6,7 +6,7 @@ A Social Media API Server
 
 ## Intro
 
-i9lyfe is an API server for Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
+i9lyfe is an API server for a Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
 ### Target Audience
 
@@ -20,7 +20,7 @@ The API documentation provides a detailed usage guide, following the OpenAPI spe
 
 If you're in need of a passionate, highly-skilled, expert-level backend engineer/developer, you've found the right one for the job.
 
-The codebase is easily accessible, as it follows a (Routes)-->(Controllers)-->(Services)-->((Services) | (Model)) pattern. Nonetheless, I provide an easy-to-follow graphical map for navigating the codebase in [this section](#codebase-map).
+The codebase is easily accessible, as it follows a (Routes)-->(Controllers)-->(Services)-->((Services) | (Model)) pattern.
 
 ### Open to suggestions
 
@@ -44,7 +44,7 @@ If you need a feature that this API server currently doesn't support, feel free 
 
 ### A note on the "❌ (old)" label on Postgres
 
-Initially, I wrote i9lyfe's database entirely with Postgres, a relational database.
+Initially, I wrote the entirety i9lyfe's database in Postgres, a relational database.
 
 Later on, when I was about implementing more advanced features, I found out that a Graph database better suits these features. This led me exploring deeper into the world of Graph databases, and that's when I realized that the whole database is even better written in a Graph database, and chose Neo4j as a replacement.
 
@@ -55,10 +55,9 @@ Later on, when I was about implementing more advanced features, I found out that
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [API Documentation](#api-documentation)
-- [Codebase Map](#codebase-map)
-- [Feature Building Tutorials (Blog Posts)](#feature-building-tutorials-blog-posts)
+- [Feature Building Tutorials (Ref. Links)](#feature-building-tutorials-ref-links)
 - [Building & Running i9lyfe Locally](#building--running-i9lyfe-locally)
-- [Deploying & Running i9lyfe Remotely](#deploying--running-i9lyfe-remotely)
+- [ToDo List](#todo-list)
 
 ## Features
 
@@ -67,6 +66,8 @@ The following is a summary of the features supported by this API. Visit the API 
 ### Content Creation & Sharing
 
 - **Create Post:** Create post of different types (inspired by Instagram) including *Photo*, *Video*, and *Reel*.
+  - Mention users
+  - Add hashtags
 
 ### Interactivity
 
@@ -79,48 +80,50 @@ The following is a summary of the features supported by this API. Visit the API 
 
 ### User Profile
 
-- Edit your profile information.  
+- Edit your profile information.
 - Manage your posts.
 - View saved posts.  
 - Access posts you’ve reacted to, posts you've commented on, posts you were mentioned in and more.
-- View saved posts
+- View user profiles
 
 ### Networking
 
-- Follow or unfollow other users.  
-- Explore content suggestions and recommendations tailored to your interests.  
-- View user profiles and their content.
+- Follow or unfollow users.
 
-### Home Feed
+### Content Recommendation
+
+#### Home Feed
 
 Get posts feed based on your interests and your follow network.
 
-### Explore
+#### Explore
 
-Explore different post types based on a content recommendation algorithm.
+Explore different post types based on a content recommendation algorithm *(Work in progress)*.
 
-### Reels
+#### Reels
 
 Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing list of reel videos.
 
 ### Chatting and Messaging
 
 - Chat with users in the application
-- Supported message types include text, voice notes, images, videos, audio files, and file attachments (with description).
+- Supports message types including:
+  - Text and voice message
+  - Images, videos, audio files, and file attachments (with description).
 
 ### Search
 
-- **Search and Filter:** Find users, hashtags, posts (photo, video, reel), or topics of interest.  
-- **Hashtags:** View top posts with specific hashtags
+- **Search and Filter:** Find users, hashtags, posts (photo, video, reel), or topics of interest matching a search term.
+- **Hashtags:** View top posts with specific hashtags.
 
 ### Notifications
 
-- **Activity Updates:** Receive notifications about likes, comments, shares, and mentions.
+- **Activity Updates:** Receive notifications of likes, comments, reposts, and mentions.
 
 ### Real-Time Updates
 
-- New posts arrive on top of your home feed in realtime.
-- Individual posts receive real-time interaction updates.
+- New posts, relevant to users can be delivered to them in realtime.
+- Individual posts can receive real-time interaction updates.
 
 ## API Documentation
 
@@ -128,14 +131,18 @@ For all **HTTP request/response communication**: [Here](./apidoc/openapi.json)'s
 
 For all **WebSocket real-time communication**: [Here](./apidoc/websocketsapi.md)'s a written markdown document.
 
-## Codebase Map
-
-Here's a graphical map of the code base for easy navigation.
-
-## Feature Building Tutorials (Blog Posts)
+## Feature Building Tutorials (Ref. Links)
 
 The following are links to blog posts discussing and walking you through the build process of major features of the application.
 
+Upcoming...
+
 ## Building & Running i9lyfe Locally
 
-## Deploying & Running i9lyfe Remotely
+---
+
+# ToDo List
+
+- Integrate an AI that observes the contents of a post and determines the "Interest" it best aligns with among the many interests in the social world.
+  - This is a better way to implement the feature in which users follow interests, and posts are recommended to them based on the interests they follow.
+  - For now, i9lyfe actually uses the "Hashtags" on posts to imply "Interests".

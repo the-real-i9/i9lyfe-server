@@ -1,7 +1,7 @@
 import fs from "node:fs/promises"
 import request from "superwstest"
 import { io } from "socket.io-client"
-import { afterAll, beforeAll, describe, expect, test } from "@jest/globals"
+import { afterAll, beforeAll, describe, expect, test, xdescribe } from "@jest/globals"
 
 import server from "../index.js"
 import { neo4jDriver } from "../initializers/db.js"
@@ -117,15 +117,63 @@ afterAll((done) => {
   server.close(done)
 })
 
-describe("test user specific operations", () => {
-  // -- Edit user profile
+xdescribe("test user specific operations", () => {
+  test("edit user1 profile", async () => {
+    // -- Edit user profile
+  })
 
+  test("change user1 profile picture", async () => {
+    // -- Change user profile picture
+  })
+
+  test("view user2 profile", async () => {
+    // -- View user profile
+  })
+
+  test("user1, user3, and user3 all follow each other", async () => {
+    // -- Follow a user(s)
+  })
+
+  test("user2 checks user1 followers", async () => {})
+
+  test("user2 checks user3 followings", async () => {})
+
+  describe("user2 checks posts in which she's been mentioned | posts reacted to | posts saved", () => {
+    let user1PostId = ""
+    let user3PostId = ""
+
+    beforeAll(() => {
+      // user1 creates a post mentioning user2
+      {
+        //
+      }
+      // user3 creates post mentioning user2
+      {
+        //
+      }
+      // user2 reacts to user1 and user2 posts
+      {
+        //
+      }
+      // user2 saves user1 and user2 posts
+      {
+        //
+      }
+    })
+
+    test("user2 checks posts in which she's been mentioned", async () => {})
+    test("user2 checks posts reacted to", async () => {})
+    test("user2 checks posts saved", async () => {})
+  })
+
+  test("user1 checks her notifications", async () => {})
+
+  test("user2 checks her notifications", async () => {})
+
+  test("user3 checks her notifications", async () => {})
 })
 
 // Story
-// -- Change user profile picture
-// -- Check user profile
-// -- Follow a user(s)
 // -- Check user followers and followings
 
 // -- Create posts, mentioning users
