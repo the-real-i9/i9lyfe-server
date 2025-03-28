@@ -1,14 +1,14 @@
-import fs from "node:fs/promises"
+// import fs from "node:fs/promises"
 import request from "superwstest"
 import { io } from "socket.io-client"
-import { afterAll, beforeAll, describe, expect, test, xdescribe } from "@jest/globals"
+import { afterAll, beforeAll, xdescribe, expect, xtest } from "@jest/globals"
 
 import server from "../index.js"
 import { neo4jDriver } from "../initializers/db.js"
 
 const signupPath = "/api/auth/signup"
-const appPathPriv = "/api/app/private"
-const appPathPubl = "/api/app/public"
+// const appPathPriv = "/api/app/private"
+// const appPathPubl = "/api/app/public"
 
 /**
  * @typedef {Object} User
@@ -118,29 +118,29 @@ afterAll((done) => {
 })
 
 xdescribe("test user specific operations", () => {
-  test("edit user1 profile", async () => {
+  xtest("edit user1 profile", async () => {
     // -- Edit user profile
   })
 
-  test("change user1 profile picture", async () => {
+  xtest("change user1 profile picture", async () => {
     // -- Change user profile picture
   })
 
-  test("view user2 profile", async () => {
+  xtest("view user2 profile", async () => {
     // -- View user profile
   })
 
-  test("user1, user3, and user3 all follow each other", async () => {
+  xtest("user1, user3, and user3 all follow each other", async () => {
     // -- Follow a user(s)
   })
 
-  test("user2 checks user1 followers", async () => {})
+  xtest("user2 checks user1 followers", async () => {})
 
-  test("user2 checks user3 followings", async () => {})
+  xtest("user2 checks user3 followings", async () => {})
 
-  describe("user2 checks posts in which she's been mentioned | posts reacted to | posts saved", () => {
-    let user1PostId = ""
-    let user3PostId = ""
+  xdescribe("user2 checks posts in which she's been mentioned | posts reacted to | posts saved", () => {
+    // let user1PostId = ""
+    // let user3PostId = ""
 
     beforeAll(() => {
       // user1 creates a post mentioning user2
@@ -161,16 +161,16 @@ xdescribe("test user specific operations", () => {
       }
     })
 
-    test("user2 checks posts in which she's been mentioned", async () => {})
-    test("user2 checks posts reacted to", async () => {})
-    test("user2 checks posts saved", async () => {})
+    xtest("user2 checks posts in which she's been mentioned", async () => {})
+    xtest("user2 checks posts reacted to", async () => {})
+    xtest("user2 checks posts saved", async () => {})
   })
 
-  test("user1 checks her notifications", async () => {})
+  xtest("user1 checks her notifications", async () => {})
 
-  test("user2 checks her notifications", async () => {})
+  xtest("user2 checks her notifications", async () => {})
 
-  test("user3 checks her notifications", async () => {})
+  xtest("user3 checks her notifications", async () => {})
 })
 
 // Story

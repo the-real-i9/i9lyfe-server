@@ -56,7 +56,7 @@ Later on, when I was about implementing more advanced features, I found out that
 - [Features](#features)
 - [API Documentation](#api-documentation)
 - [Feature Building Tutorials (Ref. Links)](#feature-building-tutorials-ref-links)
-- [Building & Running i9lyfe Locally](#building--running-i9lyfe-locally)
+- [Get i9lyfe Up and Running (Local)](#get-i9lyfe-up-and-running-local)
 - [ToDo List](#todo-list)
 
 ## Features
@@ -137,7 +137,17 @@ The following are links to blog posts discussing and walking you through the bui
 
 Upcoming...
 
-## Building & Running i9lyfe Locally
+## Get i9lyfe Up and Running (Local)
+
+### Install & Setup Node
+
+### Install & Setup Neo4j
+
+### Install & Setup Kafka
+
+### Clone the Repository
+
+### Environment Variables
 
 ---
 
