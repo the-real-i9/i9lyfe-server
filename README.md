@@ -139,11 +139,32 @@ Upcoming...
 
 ## Get "i9lyfe" Up and Running (Local)
 
-### Install & Setup Node
+### Download & Install Node
+
+If you don't have Node installed.
+
+- Visit [Node's Official Download Page](https://nodejs.org/en/download).
+- Adjust the `for`, `using`, and `with` selections according to your specifications.
+- Follow the provided installation instructions.
 
 ### Install & Setup Neo4j
 
-### Install & Setup Kafka
+If you don't have Neo4j installed and previously set up.
+
+- Visit Neo4j's Official Installation & Setup Page for [Linux](https://neo4j.com/docs/operations-manual/current/installation/linux/debian/), [Windows](https://neo4j.com/docs/operations-manual/current/installation/windows/), or [MacOS](https://neo4j.com/docs/operations-manual/current/installation/osx/), and follow the step-by-step instructions carefully.
+- Remember to setup your Neo4j password before starting the service for the first time.
+
+### Download & Setup Apache Kafka
+
+If you don't have Apache Kafka installed and setup.
+
+- [Download Kafka](https://www.apache.org/dyn/closer.cgi?path=/kafka/4.0.0/kafka_2.13-4.0.0.tgz) and extract the tgz file.
+- Go into the extracted folder.
+- Locate the `server.properties` file and open it in your code or text editor.
+- Find the `log.dirs` variable.
+- Change the value of `log.dirs`: The default path keeps `kraft-combined-logs` in a temporary directory. Change it from that to a persistent directory.
+
+  For example, on Linux, you can change from `/tmp/kraft-combined-logs` to `~/prm/kraft-combined-logs`. This is because the `/tmp` directory is usually wiped upon system restart.
 
 ### Clone the Repository
 
@@ -153,7 +174,41 @@ Upcoming...
 
 ### Start Neo4j Service
 
+Make you've set your Neo4j password before starting the service for the first time.
+
+Start the Neo4j service using:
+
+**Linux:**
+
+```bash
+# start manually on system start
+sudo systemctl start neo4j
+
+# autostart on system start
+sudo systemctl enable neo4j
+```
+
+**Windows and macOS:**
+
+Check the later steps on the installation & setup pages ([Windows](https://neo4j.com/docs/operations-manual/current/installation/windows/) | [MacOS](https://neo4j.com/docs/operations-manual/current/installation/osx/)).
+
 ### Start Kafka
+
+In your downloaded/extracted kafka directory.
+
+Start Kafka using:
+
+**Linux:**
+
+```bash
+bin/kafka-server-start.sh config/server.properties
+```
+
+**Windows:**
+
+```bash
+./bin/windows/kafka-server-start.bat ./config/server.properties
+```
 
 ### Start i9lyfe Server
 
