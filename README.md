@@ -6,7 +6,7 @@ A Social Media API Server
 
 ## Intro
 
-i9lyfe is an API server for a Social Media Application, built with Node.js and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
+i9lyfe is an API server for a Social Media Application, built with Go and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
 ### Target Audience
 
@@ -29,7 +29,8 @@ If you need a feature that this API server currently doesn't support, feel free 
 ## Technologies
 
 <div style="display: flex; align-items: center;">
-<img style="margin-right: 10px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./attachments/tech-icons/go-original-wordmark.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./attachments/tech-icons/gofiber.svg" />
 <img style="margin-right: 10px" alt="express" width="50" src="./attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/javascript-original.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="50" src="./attachments/tech-icons/neo4j-original.svg" />
@@ -38,6 +39,7 @@ If you need a feature that this API server currently doesn't support, feel free 
 <img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/jwt.svg" />
 <img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/express-validator.svg" />
 <img style="margin-right: 10px" alt="googlecloud" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
+<img style="margin-right: 10px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />❌ (old)
 <img style="margin-right: 10px; alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
 </div>
 <br>
@@ -139,13 +141,9 @@ Upcoming...
 
 ## Get "i9lyfe" Up and Running (Local)
 
-### Download & Install Node
+### Download & Install Go
 
-If you don't have Node installed.
-
-- Visit [Node's Official Download Page](https://nodejs.org/en/download).
-- Adjust the `for`, `using`, and `with` selections according to your specifications.
-- Follow the provided installation instructions.
+If you don't have Go installed.
 
 ### Install & Setup Neo4j
 
