@@ -9,12 +9,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func Upload(ctx context.Context, filePath string, data []byte) (string, error) {
 	mediaUploadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+
+	filePath = fmt.Sprintf("%s/_%s_.%s", filePath, uuid.NewString(), mimetype.Detect(data).Extension())
 
 	bucketName := os.Getenv("GCS_BUCKET")
 	fileUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, filePath)

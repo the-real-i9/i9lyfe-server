@@ -9,10 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Init(router fiber.Router) {
+func Routes(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuthRequired)
 
-	router.Use(postCommentRoutes.Init)
-	router.Use(chatRoutes.Init)
-	router.Use(userPrivateRoutes.Init)
+	router.Use(postCommentRoutes.Routes)
+	router.Use(chatRoutes.Routes)
+	router.Use(userPrivateRoutes.Routes)
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
+
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
 func init() {
@@ -21,6 +23,15 @@ func init() {
 }
 
 func main() {
+	defer initializers.CleanUp()
+
+	socketio, c := initializers.InitSocket()
+
+	defer func() {
+		socketio.Close(func(err error) {
+			log.Println("error closing socket server", err)
+		})
+	}()
 
 	app := fiber.New()
 
@@ -31,10 +42,12 @@ func main() {
 		Key: os.Getenv("COOKIE_SECRET"),
 	}))
 
-	app.Route("/api/auth", authRoutes.Init)
+	app.Get("/socket.io", adaptor.HTTPHandler(socketio.ServeHandler(c)))
 
-	app.Route("/api/app/private", privateRoutes.Init)
-	app.Route("/api/app/public", publicRoutes.Init)
+	app.Route("/api/auth", authRoutes.Routes)
+
+	app.Route("/api/app/private", privateRoutes.Routes)
+	app.Route("/api/app/public", publicRoutes.Routes)
 
 	var PORT string
 
