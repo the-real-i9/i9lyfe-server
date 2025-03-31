@@ -41,7 +41,7 @@ func PasswordMatchesHash(hash string, password string) (bool, error) {
 	return true, nil
 }
 
-func GenerateVerifCodeExp() (int, time.Time) {
+func GenerateTokenCodeExp() (int, time.Time) {
 	var token int
 	expires := time.Now().UTC().Add(1 * time.Hour)
 
