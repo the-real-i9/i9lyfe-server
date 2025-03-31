@@ -119,3 +119,49 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 
 	return resData.NewPostData, resData.MentionNotifs.([]map[string]any), nil
 }
+
+func FindOne(ctx context.Context, clientUsername, postId string) (any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
+
+		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
+		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
+		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
+		
+		WITH post, 
+			toString(post.created_at) AS created_at, 
+			ownerUser { .username, .profile_pic_url } AS owner_user,
+			CASE crxn 
+				WHEN IS NULL THEN "" 
+				ELSE crxn.reaction 
+			END AS client_reaction, 
+			CASE csaves 
+				WHEN IS NULL THEN false 
+				ELSE true 
+			END AS client_saved, 
+			CASE creposts 
+				WHEN IS NULL THEN false 
+				ELSE true 
+			END AS client_reposted
+		RETURN post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted } AS found_post
+    `,
+		map[string]any{
+			"post_id":         postId,
+			"client_username": clientUsername,
+		},
+	)
+	if err != nil {
+		log.Println("postModel.go: FindOne:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	foundPost, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_post")
+
+	return foundPost, nil
+}

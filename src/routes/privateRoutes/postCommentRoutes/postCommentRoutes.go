@@ -9,7 +9,7 @@ import (
 func Routes(router fiber.Router) {
 /* ====== POST ====== */
 router.Post("/new_post", PCC.CreateNewPost)
-router.Get("/posts/:post_id", ...validateParams, PCC.getPost)
+router.Get("/posts/:post_id", PCC.GetPost)
 router.Delete("/posts/:post_id", ...validateParams, PCC.deletePost)
 
 /* ====== POST'S REACTION ====== */

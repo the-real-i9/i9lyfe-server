@@ -16,16 +16,45 @@ func CreateNewPost(c *fiber.Ctx) error {
 
 	var body createNewPostBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	var err error
+
+	err = c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		return val_err
+	if err = body.Validate(); err != nil {
+		return err
 	}
 
 	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser.Username, body.MediaDataList, body.Type, body.Description)
+	if app_err != nil {
+		return app_err
+	}
+
+	return c.JSON(respData)
+}
+
+func GetPost(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	var params getPostParams
+
+	var err error
+
+	err = c.ParamsParser(&params)
+	if err != nil {
+		return err
+	}
+
+	if err = params.Validate(); err != nil {
+		return err
+	}
+
+	respData, app_err := postCommentService.GetPost(ctx, clientUser.Username, params.PostId)
 	if app_err != nil {
 		return app_err
 	}

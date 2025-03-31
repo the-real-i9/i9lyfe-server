@@ -3,7 +3,7 @@ package postCommentService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/models/postModel"
+	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/messageBrokerService"
 	"i9lyfe/src/services/realtimeService"
@@ -25,7 +25,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	newPostData, mentionNotifs, err := postModel.New(ctx, clientUsername, mediaUrls, postType, description, mentions, hashtags)
+	newPostData, mentionNotifs, err := post.New(ctx, clientUsername, mediaUrls, postType, description, mentions, hashtags)
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +45,13 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	}
 
 	return newPostData, nil
+}
+
+func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
+	thePost, err := post.FindOne(ctx, clientUsername, postId)
+	if err != nil {
+		return nil, err
+	}
+
+	return thePost, nil
 }

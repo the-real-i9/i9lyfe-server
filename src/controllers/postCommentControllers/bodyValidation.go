@@ -33,6 +33,5 @@ func (b createNewPostBody) Validate() error {
 		validation.Field(&b.Description, validation.Length(0, 300)),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_validation.go", "createNewPostBody")
-
+	return helpers.ValidationError(err, "postCommentControllers_bodyValidation.go", "createNewPostBody")
 }
