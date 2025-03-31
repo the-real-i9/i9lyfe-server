@@ -1,4 +1,4 @@
-package privateRoutes
+package userPrivateRoutes
 
 import "github.com/gofiber/fiber/v2"
 

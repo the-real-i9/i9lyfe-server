@@ -1,4 +1,4 @@
-package publicRoutes
+package postCommentRoutes
 
 import "github.com/gofiber/fiber/v2"
 

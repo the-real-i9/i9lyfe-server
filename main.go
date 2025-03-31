@@ -2,9 +2,9 @@ package main
 
 import (
 	"i9lyfe/src/initializers"
-	"i9lyfe/src/routes/appRoutes/privateRoutes"
-	"i9lyfe/src/routes/appRoutes/publicRoutes"
 	"i9lyfe/src/routes/authRoutes"
+	"i9lyfe/src/routes/privateRoutes"
+	"i9lyfe/src/routes/publicRoutes"
 	"log"
 	"os"
 
