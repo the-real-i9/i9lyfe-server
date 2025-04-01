@@ -1,4 +1,4 @@
-package authRoutes
+package authRoute
 
 import (
 	"i9lyfe/src/controllers/auth/passwordResetControllers"
@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Routes(router fiber.Router,
+func Route(router fiber.Router,
 ) {
 	router.Post(
 		"/signup/request_new_account",

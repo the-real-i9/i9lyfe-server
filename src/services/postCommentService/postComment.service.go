@@ -25,14 +25,14 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	newPostData, mentionNotifs, err := post.New(ctx, clientUsername, mediaUrls, postType, description, mentions, hashtags)
+	res, err := post.New(ctx, clientUsername, mediaUrls, postType, description, mentions, hashtags)
 	if err != nil {
 		return nil, err
 	}
 
-	realtimeService.BroadcastNewPost(newPostData["id"].(string), clientUsername)
+	realtimeService.BroadcastNewPost(res.NewPostData["id"].(string), clientUsername)
 
-	for _, mn := range mentionNotifs {
+	for _, mn := range res.MentionNotifs {
 		receiverUsername := mn["receiver_username"].(string)
 
 		delete(mn, "receiver_username")
@@ -44,14 +44,34 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 		})
 	}
 
-	return newPostData, nil
+	return res.NewPostData, nil
 }
 
 func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
-	thePost, err := post.FindOne(ctx, clientUsername, postId)
+	res, err := post.FindOne(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	return thePost, nil
+	return res, nil
+}
+
+func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (any, error) {
+	res, err := post.ReactTo(ctx, clientUsername, postId, reaction)
+	if err != nil {
+		return nil, err
+	}
+
+	if rn := res.ReactionNotif; rn != nil {
+		receiverUsername := rn["receiver_username"].(string)
+
+		delete(rn, "receiver_username")
+
+		// send notification with message broker
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			Event: "new notification",
+			Data:  rn,
+		})
+	}
+	// return res, nil
 }

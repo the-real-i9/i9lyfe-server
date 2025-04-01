@@ -2,8 +2,10 @@ package postModel
 
 import (
 	"context"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
 	"log"
+	"maps"
 	"slices"
 	"time"
 
@@ -11,14 +13,16 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, mentions, hashtags []string) (map[string]any, []map[string]any, error) {
-	type resDataT struct {
-		NewPostData   map[string]any
-		MentionNotifs any
-	}
+type NewResT struct {
+	NewPostData   map[string]any   `json:"new_post_data"`
+	MentionNotifs []map[string]any `json:"mention_notifs"`
+}
+
+func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, mentions, hashtags []string) (NewResT, error) {
+	var resData NewResT
 
 	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		var resData resDataT
+		resMap := make(map[string]any, 2)
 
 		var (
 			res neo4j.ResultWithContext
@@ -44,16 +48,16 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			},
 		)
 		if err != nil {
-			return resData, err
+			return nil, err
 		}
 
 		if res.Record() == nil {
-			return resData, nil
+			return nil, nil
 		}
 
-		npd, _, _ := neo4j.GetRecordValue[map[string]any](res.Record(), "new_post_data")
+		maps.Copy(resMap, res.Record().AsMap())
 
-		resData.NewPostData = npd
+		newPostId := resMap["new_post_data"].(map[string]any)["id"]
 
 		mentionsExcClient := slices.DeleteFunc(mentions, func(uname string) bool {
 			return uname == clientUsername
@@ -73,7 +77,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 				`,
 				map[string]any{
 					"mentionsExcClient": mentionsExcClient,
-					"postId":            resData.NewPostData["id"],
+					"postId":            newPostId,
 					"client_username":   clientUsername,
 				},
 			)
@@ -82,12 +86,10 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			}
 
 			if res.Record() == nil {
-				return resData, nil
+				return nil, nil
 			}
 
-			mns, _ := res.Record().Get("mention_notifs")
-
-			resData.MentionNotifs = mns
+			maps.Copy(resMap, res.Record().AsMap())
 		}
 
 		_, err = tx.Run(
@@ -101,23 +103,23 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			`,
 			map[string]any{
 				"hashtags": hashtags,
-				"postId":   resData.NewPostData["id"],
+				"postId":   newPostId,
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		return resData, nil
+		return resMap, nil
 	})
 	if err != nil {
 		log.Println("postModel.go: New:", err)
-		return nil, nil, fiber.ErrInternalServerError
+		return resData, fiber.ErrInternalServerError
 	}
 
-	resData := res.(resDataT)
+	helpers.AnyToStruct(res, &resData)
 
-	return resData.NewPostData, resData.MentionNotifs.([]map[string]any), nil
+	return resData, nil
 }
 
 func FindOne(ctx context.Context, clientUsername, postId string) (any, error) {
@@ -164,4 +166,94 @@ func FindOne(ctx context.Context, clientUsername, postId string) (any, error) {
 	foundPost, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_post")
 
 	return foundPost, nil
+}
+
+type ReactToResT struct {
+	LatestReactionsCount int            `json:"latest_reactions_count"`
+	ReactionNotif        map[string]any `json:"reaction_notif"`
+}
+
+func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (ReactToResT, error) {
+	var resData ReactToResT
+
+	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		resMap := make(map[string]any, 3)
+
+		var (
+			res neo4j.ResultWithContext
+			err error
+			at  = time.Now().UTC()
+		)
+
+		res, err = tx.Run(
+			ctx,
+			`
+      MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
+
+      MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
+      ON CREATE
+        SET crxn.reaction = $reaction,
+          crxn.at = $at,
+          post.reactions_count = post.reactions_count + 1
+
+      RETURN post.reactions_count AS latest_reactions_count, postOwner.username AS post_owner_username
+      `,
+			map[string]any{
+				"client_username": clientUsername,
+				"post_id":         postId,
+				"reaction":        reaction,
+				"at":              at,
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if res.Record() == nil {
+			return nil, nil
+		}
+
+		maps.Copy(resMap, res.Record().AsMap())
+
+		postOwnerUsername := resMap["post_owner_username"]
+
+		// handle mentions
+		if postOwnerUsername != clientUsername {
+			res, err = tx.Run(
+				ctx,
+				`
+          MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
+  
+          CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: datetime(), details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+  
+          WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.username AS receiver_username
+          RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
+          `,
+				map[string]any{
+					"post_id":         postId,
+					"client_username": clientUsername,
+					"reaction":        reaction,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if res.Record() == nil {
+				return resMap, nil
+			}
+
+			maps.Copy(resMap, res.Record().AsMap())
+		}
+
+		return resMap, nil
+	})
+	if err != nil {
+		log.Println("postModel.go: ReactTo:", err)
+		return resData, fiber.ErrInternalServerError
+	}
+
+	helpers.AnyToStruct(res, &resData)
+
+	return resData, nil
 }

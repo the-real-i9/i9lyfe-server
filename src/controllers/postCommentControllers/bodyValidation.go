@@ -4,6 +4,7 @@ import (
 	"i9lyfe/src/helpers"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 type createNewPostBody struct {
@@ -31,6 +32,19 @@ func (b createNewPostBody) Validate() error {
 			validation.In("photo", "video", "reel").Error("invalid post type. expected 'photo', 'video', or 'reel'"),
 		),
 		validation.Field(&b.Description, validation.Length(0, 300)),
+	)
+
+	return helpers.ValidationError(err, "postCommentControllers_bodyValidation.go", "createNewPostBody")
+}
+
+type reactToPostBody struct {
+	Reaction string `json:"reaction"`
+}
+
+func (b reactToPostBody) Validate() error {
+
+	err := validation.ValidateStruct(&b,
+		validation.Field(&b.Reaction, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_bodyValidation.go", "createNewPostBody")

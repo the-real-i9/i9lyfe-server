@@ -2,9 +2,10 @@ package privateRoutes
 
 import (
 	"i9lyfe/src/middlewares/authMiddlewares"
-	"i9lyfe/src/routes/privateRoutes/chatRoutes"
-	"i9lyfe/src/routes/privateRoutes/postCommentRoutes"
-	"i9lyfe/src/routes/privateRoutes/userPrivateRoutes"
+	"i9lyfe/src/routes/privateRoutes/chatRoute"
+	"i9lyfe/src/routes/privateRoutes/postCommentRoute"
+	"i9lyfe/src/routes/privateRoutes/privateUserRoute"
+	"i9lyfe/src/routes/privateRoutes/wsRoute"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,7 +13,8 @@ import (
 func Routes(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuthRequired)
 
-	router.Use(postCommentRoutes.Routes)
-	router.Use(chatRoutes.Routes)
-	router.Use(userPrivateRoutes.Routes)
+	router.Use(postCommentRoute.Route)
+	router.Use(chatRoute.Route)
+	router.Use(privateUserRoute.Route)
+	router.Use(wsRoute.Route)
 }

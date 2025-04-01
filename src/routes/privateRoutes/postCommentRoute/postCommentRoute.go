@@ -1,4 +1,4 @@
-package postCommentRoutes
+package postCommentRoute
 
 import (
 	PCC "i9lyfe/src/controllers/postCommentControllers"
@@ -6,32 +6,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Routes(router fiber.Router) {
+func Route(router fiber.Router) {
 /* ====== POST ====== */
 router.Post("/new_post", PCC.CreateNewPost)
-router.Get("/posts/:post_id", PCC.GetPost)
-router.Delete("/posts/:post_id", ...validateParams, PCC.deletePost)
+router.Get("/posts/:postId", PCC.GetPost)
+router.Delete("/posts/:postId", PCC.DeletePost)
 
 /* ====== POST'S REACTION ====== */
 
-router.Post(
-  "/posts/:post_id/react",
-  ...validateParams,
-  ...PCV.reactTo,
-  PCC.reactToPost
-)
+router.Post("/posts/:postId/react", PCC.ReactToPost)
 router.Get(
-  "/posts/:post_id/reactors",
+  "/posts/:postId/reactors",
   ...validateParams,
   PCC.getReactorsToPost
 )
 router.Get(
-  "/posts/:post_id/reactors/:reaction",
+  "/posts/:postId/reactors/:reaction",
   ...validateParams,
   PCC.getReactorsWithReactionToPost
 )
 router.Delete(
-  "/posts/:post_id/remove_reaction",
+  "/posts/:postId/remove_reaction",
   ...validateParams,
   PCC.removeReactionToPost
 )
@@ -39,42 +34,42 @@ router.Delete(
 /* ====== POST'S COMMENT ====== */
 
 router.Post(
-  "/posts/:post_id/comment",
+  "/posts/:postId/comment",
   ...validateParams,
   ...PCV.commentOn,
   PCC.commentOnPost
 )
 
 router.Get(
-  "/posts/:post_id/comments",
+  "/posts/:postId/comments",
   ...validateParams,
   ...validateLimitOffset,
   PCC.getCommentsOnPost
 )
 
-router.Get("/comments/:comment_id", ...validateParams, PCC.getComment)
+router.Get("/comments/:commentId", ...validateParams, PCC.getComment)
 
 router.Delete(
-  "/posts/:post_id/comments/:comment_id",
+  "/posts/:postId/comments/:commentId",
   ...validateParams,
   PCC.removeCommentOnPost
 )
 
 router.Post(
-  "/comments/:comment_id/comment",
+  "/comments/:commentId/comment",
   ...validateParams,
   ...PCV.commentOn,
   PCC.commentOnComment
 )
 router.Get(
-  "/comments/:comment_id/comments",
+  "/comments/:commentId/comments",
   ...validateParams,
   ...validateLimitOffset,
   PCC.getCommentsOnComment
 )
 
 router.Delete(
-  "/comments/:parent_comment_id/comments/:comment_id",
+  "/comments/:parentCommentId/comments/:commentId",
   ...validateParams,
   PCC.removeCommentOnComment
 )
@@ -82,36 +77,36 @@ router.Delete(
 /* ====== COMMENT'S REACTION====== */
 
 router.Post(
-  "/comments/:comment_id/react",
+  "/comments/:commentId/react",
   ...validateParams,
   ...PCV.reactTo,
   PCC.reactToComment
 )
 
 router.Get(
-  "/comments/:comment_id/reactors",
+  "/comments/:commentId/reactors",
   ...validateParams,
   PCC.getReactorsToComment
 )
 
 router.Get(
-  "/comments/:comment_id/reactors/:reaction",
+  "/comments/:commentId/reactors/:reaction",
   ...validateParams,
   PCC.getReactorsWithReactionToComment
 )
 
 router.Delete(
-  "/comments/:comment_id/remove_reaction",
+  "/comments/:commentId/remove_reaction",
   ...validateParams,
   PCC.removeReactionToComment
 )
 
 /* ====== REPOST ====== */
 
-router.Post("/posts/:post_id/repost", ...validateParams, PCC.createRepost)
+router.Post("/posts/:postId/repost", ...validateParams, PCC.createRepost)
 
 /* ====== POST SAVE ====== */
 
-router.Post("/posts/:post_id/save", ...validateParams, PCC.savePost)
-router.Delete("/posts/:post_id/unsave", ...validateParams, PCC.unsavePost)
+router.Post("/posts/:postId/save", ...validateParams, PCC.savePost)
+router.Delete("/posts/:postId/unsave", ...validateParams, PCC.unsavePost)
 }

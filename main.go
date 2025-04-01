@@ -2,7 +2,7 @@ package main
 
 import (
 	"i9lyfe/src/initializers"
-	"i9lyfe/src/routes/authRoutes"
+	"i9lyfe/src/routes/authRoute"
 	"i9lyfe/src/routes/privateRoutes"
 	"i9lyfe/src/routes/publicRoutes"
 	"log"
@@ -12,8 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
-
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
 func init() {
@@ -25,14 +23,6 @@ func init() {
 func main() {
 	defer initializers.CleanUp()
 
-	socketio, c := initializers.InitSocket()
-
-	defer func() {
-		socketio.Close(func(err error) {
-			log.Println("error closing socket server", err)
-		})
-	}()
-
 	app := fiber.New()
 
 	app.Use(helmet.New())
@@ -42,9 +32,7 @@ func main() {
 		Key: os.Getenv("COOKIE_SECRET"),
 	}))
 
-	app.Get("/socket.io", adaptor.HTTPHandler(socketio.ServeHandler(c)))
-
-	app.Route("/api/auth", authRoutes.Routes)
+	app.Route("/api/auth", authRoute.Route)
 
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
