@@ -7,106 +7,51 @@ import (
 )
 
 func Route(router fiber.Router) {
-/* ====== POST ====== */
-router.Post("/new_post", PCC.CreateNewPost)
-router.Get("/posts/:postId", PCC.GetPost)
-router.Delete("/posts/:postId", PCC.DeletePost)
+	/* ====== POST ====== */
+	router.Post("/new_post", PCC.CreateNewPost)
+	router.Get("/posts/:postId", PCC.GetPost)
+	router.Delete("/posts/:postId", PCC.DeletePost)
 
-/* ====== POST'S REACTION ====== */
+	/* ====== POST'S REACTION ====== */
 
-router.Post("/posts/:postId/react", PCC.ReactToPost)
-router.Get(
-  "/posts/:postId/reactors",
-  ...validateParams,
-  PCC.getReactorsToPost
-)
-router.Get(
-  "/posts/:postId/reactors/:reaction",
-  ...validateParams,
-  PCC.getReactorsWithReactionToPost
-)
-router.Delete(
-  "/posts/:postId/remove_reaction",
-  ...validateParams,
-  PCC.removeReactionToPost
-)
+	router.Post("/posts/:postId/react", PCC.ReactToPost)
+	router.Get("/posts/:postId/reactors", PCC.GetReactorsToPost)
+	router.Get("/posts/:postId/reactors/:reaction", PCC.GetReactorsWithReactionToPost)
+	router.Delete("/posts/:postId/undo_reaction", PCC.UndoReactionToPost)
 
-/* ====== POST'S COMMENT ====== */
+	/* ====== POST'S COMMENT ====== */
 
-router.Post(
-  "/posts/:postId/comment",
-  ...validateParams,
-  ...PCV.commentOn,
-  PCC.commentOnPost
-)
+	router.Post("/posts/:postId/comment", PCC.CommentOnPost)
+	// remember to add this WARNINING in the APIdoc:
+	// "for paginating comments, the 'offset' query should specify the date of the least recent item,
+	// note that, the least recent item isn't always the first (ASC) or last (DESC) comment in the list retrieved.
+	// the order of the comment list returned isn't evaluated based on date_created only
+	// therefore, you shouldn't assume that the last or first item is the least recent item,
+	// rather, you should programmatically find the least recent item in the list,
+	// doing otherwise would cause items in previous pages to be returned and some items even missing
+	router.Get("/posts/:postId/comments", PCC.GetCommentsOnPost)
+	router.Get("/comments/:commentId", PCC.GetComment)
+	router.Delete("/posts/:postId/comments/:commentId", PCC.RemoveCommentOnPost)
 
-router.Get(
-  "/posts/:postId/comments",
-  ...validateParams,
-  ...validateLimitOffset,
-  PCC.getCommentsOnPost
-)
+	/* ====== COMMENT'S REACTION====== */
 
-router.Get("/comments/:commentId", ...validateParams, PCC.getComment)
+	router.Post("/comments/:commentId/react", PCC.ReactToComment)
+	router.Get("/comments/:commentId/reactors", PCC.GetReactorsToComment)
+	router.Get("/comments/:commentId/reactors/:reaction", PCC.GetReactorsWithReactionToComment)
+	router.Delete("/comments/:commentId/undo_reaction", PCC.UndoReactionToComment)
 
-router.Delete(
-  "/posts/:postId/comments/:commentId",
-  ...validateParams,
-  PCC.removeCommentOnPost
-)
+	/* ====== COMMENT'S COMMENT ===== */
 
-router.Post(
-  "/comments/:commentId/comment",
-  ...validateParams,
-  ...PCV.commentOn,
-  PCC.commentOnComment
-)
-router.Get(
-  "/comments/:commentId/comments",
-  ...validateParams,
-  ...validateLimitOffset,
-  PCC.getCommentsOnComment
-)
+	router.Post("/comments/:commentId/comment", PCC.CommentOnComment)
+	router.Get("/comments/:commentId/comments", PCC.GetCommentsOnComment)
+	router.Delete("/comments/:parentCommentId/comments/:commentId", PCC.RemoveCommentOnComment)
 
-router.Delete(
-  "/comments/:parentCommentId/comments/:commentId",
-  ...validateParams,
-  PCC.removeCommentOnComment
-)
+	/* ====== REPOST ====== */
 
-/* ====== COMMENT'S REACTION====== */
+	router.Post("/posts/:postId/repost", PCC.CreateRepost)
 
-router.Post(
-  "/comments/:commentId/react",
-  ...validateParams,
-  ...PCV.reactTo,
-  PCC.reactToComment
-)
+	/* ====== POST SAVE ====== */
 
-router.Get(
-  "/comments/:commentId/reactors",
-  ...validateParams,
-  PCC.getReactorsToComment
-)
-
-router.Get(
-  "/comments/:commentId/reactors/:reaction",
-  ...validateParams,
-  PCC.getReactorsWithReactionToComment
-)
-
-router.Delete(
-  "/comments/:commentId/remove_reaction",
-  ...validateParams,
-  PCC.removeReactionToComment
-)
-
-/* ====== REPOST ====== */
-
-router.Post("/posts/:postId/repost", ...validateParams, PCC.createRepost)
-
-/* ====== POST SAVE ====== */
-
-router.Post("/posts/:postId/save", ...validateParams, PCC.savePost)
-router.Delete("/posts/:postId/unsave", ...validateParams, PCC.unsavePost)
+	router.Post("/posts/:postId/save", PCC.SavePost)
+	router.Delete("/posts/:postId/undo_save", PCC.UndoSavePost)
 }

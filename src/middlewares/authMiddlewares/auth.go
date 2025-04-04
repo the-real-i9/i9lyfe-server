@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/zishang520/socket.io/v2/socket"
 )
 
 func UserAuthRequired(c *fiber.Ctx) error {
@@ -62,34 +61,4 @@ func UserAuthOptional(c *fiber.Ctx) error {
 	c.Locals("user", clientUser)
 
 	return c.Next()
-}
-
-func UserAuthSocket(cliSocket *socket.Socket, next func(*socket.ExtendedError)) {
-	// authenticate user
-	usStr, found := cliSocket.Request().Headers().Get("user")
-	if !found {
-		next(socket.NewExtendedError("authentication required", nil))
-		return
-	}
-
-	var userSessionData map[string]string
-
-	if err := json.Unmarshal([]byte(usStr), &userSessionData); err != nil {
-		log.Println("socket.go: InitSocket: json.Unmarshal:", err)
-		next(socket.NewExtendedError(fiber.ErrInternalServerError.Message, nil))
-		return
-	}
-
-	sessionToken := userSessionData["authJwt"]
-
-	clientUser, err := securityServices.JwtVerify[appTypes.ClientUser](sessionToken, os.Getenv("AUTH_JWT_SECRET"))
-	if err != nil {
-		f_err := err.(*fiber.Error)
-		next(socket.NewExtendedError(f_err.Message, nil))
-		return
-	}
-
-	cliSocket.SetData(clientUser)
-
-	next(nil)
 }

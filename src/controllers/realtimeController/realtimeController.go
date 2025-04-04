@@ -2,10 +2,9 @@ package realtimeController
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/realtimeService"
-	"sync"
+	"log"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -25,16 +24,20 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 	go serverStream(ctx, clientUser.Username, c)
 
 	var body struct {
-		Event string         `json:"event"`
-		Data  map[string]any `json:"data"`
+		Event string `json:"event"`
+		Data  any    `json:"data"`
 	}
 
 	var w_err error
 
 	for {
-		r_err := c.ReadJSON(&body)
-		if r_err != nil {
-			fmt.Println(r_err)
+		if w_err != nil {
+			log.Println(w_err)
+			return
+		}
+
+		if r_err := c.ReadJSON(&body); r_err != nil {
+			log.Println(r_err)
 			return
 		}
 	}

@@ -3,7 +3,6 @@ package signupControllers
 import (
 	"i9lyfe/src/helpers"
 	"regexp"
-	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -40,19 +39,19 @@ func (b verifyEmailBody) Validate() error {
 }
 
 type registerUserBody struct {
-	Username string    `json:"username"`
-	Password string    `json:"password"`
-	Name     string    `json:"name"`
-	Birthday time.Time `json:"birthday"`
-	Bio      string    `json:"bio"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	Birthday int64  `json:"birthday"`
+	Bio      string `json:"bio"`
 }
 
 func (b registerUserBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Username,
 			validation.Required,
-			validation.Length(3, 0).Error("username too short. minimum of 3 characters"),
-			validation.Match(regexp.MustCompile("^[[:alnum:]][[:alnum:]_-]+[[:alnum:]]$")).Error("username contains invalid characters"),
+			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
 		),
 		validation.Field(&b.Password,
 			validation.Required,

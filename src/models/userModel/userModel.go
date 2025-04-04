@@ -15,7 +15,7 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 		`
 		RETURN EXISTS {
       MATCH (user:User) WHERE user.username = $uniqueIdent OR user.email = $uniqueIdent
-    } AS userExists
+    } AS user_exists
 		`,
 		map[string]any{
 			"uniqueIdent": uniqueIdent,
@@ -26,11 +26,7 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 		return false, fiber.ErrInternalServerError
 	}
 
-	userExists, _, err := neo4j.GetRecordValue[bool](res.Records[0], "userExists")
-	if err != nil {
-		log.Println("userModel.go: Exists:", err)
-		return false, fiber.ErrInternalServerError
-	}
+	userExists, _, _ := neo4j.GetRecordValue[bool](res.Records[0], "user_exists")
 
 	return userExists, nil
 }
@@ -46,7 +42,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 			"username": username,
 			"password": password,
 			"name":     name,
-			"birthday": birthday.UTC(),
+			"birthday": birthday,
 			"bio":      bio,
 		},
 	)
@@ -55,11 +51,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 		return nil, fiber.ErrInternalServerError
 	}
 
-	newUser, _, err := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_user")
-	if err != nil {
-		log.Println("userModel.go: New:", err)
-		return nil, fiber.ErrInternalServerError
-	}
+	newUser, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_user")
 
 	return newUser, nil
 }
