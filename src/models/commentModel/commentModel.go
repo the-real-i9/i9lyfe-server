@@ -134,7 +134,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId string, reaction run
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }
@@ -393,7 +393,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }

@@ -136,7 +136,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }
@@ -297,7 +297,7 @@ func ReactTo(ctx context.Context, clientUsername, postId string, reaction rune) 
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }
@@ -557,7 +557,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }
@@ -724,7 +724,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToStruct(res, &resData)
+	helpers.AnyToAny(res, &resData)
 
 	return resData, nil
 }

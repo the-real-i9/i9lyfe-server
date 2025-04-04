@@ -146,18 +146,7 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getReactorsToPostQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, params.PostId, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, params.PostId, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -184,18 +173,7 @@ func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getReactorsWithReactionToPostQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetReactorsWithReactionToPost(ctx, clientUser.Username, params.PostId, params.Reaction, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetReactorsWithReactionToPost(ctx, clientUser.Username, params.PostId, params.Reaction, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -287,18 +265,7 @@ func GetCommentsOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getCommentsOnPostQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, params.PostId, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, params.PostId, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -417,18 +384,7 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getReactorsToCommentQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, params.CommentId, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, params.CommentId, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -455,18 +411,7 @@ func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getReactorsWithReactionToCommentQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetReactorsWithReactionToComment(ctx, clientUser.Username, params.CommentId, params.Reaction, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetReactorsWithReactionToComment(ctx, clientUser.Username, params.CommentId, params.Reaction, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -558,18 +503,7 @@ func GetCommentsOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	var query getCommentsOnCommentQuery
-
-	err = c.QueryParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = query.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, params.CommentId, query.Limit, query.Offset)
+	respData, app_err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, params.CommentId, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}

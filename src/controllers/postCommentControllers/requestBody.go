@@ -24,7 +24,7 @@ func (b createNewPostBody) Validate() error {
 				validation.Length(1, 1).Error("media list out of range for type 'reel'. must contain exactly 1 media item"),
 			),
 			validation.Each(
-				validation.Length(100*1024, 8*(1024*1024)).Error("a media size is out of range. minimum of 100kb, maximum of 8 megabytes"),
+				validation.Length(100*1024, 8*(1024*1024)).Error("one or more media size is out of range. minimum of 100KiB, maximum of 8MiB"),
 			),
 		),
 		validation.Field(&b.Type,
@@ -60,7 +60,7 @@ func (b commentOnPostBody) Validate() error {
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(0, 300))),
 		validation.Field(&b.AttachmentData,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100kb, maximum of 5 megabytes"))),
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "commentOnPostBody")
@@ -89,7 +89,7 @@ func (b commentOnCommentBody) Validate() error {
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(0, 300))),
 		validation.Field(&b.AttachmentData,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100kb, maximum of 5 megabytes"))),
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "commentOnCommentBody")

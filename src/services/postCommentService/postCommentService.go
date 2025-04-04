@@ -145,8 +145,6 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	attachmentUrl := ""
-
 	mime := mimetype.Detect(attachmentData)
 	fileType := mime.String()
 	fileExt := mime.Extension()
@@ -155,12 +153,10 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 		return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for attachment_data, expected image/*", fileType))
 	}
 
-	aturl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, fileExt)
+	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, fileExt)
 	if err != nil {
 		return nil, err
 	}
-
-	attachmentUrl = aturl
 
 	mentions := utilServices.ExtractMentions(commentText)
 
@@ -185,15 +181,15 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 	}(res.MentionNotifs)
 
 	go func(commentNotif map[string]any) {
-		if rn := commentNotif; rn != nil {
-			receiverUsername := rn["receiver_username"].(string)
+		if cn := commentNotif; cn != nil {
+			receiverUsername := cn["receiver_username"].(string)
 
-			delete(rn, "receiver_username")
+			delete(cn, "receiver_username")
 
 			// send notification with message broker
 			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
 				Event: "new notification",
-				Data:  rn,
+				Data:  cn,
 			})
 		}
 	}(res.CommentNotif)
@@ -300,8 +296,6 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 
 func CommentOnComment(ctx context.Context, clientUsername, commentId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	attachmentUrl := ""
-
 	mime := mimetype.Detect(attachmentData)
 	fileType := mime.String()
 	fileExt := mime.Extension()
@@ -310,12 +304,10 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 		return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for attachment_data, expected image/*", fileType))
 	}
 
-	aturl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, fileExt)
+	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, fileExt)
 	if err != nil {
 		return nil, err
 	}
-
-	attachmentUrl = aturl
 
 	mentions := utilServices.ExtractMentions(commentText)
 
@@ -340,15 +332,15 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 	}(res.MentionNotifs)
 
 	go func(commentNotif map[string]any) {
-		if rn := commentNotif; rn != nil {
-			receiverUsername := rn["receiver_username"].(string)
+		if cn := commentNotif; cn != nil {
+			receiverUsername := cn["receiver_username"].(string)
 
-			delete(rn, "receiver_username")
+			delete(cn, "receiver_username")
 
 			// send notification with message broker
 			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
 				Event: "new notification",
-				Data:  rn,
+				Data:  cn,
 			})
 		}
 	}(res.CommentNotif)

@@ -14,7 +14,7 @@ func Routes(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuthRequired)
 
 	router.Use(postCommentRoute.Route)
-	router.Use(chatRoute.Route)
 	router.Use(privateUserRoute.Route)
+	router.Use(chatRoute.Route)
 	router.Use(wsRoute.Route)
 }

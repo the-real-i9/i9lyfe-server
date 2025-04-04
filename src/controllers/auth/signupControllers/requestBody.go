@@ -20,7 +20,7 @@ func (b requestNewAccountBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "signupControllers_validation.go", "requestNewAccountBody")
+	return helpers.ValidationError(err, "signupControllers_requestBody.go", "requestNewAccountBody")
 }
 
 type verifyEmailBody struct {
@@ -35,7 +35,7 @@ func (b verifyEmailBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "signupControllers_validation.go", "verifyEmailBody")
+	return helpers.ValidationError(err, "signupControllers_requestBody.go", "verifyEmailBody")
 }
 
 type registerUserBody struct {
@@ -62,5 +62,5 @@ func (b registerUserBody) Validate() error {
 		validation.Field(&b.Bio, validation.Required, validation.Length(0, 150).Error("too many characters (max is 150)")),
 	)
 
-	return helpers.ValidationError(err, "signupControllers_validation.go", "registerUserBody")
+	return helpers.ValidationError(err, "signupControllers_requestBody.go", "registerUserBody")
 }

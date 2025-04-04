@@ -19,7 +19,7 @@ func (b requestPasswordResetBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "passwordResetControllers_validation.go", "requestPasswordResetBody")
+	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "requestPasswordResetBody")
 }
 
 type confirmActionBody struct {
@@ -34,7 +34,7 @@ func (b confirmActionBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "passwordResetControllers_validation.go", "confirmActionBody")
+	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "confirmActionBody")
 }
 
 type resetPasswordBody struct {
@@ -49,5 +49,5 @@ func (b resetPasswordBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "passwordResetControllers_validation.go", "resetPasswordBody")
+	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "resetPasswordBody")
 }

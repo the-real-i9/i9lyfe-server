@@ -16,11 +16,11 @@ func MapToStruct(val map[string]any, yourStruct any) {
 	}
 }
 
-func AnyToStruct(val any, yourStruct any) {
+func AnyToAny(val any, dest any) {
 	bt, _ := json.Marshal(val)
 
-	if err := json.Unmarshal(bt, yourStruct); err != nil {
-		log.Println("helpers.go: AnyToStruct:", err)
+	if err := json.Unmarshal(bt, dest); err != nil {
+		log.Println("helpers.go: AnyToAny:", err)
 	}
 }
 
