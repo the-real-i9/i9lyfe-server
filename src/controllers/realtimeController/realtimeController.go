@@ -61,7 +61,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 		case "ack message delivered":
 		case "ack message read":
 		case "react to message":
-		case "undo reaction to message":
+		case "remove reaction to message":
 		case "delete message":
 		}
 	}
