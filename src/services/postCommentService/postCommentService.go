@@ -376,7 +376,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 	return appGlobals.OprSucc, nil
 }
 
-func CreateRepost(ctx context.Context, clientUsername, postId string) (any, error) {
+func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
 	res, err := post.Repost(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
@@ -401,7 +401,7 @@ func CreateRepost(ctx context.Context, clientUsername, postId string) (any, erro
 		"latest_reposts_count": res.LatestRepostsCount,
 	})
 
-	return res.RepostData, nil
+	return appGlobals.OprSucc, nil
 }
 
 func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {

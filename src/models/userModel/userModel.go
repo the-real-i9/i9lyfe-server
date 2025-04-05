@@ -174,7 +174,9 @@ func Follow(ctx context.Context, clientUsername, targetUsername string) (map[str
 		MATCH (clientUser:User{ username: $client_username }), (targetUser:User{ username: $target_username })
 		MERGE (clientUser)-[fur:FOLLOWS_USER]->(targetUser)
 		ON CREATE
-			SET fur.at = $at
+			SET fur.at = $at,
+				clientUser.following_count = coalesce(clientUser.following_count, 0) + 1,
+				targetUser.followers_count = coalesce(clientUser.followers_count, 0) + 1
 
 		WITH targetUser, clientUser
 		CREATE (targetUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: $at, follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
@@ -206,7 +208,9 @@ func Unfollow(ctx context.Context, clientUsername, targetUsername string) error 
 	_, err := db.Query(
 		ctx,
 		`
-		MATCH (:User{ username: $client_username })-[fur:FOLLOWS_USER]->(:User{ username: $target_username })
+		MATCH (clientUser:User{ username: $client_username })-[fur:FOLLOWS_USER]->(targetUser:User{ username: $target_username })
+		SET clientUser.following_count = clientUser.following_count - 1,
+				targetUser.followers_count = clientUser.followers_count - 1
     DELETE fur
 		`,
 		map[string]any{
@@ -416,20 +420,14 @@ func GetProfile(ctx context.Context, clientUsername, targetUsername string) (map
 		`
 		MATCH (profileUser:User{ username: $target_username })
 
-		MATCH (follower:User)-[:FOLLOWS_USER]->(profileUser)-[:FOLLOWS_USER]->(following:User),
-			(profileUser)-[:CREATES_POST]->(post:Post)
-
 		OPTIONAL MATCH (profileUser)<-[cfur:FOLLOWS_USER]-(:User{ username: $client_username })
 
 		WITH profileUser,
-			count(post) AS posts_count,
-			count(follower) AS followers_count,
-			count(following) AS followings_count,
 			CASE cfur 
 				WHEN IS NULL THEN false
 				ELSE true 
 			END AS client_follows
-		RETURN profileUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
+		RETURN profileUser { .username, .name, .profile_pic_url, .bio, .posts_count, .followers_count, .following_count, client_follows } AS user_profile
 		`,
 		map[string]any{
 			"client_username": clientUsername,

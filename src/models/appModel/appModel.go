@@ -13,10 +13,9 @@ func TopUsers(ctx context.Context) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
-    MATCH (user:User)<-[:FOLLOWS_USER]-(follower:User)
+    MATCH (user:User)
 
-		WITH user, count(follower) AS followers_count
-    ORDER BY followers_count DESC
+    ORDER BY user.followers_count DESC
     LIMIT 500
     RETURN collect(user { .username, .name, .profile_pic_url, .bio }) AS top_users
     `,
@@ -68,12 +67,11 @@ func TopHashtags(ctx context.Context) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
-    MATCH (ht:Hashtag)<-[:INCLUDES_HASHTAG]-(post:Post)
+    MATCH (ht:Hashtag)
 
-		WITH ht.name AS hashtag, count(post) AS posts_count
-		ORDER BY post_count DESC
+		ORDER BY ht.post_count DESC
 		LIMIT 1000
-		RETURN collect({ hashtag, posts_count }) AS top_hashtags
+		RETURN collect(ht { .name, .posts_count }) AS top_hashtags
     `,
 		nil,
 	)
@@ -95,12 +93,11 @@ func SearchHashtags(ctx context.Context, term string) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
-    MATCH (ht:Hashtag WHERE ht.name CONTAINS $term)<-[:INCLUDES_HASHTAG]-(post:Post)
+    MATCH (ht:Hashtag WHERE ht.name CONTAINS $term)
 
-		WITH ht.name AS hashtag, count(post) AS posts_count
-		ORDER BY post_count DESC
+		ORDER BY ht.post_count DESC
 		LIMIT 1000
-		RETURN collect({ hashtag, posts_count }) AS res_hashtags
+		RETURN collect(ht { .name, .posts_count }) AS res_hashtags
     `,
 		map[string]any{
 			"term": term,
@@ -172,7 +169,7 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 		},
 	)
 	if err != nil {
-		log.Println("contentRecommendationService.go: FetchPosts:", err)
+		log.Println("appModel.go: SearchPost:", err)
 		return nil, fiber.ErrInternalServerError
 	}
 

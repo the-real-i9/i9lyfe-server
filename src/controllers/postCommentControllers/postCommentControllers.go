@@ -538,7 +538,7 @@ func RemoveCommentOnComment(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func CreateRepost(c *fiber.Ctx) error {
+func RepostPost(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -557,7 +557,7 @@ func CreateRepost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CreateRepost(ctx, clientUser.Username, params.PostId)
+	respData, app_err := postCommentService.RepostPost(ctx, clientUser.Username, params.PostId)
 	if app_err != nil {
 		return app_err
 	}

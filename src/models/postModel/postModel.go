@@ -36,6 +36,8 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			MATCH (clientUser:User{ username: $client_username })
 
       CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: $at, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })
+			SET clientUser.posts_count = coalesce(clientUser.posts_count, 0) + 1
+
       WITH post, toString(post.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
       RETURN post { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
 			`,
@@ -117,8 +119,9 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			MATCH (post:Post{ id: $postId })
 
 			UNWIND $hashtags AS hashtagName
-			MERGE (ht:Hashtag{name: hashtagName})
+			MERGE (ht:Hashtag{ name: hashtagName })
 			CREATE (post)-[:INCLUDES_HASHTAG]->(ht)
+			SET ht.posts_count = coalesce(ht.posts_count, 0) + 1
 			`,
 			map[string]any{
 				"hashtags": hashtags,
@@ -191,12 +194,10 @@ func Delete(ctx context.Context, clientUsername, postId string) error {
 	_, err := db.Query(
 		ctx,
 		`
-		MATCH (clientUser:User{ username: $client_username })
+		MATCH (clientUser:User{ username: $client_username })-[:CREATES_POST]->(post:Post{ id: $post_id })
+		SET clientUser.posts_count = clientUser.posts_count - 1
 
-		OPTIONAL MATCH (clientUser)-[:CREATES_POST]->(post:Post{ id: $post_id }),
-			(clientUser)-[:CREATES_REPOST]->(repost:Repost{ id: $post_id })
-
-		DETACH DELETE post, repost
+		DETACH DELETE post
 		`,
 		map[string]any{
 			"post_id":         postId,
@@ -635,7 +636,6 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type RepostResT struct {
-	RepostData         map[string]any `json:"repost_data"`
 	LatestRepostsCount any            `json:"latest_reposts_count"`
 	RepostNotif        map[string]any `json:"repost_notif"`
 }
@@ -644,7 +644,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 	var resData RepostResT
 
 	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 4)
+		resMap := make(map[string]any, 3)
 
 		var (
 			res neo4j.ResultWithContext
@@ -655,22 +655,17 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 		res, err = tx.Run(
 			ctx,
 			`
-			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $origin_post_id })<-[:CREATES_POST]-(originPostOwner)
+			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $ost_id })<-[:CREATES_POST]-(postOwner)
 
-			MERGE (clientUser)-[:CREATES_REPOST]->(repost:Repost:Post{ reposter_username: $client_username, origin_post_id: $origin_post_id })-[:REPOST_OF]->(post)
+			MERGE (clientUser)-[:REPOSTS_POAR]->(post)
 			ON CREATE
-				SET repost += { id: randomUUID(), type: post.type, media_urls: post.media_urls, description: post.description, created_at: $at, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 },
-					post.reposts_count = post.reposts_count + 1
+				SET post.reposts_count = post.reposts_count + 1
 
-			WITH post, repost, toString(repost.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user, originPostOwner.username AS origin_post_owner_username
-
-			RETURN post.reposts_count AS latest_reposts_count,
-				repost { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS repost_data,
-				origin_post_owner_username
+			RETURN post.reposts_count AS latest_reposts_count, postOwner.username AS post_owner_username
 			`,
 			map[string]any{
 				"client_username": clientUsername,
-				"origin_post_id":  postId,
+				"post_id":         postId,
 				"at":              at,
 			},
 		)
@@ -684,23 +679,23 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 
 		maps.Copy(resMap, res.Record().AsMap())
 
-		originPostOwnerUsername := resMap["origin_post_owner_username"].(string)
+		postOwnerUsername := resMap["post_owner_username"].(string)
 
 		repostId := resMap["repost_data"].(map[string]any)["id"]
 
 		// handle mentions
-		if originPostOwnerUsername != clientUsername {
+		if postOwnerUsername != clientUsername {
 			res, err = tx.Run(
 				ctx,
 				`
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $origin_post_id })<-[:CREATES_POST]-(postOwner)
+        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
 
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: $at, details: ["repost_id", $repostId, "origin_post_id", $origin_post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
+        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: $at, details: ["post_id", $post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
         WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.username AS receiver_username
         RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
         `,
 				map[string]any{
-					"origin_post_id":  postId,
+					"post_id":         postId,
 					"repostId":        repostId,
 					"client_username": clientUsername,
 					"at":              at,

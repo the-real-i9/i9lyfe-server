@@ -48,7 +48,7 @@ func Route(router fiber.Router) {
 
 	/* ====== REPOST ====== */
 
-	router.Post("/posts/:postId/repost", PCC.CreateRepost)
+	router.Post("/posts/:postId/repost", PCC.RepostPost)
 
 	/* ====== POST SAVE ====== */
 
