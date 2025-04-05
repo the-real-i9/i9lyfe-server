@@ -9,6 +9,7 @@ import (
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/messageBrokerService"
 	"strings"
+	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v2"
@@ -148,6 +149,7 @@ func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) 
 
 	return profile, nil
 }
+
 func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
 	profile, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
@@ -156,6 +158,7 @@ func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string
 
 	return profile, nil
 }
+
 func GetUserFollowing(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
 	profile, err := user.GetFollowing(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
@@ -164,6 +167,7 @@ func GetUserFollowing(ctx context.Context, clientUsername, targetUsername string
 
 	return profile, nil
 }
+
 func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
 	profile, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
@@ -171,4 +175,40 @@ func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, li
 	}
 
 	return profile, nil
+}
+
+func GoOnline(ctx context.Context, clientUsername string) {
+	dmPartners, err := user.ChangePresence(ctx, clientUsername, "online", time.Time{})
+	if err != nil {
+		return
+	}
+
+	for _, dmp := range dmPartners {
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), messageBrokerService.Message{
+			Event: "user online",
+			Data: map[string]any{
+				"user": clientUsername,
+			},
+		})
+	}
+
+}
+
+func GoOffline(ctx context.Context, clientUsername string) {
+	lastSeen := time.Now().UTC()
+
+	dmPartners, err := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
+	if err != nil {
+		return
+	}
+
+	for _, dmp := range dmPartners {
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), messageBrokerService.Message{
+			Event: "user offline",
+			Data: map[string]any{
+				"user":      clientUsername,
+				"last_seen": lastSeen,
+			},
+		})
+	}
 }

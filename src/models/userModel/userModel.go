@@ -2,6 +2,7 @@ package userModel
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/models/db"
 	"log"
 	"time"
@@ -34,8 +35,8 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 func New(ctx context.Context, email, username, password, name, bio string, birthday time.Time) (map[string]any, error) {
 	res, err := db.Query(ctx,
 		`
-		CREATE (user:User{ email: $email, username: $username, password: $password, name: $name, birthday: $birthday, bio: $bio, profile_pic_url: "", connection_status: "offline", last_seen: $at })
-    RETURN user { .email, .username, .name, .profile_pic_url, .connection_status } AS new_user
+		CREATE (user:User{ email: $email, username: $username, password: $password, name: $name, birthday: $birthday, bio: $bio, profile_pic_url: "", presence: "offline", last_seen: $at })
+    RETURN user { .email, .username, .name, .profile_pic_url, .presence } AS new_user
 		`,
 		map[string]any{
 			"email":    email,
@@ -62,7 +63,7 @@ func AuthFind(ctx context.Context, uniqueIdent string) (map[string]any, error) {
 		ctx,
 		`
 		MATCH (user:User WHERE user.username = $unique_ident OR user.email = $unique_ident)
-		RETURN user { .email, .username, .name, .profile_pic_url, .connection_status, .password } AS found_user
+		RETURN user { .email, .username, .name, .profile_pic_url, .presence, .password } AS found_user
 		`,
 		map[string]any{
 			"unique_ident": uniqueIdent,
@@ -87,7 +88,7 @@ func Client(ctx context.Context, clientUsername string) (map[string]any, error) 
 		ctx,
 		`
 		MATCH (user:User { username: $client_username })
-		RETURN user { .email, .username, .name, .profile_pic_url, .connection_status } AS client_user
+		RETURN user { .email, .username, .name, .profile_pic_url, .presence } AS client_user
 		`,
 		map[string]any{
 			"client_username": clientUsername,
@@ -572,4 +573,37 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 	ups, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "user_posts")
 
 	return ups, nil
+}
+
+func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen time.Time) ([]any, error) {
+	var lastSeenVal string
+	if presence == "online" {
+		lastSeenVal = "null"
+	} else {
+		lastSeenVal = "$last_seen"
+	}
+
+	res, err := db.Query(ctx,
+		fmt.Sprintf(`
+		MATCH (clientUser:User{ username: $client_username })
+		SET clientUser.presence = $presence, clientUser.last_seen = %s
+
+		WITH clientUser
+		OPTIONAL MATCH (clientUser)-[:HAS_CHAT]->()-[:WITH_USER]->(partnerUser)
+		RETURN collect(partnerUser.username) AS partner_usernames
+		`, lastSeenVal),
+		map[string]any{
+			"client_username": clientUsername,
+			"presence":        presence,
+			"last_seen":       lastSeen,
+		},
+	)
+	if err != nil {
+		log.Println("userModel.go: ChangePresence:", err)
+		return nil, err
+	}
+
+	pus, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "partner_usernames")
+
+	return pus, nil
 }
