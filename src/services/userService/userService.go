@@ -7,10 +7,8 @@ import (
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
-	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/messageBrokerService"
 	"strings"
-	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v2"
@@ -23,15 +21,6 @@ func GetClientUser(ctx context.Context, clientUsername string) (any, error) {
 	}
 
 	return clientUser, nil
-}
-
-func GetHomeFeedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
-	posts, err := contentRecommendationService.GetHomePosts(ctx, clientUsername, []string{"photo", "video"}, limit, time.UnixMilli(offset).UTC())
-	if err != nil {
-		return nil, err
-	}
-
-	return posts, nil
 }
 
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (any, error) {
@@ -107,7 +96,7 @@ func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (a
 }
 
 func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
-	posts, err := user.GetMentionedPosts(ctx, clientUsername, limit, time.UnixMilli(offset).UTC())
+	posts, err := user.GetMentionedPosts(ctx, clientUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +105,7 @@ func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int
 }
 
 func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
-	posts, err := user.GetReactedPosts(ctx, clientUsername, limit, time.UnixMilli(offset).UTC())
+	posts, err := user.GetReactedPosts(ctx, clientUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +114,7 @@ func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int, 
 }
 
 func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
-	posts, err := user.GetSavedPosts(ctx, clientUsername, limit, time.UnixMilli(offset).UTC())
+	posts, err := user.GetSavedPosts(ctx, clientUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +123,7 @@ func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int, of
 }
 
 func GetUserNotifications(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
-	notifs, err := user.GetNotifications(ctx, clientUsername, limit, time.UnixMilli(offset).UTC())
+	notifs, err := user.GetNotifications(ctx, clientUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -149,4 +138,37 @@ func ReadUserNotification(ctx context.Context, clientUsername, notificationId st
 	}
 
 	return appGlobals.OprSucc, nil
+}
+
+func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (any, error) {
+	profile, err := user.GetProfile(ctx, clientUsername, targetUsername)
+	if err != nil {
+		return nil, err
+	}
+
+	return profile, nil
+}
+func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
+	profile, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	return profile, nil
+}
+func GetUserFollowing(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
+	profile, err := user.GetFollowing(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	return profile, nil
+}
+func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
+	profile, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	return profile, nil
 }

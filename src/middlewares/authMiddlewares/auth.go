@@ -40,7 +40,7 @@ func UserAuthOptional(c *fiber.Ctx) error {
 	usStr := c.Cookies("user")
 
 	if usStr == "" {
-		c.Locals("user", nil)
+		c.Locals("user", appTypes.ClientUser{})
 		return c.Next()
 	}
 

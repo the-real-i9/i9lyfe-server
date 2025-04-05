@@ -77,9 +77,9 @@ func AuthFind(ctx context.Context, uniqueIdent string) (map[string]any, error) {
 		return nil, nil
 	}
 
-	found_user, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_user")
+	fu, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_user")
 
-	return found_user, nil
+	return fu, nil
 }
 
 func Client(ctx context.Context, clientUsername string) (map[string]any, error) {
@@ -102,9 +102,9 @@ func Client(ctx context.Context, clientUsername string) (map[string]any, error) 
 		return nil, nil
 	}
 
-	client_user, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "client_user")
+	cu, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "client_user")
 
-	return client_user, nil
+	return cu, nil
 }
 
 func ChangePassword(ctx context.Context, email, newPassword string) error {
@@ -172,7 +172,9 @@ func Follow(ctx context.Context, clientUsername, targetUsername string) (map[str
 		ctx,
 		`
 		MATCH (clientUser:User{ username: $client_username }), (targetUser:User{ username: $target_username })
-		MERGE (clientUser)-[:FOLLOWS_USER]->(targetUser)
+		MERGE (clientUser)-[fur:FOLLOWS_USER]->(targetUser)
+		ON CREATE
+			SET fur.at = $at
 
 		WITH targetUser, clientUser
 		CREATE (targetUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: $at, follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
@@ -195,17 +197,17 @@ func Follow(ctx context.Context, clientUsername, targetUsername string) (map[str
 		return nil, nil
 	}
 
-	follow_notif, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "follow_notif")
+	fn, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "follow_notif")
 
-	return follow_notif, nil
+	return fn, nil
 }
 
 func Unfollow(ctx context.Context, clientUsername, targetUsername string) error {
 	_, err := db.Query(
 		ctx,
 		`
-		MATCH (:User{ username: $client_username })-[fr:FOLLOWS_USER]->(:User{ username: $target_username })
-    DELETE fr
+		MATCH (:User{ username: $client_username })-[fur:FOLLOWS_USER]->(:User{ username: $target_username })
+    DELETE fur
 		`,
 		map[string]any{
 			"client_username": clientUsername,
@@ -406,4 +408,170 @@ func ReadNotification(ctx context.Context, clientUsername, notificationId string
 	}
 
 	return nil
+}
+
+func GetProfile(ctx context.Context, clientUsername, targetUsername string) (map[string]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (profileUser:User{ username: $target_username })
+
+		MATCH (follower:User)-[:FOLLOWS_USER]->(profileUser)-[:FOLLOWS_USER]->(following:User),
+			(profileUser)-[:CREATES_POST]->(post:Post)
+
+		OPTIONAL MATCH (profileUser)<-[cfur:FOLLOWS_USER]-(:User{ username: $client_username })
+
+		WITH profileUser,
+			count(post) AS posts_count,
+			count(follower) AS followers_count,
+			count(following) AS followings_count,
+			CASE cfur 
+				WHEN IS NULL THEN false
+				ELSE true 
+			END AS client_follows
+		RETURN profileUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, followings_count, client_follows } AS user_profile
+		`,
+		map[string]any{
+			"client_username": clientUsername,
+			"target_username": targetUsername,
+		},
+	)
+	if err != nil {
+		log.Println("userModel.go: GetProfile:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	userProfile, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "user_profile")
+
+	return userProfile, nil
+}
+
+func GetFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, offset time.Time) ([]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (follower:User)-[fur:FOLLOWS_USER]->(:User{ username: $target_username })
+		WHERE fur.at < $offset
+
+		OPTIONAL MATCH (follower)<-[cfur:FOLLOWS_USER]-(:User{ username: $client_username })
+
+		WITH follower,
+			CASE cfur 
+				WHEN IS NULL THEN false
+				ELSE true 
+			END AS client_follows
+		ORDER BY fur.at DESC
+		LIMIT $limit
+		RETURN collect(follower { .id, .username, .profile_pic_url, client_follows }) AS user_followers
+		`,
+		map[string]any{
+			"client_username": clientUsername,
+			"target_username": targetUsername,
+			"limit":           limit,
+			"offset":          offset,
+		},
+	)
+	if err != nil {
+		log.Println("userModel.go: GetFollowers:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	ufs, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "user_followers")
+
+	return ufs, nil
+}
+
+func GetFollowing(ctx context.Context, clientUsername, targetUsername string, limit int, offset time.Time) ([]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (:User{ username: $target_username })-[fur:FOLLOWS_USER]->(following:User)
+		WHERE fur.at < $offset
+
+		OPTIONAL MATCH (following)<-[cfur:FOLLOWS_USER]-(:User{ username: $client_username })
+
+		WITH following,
+			CASE cfur 
+				WHEN IS NULL THEN false
+				ELSE true 
+			END AS client_follows
+		ORDER BY fur.at DESC
+		LIMIT $limit
+		RETURN collect(following { .id, .username, .profile_pic_url, client_follows }) AS user_following
+		`,
+		map[string]any{
+			"client_username": clientUsername,
+			"target_username": targetUsername,
+			"limit":           limit,
+			"offset":          offset,
+		},
+	)
+	if err != nil {
+		log.Println("userModel.go: GetFollowing:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	uf, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "user_following")
+
+	return uf, nil
+}
+
+func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit int, offset time.Time) ([]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (ownerUser:User{ username: $username })-[:CREATES_POST]->(post:Post WHERE post.created_at < $offset), (clientUser:User{ username: $client_username })
+		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
+		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
+		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
+		WITH post, 
+			toString(post.created_at) AS created_at, 
+			ownerUser { .username, .profile_pic_url } AS owner_user,
+			CASE crxn 
+				WHEN IS NULL THEN "" 
+				ELSE crxn.reaction 
+			END AS client_reaction, 
+			CASE csaves 
+				WHEN IS NULL THEN false 
+				ELSE true 
+			END AS client_saved, 
+			CASE creposts 
+				WHEN IS NULL THEN false 
+				ELSE true 
+			END AS client_reposted
+		ORDER BY post.created_at DESC
+		LIMIT toInteger($limit)
+		RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_posts
+		`,
+		map[string]any{
+			"client_username": clientUsername,
+			"target_username": targetUsername,
+			"limit":           limit,
+			"offset":          offset,
+		},
+	)
+	if err != nil {
+		log.Println("userModel.go: GetPosts:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	ups, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "user_posts")
+
+	return ups, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
@@ -11,7 +12,6 @@ import (
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/utilServices"
 	"strings"
-	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v2"
@@ -112,7 +112,7 @@ func ReactToPost(ctx context.Context, clientUsername, postId string, reaction ru
 }
 
 func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
-	reactors, err := post.GetReactors(ctx, clientUsername, postId, limit, time.UnixMilli(offset).UTC())
+	reactors, err := post.GetReactors(ctx, clientUsername, postId, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit
 }
 
 func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId string, reaction rune, limit int, offset int64) (any, error) {
-	reactors, err := post.GetReactorsWithReaction(ctx, clientUsername, postId, reaction, limit, time.UnixMilli(offset).UTC())
+	reactors, err := post.GetReactorsWithReaction(ctx, clientUsername, postId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 }
 
 func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
-	comments, err := post.GetComments(ctx, clientUsername, postId, limit, time.UnixMilli(offset).UTC())
+	comments, err := post.GetComments(ctx, clientUsername, postId, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId string, react
 }
 
 func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
-	reactors, err := comment.GetReactors(ctx, clientUsername, commentId, limit, time.UnixMilli(offset).UTC())
+	reactors, err := comment.GetReactors(ctx, clientUsername, commentId, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func GetReactorsToComment(ctx context.Context, clientUsername, commentId string,
 }
 
 func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId string, reaction rune, limit int, offset int64) (any, error) {
-	reactors, err := comment.GetReactorsWithReaction(ctx, clientUsername, commentId, reaction, limit, time.UnixMilli(offset).UTC())
+	reactors, err := comment.GetReactorsWithReaction(ctx, clientUsername, commentId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +354,7 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 }
 
 func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
-	comments, err := comment.GetComments(ctx, clientUsername, commentId, limit, time.UnixMilli(offset).UTC())
+	comments, err := comment.GetComments(ctx, clientUsername, commentId, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}

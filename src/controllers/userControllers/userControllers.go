@@ -31,20 +31,6 @@ func Signout(c *fiber.Ctx) error {
 	return c.JSON(fmt.Sprintf("Bye, %s! See you again!", clientUser.Username))
 }
 
-func GetHomeFeedPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	clientUser := c.Locals("user").(appTypes.ClientUser)
-
-	respData, app_err := userService.GetHomeFeedPosts(ctx, clientUser.Username, c.QueryInt("limit", 50), int64(c.QueryInt("offset")))
-	if app_err != nil {
-		return app_err
-	}
-
-	return c.JSON(respData)
-}
-
 func EditUserProfile(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -229,6 +215,113 @@ func ReadUserNotification(c *fiber.Ctx) error {
 	}
 
 	respData, app_err := userService.ReadUserNotification(ctx, clientUser.Username, params.NotificationId)
+	if app_err != nil {
+		return app_err
+	}
+
+	return c.JSON(respData)
+}
+
+func GetUserProfile(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	var params getUserProfileParams
+
+	var err error
+
+	err = c.ParamsParser(&params)
+	if err != nil {
+		return err
+	}
+
+	if err = params.Validate(); err != nil {
+		return err
+	}
+
+	respData, app_err := userService.GetUserProfile(ctx, clientUser.Username, params.Username)
+	if app_err != nil {
+		return app_err
+	}
+
+	return c.JSON(respData)
+}
+
+func GetUserFollowers(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	var params getUserFollowersParams
+
+	var err error
+
+	err = c.ParamsParser(&params)
+	if err != nil {
+		return err
+	}
+
+	if err = params.Validate(); err != nil {
+		return err
+	}
+
+	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	if app_err != nil {
+		return app_err
+	}
+
+	return c.JSON(respData)
+}
+func GetUserFollowing(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	var params getUserFollowingParams
+
+	var err error
+
+	err = c.ParamsParser(&params)
+	if err != nil {
+		return err
+	}
+
+	if err = params.Validate(); err != nil {
+		return err
+	}
+
+	respData, app_err := userService.GetUserFollowing(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	if app_err != nil {
+		return app_err
+	}
+
+	return c.JSON(respData)
+}
+
+func GetUserPosts(c *fiber.Ctx) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	var params getUserPostsParams
+
+	var err error
+
+	err = c.ParamsParser(&params)
+	if err != nil {
+		return err
+	}
+
+	if err = params.Validate(); err != nil {
+		return err
+	}
+
+	respData, app_err := userService.GetUserPosts(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}

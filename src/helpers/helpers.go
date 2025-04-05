@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -22,6 +23,22 @@ func AnyToAny(val any, dest any) {
 	if err := json.Unmarshal(bt, dest); err != nil {
 		log.Println("helpers.go: AnyToAny:", err)
 	}
+}
+
+// Includes a business-specific functionality for a default offset time
+//
+// When the user provides no explicit offset msec value or specifies zero,
+// this implies that she wants results from the most-recent content
+// (note that results are returned in descending order).
+// However, converting a zero msec into time.Time yields a past time,
+// and since we'll normally fetch contents whose time created is less than
+// the offset specified, we therefore need to coalesce the past time into future time.
+func OffsetTime(msec int64) time.Time {
+	if msec == 0 {
+		return time.Now().Add(time.Minute).UTC()
+	}
+
+	return time.UnixMilli(msec).UTC()
 }
 
 func WSErrResp(err error, onEvent string) map[string]any {

@@ -49,3 +49,63 @@ func (p readUserNotificationParams) Validate() error {
 
 	return helpers.ValidationError(err, "userControllers_requestParams.go", "readUserNotificationParams")
 }
+
+type getUserProfileParams struct {
+	Username string
+}
+
+func (p getUserProfileParams) Validate() error {
+	err := validation.ValidateStruct(&p,
+		validation.Field(&p.Username, validation.Required,
+			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
+		),
+	)
+
+	return helpers.ValidationError(err, "userControllers_requestParams.go", "getUserProfileParams")
+}
+
+type getUserFollowersParams struct {
+	Username string
+}
+
+func (p getUserFollowersParams) Validate() error {
+	err := validation.ValidateStruct(&p,
+		validation.Field(&p.Username, validation.Required,
+			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
+		),
+	)
+
+	return helpers.ValidationError(err, "userControllers_requestParams.go", "getUserFollowersParams")
+}
+
+type getUserFollowingParams struct {
+	Username string
+}
+
+func (p getUserFollowingParams) Validate() error {
+	err := validation.ValidateStruct(&p,
+		validation.Field(&p.Username, validation.Required,
+			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
+		),
+	)
+
+	return helpers.ValidationError(err, "userControllers_requestParams.go", "getUserFollowingParams")
+}
+
+type getUserPostsParams struct {
+	Username string
+}
+
+func (p getUserPostsParams) Validate() error {
+	err := validation.ValidateStruct(&p,
+		validation.Field(&p.Username, validation.Required,
+			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
+		),
+	)
+
+	return helpers.ValidationError(err, "userControllers_requestParams.go", "getUserPostsParams")
+}

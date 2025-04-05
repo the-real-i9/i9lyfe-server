@@ -16,8 +16,6 @@ func Route(router fiber.Router) {
 
 	router.Put("/change_profile_picture", UC.ChangeUserProfilePicture)
 
-	router.Get("/home_feed", UC.GetHomeFeedPosts)
-
 	router.Post("/users/:username/follow", UC.FollowUser)
 
 	router.Delete("/users/:username/unfollow", UC.UnfollowUser)
