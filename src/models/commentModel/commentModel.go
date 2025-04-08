@@ -52,7 +52,7 @@ type ReactToResT struct {
 	ReactionNotif        map[string]any `json:"reaction_notif"`
 }
 
-func ReactTo(ctx context.Context, clientUsername, commentId string, reaction rune) (ReactToResT, error) {
+func ReactTo(ctx context.Context, clientUsername, commentId, reaction string) (ReactToResT, error) {
 	var resData ReactToResT
 
 	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -134,7 +134,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId string, reaction run
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }
@@ -177,7 +177,7 @@ func GetReactors(ctx context.Context, clientUsername, commentId string, limit in
 	return reactors, nil
 }
 
-func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId string, reaction rune, limit int, offset time.Time) ([]any, error) {
+func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
@@ -393,7 +393,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }

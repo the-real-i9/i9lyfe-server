@@ -4,25 +4,50 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func MapToStruct(val map[string]any, yourStruct any) {
-	bt, _ := json.Marshal(val)
-
-	if err := json.Unmarshal(bt, yourStruct); err != nil {
-		log.Println("helpers.go: MapToStruct:", err)
+func ToStruct(val any, dest any) {
+	if reflect.TypeOf(dest).Elem().Kind() != reflect.Struct {
+		panic("expected 'dest' to be a struct")
 	}
-}
 
-func AnyToAny(val any, dest any) {
 	bt, _ := json.Marshal(val)
 
 	if err := json.Unmarshal(bt, dest); err != nil {
-		log.Println("helpers.go: AnyToAny:", err)
+		log.Println("helpers.go: ToStruct:", err)
 	}
+}
+
+func StructToMap(val any, dest *map[string]any) {
+	if reflect.TypeOf(val).Kind() != reflect.Struct {
+		panic("expected 'val' to be a struct")
+	}
+
+	valNumField := reflect.TypeOf(val).NumField()
+
+	var resMap = make(map[string]any, valNumField)
+
+	for i := range valNumField {
+		key := ""
+		jsonTag := reflect.TypeOf(val).Field(i).Tag.Get("json")
+
+		if jsonTag != "" {
+			key = jsonTag
+		} else {
+			key = strings.ToLower(reflect.TypeOf(val).Field(i).Name)
+		}
+
+		fieldVal := reflect.ValueOf(val).Field(i).Interface()
+
+		resMap[key] = fieldVal
+	}
+
+	*dest = resMap
 }
 
 // Includes a business-specific functionality for a default offset time

@@ -28,20 +28,7 @@ func DeleteChat(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params deleteChatParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := chatService.DeleteChat(ctx, clientUser.Username, params.PartnerUsername)
+	respData, app_err := chatService.DeleteChat(ctx, clientUser.Username, c.Params("partner_username"))
 	if app_err != nil {
 		return app_err
 	}

@@ -139,7 +139,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }
@@ -217,7 +217,7 @@ type ReactToResT struct {
 	ReactionNotif        map[string]any `json:"reaction_notif"`
 }
 
-func ReactTo(ctx context.Context, clientUsername, postId string, reaction rune) (ReactToResT, error) {
+func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (ReactToResT, error) {
 	var resData ReactToResT
 
 	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -298,7 +298,7 @@ func ReactTo(ctx context.Context, clientUsername, postId string, reaction rune) 
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }
@@ -341,7 +341,7 @@ func GetReactors(ctx context.Context, clientUsername, postId string, limit int, 
 	return reactors, nil
 }
 
-func GetReactorsWithReaction(ctx context.Context, clientUsername, postId string, reaction rune, limit int, offset time.Time) ([]any, error) {
+func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
@@ -558,7 +558,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }
@@ -719,7 +719,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(res, &resData)
+	helpers.ToStruct(res, &resData)
 
 	return resData, nil
 }

@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/chatMessageTypes"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/chatService"
+	"i9lyfe/src/services/chatService/messageService"
 	"i9lyfe/src/services/messageBrokerService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/userService"
@@ -56,13 +59,194 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			realtimeService.PostUpdateSubscribers.Store(clientUser.Username, c)
 		case "stop receiving post updates":
 			realtimeService.PostUpdateSubscribers.Delete(clientUser.Username)
-		case "send message":
-		case "get chat history":
-		case "ack message delivered":
-		case "ack message read":
-		case "react to message":
-		case "remove reaction to message":
-		case "delete message":
+		case "chat: send message: text":
+			var msg chatMessageTypes.Text
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendTextMessage(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: send message: voice":
+			var msg chatMessageTypes.Voice
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendVoiceMessage(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: send message: photo":
+			var msg chatMessageTypes.Photo
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendPhoto(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: send message: video":
+			var msg chatMessageTypes.Video
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendVideo(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: send message: audio":
+			var msg chatMessageTypes.Audio
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendAudio(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: send message: file":
+			var msg chatMessageTypes.File
+
+			helpers.ToStruct(body.Data, &msg)
+
+			if err := msg.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.SendFile(ctx, clientUser.Username, msg)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: get history":
+			var data getChatHistoryEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := chatService.GetChatHistory(ctx, clientUser.Username, data.PartnerUsername, data.Offset)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: ack message delivered":
+			var data ackChatMsgDeliveredEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.AckMsgDelivered(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: ack message read":
+			var data ackChatMsgReadEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.AckMsgRead(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: react to message":
+			var data reactToChatMsgEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.ReactToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.Reaction, data.At)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: remove reaction to message":
+			var data removeReactionToChatMsgEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := messageService.RemoveReactionToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+		case "chat: delete message":
 		}
 	}
 

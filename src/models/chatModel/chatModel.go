@@ -65,3 +65,34 @@ func Delete(ctx context.Context, clientUsername, partnerUsername string) error {
 
 	return nil
 }
+
+func History(ctx context.Context, clientUsername, partnerUsername string, offset time.Time) ([]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
+		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message WHERE message.created_at < $offset)<-[rxn:REACTS_TO_MESSAGE]-(reactor)
+		
+		WITH message, toString(message.created_at) AS created_at, collect({ user: reactor { .username, .profile_pic_url }, reaction: rxn.reaction }) AS reactions
+		ORDER BY message.created_at DESC
+		LIMIT 50
+		RETURN collect(message { .*, created_at, reactions }) AS chat_history
+		`,
+		map[string]any{
+			"client_username":  clientUsername,
+			"partner_username": partnerUsername,
+			"offset":           offset,
+		},
+	)
+	if err != nil {
+		log.Println("chatModel.go: History:", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	ch, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "chat_history")
+
+	return ch, nil
+}

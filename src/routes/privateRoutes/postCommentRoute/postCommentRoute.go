@@ -44,7 +44,7 @@ func Route(router fiber.Router) {
 
 	router.Post("/comments/:commentId/comment", PCC.CommentOnComment)
 	router.Get("/comments/:commentId/comments", PCC.GetCommentsOnComment)
-	router.Delete("/comments/:parentCommentId/comments/:commentId", PCC.RemoveCommentOnComment)
+	router.Delete("/comments/:parentCommentId/comments/:childCommentId", PCC.RemoveCommentOnComment)
 
 	/* ====== REPOST ====== */
 

@@ -91,20 +91,7 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params followUserParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.FollowUser(ctx, clientUser.Username, params.Username)
+	respData, app_err := userService.FollowUser(ctx, clientUser.Username, c.Params("username"))
 	if app_err != nil {
 		return app_err
 	}
@@ -118,20 +105,7 @@ func UnfollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params unfollowUserParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.UnfollowUser(ctx, clientUser.Username, params.Username)
+	respData, app_err := userService.UnfollowUser(ctx, clientUser.Username, c.Params("username"))
 	if app_err != nil {
 		return app_err
 	}
@@ -201,20 +175,7 @@ func ReadUserNotification(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params readUserNotificationParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.ReadUserNotification(ctx, clientUser.Username, params.NotificationId)
+	respData, app_err := userService.ReadUserNotification(ctx, clientUser.Username, c.Params("notification_id"))
 	if app_err != nil {
 		return app_err
 	}
@@ -228,20 +189,7 @@ func GetUserProfile(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params getUserProfileParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.GetUserProfile(ctx, clientUser.Username, params.Username)
+	respData, app_err := userService.GetUserProfile(ctx, clientUser.Username, c.Params("username"))
 	if app_err != nil {
 		return app_err
 	}
@@ -255,20 +203,7 @@ func GetUserFollowers(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params getUserFollowersParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("usesrname"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -281,20 +216,7 @@ func GetUserFollowing(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params getUserFollowingParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.GetUserFollowing(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := userService.GetUserFollowing(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -308,20 +230,7 @@ func GetUserPosts(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	var params getUserPostsParams
-
-	var err error
-
-	err = c.ParamsParser(&params)
-	if err != nil {
-		return err
-	}
-
-	if err = params.Validate(); err != nil {
-		return err
-	}
-
-	respData, app_err := userService.GetUserPosts(ctx, clientUser.Username, params.Username, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := userService.GetUserPosts(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}

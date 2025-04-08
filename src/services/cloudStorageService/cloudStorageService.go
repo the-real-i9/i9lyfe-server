@@ -12,29 +12,28 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Upload(ctx context.Context, filePath string, data []byte, ext string) (string, error) {
-	mediaUploadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func Upload(ctx context.Context, dirPath string, data []byte, ext string) (string, error) {
+	mediaUploadCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
-	filePath = fmt.Sprintf("%s/_%d_.%s", filePath, time.Now().UnixNano(), ext)
+	dirPath = fmt.Sprintf("%s/_%d_.%s", dirPath, time.Now().UnixNano(), ext)
 
 	bucketName := os.Getenv("GCS_BUCKET")
-	fileUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, filePath)
+	mediaUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, dirPath)
 
-	stWriter := appGlobals.GCSClient.Bucket(bucketName).Object(filePath).NewWriter(mediaUploadCtx)
+	stWriter := appGlobals.GCSClient.Bucket(bucketName).Object(dirPath).NewWriter(mediaUploadCtx)
 
 	stWriter.Write(data)
 
 	err := stWriter.Close()
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Println("cloudStorageService.go: UploadFile:", "media upload timed out")
-		} else {
-			log.Println("cloudStorageService.go: UploadFile:", err)
+			return "", fiber.NewError(fiber.StatusRequestTimeout, "media upload timed out")
 		}
 
+		log.Println("cloudStorageService.go: UploadFile:", err)
 		return "", fiber.ErrInternalServerError
 	}
 
-	return fileUrl, nil
+	return mediaUrl, nil
 }

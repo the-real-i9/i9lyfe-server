@@ -22,15 +22,15 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	mediaUrls := make([]string, len(mediaDataList))
 
 	for i, mediaData := range mediaDataList {
-		mime := mimetype.Detect(mediaData)
-		fileType := mime.String()
-		fileExt := mime.Extension()
+		mediaMIME := mimetype.Detect(mediaData)
+		mediaType := mediaMIME.String()
+		mediaExt := mediaMIME.Extension()
 
-		if ((postType == "reel" || postType == "video") && !strings.HasPrefix(fileType, "video")) || (postType == "photo" && !strings.HasPrefix(fileType, "image")) {
-			return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for the post type %s", fileType, postType))
+		if ((postType == "reel" || postType == "video") && !strings.HasPrefix(mediaType, "video")) || (postType == "photo" && !strings.HasPrefix(mediaType, "image")) {
+			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
 		}
 
-		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s", clientUsername), mediaData, fileExt)
+		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s", clientUsername), mediaData, mediaExt)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (any, error)
 	return appGlobals.OprSucc, nil
 }
 
-func ReactToPost(ctx context.Context, clientUsername, postId string, reaction rune) (any, error) {
+func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (any, error) {
 	res, err := post.ReactTo(ctx, clientUsername, postId, reaction)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit
 	return reactors, nil
 }
 
-func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId string, reaction rune, limit int, offset int64) (any, error) {
+func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, reaction string, limit int, offset int64) (any, error) {
 	reactors, err := post.GetReactorsWithReaction(ctx, clientUsername, postId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
@@ -145,15 +145,15 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	mime := mimetype.Detect(attachmentData)
-	fileType := mime.String()
-	fileExt := mime.Extension()
+	mediaMIME := mimetype.Detect(attachmentData)
+	mediaType := mediaMIME.String()
+	mediaExt := mediaMIME.Extension()
 
-	if !strings.HasPrefix(fileType, "image") {
-		return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for attachment_data, expected image/*", fileType))
+	if !strings.HasPrefix(mediaType, "image") {
+		return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 	}
 
-	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, fileExt)
+	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 	return appGlobals.OprSucc, nil
 }
 
-func ReactToComment(ctx context.Context, clientUsername, commentId string, reaction rune) (any, error) {
+func ReactToComment(ctx context.Context, clientUsername, commentId, reaction string) (any, error) {
 	res, err := comment.ReactTo(ctx, clientUsername, commentId, reaction)
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func GetReactorsToComment(ctx context.Context, clientUsername, commentId string,
 	return reactors, nil
 }
 
-func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId string, reaction rune, limit int, offset int64) (any, error) {
+func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset int64) (any, error) {
 	reactors, err := comment.GetReactorsWithReaction(ctx, clientUsername, commentId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
@@ -296,15 +296,15 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 
 func CommentOnComment(ctx context.Context, clientUsername, commentId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	mime := mimetype.Detect(attachmentData)
-	fileType := mime.String()
-	fileExt := mime.Extension()
+	mediaMIME := mimetype.Detect(attachmentData)
+	mediaType := mediaMIME.String()
+	mediaExt := mediaMIME.Extension()
 
-	if !strings.HasPrefix(fileType, "image") {
-		return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for attachment_data, expected image/*", fileType))
+	if !strings.HasPrefix(mediaType, "image") {
+		return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 	}
 
-	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, fileExt)
+	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, mediaExt)
 	if err != nil {
 		return nil, err
 	}

@@ -51,7 +51,7 @@ func (b registerUserBody) Validate() error {
 		validation.Field(&b.Username,
 			validation.Required,
 			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
-			validation.Match(regexp.MustCompile("^\\w[\\w-]*\\w$")).Error("username contains invalid characters"),
+			validation.Match(regexp.MustCompile(`^\w[\w-]*\w$`)).Error("username contains invalid characters"),
 		),
 		validation.Field(&b.Password,
 			validation.Required,

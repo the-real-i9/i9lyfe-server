@@ -24,3 +24,12 @@ func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (an
 
 	return appGlobals.OprSucc, nil
 }
+
+func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, offset int64) ([]any, error) {
+	history, err := chat.History(ctx, clientUsername, partnerUsername, helpers.OffsetTime(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	return history, nil
+}

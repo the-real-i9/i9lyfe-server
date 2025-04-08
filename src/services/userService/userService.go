@@ -27,7 +27,11 @@ func GetClientUser(ctx context.Context, clientUsername string) (any, error) {
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (any, error) {
 	var updateKVMap map[string]any
 
-	helpers.AnyToAny(updateKVStruct, &updateKVMap)
+	helpers.StructToMap(updateKVStruct, &updateKVMap)
+
+	if _, ok := updateKVMap["birthday"]; ok {
+		updateKVMap["birthday"] = time.UnixMilli(updateKVMap["birthday"].(int64)).UTC()
+	}
 
 	err := user.EditProfile(ctx, clientUsername, updateKVMap)
 	if err != nil {

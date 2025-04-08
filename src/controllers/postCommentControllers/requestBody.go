@@ -38,7 +38,7 @@ func (b createNewPostBody) Validate() error {
 }
 
 type reactToPostBody struct {
-	Reaction rune `json:"reaction"`
+	Reaction string `json:"reaction"`
 }
 
 func (b reactToPostBody) Validate() error {
@@ -67,7 +67,7 @@ func (b commentOnPostBody) Validate() error {
 }
 
 type reactToCommentBody struct {
-	Reaction rune `json:"reaction"`
+	Reaction string `json:"reaction"`
 }
 
 func (b reactToCommentBody) Validate() error {

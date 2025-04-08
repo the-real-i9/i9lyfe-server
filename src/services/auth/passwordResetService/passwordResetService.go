@@ -47,7 +47,7 @@ func ConfirmAction(ctx context.Context, sessionData map[string]any, inputResetTo
 		PwdrTokenExpires time.Time
 	}
 
-	helpers.MapToStruct(sessionData, &sd)
+	helpers.ToStruct(sessionData, &sd)
 
 	if sd.PwdrToken != inputResetToken {
 		return "", nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect password reset token! Check or Re-submit your email.")

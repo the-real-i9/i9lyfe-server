@@ -99,7 +99,7 @@ func JwtVerify[T any](tokenString, secret string) (T, error) {
 		return data, fiber.ErrInternalServerError
 	}
 
-	helpers.AnyToAny(token.Claims.(jwt.MapClaims)["data"], &data)
+	helpers.ToStruct(token.Claims.(jwt.MapClaims)["data"], &data)
 
 	return data, nil
 }
