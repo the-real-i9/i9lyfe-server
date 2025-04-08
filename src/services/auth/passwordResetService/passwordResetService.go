@@ -19,7 +19,7 @@ func RequestPasswordReset(ctx context.Context, email string) (any, map[string]an
 		return nil, nil, err
 	}
 
-	if userExists {
+	if !userExists {
 		return nil, nil, fiber.NewError(fiber.StatusNotFound, "No user with this email exists.")
 	}
 

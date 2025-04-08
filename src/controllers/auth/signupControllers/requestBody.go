@@ -29,10 +29,7 @@ type verifyEmailBody struct {
 
 func (b verifyEmailBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Code,
-			validation.Required,
-			validation.Length(6, 6).Error("expected a 6-digit number string"),
-		),
+		validation.Field(&b.Code, validation.Required),
 	)
 
 	return helpers.ValidationError(err, "signupControllers_requestBody.go", "verifyEmailBody")

@@ -106,5 +106,5 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	c.Cookie(helpers.Cookie("user", string(usd), "/api/app", int(10*24*time.Hour/time.Second)))
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }

@@ -28,10 +28,7 @@ type confirmActionBody struct {
 
 func (b confirmActionBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Token,
-			validation.Required,
-			validation.Length(6, 6).Error("expected a 6-digit number string"),
-		),
+		validation.Field(&b.Token, validation.Required),
 	)
 
 	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "confirmActionBody")

@@ -66,3 +66,22 @@ func resBody[T any](body io.ReadCloser) (T, error) {
 
 	return d, nil
 }
+
+func errBody(body io.ReadCloser) (string, error) {
+	defer body.Close()
+
+	bt, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bt), nil
+}
+
+func failMsg(body io.ReadCloser) string {
+	defer body.Close()
+
+	bt, _ := io.ReadAll(body)
+
+	return string(bt)
+}

@@ -11,6 +11,6 @@ import (
 func Routes(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuthOptional)
 
-	router.Use(publicUserRoute.Route)
-	router.Use(appRoute.Route)
+	router.Route("", publicUserRoute.Route)
+	router.Route("", appRoute.Route)
 }

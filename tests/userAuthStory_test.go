@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const signupPath string = "/api/auth/signup"
-const signinPath string = "/api/auth/signin"
-const forgotPasswordPath string = "/api/auth/forgot_password"
-const signoutPath string = "/api/app/private/signout"
+const signupPath string = HOST_URL + "/api/auth/signup"
+const signinPath string = HOST_URL + "/api/auth/signin"
+const forgotPasswordPath string = HOST_URL + "/api/auth/forgot_password"
+const signoutPath string = HOST_URL + "/api/app/private/signout"
 
 func TestUserAuthStory(t *testing.T) {
 
@@ -36,10 +36,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Equal(t, bd["msg"], fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user1.Email))
+		require.Contains(t, rb, "msg")
+		require.Equal(t, fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user1.Email), rb["msg"])
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -47,9 +47,7 @@ func TestUserAuthStory(t *testing.T) {
 	{
 		t.Log("user1 sends an incorrect email verf code")
 
-		verfCode := os.Getenv("DUMMY_TOKEN")
-
-		reqBody, err := makeReqBody(map[string]any{"code": verfCode + "1"})
+		reqBody, err := makeReqBody(map[string]any{"code": "011111"})
 		require.NoError(t, err)
 
 		req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
@@ -59,11 +57,11 @@ func TestUserAuthStory(t *testing.T) {
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusBadRequest, res.StatusCode)
 
-		bd, err := resBody[string](res.Body)
+		eb, err := errBody(res.Body)
+		require.Equal(t, http.StatusBadRequest, res.StatusCode, eb)
 		require.NoError(t, err)
-		require.Equal(t, bd, "Incorrect verification code! Check or Re-submit your email.")
+		require.Equal(t, "Incorrect verification code! Check or Re-submit your email.", eb)
 	}
 
 	{
@@ -83,10 +81,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Equal(t, bd["msg"], fmt.Sprintf("Your email, %s, has been verified!", user1.Email))
+		require.Contains(t, rb, "msg")
+		require.Equal(t, fmt.Sprintf("Your email, %s, has been verified!", user1.Email), rb["msg"])
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -112,11 +110,11 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, res.StatusCode)
 
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Contains(t, bd, "user")
-		require.Equal(t, bd["msg"], "Signup Success!")
+		require.Contains(t, rb, "msg")
+		require.Contains(t, rb, "user")
+		require.Equal(t, "Signup success!", rb["msg"])
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -137,26 +135,26 @@ func TestUserAuthStory(t *testing.T) {
 		t.Log("user1 signs in with incorrect credentials")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"email_or_username": user1.Email,
-			"password":          "millini",
+			"emailOrUsername": user1.Email,
+			"password":        "millinix",
 		})
 		require.NoError(t, err)
 
 		res, err := http.Post(signinPath, "application/json", reqBody)
 		require.NoError(t, err)
 
-		require.Equal(t, http.StatusNotFound, res.StatusCode)
-		bd, err := resBody[string](res.Body)
+		eb, err := errBody(res.Body)
+		require.Equal(t, http.StatusNotFound, res.StatusCode, eb)
 		require.NoError(t, err)
-		require.Equal(t, bd, "Incorrect email or password")
+		require.Equal(t, "Incorrect email or password", eb)
 	}
 
 	{
 		t.Log("user1 signs in with correct credentials")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"email_or_username": user1.Email,
-			"password":          user1.Password,
+			"emailOrUsername": user1.Email,
+			"password":        user1.Password,
 		})
 		require.NoError(t, err)
 
@@ -164,10 +162,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Contains(t, bd["msg"], "Singin Success!")
+		require.Contains(t, rb, "msg")
+		require.Contains(t, rb["msg"], "Signin success!")
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -194,10 +192,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Equal(t, bd["msg"], fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", user1.Email))
+		require.Contains(t, rb, "msg")
+		require.Equal(t, fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", user1.Email), rb["msg"])
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -205,9 +203,7 @@ func TestUserAuthStory(t *testing.T) {
 	{
 		t.Log("user1 sends an incorrect email confirmation token")
 
-		token := os.Getenv("DUMMY_TOKEN")
-
-		reqBody, err := makeReqBody(map[string]any{"token": token + "1"})
+		reqBody, err := makeReqBody(map[string]any{"token": "011111"})
 		require.NoError(t, err)
 
 		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_action", reqBody)
@@ -217,11 +213,11 @@ func TestUserAuthStory(t *testing.T) {
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusBadRequest, res.StatusCode)
 
-		bd, err := resBody[string](res.Body)
+		eb, err := errBody(res.Body)
+		require.Equal(t, http.StatusBadRequest, res.StatusCode, eb)
 		require.NoError(t, err)
-		require.Equal(t, bd, "Incorrect password reset token! Check or Re-submit your email.")
+		require.Equal(t, "Incorrect password reset token! Check or Re-submit your email.", eb)
 	}
 
 	{
@@ -241,10 +237,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, res.StatusCode)
 
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Equal(t, bd["msg"], fmt.Sprintf("%s, you're about to reset your password!", user1.Email))
+		require.Contains(t, rb, "msg")
+		require.Equal(t, fmt.Sprintf("%s, you're about to reset your password!", user1.Email), rb["msg"])
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -266,12 +262,12 @@ func TestUserAuthStory(t *testing.T) {
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, res.StatusCode)
 
-		bd, err := resBody[map[string]any](res.Body)
+		require.Equal(t, http.StatusOK, res.StatusCode)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Equal(t, bd["msg"], "Your password has been changed successfully")
+		require.Contains(t, rb, "msg")
+		require.Equal(t, "Your password has been changed successfully", rb["msg"])
 
 		user1.Password = newPassword
 	}
@@ -280,8 +276,8 @@ func TestUserAuthStory(t *testing.T) {
 		t.Log("user1 signs in with new password")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"email_or_username": user1.Username,
-			"password":          user1.Password,
+			"emailOrUsername": user1.Username,
+			"password":        user1.Password,
 		})
 		require.NoError(t, err)
 
@@ -289,10 +285,10 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, res.StatusCode)
-		bd, err := resBody[map[string]any](res.Body)
+		rb, err := resBody[map[string]any](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, bd, "msg")
-		require.Contains(t, bd["msg"], "Singin Success!")
+		require.Contains(t, rb, "msg")
+		require.Equal(t, "Signin success!", rb["msg"])
 	}
 
 	{
@@ -304,9 +300,9 @@ func TestUserAuthStory(t *testing.T) {
 		res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
 		require.NoError(t, err)
 
-		require.Equal(t, http.StatusBadRequest, res.StatusCode)
-		bd, err := resBody[string](res.Body)
+		eb, err := errBody(res.Body)
+		require.Equal(t, http.StatusBadRequest, res.StatusCode, eb)
 		require.NoError(t, err)
-		require.Equal(t, bd, "A user with this email already exists.")
+		require.Equal(t, "A user with this email already exists.", eb)
 	}
 }

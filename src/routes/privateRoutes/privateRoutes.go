@@ -13,8 +13,8 @@ import (
 func Routes(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuthRequired)
 
-	router.Use(postCommentRoute.Route)
-	router.Use(privateUserRoute.Route)
-	router.Use(chatRoute.Route)
-	router.Use(wsRoute.Route)
+	router.Route("", postCommentRoute.Route)
+	router.Route("", privateUserRoute.Route)
+	router.Route("", chatRoute.Route)
+	router.Route("", wsRoute.Route)
 }
