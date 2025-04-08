@@ -531,10 +531,10 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (ownerUser:User{ username: $username })-[:CREATES_POST]->(post:Post WHERE post.created_at < $offset), (clientUser:User{ username: $client_username })
-		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
-		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
-		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
+		MATCH (ownerUser:User{ username: $username })-[:CREATES_POST]->(post:Post WHERE post.created_at < $offset)
+		OPTIONAL MATCH (post)<-[crxn:REACTS_TO_POST]-(:User{ username: $client_username })
+		OPTIONAL MATCH (post)<-[csaves:SAVES_POST]-(:User{ username: $client_username })
+		OPTIONAL MATCH (post)<-[creposts:REPOSTS_POST]-(:User{ username: $client_username })
 		WITH post, 
 			toString(post.created_at) AS created_at, 
 			ownerUser { .username, .profile_pic_url } AS owner_user,
@@ -551,7 +551,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 				ELSE true 
 			END AS client_reposted
 		ORDER BY post.created_at DESC
-		LIMIT toInteger($limit)
+		LIMIT $limit
 		RETURN collect(post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted }) AS user_posts
 		`,
 		map[string]any{
