@@ -9,7 +9,6 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/joho/godotenv"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"github.com/segmentio/kafka-go"
 	"google.golang.org/api/option"
 )
 
@@ -114,17 +113,6 @@ func initNeo4jDriver() error {
 	return nil
 }
 
-func initKafkaWriter() error {
-	w := &kafka.Writer{
-		Addr:                   kafka.TCP(os.Getenv("KAFKA_BROKER_ADDRESS")),
-		AllowAutoTopicCreation: true,
-	}
-
-	appGlobals.KafkaWriter = w
-
-	return nil
-}
-
 func InitApp() error {
 
 	if os.Getenv("GO_ENV") == "" {
@@ -140,8 +128,6 @@ func InitApp() error {
 	if err := initGCSClient(); err != nil {
 		return err
 	}
-
-	initKafkaWriter()
 
 	return nil
 }
