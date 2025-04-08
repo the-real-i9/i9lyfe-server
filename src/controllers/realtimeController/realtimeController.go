@@ -9,7 +9,7 @@ import (
 	"i9lyfe/src/appTypes/chatMessageTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/chatService"
-	"i9lyfe/src/services/chatService/messageService"
+	"i9lyfe/src/services/chatService/chatMessageService"
 	"i9lyfe/src/services/messageBrokerService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/userService"
@@ -69,7 +69,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendTextMessage(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendTextMessage(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -86,7 +86,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendVoiceMessage(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendVoiceMessage(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -103,7 +103,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendPhoto(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendPhoto(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -120,7 +120,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendVideo(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendVideo(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -137,7 +137,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendAudio(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendAudio(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -154,7 +154,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.SendFile(ctx, clientUser.Username, msg)
+			res, err := chatMessageService.SendFile(ctx, clientUser.Username, msg)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -188,7 +188,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.AckMsgDelivered(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
+			res, err := chatMessageService.AckMsgDelivered(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -205,7 +205,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.AckMsgRead(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
+			res, err := chatMessageService.AckMsgRead(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.At)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -222,7 +222,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.ReactToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.Reaction, data.At)
+			res, err := chatMessageService.ReactToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.Reaction, data.At)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -239,7 +239,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := messageService.RemoveReactionToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId)
+			res, err := chatMessageService.RemoveReactionToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
 				continue
@@ -247,6 +247,22 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
 		case "chat: delete message":
+			var data deleteChatMsgEvd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			res, err := chatMessageService.DeleteMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.DeleteFor)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Event))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
 		}
 	}
 

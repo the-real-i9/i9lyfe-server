@@ -1,4 +1,4 @@
-package messageService
+package chatMessageService
 
 import (
 	"context"
