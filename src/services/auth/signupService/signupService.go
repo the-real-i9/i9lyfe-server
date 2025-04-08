@@ -27,7 +27,7 @@ func RequestNewAccount(ctx context.Context, email string) (any, map[string]any, 
 
 	verfCode, expires := securityServices.GenerateTokenCodeExp()
 
-	go mailService.SendMail(email, "Verify your email", fmt.Sprintf("<p>Your email verification code is <strong>%d</strong></p>", verfCode))
+	go mailService.SendMail(email, "Verify your email", fmt.Sprintf("<p>Your email verification code is <strong>%s</strong></p>", verfCode))
 
 	sessionData := map[string]any{
 		"email":        email,
@@ -36,7 +36,7 @@ func RequestNewAccount(ctx context.Context, email string) (any, map[string]any, 
 	}
 
 	respData := map[string]any{
-		"msg": "Enter the 6-digit code sent to" + email + "to verify your email",
+		"msg": fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", email),
 	}
 
 	return respData, sessionData, nil

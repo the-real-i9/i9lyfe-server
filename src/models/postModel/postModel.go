@@ -144,7 +144,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 	return resData, nil
 }
 
-func Get(ctx context.Context, clientUsername, postId string) (any, error) {
+func Get(ctx context.Context, clientUsername, postId string) (map[string]any, error) {
 	res, err := db.Query(
 		ctx,
 		`

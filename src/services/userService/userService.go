@@ -3,7 +3,6 @@ package userService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
@@ -38,7 +37,7 @@ func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct 
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictureData []byte) (any, error) {
@@ -61,7 +60,7 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
@@ -88,7 +87,7 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any
 		}
 	}(followNotif)
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
@@ -97,7 +96,7 @@ func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (a
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {
@@ -142,7 +141,7 @@ func ReadUserNotification(ctx context.Context, clientUsername, notificationId st
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (any, error) {

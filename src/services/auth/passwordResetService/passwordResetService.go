@@ -25,7 +25,7 @@ func RequestPasswordReset(ctx context.Context, email string) (any, map[string]an
 
 	pwdrToken, expires := securityServices.GenerateTokenCodeExp()
 
-	go mailService.SendMail(email, "Confirm your email: Password Reset", fmt.Sprintf("<p>Your password reset token is <strong>%d</strong>.</p>", pwdrToken))
+	go mailService.SendMail(email, "Confirm your email: Password Reset", fmt.Sprintf("<p>Your password reset token is <strong>%s</strong>.</p>", pwdrToken))
 
 	sessionData := map[string]any{
 		"email":            email,
@@ -34,7 +34,7 @@ func RequestPasswordReset(ctx context.Context, email string) (any, map[string]an
 	}
 
 	respData := map[string]any{
-		"msg": "Enter the 6-digit number token sent to " + email + " to reset your password",
+		"msg": fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", email),
 	}
 
 	return respData, sessionData, nil
@@ -60,13 +60,13 @@ func ConfirmAction(ctx context.Context, sessionData map[string]any, inputResetTo
 	newSessionData := map[string]any{"email": sd.Email}
 
 	respData := map[string]any{
-		"msg": fmt.Sprintf("Your email, %s, has been verified!", sd.Email),
+		"msg": fmt.Sprintf("%s, you're about to reset your password!", sd.Email),
 	}
 
 	return respData, newSessionData, nil
 }
 
-func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword string) (any, error) {
+func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword string) (map[string]any, error) {
 	email := sessionData["email"].(string)
 
 	hashedPassword, err := securityServices.HashPassword(newPassword)

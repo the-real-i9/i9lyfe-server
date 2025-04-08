@@ -46,5 +46,5 @@ jobs:
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
-          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}

@@ -2,7 +2,6 @@ package chatService
 
 import (
 	"context"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	chat "i9lyfe/src/models/chatModel"
 )
@@ -22,7 +21,7 @@ func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (an
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, offset int64) ([]any, error) {

@@ -38,7 +38,8 @@ func (b confirmActionBody) Validate() error {
 }
 
 type resetPasswordBody struct {
-	NewPassword string `json:"newPassword"`
+	NewPassword        string `json:"newPassword"`
+	ConfirmNewPassword string `json:"confirmNewPassword"`
 }
 
 func (b resetPasswordBody) Validate() error {
@@ -46,6 +47,10 @@ func (b resetPasswordBody) Validate() error {
 		validation.Field(&b.NewPassword,
 			validation.Required,
 			validation.Length(8, 0).Error("password too short. minimun of 8 characters"),
+		),
+		validation.Field(&b.ConfirmNewPassword,
+			validation.Required,
+			validation.In(b.NewPassword).Error("passwords mismatch"),
 		),
 	)
 

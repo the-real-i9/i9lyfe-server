@@ -3,7 +3,6 @@ package postCommentService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
@@ -80,7 +79,7 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (any, error)
 		return nil, err
 	}
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (any, error) {
@@ -108,7 +107,7 @@ func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (
 		"latest_reactions_count": res.LatestReactionsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
@@ -140,7 +139,7 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 		"latest_reactions_count": latestReactionsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte) (map[string]any, error) {
@@ -231,7 +230,7 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 		"latest_comments_count": latestCommentsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func ReactToComment(ctx context.Context, clientUsername, commentId, reaction string) (any, error) {
@@ -259,7 +258,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, reaction str
 		"latest_reactions_count": res.LatestReactionsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
@@ -291,7 +290,7 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 		"latest_reactions_count": latestReactionsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func CommentOnComment(ctx context.Context, clientUsername, commentId, commentText string, attachmentData []byte) (map[string]any, error) {
@@ -373,7 +372,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 		"latest_comments_count": latestCommentsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
@@ -401,7 +400,7 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 		"latest_reposts_count": res.LatestRepostsCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
@@ -415,7 +414,7 @@ func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
 		"latest_saves_count": latestSavesCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }
 
 func UndoSavePost(ctx context.Context, clientUsername, postId string) (any, error) {
@@ -429,5 +428,5 @@ func UndoSavePost(ctx context.Context, clientUsername, postId string) (any, erro
 		"latest_saves_count": latestSavesCount,
 	})
 
-	return appGlobals.OprSucc, nil
+	return true, nil
 }

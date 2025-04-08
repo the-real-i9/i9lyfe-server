@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	"i9lyfe/src/helpers"
@@ -41,14 +40,14 @@ func PasswordMatchesHash(hash string, password string) (bool, error) {
 	return true, nil
 }
 
-func GenerateTokenCodeExp() (int, time.Time) {
-	var token int
+func GenerateTokenCodeExp() (string, time.Time) {
+	var token string
 	expires := time.Now().UTC().Add(1 * time.Hour)
 
 	if os.Getenv("GO_ENV") != "production" {
-		token, _ = strconv.Atoi(os.Getenv("DUMMY_VERF_TOKEN"))
+		token = os.Getenv("DUMMY_TOKEN")
 	} else {
-		token = rand.Intn(899999) + 100000
+		token = fmt.Sprint(rand.Intn(899999) + 100000)
 	}
 
 	return token, expires

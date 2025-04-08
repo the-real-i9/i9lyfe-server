@@ -11,6 +11,3 @@ var GCSClient *storage.Client
 var Neo4jDriver neo4j.DriverWithContext
 
 var KafkaWriter *kafka.Writer
-
-// Operation Successful
-var OprSucc = map[string]string{"msg": "Operation Successful"}
