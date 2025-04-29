@@ -89,7 +89,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId, reaction string) (R
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -120,7 +120,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId, reaction string) (R
 				return nil, err
 			}
 
-			if res.Record() == nil {
+			if !res.Next(ctx) {
 				return resMap, nil
 			}
 
@@ -293,7 +293,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -345,7 +345,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 					return nil, err
 				}
 
-				if res.Record() == nil {
+				if !res.Next(ctx) {
 					return nil, nil
 				}
 
@@ -379,7 +379,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 				return nil, err
 			}
 
-			if res.Record() == nil {
+			if !res.Next(ctx) {
 				return nil, nil
 			}
 

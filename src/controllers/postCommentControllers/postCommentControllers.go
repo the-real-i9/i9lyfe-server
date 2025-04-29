@@ -32,7 +32,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }
 
 func GetPost(c *fiber.Ctx) error {
@@ -87,7 +87,7 @@ func ReactToPost(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }
 
 func GetReactorsToPost(c *fiber.Ctx) error {
@@ -156,7 +156,7 @@ func CommentOnPost(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }
 
 func GetCommentsOnPost(c *fiber.Ctx) error {
@@ -225,7 +225,7 @@ func ReactToComment(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }
 
 func GetReactorsToComment(c *fiber.Ctx) error {
@@ -294,7 +294,7 @@ func CommentOnComment(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	return c.JSON(respData)
+	return c.Status(201).JSON(respData)
 }
 
 func GetCommentsOnComment(c *fiber.Ctx) error {

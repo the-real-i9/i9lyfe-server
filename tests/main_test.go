@@ -31,7 +31,7 @@ type UserT struct {
 	Bio           string
 	SessionCookie string
 	WSConn        *websocket.Conn
-	ServerWSMsg   map[string]any
+	ServerWSMsg   chan map[string]any
 }
 
 func TestMain(m *testing.M) {

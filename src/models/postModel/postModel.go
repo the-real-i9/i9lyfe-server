@@ -53,7 +53,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -105,7 +105,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 					return nil, err
 				}
 
-				if res.Record() == nil {
+				if !res.Next(ctx) {
 					return nil, nil
 				}
 
@@ -253,7 +253,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (Reac
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -284,7 +284,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (Reac
 				return nil, err
 			}
 
-			if res.Record() == nil {
+			if !res.Next(ctx) {
 				return resMap, nil
 			}
 
@@ -456,7 +456,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -508,7 +508,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 					return nil, err
 				}
 
-				if res.Record() == nil {
+				if !res.Next(ctx) {
 					return nil, nil
 				}
 
@@ -544,7 +544,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 				return nil, err
 			}
 
-			if res.Record() == nil {
+			if !res.Next(ctx) {
 				return nil, nil
 			}
 
@@ -673,7 +673,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 			return nil, err
 		}
 
-		if res.Record() == nil {
+		if !res.Next(ctx) {
 			return nil, nil
 		}
 
@@ -705,7 +705,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 				return nil, err
 			}
 
-			if res.Record() == nil {
+			if !res.Next(ctx) {
 				return resMap, nil
 			}
 

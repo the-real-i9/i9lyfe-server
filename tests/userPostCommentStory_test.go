@@ -158,20 +158,26 @@ func TestPostCommentStory(t *testing.T) {
 
 			defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
 
-			go func(user *UserT) {
-				var wsMsg map[string]any
+			commChan := make(chan map[string]any)
+
+			go func(commChan chan<- map[string]any) {
 
 				for {
+					var wsMsg map[string]any
+
 					if err := wsConn.ReadJSON(&wsMsg); err != nil {
 						break
 					}
+
+					commChan <- wsMsg
 				}
 
-				user.ServerWSMsg = wsMsg
+				close(commChan)
 
-			}(user)
+			}(commChan)
 
 			user.WSConn = wsConn
+			user.ServerWSMsg = commChan
 		}
 	}
 
@@ -238,20 +244,20 @@ func TestPostCommentStory(t *testing.T) {
 			return
 		}
 
-		rb, err := succResBody[map[string]any](res.Body)
+		rb, err := succResBody[bool](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, rb, "msg")
+		require.True(t, rb)
 
 		// user1 is notified
-		require.NotEmpty(t, user1.ServerWSMsg)
-		require.Equal(t, "new notification", user1.ServerWSMsg["event"])
+		serverWSMsg := <-user1.ServerWSMsg
 
-		recvNotif := user1.ServerWSMsg["data"]
+		require.NotEmpty(t, serverWSMsg)
+		require.Equal(t, "new notification", serverWSMsg["event"])
+
+		recvNotif := serverWSMsg["data"]
 
 		require.Contains(t, recvNotif, "id")
-		require.Contains(t, recvNotif, "reaction_to_post")
-
-		user1.ServerWSMsg = nil
+		require.Contains(t, recvNotif, "type")
 	}
 
 	{
@@ -277,20 +283,20 @@ func TestPostCommentStory(t *testing.T) {
 			return
 		}
 
-		rb, err := succResBody[map[string]any](res.Body)
+		rb, err := succResBody[bool](res.Body)
 		require.NoError(t, err)
-		require.Contains(t, rb, "msg")
+		require.True(t, rb)
 
 		// user1 is notified
-		require.NotEmpty(t, user1.ServerWSMsg)
-		require.Equal(t, "new notification", user1.ServerWSMsg["event"])
+		serverWSMsg := <-user1.ServerWSMsg
 
-		recvNotif := user1.ServerWSMsg["data"]
+		require.NotEmpty(t, serverWSMsg)
+		require.Equal(t, "new notification", serverWSMsg["event"])
+
+		recvNotif := serverWSMsg["data"]
 
 		require.Contains(t, recvNotif, "id")
-		require.Contains(t, recvNotif, "reaction_to_post")
-
-		user1.ServerWSMsg = nil
+		require.Contains(t, recvNotif, "type")
 	}
 
 	{
