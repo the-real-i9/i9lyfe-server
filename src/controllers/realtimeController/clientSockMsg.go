@@ -18,6 +18,8 @@ func (b clientMessageBody) Validate() error {
 		validation.Field(&b.Event, validation.Required, validation.In(
 			"start receiving post updates",
 			"stop receiving post updates",
+			"start receiving comment updates",
+			"stop receiving comment updates",
 			"chat: send message: text",
 			"chat: send message: voice",
 			"chat: send message: photo",

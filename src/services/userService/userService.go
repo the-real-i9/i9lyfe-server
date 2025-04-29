@@ -3,6 +3,7 @@ package userService
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
@@ -80,7 +81,7 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any
 			delete(fn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  fn,
 			})
@@ -187,7 +188,7 @@ func GoOnline(ctx context.Context, clientUsername string) {
 	}
 
 	for _, dmp := range dmPartners {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), appTypes.ServerWSMsg{
 			Event: "user online",
 			Data: map[string]any{
 				"user": clientUsername,
@@ -206,7 +207,7 @@ func GoOffline(ctx context.Context, clientUsername string) {
 	}
 
 	for _, dmp := range dmPartners {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", dmp), appTypes.ServerWSMsg{
 			Event: "user offline",
 			Data: map[string]any{
 				"user":      clientUsername,

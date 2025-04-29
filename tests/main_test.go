@@ -9,12 +9,18 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/fasthttp/websocket"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 const HOST_URL string = "http://localhost:8000"
 const WSHOST_URL string = "ws://localhost:8000"
+
+const AUTH_PATH string = "/api/auth"
+const APP_PATH_PRIVATE string = "/api/app/private"
+const APP_PATH_PUBLIC string = "/api/app/public"
 
 type UserT struct {
 	Email         string
@@ -24,6 +30,8 @@ type UserT struct {
 	Birthday      int64
 	Bio           string
 	SessionCookie string
+	WSConn        *websocket.Conn
+	ServerWSMsg   map[string]any
 }
 
 func TestMain(m *testing.M) {
@@ -50,7 +58,7 @@ func makeReqBody(data map[string]any) (io.Reader, error) {
 	return bytes.NewReader(dataBt), err
 }
 
-func resBody[T any](body io.ReadCloser) (T, error) {
+func succResBody[T any](body io.ReadCloser) (T, error) {
 	var d T
 
 	defer body.Close()
@@ -67,7 +75,7 @@ func resBody[T any](body io.ReadCloser) (T, error) {
 	return d, nil
 }
 
-func errBody(body io.ReadCloser) (string, error) {
+func errResBody(body io.ReadCloser) (string, error) {
 	defer body.Close()
 
 	bt, err := io.ReadAll(body)
@@ -78,10 +86,11 @@ func errBody(body io.ReadCloser) (string, error) {
 	return string(bt), nil
 }
 
-func failMsg(body io.ReadCloser) string {
-	defer body.Close()
+func bday(bdaystr string) int64 {
+	bd, err := time.Parse(time.DateOnly, bdaystr)
+	if err != nil {
+		log.Println("main_test.go", err)
+	}
 
-	bt, _ := io.ReadAll(body)
-
-	return string(bt)
+	return bd.UTC().UnixMilli()
 }

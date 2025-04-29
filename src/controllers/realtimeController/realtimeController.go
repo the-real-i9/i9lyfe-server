@@ -59,6 +59,10 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			realtimeService.PostUpdateSubscribers.Store(clientUser.Username, c)
 		case "stop receiving post updates":
 			realtimeService.PostUpdateSubscribers.Delete(clientUser.Username)
+		case "start receiving comment updates":
+			realtimeService.CommentUpdateSubscribers.Store(clientUser.Username, c)
+		case "stop receiving comment updates":
+			realtimeService.CommentUpdateSubscribers.Delete(clientUser.Username)
 		case "chat: send message: text":
 			var msg chatMessageTypes.Text
 
@@ -269,7 +273,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 	go func(r *kafka.Reader, clientUsername string) {
 		realtimeService.AllClientSockets.Delete(clientUsername)
 
-		userService.GoOffline(context.Background(), clientUsername)
+		userService.GoOffline(context.TODO(), clientUsername)
 
 		if err := r.Close(); err != nil {
 			log.Println("failed to close reader:", err)
@@ -290,7 +294,7 @@ func serverStream(c *websocket.Conn, r *kafka.Reader) {
 			break
 		}
 
-		var msg any
+		var msg appTypes.ServerWSMsg
 		json.Unmarshal(m.Value, &msg)
 
 		c.WriteJSON(msg)

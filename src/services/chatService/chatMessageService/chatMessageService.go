@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/chatMessageTypes"
 	"i9lyfe/src/helpers"
 	chatMessage "i9lyfe/src/models/chatModel/chatMessageModel"
@@ -33,7 +34,7 @@ func SendTextMessage(ctx context.Context, clientUsername string, msg chatMessage
 
 	res.PartnerRes["props"] = map[string]any{"content": msg.Props.Content}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -81,7 +82,7 @@ func SendVoiceMessage(ctx context.Context, clientUsername string, msg chatMessag
 		return nil, err
 	}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -129,7 +130,7 @@ func SendPhoto(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, err
 	}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -177,7 +178,7 @@ func SendVideo(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, err
 	}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -225,7 +226,7 @@ func SendAudio(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, err
 	}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -272,7 +273,7 @@ func SendFile(ctx context.Context, clientUsername string, msg chatMessageTypes.F
 		return nil, err
 	}
 
-	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), messageBrokerService.Message{
+	messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", msg.To), appTypes.ServerWSMsg{
 		Event: "chat: new message",
 		Data:  res.PartnerRes,
 	})
@@ -287,7 +288,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId
 	}
 
 	if done {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), appTypes.ServerWSMsg{
 			Event: "chat: message delivered",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -307,7 +308,7 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId stri
 	}
 
 	if done {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), appTypes.ServerWSMsg{
 			Event: "chat: message read",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -327,7 +328,7 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, rea
 	}
 
 	if done {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), appTypes.ServerWSMsg{
 			Event: "chat: message reaction",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -348,7 +349,7 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 	}
 
 	if done {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), appTypes.ServerWSMsg{
 			Event: "chat: message reaction removed",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -367,7 +368,7 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 	}
 
 	if done && deleteFor == "everyone" {
-		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), messageBrokerService.Message{
+		messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", partnerUsername), appTypes.ServerWSMsg{
 			Event: "chat: message deleted",
 			Data: map[string]any{
 				"partner_username": clientUsername,

@@ -23,6 +23,11 @@ func RecommendPost(clientUsername, postId string) any {
 		ctx,
 		`
     MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User)
+		WHERE EXISTS {
+      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(ownerUser)
+      UNION
+      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
+    }
     
     WITH post, toString(post.created_at) AS created_at, ownerUser { .username, .profile_pic_url } AS owner_user
     RETURN post { .*, created_at, owner_user } AS the_post

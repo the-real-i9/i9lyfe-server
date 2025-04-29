@@ -3,6 +3,7 @@ package postCommentService
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
@@ -55,7 +56,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 			delete(mn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  mn,
 			})
@@ -95,14 +96,14 @@ func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 		}
 	}(res.ReactionNotif)
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":                postId,
 		"latest_reactions_count": res.LatestReactionsCount,
 	})
@@ -134,7 +135,7 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":                postId,
 		"latest_reactions_count": latestReactionsCount,
 	})
@@ -172,7 +173,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 			delete(mn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  mn,
 			})
@@ -186,14 +187,14 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 			delete(cn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
 		}
 	}(res.CommentNotif)
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":               postId,
 		"latest_comments_count": res.LatestCommentsCount,
 	})
@@ -225,7 +226,7 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":               postId,
 		"latest_comments_count": latestCommentsCount,
 	})
@@ -246,14 +247,14 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, reaction str
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 		}
 	}(res.ReactionNotif)
 
-	go realtimeService.SendCommentUpdate(commentId, map[string]any{
+	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":             commentId,
 		"latest_reactions_count": res.LatestReactionsCount,
 	})
@@ -285,7 +286,7 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 		return nil, err
 	}
 
-	go realtimeService.SendCommentUpdate(commentId, map[string]any{
+	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":             commentId,
 		"latest_reactions_count": latestReactionsCount,
 	})
@@ -323,7 +324,7 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 			delete(mn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  mn,
 			})
@@ -337,14 +338,14 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 			delete(cn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
 		}
 	}(res.CommentNotif)
 
-	go realtimeService.SendCommentUpdate(commentId, map[string]any{
+	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":            commentId,
 		"latest_comments_count": res.LatestCommentsCount,
 	})
@@ -367,7 +368,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 		return nil, err
 	}
 
-	go realtimeService.SendCommentUpdate(parentCommentId, map[string]any{
+	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":            parentCommentId,
 		"latest_comments_count": latestCommentsCount,
 	})
@@ -388,14 +389,14 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), messageBrokerService.Message{
+			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 		}
 	}(res.RepostNotif)
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":              postId,
 		"latest_reposts_count": res.LatestRepostsCount,
 	})
@@ -409,7 +410,7 @@ func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":            postId,
 		"latest_saves_count": latestSavesCount,
 	})
@@ -423,7 +424,7 @@ func UndoSavePost(ctx context.Context, clientUsername, postId string) (any, erro
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(postId, map[string]any{
+	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":            postId,
 		"latest_saves_count": latestSavesCount,
 	})

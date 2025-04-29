@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/appTypes"
 	"log"
 	"net"
 	"os"
@@ -13,23 +14,26 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type Message struct {
-	Event string `json:"event"`
-	Data  any    `json:"data"`
-}
+func Send(topic string, message appTypes.ServerWSMsg) {
+	var (
+		msg []byte
+		err error
+	)
 
-func Send(topic string, message Message) {
-	msg, _ := json.Marshal(message)
+	msg, err = json.Marshal(message)
+	if err != nil {
+		log.Println("messageBrokerService.go: json.Marshal:", err)
+	}
 
 	w := appGlobals.KafkaWriter
 
-	err := w.WriteMessages(context.Background(), kafka.Message{
+	err = w.WriteMessages(context.Background(), kafka.Message{
 		Value: msg,
 		Topic: fmt.Sprintf("i9lyfe-%s", topic),
 	})
 
 	if err != nil {
-		log.Println("failed to write message:", err)
+		log.Println("messageBrokerService.go: failed to write message:", err)
 	}
 }
 

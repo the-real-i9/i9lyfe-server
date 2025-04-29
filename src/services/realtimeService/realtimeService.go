@@ -1,12 +1,12 @@
 package realtimeService
 
 import (
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/contentRecommendationService"
 	"log"
 	"sync"
 
 	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
 )
 
 var (
@@ -34,26 +34,26 @@ func BroadcastNewPost(postId, ownerUsername string) {
 	})
 }
 
-func SendPostUpdate(postId string, data any) {
+func SendPostUpdate(data any) {
 	PostUpdateSubscribers.Range(func(key, value any) bool {
 		clientSocket := value.(*websocket.Conn)
 
-		clientSocket.WriteJSON(fiber.Map{
-			"event": "latest post update",
-			"data":  data,
+		clientSocket.WriteJSON(appTypes.ServerWSMsg{
+			Event: "latest post update",
+			Data:  data,
 		})
 
 		return true
 	})
 }
 
-func SendCommentUpdate(commentId string, data any) {
+func SendCommentUpdate(data any) {
 	CommentUpdateSubscribers.Range(func(key, value any) bool {
 		clientSocket := value.(*websocket.Conn)
 
-		clientSocket.WriteJSON(fiber.Map{
-			"event": "latest comment update",
-			"data":  data,
+		clientSocket.WriteJSON(appTypes.ServerWSMsg{
+			Event: "latest comment update",
+			Data:  data,
 		})
 
 		return true
