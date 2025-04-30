@@ -15,6 +15,7 @@ import (
 	"i9lyfe/src/services/userService"
 	"io"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/segmentio/kafka-go"
@@ -277,6 +278,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 		if err := r.Close(); err != nil {
 			log.Println("failed to close reader:", err)
+		} else {
+			log.Println("reader closed: at:", time.Now())
 		}
 	}(r, clientUser.Username)
 })
@@ -289,7 +292,7 @@ func serverStream(c *websocket.Conn, r *kafka.Reader) {
 		m, err := r.ReadMessage(ctx)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				log.Println("realtimeController.go: serverStream: r.ReadMessage:", err)
+				log.Println("realtimeController.go: serverStream: r.ReadMessage:", err, ": at:", time.Now())
 			}
 			break
 		}
@@ -297,6 +300,7 @@ func serverStream(c *websocket.Conn, r *kafka.Reader) {
 		var msg appTypes.ServerWSMsg
 		json.Unmarshal(m.Value, &msg)
 
+		log.Printf("%s\n", m.Value)
 		c.WriteJSON(msg)
 	}
 }
