@@ -58,9 +58,9 @@ type commentOnPostBody struct {
 func (b commentOnPostBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.CommentText,
-			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(0, 300))),
+			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(0, 300))),
 		validation.Field(&b.AttachmentData,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "commentOnPostBody")

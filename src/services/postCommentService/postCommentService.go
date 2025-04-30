@@ -145,17 +145,24 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	mediaMIME := mimetype.Detect(attachmentData)
-	mediaType := mediaMIME.String()
-	mediaExt := mediaMIME.Extension()
+	var (
+		attachmentUrl string
+		err           error
+	)
 
-	if !strings.HasPrefix(mediaType, "image") {
-		return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
-	}
+	if attachmentData != nil {
+		mediaMIME := mimetype.Detect(attachmentData)
+		mediaType := mediaMIME.String()
+		mediaExt := mediaMIME.Extension()
 
-	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, mediaExt)
-	if err != nil {
-		return nil, err
+		if !strings.HasPrefix(mediaType, "image") {
+			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
+		}
+
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, mediaExt)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	mentions := utilServices.ExtractMentions(commentText)
@@ -296,17 +303,24 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 
 func CommentOnComment(ctx context.Context, clientUsername, commentId, commentText string, attachmentData []byte) (map[string]any, error) {
 
-	mediaMIME := mimetype.Detect(attachmentData)
-	mediaType := mediaMIME.String()
-	mediaExt := mediaMIME.Extension()
+	var (
+		attachmentUrl string
+		err           error
+	)
 
-	if !strings.HasPrefix(mediaType, "image") {
-		return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
-	}
+	if attachmentData != nil {
+		mediaMIME := mimetype.Detect(attachmentData)
+		mediaType := mediaMIME.String()
+		mediaExt := mediaMIME.Extension()
 
-	attachmentUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, mediaExt)
-	if err != nil {
-		return nil, err
+		if !strings.HasPrefix(mediaType, "image") {
+			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
+		}
+
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, mediaExt)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	mentions := utilServices.ExtractMentions(commentText)
