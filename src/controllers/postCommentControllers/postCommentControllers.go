@@ -2,8 +2,10 @@ package postCommentControllers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/postCommentService"
+	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -110,7 +112,12 @@ func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetReactorsWithReactionToPost(ctx, clientUser.Username, c.Params("postId"), c.Params("reaction"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	reaction, err := url.PathUnescape(c.Params("reaction"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprint(err))
+	}
+
+	respData, app_err := postCommentService.GetReactorsWithReactionToPost(ctx, clientUser.Username, c.Params("postId"), reaction, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}
@@ -248,7 +255,12 @@ func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetReactorsWithReactionToComment(ctx, clientUser.Username, c.Params("commentId"), c.Params("reaction"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	reaction, err := url.PathUnescape(c.Params("reaction"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprint(err))
+	}
+
+	respData, app_err := postCommentService.GetReactorsWithReactionToComment(ctx, clientUser.Username, c.Params("commentId"), reaction, c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}

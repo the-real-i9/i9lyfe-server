@@ -345,7 +345,7 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reacti
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: $reaction }]-(reactor:User)
+		MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: toString($reaction) }]-(reactor:User)
 		WHERE rxn.at < $offset
 		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
 		WITH reactor, 

@@ -352,4 +352,35 @@ func TestPostCommentStory(t *testing.T) {
 			}, nil),
 		)))
 	}
+
+	{
+		t.Log("user1 filters reactors to her post1 by a certain reaction")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user1.SessionCookie)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		require.Len(t, reactors, 1)
+
+		td.Cmp(td.Require(t), reactors, td.Slice([]map[string]any{},
+			td.ArrayEntries{0: td.SuperMapOf(map[string]any{
+				"username": user2.Username,
+				"reaction": "🤔",
+			}, nil)},
+		))
+	}
 }

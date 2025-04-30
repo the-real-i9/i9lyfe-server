@@ -38,7 +38,6 @@ i9lyfe was first built using these technologies, subsequent improvements to the 
 <img style="margin-right: 10px" alt="socket.io" width="40" src="./.attachments/tech-icons/socketio-original.svg" />
 </div>
 
-
 ## Table of Contents
 
 - [Intro](#intro)
