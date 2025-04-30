@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - switch-to-go
+      - main
 name: "Test i9lyfe"
 jobs:
   Tests:
