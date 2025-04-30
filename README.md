@@ -8,20 +8,6 @@ A Social Media API Server
 
 i9lyfe is an API server for a Social Media Application, built with Go and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
-### Target Audience
-
-#### Frontend Developers
-
-If you're a frontend developer looking to build a Social Media Application, not just to have it static UI, but to also make it function.
-
-The API documentation provides a detailed usage guide, following the OpenAPI specification.
-
-#### HRMs, Startup Founders, Project Teams, Hiring Managers etc
-
-If you're in need of a passionate, highly-skilled, expert-level backend engineer/developer, you've found the right one for the job.
-
-The codebase is easily accessible, as it follows a (Routes)-->(Controllers)-->(Services)-->((Services) | (Model)) pattern.
-
 ### Open to suggestions
 
 If you need a feature that this API server currently doesn't support, feel free to suggest them in the issues and it will be added as soon as possible.
@@ -29,18 +15,18 @@ If you need a feature that this API server currently doesn't support, feel free 
 ## Technologies
 
 <div style="display: flex; align-items: center;">
-<img style="margin-right: 10px" alt="go" width="50" src="./attachments/tech-icons/go-original-wordmark.svg" />
-<img style="margin-right: 10px" alt="go" width="50" src="./attachments/tech-icons/gofiber.svg" />
-<img style="margin-right: 10px" alt="express" width="50" src="./attachments/tech-icons/express-original.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/javascript-original.svg" />
-<img style="margin-right: 10px" alt="neo4j" width="50" src="./attachments/tech-icons/neo4j-original.svg" />
-<img style="margin-right: 10px" alt="socket.io" width="50" src="./attachments/tech-icons/socketio-original.svg" />
-<img style="margin-right: 10px" alt="apachekafka" width="50" src="./attachments/tech-icons/apachekafka-original.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/jwt.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./attachments/tech-icons/express-validator.svg" />
-<img style="margin-right: 10px" alt="googlecloud" width="50" src="./attachments/tech-icons/googlecloud-original.svg" />
-<img style="margin-right: 10px" alt="nodejs" width="50" src="./attachments/tech-icons/nodejs-original.svg" />❌ (old)
-<img style="margin-right: 10px; alt="postgresql" width="50" src="./attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
+<img style="margin-right: 10px" alt="go" width="50" src="./.attachments/tech-icons/go-original-wordmark.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./.attachments/tech-icons/gofiber.svg" />
+<img style="margin-right: 10px" alt="express" width="50" src="./.attachments/tech-icons/express-original.svg" />
+<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/javascript-original.svg" />
+<img style="margin-right: 10px" alt="neo4j" width="50" src="./.attachments/tech-icons/neo4j-original.svg" />
+<img style="margin-right: 10px" alt="socket.io" width="50" src="./.attachments/tech-icons/socketio-original.svg" />
+<img style="margin-right: 10px" alt="apachekafka" width="50" src="./.attachments/tech-icons/apachekafka-original.svg" />
+<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/jwt.svg" />
+<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/express-validator.svg" />
+<img style="margin-right: 10px" alt="googlecloud" width="50" src="./.attachments/tech-icons/googlecloud-original.svg" />
+<img style="margin-right: 10px" alt="nodejs" width="50" src="./.attachments/tech-icons/nodejs-original.svg" />❌ (old)
+<img style="margin-right: 10px; alt="postgresql" width="50" src="./.attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
 </div>
 <br>
 
@@ -129,9 +115,9 @@ Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing 
 
 ## API Documentation
 
-For all **HTTP request/response communication**: [Here](./apidoc/openapi.json)'s a well-written OpenAPI JSON document. Drop or Import it into a [Swagger Editor](https://editor.swagger.io/?_gl=1*1numedn*_gcl_au*MTUxNDUxNjEuMTc0MjY1MTg5Nw..) to access it.
+For all **HTTP request/response communication**: [Here](./.apidoc/openapi.json)'s a well-written OpenAPI JSON document. Drop or Import it into a [Swagger Editor](https://editor.swagger.io/?_gl=1*1numedn*_gcl_au*MTUxNDUxNjEuMTc0MjY1MTg5Nw..) to access it.
 
-For all **WebSocket real-time communication**: [Here](./apidoc/websocketsapi.md)'s a written markdown document.
+For all **WebSocket real-time communication**: [Here](./.apidoc/websocketsapi.md)'s a written markdown document.
 
 ## Feature Building Tutorials (Ref. Links)
 
