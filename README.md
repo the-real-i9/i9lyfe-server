@@ -15,26 +15,28 @@ If you need a feature that this API server currently doesn't support, feel free 
 ## Technologies
 
 <div style="display: flex; align-items: center;">
-<img style="margin-right: 10px" alt="go" width="50" src="./.attachments/tech-icons/go-original-wordmark.svg" />
-<img style="margin-right: 10px" alt="go" width="50" src="./.attachments/tech-icons/gofiber.svg" />
-<img style="margin-right: 10px" alt="express" width="50" src="./.attachments/tech-icons/express-original.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/javascript-original.svg" />
-<img style="margin-right: 10px" alt="neo4j" width="50" src="./.attachments/tech-icons/neo4j-original.svg" />
-<img style="margin-right: 10px" alt="socket.io" width="50" src="./.attachments/tech-icons/socketio-original.svg" />
-<img style="margin-right: 10px" alt="apachekafka" width="50" src="./.attachments/tech-icons/apachekafka-original.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/jwt.svg" />
-<img style="margin-right: 10px" alt="javascript" width="50" src="./.attachments/tech-icons/express-validator.svg" />
-<img style="margin-right: 10px" alt="googlecloud" width="50" src="./.attachments/tech-icons/googlecloud-original.svg" />
-<img style="margin-right: 10px" alt="nodejs" width="50" src="./.attachments/tech-icons/nodejs-original.svg" />❌ (old)
-<img style="margin-right: 10px; alt="postgresql" width="50" src="./.attachments/tech-icons/postgresql-original.svg" /> ❌ (old)
+<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/go-original-wordmark.svg" />
+<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/gofiber.svg" />
+<img style="margin-right: 10px" alt="neo4j" width="40" src="./.attachments/tech-icons/neo4j-original.svg" />
+<img style="margin-right: 10px" alt="websocket" width="40" src="./.attachments/tech-icons/websocket.svg" />
+<img style="margin-right: 10px" alt="apachekafka" width="40" src="./.attachments/tech-icons/apachekafka-original.svg" />
+<img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/jwt.svg" />
+<img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/express-validator.svg" />
+<img style="margin-right: 10px" alt="googlecloud" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
+<img style="margin-right: 10px" alt="docker" width="40" src="./.attachments/tech-icons/docker-plain.svg" />
 </div>
-<br>
 
-### A note on the "❌ (old)" label on Postgres
+### Old Technologies
+i9lyfe was first built using these technologies, subsequent improvements to the app required alternatives.
 
-Initially, I wrote the entirety i9lyfe's database in Postgres, a relational database.
+<div>
+<img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/javascript-original.svg" />
+<img style="margin-right: 10px" alt="nodejs" width="40" src="./.attachments/tech-icons/nodejs-original.svg" />
+<img style="margin-right: 10px" alt="express" width="40" src="./.attachments/tech-icons/express-original.svg" />
+<img style="margin-right: 10px; alt="postgresql" width="40" src="./.attachments/tech-icons/postgresql-original.svg" />
+<img style="margin-right: 10px" alt="socket.io" width="40" src="./.attachments/tech-icons/socketio-original.svg" />
+</div>
 
-Later on, when I was about implementing more advanced features, I found out that a Graph database better suits these features. This led me exploring deeper into the world of Graph databases, and that's when I realized that the whole database is even better written in a Graph database, and chose Neo4j as a replacement.
 
 ## Table of Contents
 
