@@ -559,12 +559,10 @@ func TestPostCommentStory(t *testing.T) {
 			return
 		}
 
-		commenters, err := succResBody[[]map[string]any](res.Body)
+		comments, err := succResBody[[]map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Len(t, commenters, 2)
-
-		td.Cmp(td.Require(t), commenters, td.All(
+		td.Cmp(td.Require(t), comments, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"owner_user": td.SuperMapOf(map[string]any{
 					"username": user2.Username,
@@ -663,4 +661,416 @@ func TestPostCommentStory(t *testing.T) {
 				"id": user2Comment1User1Post1Id,
 			}, nil))
 	}
+
+	// ----------------------------
+	// ----------------------------
+
+	user1Reply1User2Comment1User1Post1Id := ""
+
+	{
+		t.Log("user1 replied to user2's comment on her post1 | user2 is notified")
+
+		reqBody, err := makeReqBody(map[string]any{
+			"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user1.SessionCookie)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"id": td.Ignore(),
+			}, nil))
+
+		user1Reply1User2Comment1User1Post1Id = rb["id"].(string)
+
+		// user2 is notified
+		serverWSMsg := <-user2.ServerWSMsg
+
+		require.NotEmpty(t, serverWSMsg)
+
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":             td.Ignore(),
+						"type":           "comment_on_comment",
+						"commenter_user": td.SuperSliceOf([]any{"username", user1.Username}, nil),
+					},
+					nil),
+			}, nil))
+	}
+
+	user3Reply1User2Comment1User1Post1Id := ""
+
+	{
+		t.Log("user3 replied to user2's comment on user1's post1 | user2 is notified")
+
+		reqBody, err := makeReqBody(map[string]any{
+			"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user3.SessionCookie)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"id": td.Ignore(),
+			}, nil))
+
+		user3Reply1User2Comment1User1Post1Id = rb["id"].(string)
+
+		// user2 is notified
+		serverWSMsg := <-user2.ServerWSMsg
+
+		require.NotEmpty(t, serverWSMsg)
+
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":             td.Ignore(),
+						"type":           "comment_on_comment",
+						"commenter_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
+					},
+					nil),
+			}, nil))
+	}
+
+	{
+		t.Log("user2 checks replies to her comment1 on user1's post1")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user2.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		replies, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), replies, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user1.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+			}, nil)),
+			td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user3.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+			}, nil)),
+		))
+	}
+
+	{
+		t.Log("user3 removes her reply to user2's comment1 on user1's post1")
+
+		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments/"+user3Reply1User2Comment1User1Post1Id, nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user3.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[bool](res.Body)
+		require.NoError(t, err)
+		require.True(t, rb)
+	}
+
+	{
+		t.Log("user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user2.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), reactors, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user1.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+			}, nil)),
+			td.Not(td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user3.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+			}, nil))),
+		))
+	}
+
+	// ----------------------------
+	// ----------------------------
+
+	{
+		t.Log("user2 reacts to user1's reply to her comment1 on user1's post1 | user1 is notified")
+
+		reqBody, err := makeReqBody(map[string]any{
+			"reaction": "😆",
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user2.SessionCookie)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[bool](res.Body)
+		require.NoError(t, err)
+		require.True(t, rb)
+
+		// user1 is notified
+		serverWSMsg := <-user1.ServerWSMsg
+
+		require.NotEmpty(t, serverWSMsg)
+
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":           td.Ignore(),
+						"type":         "reaction_to_comment",
+						"reactor_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
+					},
+					nil),
+			}, nil))
+	}
+
+	{
+		t.Log("user3 reacts to user1's reply to user2's comment1 on user1's post1 | user1 is notified")
+
+		reqBody, err := makeReqBody(map[string]any{
+			"reaction": "😂",
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user3.SessionCookie)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[bool](res.Body)
+		require.NoError(t, err)
+		require.True(t, rb)
+
+		// user1 is notified
+		serverWSMsg := <-user1.ServerWSMsg
+
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":           td.Ignore(),
+						"type":         "reaction_to_comment",
+						"reactor_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
+					}, nil),
+			}, nil))
+	}
+
+	{
+		t.Log("user1 checks reactors to her reply to user2's comment1 on her post1")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user1.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), reactors, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"username": user2.Username,
+				"reaction": "😆",
+			}, nil)),
+			td.Contains(td.SuperMapOf(map[string]any{
+				"username": user3.Username,
+				"reaction": "😂",
+			}, nil)),
+		))
+	}
+
+	{
+		t.Log("user1 filters reactors to her reply to user2's comment1 on her post1 by a certain reaction")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user1.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), reactors, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"username": user2.Username,
+				"reaction": "😆",
+			}, nil)),
+			td.Not(td.Contains(td.SuperMapOf(map[string]any{
+				"username": user3.Username,
+				"reaction": "😂",
+			}, nil))),
+		))
+	}
+
+	{
+		t.Log("user3 removes her reaction to user1's reply to user2's comment1 on user1's post1")
+
+		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/undo_reaction", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user3.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		rb, err := succResBody[bool](res.Body)
+		require.NoError(t, err)
+		require.True(t, rb)
+	}
+
+	{
+		t.Log("user1 rechecks reactors to her reply to user2's comment1 on her post1 | user3's reaction gone")
+
+		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
+		require.NoError(t, err)
+		req.Header.Set("Cookie", user1.SessionCookie)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), reactors, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"username": user2.Username,
+				"reaction": "😆",
+			}, nil)),
+			td.Not(td.Contains(td.SuperMapOf(map[string]any{
+				"username": user3.Username,
+				"reaction": "😂",
+			}, nil))),
+		))
+	}
+
 }
