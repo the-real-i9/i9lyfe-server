@@ -1,50 +1,62 @@
 on:
   push:
     branches:
-      - main
+      - switch-to-go
 name: "Test i9lyfe"
 jobs:
   Tests:
     runs-on: ubuntu-latest
     services:
       neo4j:
-        image: 'neo4j:5.26'
+        image: 'neo4j:latest'
         ports:
           - '7687:7687'
         env:
           NEO4J_AUTH: "neo4j/pa@sw$!d"
 
-      broker:
+      kafka-kraft:
         image: 'confluentinc/confluent-local:latest'
         ports:
           - 9092:9092
+
+    strategy:
+      matrix:
+        go-version:
+          - 1.24.x
           
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v4
 
-      - name: Install Node
-        uses: actions/setup-node@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          go-version: '${{ matrix.go-version }}'
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Build server
+        run: go build -o i9lyfe_server
 
-      - name: Run Test
-        run: cd ./src/tests && npm test
+      - name: Start server
+        run: ./i9lyfe_server &
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
           NEO4J_PASSWORD: "pa@sw$!d"
           KAFKA_BROKER_ADDRESS: "localhost:9092"
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
-          COOKIE_SECRET_KEY_1: ${{ secrets.COOKIE_SECRET_KEY_1 }}
-          COOKIE_SECRET_KEY_2: ${{ secrets.COOKIE_SECRET_KEY_2 }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
           MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
-          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
+          GO_ENV: test
+        
+      - name: Run Test
+        run: sleep 2; cd ./tests && go test ./... -v -race
+        env:
+          NEO4J_URL: "neo4j://localhost"
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: "pa@sw$!d"
+          DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
