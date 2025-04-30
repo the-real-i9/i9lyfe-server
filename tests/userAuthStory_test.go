@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,8 +47,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user1.Email), rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user1.Email),
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -105,8 +108,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, fmt.Sprintf("Your email, %s, has been verified!", user1.Email), rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": fmt.Sprintf("Your email, %s, has been verified!", user1.Email),
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -141,9 +146,11 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Contains(t, rb, "user")
-		require.Equal(t, "Signup success!", rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"user": td.Ignore(),
+				"msg":  "Signup success!",
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -212,8 +219,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Contains(t, rb["msg"], "Signin success!")
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": "Signin success!",
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -255,8 +264,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", user1.Email), rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", user1.Email),
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -313,8 +324,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, fmt.Sprintf("%s, you're about to reset your password!", user1.Email), rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": fmt.Sprintf("%s, you're about to reset your password!", user1.Email),
+			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
 	}
@@ -347,8 +360,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, "Your password has been changed successfully", rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": "Your password has been changed successfully",
+			}, nil))
 
 		user1.Password = newPassword
 	}
@@ -375,8 +390,10 @@ func TestUserAuthStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "msg")
-		require.Equal(t, "Signin success!", rb["msg"])
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"msg": "Signin success!",
+			}, nil))
 	}
 
 	{

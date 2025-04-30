@@ -21,6 +21,10 @@ func Upload(ctx context.Context, dirPath string, data []byte, ext string) (strin
 	bucketName := os.Getenv("GCS_BUCKET")
 	mediaUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, dirPath)
 
+	if os.Getenv("GO_ENV") == "test" || os.Getenv("GO_ENV") == "" {
+		return mediaUrl, nil
+	}
+
 	stWriter := appGlobals.GCSClient.Bucket(bucketName).Object(dirPath).NewWriter(mediaUploadCtx)
 
 	stWriter.Write(data)
@@ -32,8 +36,7 @@ func Upload(ctx context.Context, dirPath string, data []byte, ext string) (strin
 		}
 
 		log.Println("cloudStorageService.go: UploadFile:", err)
-		// return "", fiber.ErrInternalServerError // don't do this in production
-		return "", nil
+		return "", fiber.ErrInternalServerError
 	}
 
 	return mediaUrl, nil

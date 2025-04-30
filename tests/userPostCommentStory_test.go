@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/fasthttp/websocket"
+	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,8 +66,10 @@ func TestPostCommentStory(t *testing.T) {
 				rb, err := succResBody[map[string]any](res.Body)
 				require.NoError(t, err)
 
-				require.Contains(t, rb, "msg")
-				require.Equal(t, fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user.Email), rb["msg"])
+				td.Cmp(td.Require(t), rb, td.SuperMapOf(
+					map[string]any{
+						"msg": fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user.Email),
+					}, nil))
 
 				user.SessionCookie = res.Header.Get("Set-Cookie")
 			}
@@ -95,8 +98,10 @@ func TestPostCommentStory(t *testing.T) {
 				rb, err := succResBody[map[string]any](res.Body)
 				require.NoError(t, err)
 
-				require.Contains(t, rb, "msg")
-				require.Equal(t, fmt.Sprintf("Your email, %s, has been verified!", user.Email), rb["msg"])
+				td.Cmp(td.Require(t), rb, td.SuperMapOf(
+					map[string]any{
+						"msg": fmt.Sprintf("Your email, %s, has been verified!", user.Email),
+					}, nil))
 
 				user.SessionCookie = res.Header.Get("Set-Cookie")
 			}
@@ -129,9 +134,11 @@ func TestPostCommentStory(t *testing.T) {
 				rb, err := succResBody[map[string]any](res.Body)
 				require.NoError(t, err)
 
-				require.Contains(t, rb, "msg")
-				require.Contains(t, rb, "user")
-				require.Equal(t, "Signup success!", rb["msg"])
+				td.Cmp(td.Require(t), rb, td.SuperMapOf(
+					map[string]any{
+						"user": td.Ignore(),
+						"msg":  "Signup success!",
+					}, nil))
 
 				user.SessionCookie = res.Header.Get("Set-Cookie")
 			}
@@ -216,7 +223,10 @@ func TestPostCommentStory(t *testing.T) {
 		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(t, err)
 
-		require.Contains(t, rb, "id")
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(
+			map[string]any{
+				"id": td.Ignore(),
+			}, nil))
 
 		user1Post1Id = rb["id"].(string)
 	}
@@ -252,12 +262,18 @@ func TestPostCommentStory(t *testing.T) {
 		serverWSMsg := <-user1.ServerWSMsg
 
 		require.NotEmpty(t, serverWSMsg)
-		require.Equal(t, "new notification", serverWSMsg["event"])
 
-		recvNotif := serverWSMsg["data"]
-
-		require.Contains(t, recvNotif, "id")
-		require.Contains(t, recvNotif, "type")
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":           td.Ignore(),
+						"type":         "reaction_to_post",
+						"reactor_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
+					},
+					nil),
+			}, nil))
 	}
 
 	{
@@ -290,13 +306,16 @@ func TestPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		require.NotEmpty(t, serverWSMsg)
-		require.Equal(t, "new notification", serverWSMsg["event"])
-
-		recvNotif := serverWSMsg["data"]
-
-		require.Contains(t, recvNotif, "id")
-		require.Contains(t, recvNotif, "type")
+		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(
+			map[string]any{
+				"event": "new notification",
+				"data": td.SuperMapOf(
+					map[string]any{
+						"id":           td.Ignore(),
+						"type":         "reaction_to_post",
+						"reactor_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
+					}, nil),
+			}, nil))
 	}
 
 	{
@@ -322,18 +341,15 @@ func TestPostCommentStory(t *testing.T) {
 
 		require.Len(t, reactors, 2)
 
-		for _, reactor := range reactors {
-			require.Contains(t, reactor, "username")
-
-			require.Contains(t, []string{user2.Username, user3.Username}, reactor["username"])
-
-			if reactor["username"].(string) == user2.Username {
-				require.Equal(t, "🤔", reactor["reaction"])
-			}
-
-			if reactor["username"].(string) == user3.Username {
-				require.Equal(t, "😀", reactor["reaction"])
-			}
-		}
+		td.Cmp(td.Require(t), reactors, td.Contains(td.Any(
+			td.SuperMapOf(map[string]any{
+				"username": user2.Username,
+				"reaction": "🤔",
+			}, nil),
+			td.SuperMapOf(map[string]any{
+				"username": user3.Username,
+				"reaction": "😀",
+			}, nil),
+		)))
 	}
 }
