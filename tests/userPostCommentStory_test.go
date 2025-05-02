@@ -183,7 +183,7 @@ func TestPostCommentStory(t *testing.T) {
 					var wsMsg map[string]any
 
 					if err := userWSConn.ReadJSON(&wsMsg); err != nil {
-						log.Println("error: ReadJSON", err)
+						log.Println("unexpected error: userWSConn.ReadJSON:", err)
 						break
 					}
 
@@ -672,9 +672,6 @@ func TestPostCommentStory(t *testing.T) {
 				"id": user2Comment1User1Post1Id,
 			}, nil))
 	}
-
-	// ----------------------------
-	// ----------------------------
 
 	user1Reply1User2Comment1User1Post1Id := ""
 
