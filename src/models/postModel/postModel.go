@@ -655,11 +655,12 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 		res, err = tx.Run(
 			ctx,
 			`
-			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $ost_id })<-[:CREATES_POST]-(postOwner)
+			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
 
-			MERGE (clientUser)-[:REPOSTS_POAR]->(post)
+			MERGE (clientUser)-[crep:REPOSTS_POST]->(post)
 			ON CREATE
-				SET post.reposts_count = post.reposts_count + 1
+				SET post.reposts_count = post.reposts_count + 1,
+					crep.at = $at
 
 			RETURN post.reposts_count AS latest_reposts_count, postOwner.username AS post_owner_username
 			`,
@@ -681,8 +682,6 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 
 		postOwnerUsername := resMap["post_owner_username"].(string)
 
-		repostId := resMap["repost_data"].(map[string]any)["id"]
-
 		// handle mentions
 		if postOwnerUsername != clientUsername {
 			res, err = tx.Run(
@@ -696,7 +695,6 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
         `,
 				map[string]any{
 					"post_id":         postId,
-					"repostId":        repostId,
 					"client_username": clientUsername,
 					"at":              at,
 				},
