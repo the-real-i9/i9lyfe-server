@@ -75,7 +75,7 @@ func JwtVerify[T any](tokenString, secret string) (T, error) {
 	var data T
 
 	parser := jwt.NewParser()
-	token, err := parser.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+	token, err := parser.Parse(tokenString, func(t *jwt.Token) (any, error) {
 
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])

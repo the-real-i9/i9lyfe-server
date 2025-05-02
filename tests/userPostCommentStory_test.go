@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -49,6 +50,8 @@ func TestPostCommentStory(t *testing.T) {
 		t.Log("Setup: create new account for users")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
+			user := user
+
 			{
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(t, err)
@@ -149,6 +152,8 @@ func TestPostCommentStory(t *testing.T) {
 		t.Log("Setup: Init user sockets")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
+			user := user
+
 			header := http.Header{}
 			header.Set("Cookie", user.SessionCookie)
 			wsConn, res, err := websocket.DefaultDialer.Dial(wsPath, header)
@@ -165,26 +170,32 @@ func TestPostCommentStory(t *testing.T) {
 
 			defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
 
-			commChan := make(chan map[string]any)
+			user.WSConn = wsConn
+			user.ServerWSMsg = make(chan map[string]any)
 
-			go func(commChan chan<- map[string]any) {
+			go func() {
+				userCommChan := user.ServerWSMsg
 
 				for {
+					userCommChan := userCommChan
+					userWSConn := user.WSConn
+
 					var wsMsg map[string]any
 
-					if err := wsConn.ReadJSON(&wsMsg); err != nil {
+					if err := userWSConn.ReadJSON(&wsMsg); err != nil {
+						log.Println("error: ReadJSON", err)
 						break
 					}
 
-					commChan <- wsMsg
+					if wsMsg == nil {
+						continue
+					}
+
+					userCommChan <- wsMsg
 				}
 
-				close(commChan)
-
-			}(commChan)
-
-			user.WSConn = wsConn
-			user.ServerWSMsg = commChan
+				close(userCommChan)
+			}()
 		}
 	}
 

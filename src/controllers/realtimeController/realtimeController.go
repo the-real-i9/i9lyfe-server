@@ -2,23 +2,17 @@ package realtimeController
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/chatMessageTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/chatService"
 	"i9lyfe/src/services/chatService/chatMessageService"
-	"i9lyfe/src/services/messageBrokerService"
+	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/userService"
-	"io"
 	"log"
-	"time"
 
 	"github.com/gofiber/contrib/websocket"
-	"github.com/segmentio/kafka-go"
 )
 
 var WSStream = websocket.New(func(c *websocket.Conn) {
@@ -29,11 +23,9 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 	realtimeService.AllClientSockets.Store(clientUser.Username, c)
 
-	go userService.GoOnline(ctx, clientUser.Username)
+	go userService.GoOnline(context.Background(), clientUser.Username)
 
-	r := messageBrokerService.ConsumeTopic(fmt.Sprintf("user-%s-alerts", clientUser.Username))
-
-	go serverStream(c, r)
+	eventStreamService.Subscribe(clientUser.Username, c)
 
 	var w_err error
 
@@ -271,36 +263,9 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 		}
 	}
 
-	go func(r *kafka.Reader, clientUsername string) {
-		realtimeService.AllClientSockets.Delete(clientUsername)
+	realtimeService.AllClientSockets.Delete(clientUser.Username)
 
-		userService.GoOffline(context.TODO(), clientUsername)
+	go userService.GoOffline(context.Background(), clientUser.Username)
 
-		if err := r.Close(); err != nil {
-			log.Println("failed to close reader:", err)
-		} else {
-			log.Println("reader closed: at:", time.Now())
-		}
-	}(r, clientUser.Username)
+	eventStreamService.Unsubscribe(clientUser.Username)
 })
-
-func serverStream(c *websocket.Conn, r *kafka.Reader) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	for {
-		m, err := r.ReadMessage(ctx)
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				log.Println("realtimeController.go: serverStream: r.ReadMessage:", err, ": at:", time.Now())
-			}
-			break
-		}
-
-		var msg appTypes.ServerWSMsg
-		json.Unmarshal(m.Value, &msg)
-
-		log.Printf("%s\n", m.Value)
-		c.WriteJSON(msg)
-	}
-}

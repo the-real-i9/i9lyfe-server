@@ -258,7 +258,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 	var resData CommentOnResT
 
 	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 5)
+		resMap := make(map[string]any, 7)
 
 		var (
 			res neo4j.ResultWithContext
@@ -294,6 +294,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 		}
 
 		if !res.Next(ctx) {
+
 			return nil, nil
 		}
 
@@ -380,6 +381,7 @@ func CommentOn(ctx context.Context, clientUsername, commentId, commentText, atta
 			}
 
 			if !res.Next(ctx) {
+				log.Println("no record")
 				return nil, nil
 			}
 

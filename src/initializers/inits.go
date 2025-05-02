@@ -80,6 +80,10 @@ func initNeo4jDriver() error {
 		if err != nil {
 			return nil, err
 		}
+		_, err = tx.Run(ctx, `CREATE CONSTRAINT unique_undevtmsg IF NOT EXISTS FOR (undevtmsg:UndEventMessage) REQUIRE (undevtmsg.id) IS UNIQUE`, nil)
+		if err != nil {
+			return nil, err
+		}
 		_, err = tx.Run(ctx, `CREATE INDEX post_type_idx IF NOT EXISTS FOR (post:Post) ON (post.type)`, nil)
 		if err != nil {
 			return nil, err
@@ -133,10 +137,6 @@ func InitApp() error {
 }
 
 func CleanUp() {
-	if err := appGlobals.KafkaWriter.Close(); err != nil {
-		log.Println("failed to close kafka writer:", err)
-	}
-
 	if err := appGlobals.Neo4jDriver.Close(context.TODO()); err != nil {
 		log.Println("error closing neo4j driver", err)
 	}

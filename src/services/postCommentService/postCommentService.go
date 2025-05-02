@@ -8,7 +8,7 @@ import (
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
-	"i9lyfe/src/services/messageBrokerService"
+	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/utilServices"
 	"strings"
@@ -48,20 +48,22 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 
 	realtimeService.BroadcastNewPost(res.NewPostData["id"].(string), clientUsername)
 
-	go func(mentionNotifs []map[string]any) {
-		for _, mn := range mentionNotifs {
-			mn := mn
-			receiverUsername := mn["receiver_username"].(string)
+	if len(res.MentionNotifs) > 0 {
+		go func() {
+			for _, mn := range res.MentionNotifs {
+				mn := mn
+				receiverUsername := mn["receiver_username"].(string)
 
-			delete(mn, "receiver_username")
+				delete(mn, "receiver_username")
 
-			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
-				Event: "new notification",
-				Data:  mn,
-			})
-		}
-	}(res.MentionNotifs)
+				// send notification with message broker
+				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+					Event: "new notification",
+					Data:  mn,
+				})
+			}
+		}()
+	}
 
 	return res.NewPostData, nil
 }
@@ -89,19 +91,21 @@ func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (
 		return nil, err
 	}
 
-	go func(reactionNotif map[string]any) {
-		if rn := reactionNotif; rn != nil {
+	if res.ReactionNotif != nil {
+		go func() {
+			rn := res.ReactionNotif
 			receiverUsername := rn["receiver_username"].(string)
 
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
+			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
-		}
-	}(res.ReactionNotif)
+
+		}()
+	}
 
 	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":                postId,
@@ -172,34 +176,38 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 		return nil, err
 	}
 
-	go func(mentionNotifs []map[string]any) {
-		for _, mn := range mentionNotifs {
-			mn := mn
-			receiverUsername := mn["receiver_username"].(string)
+	if len(res.MentionNotifs) > 0 {
+		go func() {
+			for _, mn := range res.MentionNotifs {
+				mn := mn
+				receiverUsername := mn["receiver_username"].(string)
 
-			delete(mn, "receiver_username")
+				delete(mn, "receiver_username")
 
-			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
-				Event: "new notification",
-				Data:  mn,
-			})
-		}
-	}(res.MentionNotifs)
+				// send notification with message broker
+				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+					Event: "new notification",
+					Data:  mn,
+				})
+			}
+		}()
+	}
 
-	go func(commentNotif map[string]any) {
-		if cn := commentNotif; cn != nil {
+	if res.CommentNotif != nil {
+		go func() {
+			cn := res.CommentNotif
 			receiverUsername := cn["receiver_username"].(string)
 
 			delete(cn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
+			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
-		}
-	}(res.CommentNotif)
+
+		}()
+	}
 
 	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":               postId,
@@ -247,19 +255,21 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, reaction str
 		return nil, err
 	}
 
-	go func(reactionNotif map[string]any) {
-		if rn := reactionNotif; rn != nil {
+	if res.ReactionNotif != nil {
+		go func() {
+			rn := res.ReactionNotif
 			receiverUsername := rn["receiver_username"].(string)
 
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
+			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
-		}
-	}(res.ReactionNotif)
+
+		}()
+	}
 
 	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":             commentId,
@@ -330,34 +340,39 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 		return nil, err
 	}
 
-	go func(mentionNotifs []map[string]any) {
-		for _, mn := range mentionNotifs {
-			mn := mn
-			receiverUsername := mn["receiver_username"].(string)
+	if len(res.MentionNotifs) > 0 {
+		go func() {
+			for _, mn := range res.MentionNotifs {
+				mn := mn
 
-			delete(mn, "receiver_username")
+				receiverUsername := mn["receiver_username"].(string)
 
-			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
-				Event: "new notification",
-				Data:  mn,
-			})
-		}
-	}(res.MentionNotifs)
+				delete(mn, "receiver_username")
 
-	go func(commentNotif map[string]any) {
-		if cn := commentNotif; cn != nil {
+				// send notification with message broker
+				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+					Event: "new notification",
+					Data:  mn,
+				})
+			}
+		}()
+	}
+
+	if res.CommentNotif != nil {
+		go func() {
+			cn := res.CommentNotif
+
 			receiverUsername := cn["receiver_username"].(string)
 
 			delete(cn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
+			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
-		}
-	}(res.CommentNotif)
+		}()
+	}
 
 	go realtimeService.SendCommentUpdate(map[string]any{
 		"comment_id":            commentId,
@@ -396,19 +411,21 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 		return nil, err
 	}
 
-	go func(repostNotif map[string]any) {
-		if rn := repostNotif; rn != nil {
+	if res.RepostNotif != nil {
+		go func() {
+			rn := res.RepostNotif
 			receiverUsername := rn["receiver_username"].(string)
 
 			delete(rn, "receiver_username")
 
 			// send notification with message broker
-			messageBrokerService.Send(fmt.Sprintf("user-%s-alerts", receiverUsername), appTypes.ServerWSMsg{
+			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
-		}
-	}(res.RepostNotif)
+
+		}()
+	}
 
 	go realtimeService.SendPostUpdate(map[string]any{
 		"post_id":              postId,

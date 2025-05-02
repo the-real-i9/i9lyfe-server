@@ -4,14 +4,15 @@ go 1.24.1
 
 require (
 	cloud.google.com/go/storage v1.51.0
+	github.com/fasthttp/websocket v1.5.12
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/joho/godotenv v1.5.1
+	github.com/maxatome/go-testdeep v1.14.0
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.0
-	github.com/segmentio/kafka-go v0.4.47
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.37.0
 	google.golang.org/api v0.228.0
@@ -36,7 +37,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -48,15 +48,12 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/maxatome/go-testdeep v1.14.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.60.0 // indirect
-	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.35.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
