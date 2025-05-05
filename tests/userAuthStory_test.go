@@ -14,7 +14,7 @@ import (
 const signupPath string = HOST_URL + "/api/auth/signup"
 const signinPath string = HOST_URL + "/api/auth/signin"
 const forgotPasswordPath string = HOST_URL + "/api/auth/forgot_password"
-const signoutPath string = HOST_URL + "/api/app/private/signout"
+const signoutPath string = HOST_URL + "/api/app/private/me/signout"
 
 func TestUserAuthStory(t *testing.T) {
 	t.Parallel()

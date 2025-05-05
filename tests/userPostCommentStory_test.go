@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -13,10 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const appPathPriv = HOST_URL + "/api/app/private"
 const wsPath = WSHOST_URL + "/api/app/private/ws"
 
-func TestPostCommentStory(t *testing.T) {
+func TestUserPostCommentStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
@@ -180,7 +178,6 @@ func TestPostCommentStory(t *testing.T) {
 					var wsMsg map[string]any
 
 					if err := userWSConn.ReadJSON(&wsMsg); err != nil {
-						log.Println("unexpected error: userWSConn.ReadJSON:", err)
 						break
 					}
 
@@ -239,7 +236,7 @@ func TestPostCommentStory(t *testing.T) {
 	}
 
 	{
-		t.Log("user2 reacts to user1's post1 | user1 is notified")
+		t.Log("Action: user2 reacts to user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "🤔",
@@ -268,16 +265,13 @@ func TestPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		require.NotEmpty(t, serverWSMsg)
-
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
 				"type":         "reaction_to_post",
 				"reactor_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
-			},
-				nil),
+			}, nil),
 		}, nil))
 	}
 
@@ -442,7 +436,7 @@ func TestPostCommentStory(t *testing.T) {
 	user2Comment1User1Post1Id := ""
 
 	{
-		t.Log("user2 comments on user1's post1 | user1 is notified")
+		t.Log("Action: user2 comments on user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
 			"comment_text": fmt.Sprintf("This is a comment from %s", user2.Username),
@@ -475,8 +469,6 @@ func TestPostCommentStory(t *testing.T) {
 
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
-
-		require.NotEmpty(t, serverWSMsg)
 
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
@@ -525,8 +517,6 @@ func TestPostCommentStory(t *testing.T) {
 
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
-
-		require.NotEmpty(t, serverWSMsg)
 
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
@@ -695,8 +685,6 @@ func TestPostCommentStory(t *testing.T) {
 		// user2 is notified
 		serverWSMsg := <-user2.ServerWSMsg
 
-		require.NotEmpty(t, serverWSMsg)
-
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
@@ -745,8 +733,6 @@ func TestPostCommentStory(t *testing.T) {
 		// user2 is notified
 		serverWSMsg := <-user2.ServerWSMsg
 
-		require.NotEmpty(t, serverWSMsg)
-
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
@@ -759,7 +745,7 @@ func TestPostCommentStory(t *testing.T) {
 	}
 
 	{
-		t.Log("user2 checks replies to her comment1 on user1's post1")
+		t.Log("Action: user2 checks replies to her comment1 on user1's post1")
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -817,7 +803,7 @@ func TestPostCommentStory(t *testing.T) {
 	}
 
 	{
-		t.Log("user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
+		t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -853,7 +839,7 @@ func TestPostCommentStory(t *testing.T) {
 	}
 
 	{
-		t.Log("user2 reacts to user1's reply to her comment1 on user1's post1 | user1 is notified")
+		t.Log("Action: user2 reacts to user1's reply to her comment1 on user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "😆",
@@ -881,8 +867,6 @@ func TestPostCommentStory(t *testing.T) {
 
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
-
-		require.NotEmpty(t, serverWSMsg)
 
 		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
 			"event": "new notification",
@@ -1106,7 +1090,7 @@ func TestPostCommentStory(t *testing.T) {
 	}
 
 	{
-		t.Log("Action: user2 views user1's post2 where she's been mentioned")
+		t.Log("Action: user2 views user1's post2 following the mention notification received")
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post2Id, nil)
 		require.NoError(t, err)

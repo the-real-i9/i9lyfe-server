@@ -177,7 +177,7 @@ func Follow(ctx context.Context, clientUsername, targetUsername string) (map[str
 		ON CREATE
 			SET fur.at = $at,
 				clientUser.following_count = coalesce(clientUser.following_count, 0) + 1,
-				targetUser.followers_count = coalesce(clientUser.followers_count, 0) + 1
+				targetUser.followers_count = coalesce(targetUser.followers_count, 0) + 1
 
 		WITH targetUser, clientUser
 		CREATE (targetUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: $at, follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
@@ -231,13 +231,13 @@ func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, of
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (clientUser:User{ username: $client_username })<-[:MENTIONS_USER]-(post:Post WHERE post.created_at < $offset)
+		MATCH (clientUser:User{ username: $client_username })<-[:MENTIONS_USER]-(post:Post WHERE post.created_at < $offset)<-[:CREATES_POST]-(ownerUser)
 		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
 		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
 		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
 		WITH post, 
 			toString(post.created_at) AS created_at, 
-			clientUser { .username, .profile_pic_url } AS owner_user,
+			ownerUser { .username, .profile_pic_url } AS owner_user,
 			CASE crxn 
 				WHEN IS NULL THEN "" 
 				ELSE crxn.reaction 
@@ -278,12 +278,12 @@ func GetReactedPosts(ctx context.Context, clientUsername string, limit int, offs
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (clientUser:User{ username: $client_username })-[cxrn:REACTS_TO_POST]->(post:Post WHERE post.created_at < $offset)
+		MATCH (clientUser:User{ username: $client_username })-[crxn:REACTS_TO_POST]->(post:Post WHERE post.created_at < $offset)<-[:CREATES_POST]-(ownerUser)
 		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
 		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
 		WITH post, 
 			toString(post.created_at) AS created_at, 
-			clientUser { .username, .profile_pic_url } AS owner_user,
+			ownerUser { .username, .profile_pic_url } AS owner_user,
 			crxn.reaction AS client_reaction, 
 			CASE csaves 
 				WHEN IS NULL THEN false 
@@ -321,12 +321,12 @@ func GetSavedPosts(ctx context.Context, clientUsername string, limit int, offset
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (clientUser:User{ username: $client_username })-[:SAVES_POST]->(post:Post WHERE post.created_at < $offset)
+		MATCH (clientUser:User{ username: $client_username })-[:SAVES_POST]->(post:Post WHERE post.created_at < $offset)<-[:CREATES_POST]-(ownerUser)
 		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
 		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
 		WITH post, 
 			toString(post.created_at) AS created_at, 
-			clientUser { .username, .profile_pic_url } AS owner_user,
+			ownerUser { .username, .profile_pic_url } AS owner_user,
 			CASE crxn 
 				WHEN IS NULL THEN "" 
 				ELSE crxn.reaction 
@@ -427,8 +427,12 @@ func GetProfile(ctx context.Context, clientUsername, targetUsername string) (map
 			CASE cfur 
 				WHEN IS NULL THEN false
 				ELSE true 
-			END AS client_follows
-		RETURN profileUser { .username, .name, .profile_pic_url, .bio, .posts_count, .followers_count, .following_count, client_follows } AS user_profile
+			END AS client_follows,
+			coalesce(profileUser.posts_count, 0) AS posts_count,
+			coalesce(profileUser.followers_count, 0) AS followers_count,
+			coalesce(profileUser.following_count, 0) AS following_count
+
+		RETURN profileUser { .username, .name, .profile_pic_url, .bio, posts_count, followers_count, following_count, client_follows } AS user_profile
 		`,
 		map[string]any{
 			"client_username": clientUsername,
@@ -465,6 +469,7 @@ func GetFollowers(ctx context.Context, clientUsername, targetUsername string, li
 			END AS client_follows
 		ORDER BY fur.at DESC
 		LIMIT $limit
+
 		RETURN collect(follower { .id, .username, .profile_pic_url, client_follows }) AS user_followers
 		`,
 		map[string]any{

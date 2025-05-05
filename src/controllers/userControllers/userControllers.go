@@ -91,7 +91,13 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.FollowUser(ctx, clientUser.Username, c.Params("username"))
+	clientUsername, targetUsername := clientUser.Username, c.Params("username")
+
+	if clientUsername == targetUsername {
+		return fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
+	}
+
+	respData, app_err := userService.FollowUser(ctx, clientUsername, targetUsername)
 	if app_err != nil {
 		return app_err
 	}
@@ -203,7 +209,7 @@ func GetUserFollowers(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("usesrname"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
 	if app_err != nil {
 		return app_err
 	}

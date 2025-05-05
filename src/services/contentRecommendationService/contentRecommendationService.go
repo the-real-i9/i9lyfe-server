@@ -11,8 +11,7 @@ import (
 )
 
 /*
-- Bear with me, I'm still working on a content recommendation algorithm.
-- This is far from how I envisage it. I just want to have a dummy implementation for now
+- Bear with me, a more sophisticated content recommendation algorithm will be implemented in the future.
 */
 
 func RecommendPost(clientUsername, postId string) any {

@@ -65,28 +65,19 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 }
 
 func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	if clientUsername == targetUsername {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
-	}
-
 	followNotif, err := user.Follow(ctx, clientUsername, targetUsername)
 	if err != nil {
 		return nil, err
 	}
 
-	go func(followNotif map[string]any) {
-		if fn := followNotif; fn != nil {
-			receiverUsername := fn["receiver_username"].(string)
-
-			delete(fn, "receiver_username")
-
-			// send notification with message broker
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+	go func() {
+		if followNotif != nil {
+			eventStreamService.Send(targetUsername, appTypes.ServerWSMsg{
 				Event: "new notification",
-				Data:  fn,
+				Data:  followNotif,
 			})
 		}
-	}(followNotif)
+	}()
 
 	return true, nil
 }
@@ -154,31 +145,31 @@ func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) 
 	return profile, nil
 }
 
-func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
-	profile, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) ([]any, error) {
+	followers, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
 
-	return profile, nil
+	return followers, nil
 }
 
-func GetUserFollowing(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
-	profile, err := user.GetFollowing(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+func GetUserFollowing(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) ([]any, error) {
+	following, err := user.GetFollowing(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
 
-	return profile, nil
+	return following, nil
 }
 
-func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) (any, error) {
-	profile, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
+func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, offset int64) ([]any, error) {
+	posts, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
 
-	return profile, nil
+	return posts, nil
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {

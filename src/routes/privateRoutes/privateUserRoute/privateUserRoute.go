@@ -10,23 +10,23 @@ func Route(router fiber.Router) {
 
 	router.Get("/client_user", UC.GetClientUser)
 
-	router.Get("/signout", UC.Signout)
+	router.Get("/me/signout", UC.Signout)
 
-	router.Patch("/edit_profile", UC.EditUserProfile)
+	router.Put("/me/edit_profile", UC.EditUserProfile)
 
-	router.Put("/change_profile_picture", UC.ChangeUserProfilePicture)
+	router.Put("/me/change_profile_picture", UC.ChangeUserProfilePicture)
 
 	router.Post("/users/:username/follow", UC.FollowUser)
 
 	router.Delete("/users/:username/unfollow", UC.UnfollowUser)
 
-	router.Get("/mentioned_posts", UC.GetUserMentionedPosts)
+	router.Get("/me/mentioned_posts", UC.GetUserMentionedPosts)
 
-	router.Get("/reacted_posts", UC.GetUserReactedPosts)
+	router.Get("/me/reacted_posts", UC.GetUserReactedPosts)
 
-	router.Get("/saved_posts", UC.GetUserSavedPosts)
+	router.Get("/me/saved_posts", UC.GetUserSavedPosts)
 
-	router.Get("/notifications", UC.GetUserNotifications)
+	router.Get("/me/notifications", UC.GetUserNotifications)
 
-	router.Put("/notifications/:notification_id/read", UC.ReadUserNotification)
+	router.Put("/me/notifications/:notification_id/read", UC.ReadUserNotification)
 }
