@@ -23,11 +23,10 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 
 	for i, mediaData := range mediaDataList {
 		mediaMIME := mimetype.Detect(mediaData)
-		mediaType := mediaMIME.String()
-		mediaExt := mediaMIME.Extension()
+		mediaType, mediaExt := mediaMIME.String(), mediaMIME.Extension()
 
 		if ((postType == "reel" || postType == "video") && !strings.HasPrefix(mediaType, "video")) || (postType == "photo" && !strings.HasPrefix(mediaType, "image")) {
-			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
+			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
 		}
 
 		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s", clientUsername), mediaData, mediaExt)
@@ -154,11 +153,10 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 
 	if attachmentData != nil {
 		mediaMIME := mimetype.Detect(attachmentData)
-		mediaType := mediaMIME.String()
-		mediaExt := mediaMIME.Extension()
+		mediaType, mediaExt := mediaMIME.String(), mediaMIME.Extension()
 
 		if !strings.HasPrefix(mediaType, "image") {
-			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
+			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 		}
 
 		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, mediaExt)

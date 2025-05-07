@@ -230,10 +230,10 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user1 changes his profile picture")
 
-		photo, err := os.ReadFile("./test_files/photo_1.png")
+		ppic, err := os.ReadFile("./test_files/profile_pic.png")
 		require.NoError(t, err)
 
-		reqBody, err := makeReqBody(map[string]any{"picture_data": photo})
+		reqBody, err := makeReqBody(map[string]any{"picture_data": ppic})
 		require.NoError(t, err)
 
 		req, err := http.NewRequest("PUT", appPathPriv+"/me/change_profile_picture", reqBody)
