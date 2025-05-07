@@ -28,7 +28,7 @@ type changeProfilePictureBody struct {
 
 func (b changeProfilePictureBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.PictureData, validation.Required, validation.Length(50*1024, 2*(1024*1024)).Error("picture size is out of range. minimum of 50KiB, maximum of 2MiB")),
+		validation.Field(&b.PictureData, validation.Required, validation.Length(1024, 2*(1024*1024)).Error("picture size is out of range. minimum of 1KiB, maximum of 2MiB")),
 	)
 
 	return helpers.ValidationError(err, "userControllers_requestBody.go", "changeProfilePictureBody")
