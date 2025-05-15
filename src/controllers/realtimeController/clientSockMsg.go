@@ -120,7 +120,7 @@ func (d deleteChatMsgEvd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
-		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone").Error("expected value: 'me' or 'everyone'. but found "+d.DeleteFor)),
+		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone", "").Error("expected value: 'me' or 'everyone', or no value. but found "+d.DeleteFor)),
 	)
 
 	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "deleteChatMsgEvd")

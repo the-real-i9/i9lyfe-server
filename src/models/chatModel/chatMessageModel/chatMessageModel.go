@@ -48,7 +48,7 @@ func Send(ctx context.Context, clientUsername, toUser, msgType, msgProps string,
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: SendMessage:", err)
+		log.Println("chatMessageModel.go: SendMessage:", err)
 		return resData, fiber.ErrInternalServerError
 	}
 
@@ -79,7 +79,7 @@ func AckDelivered(ctx context.Context, clientUsername, partnerUsername, msgId st
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: AckMsgDelivered:", err)
+		log.Println("chatMessageModel.go: AckMsgDelivered:", err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -111,7 +111,7 @@ func AckRead(ctx context.Context, clientUsername, partnerUsername, msgId string,
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: AckMsgRead:", err)
+		log.Println("chatMessageModel.go: AckMsgRead:", err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -150,7 +150,7 @@ func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, reacti
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: ReactToMsg:", err)
+		log.Println("chatMessageModel.go: ReactToMsg:", err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -168,7 +168,7 @@ func RemoveReaction(ctx context.Context, clientUsername, partnerUsername, msgId 
 		ctx,
 		`
 		MATCH (:User{ username: $client_username })-[crxn:REACTS_TO_MESSAGE]->(:Message{ id: $message_id })-[:IN_CHAT]->(:Chat{ owner_username: $client_username, partner_username: $partner_username })
-		DELETE rr
+		DELETE crxn
 
 		RETURN true AS done
 		`,
@@ -179,7 +179,7 @@ func RemoveReaction(ctx context.Context, clientUsername, partnerUsername, msgId 
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: RemoveReactionToMsg:", err)
+		log.Println("chatMessageModel.go: RemoveReactionToMsg:", err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -195,17 +195,18 @@ func RemoveReaction(ctx context.Context, clientUsername, partnerUsername, msgId 
 func Delete(ctx context.Context, clientUsername, partnerUsername, msgId, deleteFor string) (bool, error) {
 	var query string
 
-	if deleteFor == "me" {
+	if deleteFor == "everyone" {
 		query = `
-			MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[incr:IN_CHAT]-(message:Message{ id: $message_id })<-[rsmr:SENDS_MESSAGE|RECEIVES_MESSAGE]-(clientUser)
-    	DELETE incr, rsmr
+			MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message{ id: $message_id })<-[:SENDS_MESSAGE]-()
+
+      DETACH DELETE message
 
 			RETURN true AS done
 		`
 	} else {
 		query = `
-      MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message{ id: $message_id })
-      DETACH DELETE message
+      MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[incr:IN_CHAT]-(message:Message{ id: $message_id })<-[rsmr:SENDS_MESSAGE|RECEIVES_MESSAGE]-(clientUser)
+    	DELETE incr, rsmr
 
 			RETURN true AS done
     `
@@ -221,7 +222,7 @@ func Delete(ctx context.Context, clientUsername, partnerUsername, msgId, deleteF
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: DeleteMsg:", err)
+		log.Println("chatMessageModel.go: DeleteMsg:", err)
 		return false, fiber.ErrInternalServerError
 	}
 

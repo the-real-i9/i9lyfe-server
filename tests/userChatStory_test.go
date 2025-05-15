@@ -342,10 +342,6 @@ func TestUserChatStory(t *testing.T) {
 		}, nil))
 	}
 
-	// -----------
-	// -----------
-	// -----------
-
 	user2NewMsgId := ""
 
 	{
@@ -516,5 +512,54 @@ func TestUserChatStory(t *testing.T) {
 				}, nil)),
 			),
 		}, nil))
+	}
+
+	{
+		t.Log("Action: user2 removes reaction to user1's message")
+
+		err := user2.WSConn.WriteJSON(map[string]any{
+			"event": "chat: remove reaction to message",
+			"data": map[string]any{
+				"partnerUsername": user1.Username,
+				"msgId":           user1NewMsgId,
+				"at":              time.Now().UTC().UnixMilli(),
+			},
+		})
+		require.NoError(t, err)
+
+		// user2's server reply (response) to event sent
+		user2ServerReply := <-user2.ServerWSMsg
+
+		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
+			"event":   "server reply",
+			"toEvent": "chat: remove reaction to message",
+			"data":    true,
+		}, nil))
+	}
+
+	{
+		t.Log("Action: user1 is notified of user2's reaction removal to his message")
+
+		user1ReadAckReceipt := <-user1.ServerWSMsg
+
+		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
+			"event": "chat: message reaction removed",
+			"data": td.SuperMapOf(map[string]any{
+				"partner_username": user2.Username,
+				"msg_id":           user1NewMsgId,
+			}, nil),
+		}, nil))
+	}
+
+	{
+		t.Log("Action: user1 deletes his message for everyone")
+	}
+
+	{
+		t.Log("Action: user2 deletes his message for himself")
+	}
+
+	{
+		t.Log("Action: user1 deletes user2's message")
 	}
 }
