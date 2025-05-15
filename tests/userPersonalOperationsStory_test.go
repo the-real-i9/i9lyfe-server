@@ -280,7 +280,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 		serverWSMsg := <-user2.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -314,7 +314,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 		serverWSMsg := <-user2.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -348,7 +348,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 		serverWSMsg := <-user3.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -417,7 +417,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -572,9 +572,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			"username":        user1.Username,
 			"name":            user1.Name,
 			"bio":             user1.Bio,
-			"posts_count":     float64(0),
-			"followers_count": float64(1),
-			"following_count": float64(1),
+			"posts_count":     td.Lax(0),
+			"followers_count": td.Lax(1),
+			"following_count": td.Lax(1),
 		}, nil))
 	}
 
@@ -627,7 +627,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 			serverWSMsg_mentionNotif := <-user2.ServerWSMsg
 
-			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":              td.Ignore(),
@@ -693,7 +693,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 			serverWSMsg_mentionNotif := <-user2.ServerWSMsg
 
-			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":              td.Ignore(),
@@ -747,7 +747,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			// user1 is notified
 			serverWSMsg := <-user1.ServerWSMsg
 
-			td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":           td.Ignore(),
@@ -787,7 +787,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			// user3 is notified
 			serverWSMsg := <-user3.ServerWSMsg
 
-			td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":           td.Ignore(),

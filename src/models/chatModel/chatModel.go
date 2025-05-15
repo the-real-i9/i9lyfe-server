@@ -70,12 +70,21 @@ func History(ctx context.Context, clientUsername, partnerUsername string, offset
 	res, err := db.Query(
 		ctx,
 		`
-		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message WHERE message.created_at < $offset)<-[rxn:REACTS_TO_MESSAGE]-(reactor)
+		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message WHERE message.created_at < $offset)
 		
-		WITH message, toString(message.created_at) AS created_at, collect({ user: reactor { .username, .profile_pic_url }, reaction: rxn.reaction }) AS reactions
+		MATCH (message)<-[:SENDS_MESSAGE]-(msgSender)
+
+		OPTIONAL MATCH (message)<-[rxn:REACTS_TO_MESSAGE]-(reactor)
+		
+		WITH message, 
+			toString(message.created_at) AS created_at, 
+			collect({ user: reactor { .username, .profile_pic_url }, reaction: rxn.reaction }) AS reactions,
+			msgSender { .username, .profile_pic_url, .presence } AS sender
+
 		ORDER BY message.created_at DESC
 		LIMIT 50
-		RETURN collect(message { .*, created_at, reactions }) AS chat_history
+
+		RETURN collect(message { .*, created_at, sender, reactions }) AS chat_history
 		`,
 		map[string]any{
 			"client_username":  clientUsername,

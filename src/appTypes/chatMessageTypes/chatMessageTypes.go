@@ -1,137 +1,211 @@
 package chatMessageTypes
 
 import (
+	"fmt"
 	"i9lyfe/src/helpers"
+	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
+type textProps struct {
+	Content string `json:"content"`
+}
+
+func (mp textProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Content, validation.Required),
+	)
+}
+
 type Text struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Content string `json:"content"`
-	} `json:"props"`
+	Props  textProps `json:"props"`
+	ToUser string    `json:"toUser"`
+	At     int64     `json:"at"`
 }
 
 func (m Text) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Content, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
+		validation.Field(&m.ToUser, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "Text")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "Text")
+}
+
+type voiceProps struct {
+	Duration int64  `json:"duration"`
+	Data     []byte `json:"data"`
+}
+
+func (mp voiceProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
+		validation.Field(&mp.Data, validation.Required),
+	)
 }
 
 type Voice struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Duration int64  `json:"duration"`
-		Data     []byte `json:"data"`
-	} `json:"props"`
+	Props  voiceProps `json:"props"`
+	ToUser string     `json:"toUser"`
+	At     int64      `json:"at"`
 }
 
 func (m Voice) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
-		validation.Field(&m.Props.Data, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.ToUser, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "Voice")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "Voice")
+}
+
+type photoProps struct {
+	Data    []byte `json:"data"`
+	Size    int64  `json:"size"`
+	Caption string `json:"caption"`
+}
+
+func (mp photoProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Data, validation.Required),
+		validation.Field(&mp.Size, validation.Required, validation.By(func(value any) error {
+			if value.(int64) != int64(len(mp.Data)) {
+				return fmt.Errorf("size specified does not match the calculated data size")
+			}
+
+			return nil
+		})),
+	)
 }
 
 type Photo struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Data    []byte `json:"data"`
-		Size    int64  `json:"size"`
-		Summary string `json:"summary"`
-	} `json:"props"`
+	Props  photoProps `json:"props"`
+	ToUser string     `json:"toUser"`
+	At     int64      `json:"at"`
 }
 
 func (m Photo) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Data, validation.Required),
-		validation.Field(&m.Props.Size, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.ToUser, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "Photo")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "Photo")
+}
+
+type videoProps struct {
+	Duration int64  `json:"duration"`
+	Data     []byte `json:"data"`
+	Size     int64  `json:"size"`
+	Caption  string `json:"caption"`
+}
+
+func (mp videoProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
+		validation.Field(&mp.Data, validation.Required, validation.By(func(value any) error {
+			if value.(int64) != int64(len(mp.Data)) {
+				return fmt.Errorf("size specified does not match the calculated data size")
+			}
+
+			return nil
+		})),
+		validation.Field(&mp.Size, validation.Required),
+	)
 }
 
 type Video struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Duration int64  `json:"duration"`
-		Data     []byte `json:"data"`
-		Size     int64  `json:"size"`
-		Summary  string `json:"summary"`
-	} `json:"props"`
+	Props  videoProps `json:"props"`
+	ToUser string     `json:"toUser"`
+	At     int64      `json:"at"`
 }
 
 func (m Video) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
-		validation.Field(&m.Props.Data, validation.Required),
-		validation.Field(&m.Props.Size, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.ToUser, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "Video")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "Video")
+}
+
+type audioProps struct {
+	Name     string `json:"name"`
+	Duration int64  `json:"duration"`
+	Data     []byte `json:"data"`
+	Size     int64  `json:"size"`
+}
+
+func (mp audioProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Name, validation.Required),
+		validation.Field(&mp.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
+		validation.Field(&mp.Data, validation.Required),
+		validation.Field(&mp.Size, validation.Required, validation.By(func(value any) error {
+			if value.(int64) != int64(len(mp.Data)) {
+				return fmt.Errorf("size specified does not match the calculated data size")
+			}
+
+			return nil
+		})),
+	)
 }
 
 type Audio struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Name     string `json:"name"`
-		Duration int64  `json:"duration"`
-		Data     []byte `json:"data"`
-		Size     int64  `json:"size"`
-	} `json:"props"`
+	Props  audioProps `json:"props"`
+	ToUser string     `json:"toUser"`
+	At     int64      `json:"at"`
 }
 
 func (m Audio) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Name, validation.Required),
-		validation.Field(&m.Props.Duration, validation.Required, validation.Min(1000).Error("duration can't be less than 1000msec")),
-		validation.Field(&m.Props.Data, validation.Required),
-		validation.Field(&m.Props.Size, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.ToUser, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "Audio")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "Audio")
+}
+
+type fileProps struct {
+	Name string `json:"name"`
+	Data []byte `json:"data"`
+	Size int64  `json:"size"`
+	Ext  string `json:"ext"`
+}
+
+func (mp fileProps) Validate() error {
+	return validation.ValidateStruct(&mp,
+		validation.Field(&mp.Name, validation.Required),
+		validation.Field(&mp.Data, validation.Required),
+		validation.Field(&mp.Size, validation.Required, validation.By(func(value any) error {
+			if value.(int64) != int64(len(mp.Data)) {
+				return fmt.Errorf("size specified does not match the calculated data size")
+			}
+
+			return nil
+		})),
+		validation.Field(&mp.Ext, validation.Required),
+	)
 }
 
 type File struct {
-	To    string `json:"to"`
-	At    int64  `json:"at"`
-	Props struct {
-		Name string `json:"name"`
-		Data []byte `json:"data"`
-		Size int64  `json:"size"`
-		Ext  string `json:"ext"`
-	} `json:"props"`
+	Props  fileProps `json:"props"`
+	ToUser string    `json:"toUser"`
+	At     int64     `json:"at"`
 }
 
 func (m File) Validate() error {
 	err := validation.ValidateStruct(&m,
-		validation.Field(&m.To, validation.Required),
-		validation.Field(&m.At, validation.Required),
-		validation.Field(&m.Props.Name, validation.Required),
-		validation.Field(&m.Props.Data, validation.Required),
-		validation.Field(&m.Props.Size, validation.Required),
-		validation.Field(&m.Props.Ext, validation.Required),
+		validation.Field(&m.Props, validation.Required),
+		validation.Field(&m.ToUser, validation.Required),
+		validation.Field(&m.At, validation.Required, validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time")),
 	)
 
-	return helpers.ValidationError(err, "msgTypes.go", "File")
+	return helpers.ValidationError(err, "chatMessageTypes.go", "File")
 }

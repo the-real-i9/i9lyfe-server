@@ -2,6 +2,7 @@ package realtimeController
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/chatMessageTypes"
 	"i9lyfe/src/helpers"
@@ -260,6 +261,10 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			}
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Event))
+
+		default:
+			w_err = c.WriteJSON(helpers.WSErrReply(fmt.Errorf("invalid event: %s", body.Event), body.Event))
+			continue
 		}
 	}
 

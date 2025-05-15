@@ -27,17 +27,17 @@ func SendTextMessage(ctx context.Context, clientUsername string, msg chatMessage
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	res.PartnerRes["props"] = map[string]any{"content": msg.Props.Content}
-
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -45,26 +45,25 @@ func SendTextMessage(ctx context.Context, clientUsername string, msg chatMessage
 func SendVoiceMessage(ctx context.Context, clientUsername string, msg chatMessageTypes.Voice) (any, error) {
 	msgType := "voice"
 
-	// upload the voice data in exchange for a url
-
-	var msgPropsMap map[string]any
-
-	helpers.StructToMap(msg.Props, &msgPropsMap)
-
-	voiceData := msgPropsMap["data"].([]byte)
+	voiceData := msg.Props.Data
 
 	mediaMIME := mimetype.Detect(voiceData)
 	mediaType := mediaMIME.String()
 	mediaExt := mediaMIME.Extension()
 
 	if !strings.HasPrefix((mediaType), "audio") {
-		return nil, fiber.NewError(400, "invalid media type for voice message. expected audio/*, but found "+mediaType)
+		return nil, fiber.NewError(fiber.StatusBadRequest, "invalid media type for voice message. expected audio/*, but found "+mediaType)
 	}
 
-	voiceUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.To), voiceData, mediaExt)
+	// upload the voice data in exchange for a url
+	voiceUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.ToUser), voiceData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
+
+	var msgPropsMap map[string]any
+
+	helpers.StructToMap(msg.Props, &msgPropsMap)
 
 	msgPropsMap["data_url"] = voiceUrl
 
@@ -77,15 +76,17 @@ func SendVoiceMessage(ctx context.Context, clientUsername string, msg chatMessag
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -93,26 +94,25 @@ func SendVoiceMessage(ctx context.Context, clientUsername string, msg chatMessag
 func SendPhoto(ctx context.Context, clientUsername string, msg chatMessageTypes.Photo) (any, error) {
 	msgType := "photo"
 
-	// upload the photo data in exchange for a url
-
-	var msgPropsMap map[string]any
-
-	helpers.StructToMap(msg.Props, &msgPropsMap)
-
-	photoData := msgPropsMap["data"].([]byte)
+	photoData := msg.Props.Data
 
 	mediaMIME := mimetype.Detect(photoData)
 	mediaType := mediaMIME.String()
 	mediaExt := mediaMIME.Extension()
 
 	if !strings.HasPrefix((mediaType), "image") {
-		return nil, fiber.NewError(400, "invalid media type for photo message. expected image/*, but found "+mediaType)
+		return nil, fiber.NewError(fiber.StatusBadRequest, "invalid media type for photo message. expected image/*, but found "+mediaType)
 	}
 
-	photoUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.To), photoData, mediaExt)
+	// upload photo data in exchange for a url
+	photoUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.ToUser), photoData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
+
+	var msgPropsMap map[string]any
+
+	helpers.StructToMap(msg.Props, &msgPropsMap)
 
 	msgPropsMap["data_url"] = photoUrl
 
@@ -125,15 +125,17 @@ func SendPhoto(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -141,26 +143,25 @@ func SendPhoto(ctx context.Context, clientUsername string, msg chatMessageTypes.
 func SendVideo(ctx context.Context, clientUsername string, msg chatMessageTypes.Video) (any, error) {
 	msgType := "video"
 
-	// upload the video data in exchange for a url
-
-	var msgPropsMap map[string]any
-
-	helpers.StructToMap(msg.Props, &msgPropsMap)
-
-	videoData := msgPropsMap["data"].([]byte)
+	videoData := msg.Props.Data
 
 	mediaMIME := mimetype.Detect(videoData)
 	mediaType := mediaMIME.String()
 	mediaExt := mediaMIME.Extension()
 
 	if !strings.HasPrefix((mediaType), "video") {
-		return nil, fiber.NewError(400, "invalid media type for video message. expected video/*, but found "+mediaType)
+		return nil, fiber.NewError(fiber.StatusBadRequest, "invalid media type for video message. expected video/*, but found "+mediaType)
 	}
 
-	videoUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.To), videoData, mediaExt)
+	// upload the video data in exchange for a url
+	videoUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.ToUser), videoData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
+
+	var msgPropsMap map[string]any
+
+	helpers.StructToMap(msg.Props, &msgPropsMap)
 
 	msgPropsMap["data_url"] = videoUrl
 
@@ -173,15 +174,17 @@ func SendVideo(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -189,26 +192,25 @@ func SendVideo(ctx context.Context, clientUsername string, msg chatMessageTypes.
 func SendAudio(ctx context.Context, clientUsername string, msg chatMessageTypes.Audio) (any, error) {
 	msgType := "audio"
 
-	// upload the audio data in exchange for a url
-
-	var msgPropsMap map[string]any
-
-	helpers.StructToMap(msg.Props, &msgPropsMap)
-
-	audioData := msgPropsMap["data"].([]byte)
+	audioData := msg.Props.Data
 
 	mediaMIME := mimetype.Detect(audioData)
 	mediaType := mediaMIME.String()
 	mediaExt := mediaMIME.Extension()
 
 	if !strings.HasPrefix((mediaType), "audio") {
-		return nil, fiber.NewError(400, "invalid media type for audio message. expected audio/*, but found "+mediaType)
+		return nil, fiber.NewError(fiber.StatusBadRequest, "invalid media type for audio message. expected audio/*, but found "+mediaType)
 	}
 
-	audioUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.To), audioData, mediaExt)
+	// upload the audio data in exchange for a url
+	audioUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.ToUser), audioData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
+
+	var msgPropsMap map[string]any
+
+	helpers.StructToMap(msg.Props, &msgPropsMap)
 
 	msgPropsMap["data_url"] = audioUrl
 
@@ -221,15 +223,17 @@ func SendAudio(ctx context.Context, clientUsername string, msg chatMessageTypes.
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -237,25 +241,24 @@ func SendAudio(ctx context.Context, clientUsername string, msg chatMessageTypes.
 func SendFile(ctx context.Context, clientUsername string, msg chatMessageTypes.File) (any, error) {
 	msgType := "file"
 
-	// upload the file data in exchange for a url
-
-	var msgPropsMap map[string]any
-
-	helpers.StructToMap(msg.Props, &msgPropsMap)
-
-	fileData := msgPropsMap["data"].([]byte)
+	fileData := msg.Props.Data
 
 	mediaMIME := mimetype.Detect(fileData)
 	mediaExt := mediaMIME.Extension()
 
 	if mediaExt != msg.Props.Ext {
-		return nil, fiber.NewError(400, "the file extension detected (%s) does not match the one provided "+mediaExt)
+		return nil, fiber.NewError(fiber.StatusBadRequest, "the file extension detected (%s) does not match the one provided "+mediaExt)
 	}
 
-	fileUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.To), fileData, mediaExt)
+	// upload the file data in exchange for a url
+	fileUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("message_medias/user-%s-%s", clientUsername, msg.ToUser), fileData, mediaExt)
 	if err != nil {
 		return nil, err
 	}
+
+	var msgPropsMap map[string]any
+
+	helpers.StructToMap(msg.Props, &msgPropsMap)
 
 	msgPropsMap["data_url"] = fileUrl
 
@@ -268,15 +271,17 @@ func SendFile(ctx context.Context, clientUsername string, msg chatMessageTypes.F
 		return nil, fiber.ErrInternalServerError
 	}
 
-	res, err := chatMessage.Send(ctx, clientUsername, msg.To, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
+	res, err := chatMessage.Send(ctx, clientUsername, msg.ToUser, msgType, string(msgProps), time.UnixMilli(msg.At).UTC())
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.Send(msg.To, appTypes.ServerWSMsg{
-		Event: "chat: new message",
-		Data:  res.PartnerRes,
-	})
+	if res.PartnerRes != nil {
+		go eventStreamService.Send(msg.ToUser, appTypes.ServerWSMsg{
+			Event: "chat: new message",
+			Data:  res.PartnerRes,
+		})
+	}
 
 	return res.ClientRes, nil
 }
@@ -288,11 +293,11 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId
 	}
 
 	if done {
-		eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
 			Event: "chat: message delivered",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"message_id":       msgId,
+				"msg_id":           msgId,
 				"delivered_at":     at,
 			},
 		})
@@ -308,11 +313,11 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId stri
 	}
 
 	if done {
-		eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
 			Event: "chat: message read",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"message_id":       msgId,
+				"msg_id":           msgId,
 				"read_at":          at,
 			},
 		})
@@ -328,11 +333,11 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, rea
 	}
 
 	if done {
-		eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
 			Event: "chat: message reaction",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"message_id":       msgId,
+				"msg_id":           msgId,
 				"reaction":         reaction,
 				"at":               at,
 			},
@@ -349,11 +354,11 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 	}
 
 	if done {
-		eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
 			Event: "chat: message reaction removed",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"message_id":       msgId,
+				"msg_id":           msgId,
 			},
 		})
 	}
@@ -368,11 +373,11 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 	}
 
 	if done && deleteFor == "everyone" {
-		eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
 			Event: "chat: message deleted",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"message_id":       msgId,
+				"msg_id":           msgId,
 			},
 		})
 	}

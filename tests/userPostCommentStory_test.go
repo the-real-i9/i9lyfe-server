@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const wsPath = WSHOST_URL + "/api/app/private/ws"
-
 func TestUserPostCommentStory(t *testing.T) {
 	t.Parallel()
 
@@ -265,7 +263,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -305,7 +303,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -470,7 +468,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -518,7 +516,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -685,7 +683,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user2 is notified
 		serverWSMsg := <-user2.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -733,7 +731,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user2 is notified
 		serverWSMsg := <-user2.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -868,7 +866,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -909,7 +907,7 @@ func TestUserPostCommentStory(t *testing.T) {
 		// user1 is notified
 		serverWSMsg := <-user1.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -1079,7 +1077,7 @@ func TestUserPostCommentStory(t *testing.T) {
 
 		serverWSMsg := <-user2.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":              td.Ignore(),
@@ -1178,7 +1176,7 @@ func TestUserPostCommentStory(t *testing.T) {
 
 		serverWSMsg := <-user3.ServerWSMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.SuperMapOf(map[string]any{
+		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),

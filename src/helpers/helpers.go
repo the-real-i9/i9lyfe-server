@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -13,7 +14,7 @@ import (
 
 func ToStruct(val any, dest any) {
 	if reflect.TypeOf(dest).Elem().Kind() != reflect.Struct {
-		panic("expected 'dest' to be a struct")
+		panic("expected 'dest' to be a pointer to struct")
 	}
 
 	bt, err := json.Marshal(val)
@@ -69,7 +70,7 @@ func OffsetTime(msec int64) time.Time {
 	return time.UnixMilli(msec).UTC()
 }
 
-func WSErrReply(err error, onEvent string) map[string]any {
+func WSErrReply(err error, toEvent string) map[string]any {
 
 	errCode := fiber.StatusInternalServerError
 
@@ -79,21 +80,21 @@ func WSErrReply(err error, onEvent string) map[string]any {
 
 	errResp := map[string]any{
 		"event":   "server error",
-		"onEvent": onEvent,
+		"toEvent": toEvent,
 		"data": map[string]any{
 			"statusCode": errCode,
-			"errorMsg":   err.Error(),
+			"errorMsg":   fmt.Sprint(err),
 		},
 	}
 
 	return errResp
 }
 
-func WSReply(data any, onEvent string) map[string]any {
+func WSReply(data any, toEvent string) map[string]any {
 
 	reply := map[string]any{
 		"event":   "server reply",
-		"onEvent": onEvent,
+		"toEvent": toEvent,
 		"data":    data,
 	}
 

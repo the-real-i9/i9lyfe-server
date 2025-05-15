@@ -18,8 +18,14 @@ import (
 const HOST_URL string = "http://localhost:8000"
 const WSHOST_URL string = "ws://localhost:8000"
 
+const signupPath string = HOST_URL + "/api/auth/signup"
+const signinPath string = HOST_URL + "/api/auth/signin"
+const forgotPasswordPath string = HOST_URL + "/api/auth/forgot_password"
+const signoutPath string = HOST_URL + "/api/app/private/me/signout"
+
 const appPathPriv = HOST_URL + "/api/app/private"
 const appPathPublic = HOST_URL + "/api/app/public"
+const wsPath = WSHOST_URL + "/api/app/private/ws"
 
 type UserT struct {
 	Email         string

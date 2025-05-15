@@ -16,7 +16,7 @@ type SendResT struct {
 	PartnerRes map[string]any `json:"partner_res"`
 }
 
-func Send(ctx context.Context, clientUsername, to, msgType, msgProps string, msgAt time.Time) (SendResT, error) {
+func Send(ctx context.Context, clientUsername, toUser, msgType, msgProps string, msgAt time.Time) (SendResT, error) {
 	var resData SendResT
 
 	res, err := db.Query(
@@ -41,7 +41,7 @@ func Send(ctx context.Context, clientUsername, to, msgType, msgProps string, msg
 		`,
 		map[string]any{
 			"client_username":  clientUsername,
-			"partner_username": to,
+			"partner_username": toUser,
 			"msg_type":         msgType,
 			"msg_props":        msgProps,
 			"msg_at":           msgAt,

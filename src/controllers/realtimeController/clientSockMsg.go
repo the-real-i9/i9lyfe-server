@@ -15,27 +15,15 @@ type clientMessageBody struct {
 
 func (b clientMessageBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Event, validation.Required, validation.In(
-			"start receiving post updates",
-			"stop receiving post updates",
-			"start receiving comment updates",
-			"stop receiving comment updates",
-			"chat: send message: text",
-			"chat: send message: voice",
-			"chat: send message: photo",
-			"chat: send message: video",
-			"chat: send message: audio",
-			"chat: send message: file",
-			"chat: get history",
-			"chat: ack message delivered",
-			"chat: ack message read",
-			"chat: react to message",
-			"chat: remove reaction to message",
-			"chat: delete message",
-		)),
+		validation.Field(&b.Event, validation.Required),
 		validation.Field(&b.Data,
 			validation.Required.When(
-				!slices.Contains([]string{"start receiving post updates", "stop receiving post updates"}, b.Event),
+				!slices.Contains([]string{
+					"start receiving post updates",
+					"stop receiving post updates",
+					"start receiving comment updates",
+					"stop receiving comment updates",
+				}, b.Event),
 			),
 		),
 	)
@@ -44,7 +32,7 @@ func (b clientMessageBody) Validate() error {
 }
 
 type getChatHistoryEvd struct {
-	PartnerUsername string `json:"partner_username"`
+	PartnerUsername string `json:"partnerUsername"`
 	Offset          int64  `json:"offset"`
 }
 
@@ -57,8 +45,8 @@ func (d getChatHistoryEvd) Validate() error {
 }
 
 type ackChatMsgDeliveredEvd struct {
-	PartnerUsername string `json:"partner_username"`
-	MsgId           string `json:"message_id"`
+	PartnerUsername string `json:"partnerUsername"`
+	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
@@ -73,8 +61,8 @@ func (d ackChatMsgDeliveredEvd) Validate() error {
 }
 
 type ackChatMsgReadEvd struct {
-	PartnerUsername string `json:"partner_username"`
-	MsgId           string `json:"message_id"`
+	PartnerUsername string `json:"partnerUsername"`
+	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
@@ -89,8 +77,8 @@ func (d ackChatMsgReadEvd) Validate() error {
 }
 
 type reactToChatMsgEvd struct {
-	PartnerUsername string `json:"partner_username"`
-	MsgId           string `json:"message_id"`
+	PartnerUsername string `json:"partnerUsername"`
+	MsgId           string `json:"msgId"`
 	Reaction        string `json:"reaction"`
 	At              int64  `json:"at"`
 }
@@ -107,8 +95,8 @@ func (d reactToChatMsgEvd) Validate() error {
 }
 
 type removeReactionToChatMsgEvd struct {
-	PartnerUsername string `json:"partner_username"`
-	MsgId           string `json:"message_id"`
+	PartnerUsername string `json:"partnerUsername"`
+	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
@@ -123,9 +111,9 @@ func (d removeReactionToChatMsgEvd) Validate() error {
 }
 
 type deleteChatMsgEvd struct {
-	PartnerUsername string `json:"partner_username"`
-	MsgId           string `json:"message_id"`
-	DeleteFor       string `json:"delete_for"`
+	PartnerUsername string `json:"partnerUsername"`
+	MsgId           string `json:"msgId"`
+	DeleteFor       string `json:"deleteFor"`
 }
 
 func (d deleteChatMsgEvd) Validate() error {
