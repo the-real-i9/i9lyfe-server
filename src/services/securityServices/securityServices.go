@@ -91,7 +91,7 @@ func JwtVerify[T any](tokenString, secret string) (T, error) {
 			errors.Is(err, jwt.ErrTokenInvalidClaims) ||
 			errors.Is(err, jwt.ErrTokenExpired) {
 
-			return data, fiber.NewError(fiber.StatusUnauthorized, "jwt error:", err.Error())
+			return data, fiber.NewError(fiber.StatusUnauthorized, "jwt error:", fmt.Sprint(err))
 		}
 
 		log.Println("securityServices.go: JwtVerify:", err)

@@ -9,8 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Route(router fiber.Router,
-) {
+func Route(router fiber.Router) {
 	router.Post(
 		"/signup/request_new_account",
 		signupControllers.RequestNewAccount,

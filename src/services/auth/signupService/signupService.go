@@ -52,11 +52,11 @@ func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode 
 	helpers.ToStruct(sessionData, &sd)
 
 	if sd.VCode != inputVerfCode {
-		return "", nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect verification code! Check or Re-submit your email.")
+		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect verification code! Check or Re-submit your email.")
 	}
 
 	if sd.VCodeExpires.Before(time.Now()) {
-		return "", nil, fiber.NewError(fiber.StatusBadRequest, "Verification code expired! Re-submit your email.")
+		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "Verification code expired! Re-submit your email.")
 	}
 
 	go mailService.SendMail(sd.Email, "Email Verification Success", fmt.Sprintf("Your email <strong>%s</strong> has been verified!", sd.Email))
