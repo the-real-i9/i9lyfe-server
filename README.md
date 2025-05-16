@@ -8,10 +8,6 @@ A Social Media API Server
 
 i9lyfe is an API server for a Social Media Application, built with Go and Neo4j. It supports major social media application features that can be used to implement a mordern social media application frontend.
 
-### Open to suggestions
-
-If you need a feature that this API server currently doesn't support, feel free to suggest them in the issues and it will be added as soon as possible.
-
 ## Technologies
 
 <div style="display: flex; align-items: center;">
@@ -28,13 +24,13 @@ If you need a feature that this API server currently doesn't support, feel free 
 
 ### Old Technologies
 
-i9lyfe was first built using these technologies, subsequent improvements to the app required alternatives.
+i9lyfe was initially built using these technologies, subsequent improvements to the app required alternatives.
 
 <div>
 <img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/javascript-original.svg" />
 <img style="margin-right: 10px" alt="nodejs" width="40" src="./.attachments/tech-icons/nodejs-original.svg" />
 <img style="margin-right: 10px" alt="express" width="40" src="./.attachments/tech-icons/express-original.svg" />
-<img style="margin-right: 10px; alt="postgresql" width="40" src="./.attachments/tech-icons/postgresql-original.svg" />
+<img style="margin-right: 10px" alt="postgresql" width="40" src="./.attachments/tech-icons/postgresql-original.svg" />
 <img style="margin-right: 10px" alt="socket.io" width="40" src="./.attachments/tech-icons/socketio-original.svg" />
 </div>
 
@@ -45,7 +41,6 @@ i9lyfe was first built using these technologies, subsequent improvements to the 
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [API Documentation](#api-documentation)
-- [ToDo List](#todo-list)
 
 ## Features
 
@@ -115,10 +110,6 @@ Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing 
 
 ## API Documentation
 
-> Note: The documentation is currently incomplete. Writing it is a cumbersome task, but I'll be done very soon.
+For all **REST request/response Communication**: [Click Here](./.apidoc/restapi.md)
 
-For all **HTTP request/response communication**: [Here](./.apidoc/openapi.json)'s a well-written OpenAPI JSON document. Drop or Import it into a [Swagger Editor](https://editor.swagger.io/?_gl=1*1numedn*_gcl_au*MTUxNDUxNjEuMTc0MjY1MTg5Nw..) to access it.
-
-For all **WebSocket real-time communication**: [Here](./.apidoc/websocketsapi.md)'s a written markdown document.
-
-## ToDo List
+For all **WebSocket Real-time Communication**: [Click Here](./.apidoc/websocketsapi.md)

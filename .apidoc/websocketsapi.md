@@ -1,6 +1,6 @@
-# API Documentation for WebSockets (Socket.io) Communication
+# API Documentation (WebSockets Real-time Communication)
 
-**WebSocket Endpoint:** $HOST_DOMAIN/socket.io
+**WebSocket Endpoint:** `ws://$HOST_DOMAIN/api/app/private/ws`
 
 ## Server Events
 
