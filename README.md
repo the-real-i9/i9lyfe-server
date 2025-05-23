@@ -41,6 +41,7 @@ i9lyfe was initially built using these technologies, subsequent improvements to 
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [API Documentation](#api-documentation)
+- [My Content Recommendation Algorithm](#my-content-recommendation-algorithm)
 
 ## Features
 
@@ -113,3 +114,25 @@ Yes, just like you're thinking. Swipe, swipe and swipe up through an exhautsing 
 For all **REST request/response Communication**: [Click Here](./.apidoc/restapi.md)
 
 For all **WebSocket Real-time Communication**: [Click Here](./.apidoc/websocketsapi.md)
+
+## My Content Recommendation Algorithm
+
+### User Home Feed Population Re-Implementation
+
+- When a user comes online (i.e establishes a WebSocket connection), he joins the list of users listening for recommended posts in a `sync.Map`.
+  - When a user goes offline (i.e tears-down a WebSocket connection), he is removed from the list of users listening for recommended posts in a `sync.Map`.
+
+- In the `sync.Map`, each user's `username` is mapped to a`[2]any`, the first item holds the user's socket pipe `*websocket.Conn`, while the second hosts a recommended posts queue `[]string`, where recommended posts are kept (by `id`) until the user pulls them.
+  - When the post queue contains at least one post, the user is notified of the availability of new posts.
+  - When the user pulls them, we get all posts whose `id` is present in the recommended posts queue, sort them according to time created in descending order, and send them to the user.
+
+- If the user is offline (i.e. its key isn't found in the list of users listening for recommended posts, `sync.Map`), the post is queued in the database instead.
+  - When the user comes online, we get all posts whose `id` is present in the user recommended posts list, sort them according to time created in descending order, and send them to the user.
+
+### Expolre Feed Content Recommedation Algorithm
+
+### User Home Feed Content Recommendation Algorithm
+
+We recommend posts to users based on their follow network and their interests.
+
+Determining a user's follow network is easy. Determining their interests requires technicality. That's why this algorithm is about determining user's interests.
