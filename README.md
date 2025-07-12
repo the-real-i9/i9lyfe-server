@@ -15,7 +15,6 @@ i9lyfe is an API server for a Social Media Application, built with Go and Neo4j.
 <img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/gofiber.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="40" src="./.attachments/tech-icons/neo4j-original.svg" />
 <img style="margin-right: 10px" alt="websocket" width="40" src="./.attachments/tech-icons/websocket.svg" />
-<img style="margin-right: 10px" alt="apachekafka" width="40" src="./.attachments/tech-icons/apachekafka-original.svg" />
 <img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/jwt.svg" />
 <img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/express-validator.svg" />
 <img style="margin-right: 10px" alt="googlecloud" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
@@ -32,6 +31,7 @@ i9lyfe was initially built using these technologies, subsequent improvements to 
 <img style="margin-right: 10px" alt="express" width="40" src="./.attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 10px" alt="postgresql" width="40" src="./.attachments/tech-icons/postgresql-original.svg" />
 <img style="margin-right: 10px" alt="socket.io" width="40" src="./.attachments/tech-icons/socketio-original.svg" />
+<img style="margin-right: 10px" alt="apachekafka" width="40" src="./.attachments/tech-icons/apachekafka-original.svg" />
 </div>
 
 ## Table of Contents
