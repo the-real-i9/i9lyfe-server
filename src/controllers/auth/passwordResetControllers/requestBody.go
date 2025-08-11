@@ -22,16 +22,16 @@ func (b requestPasswordResetBody) Validate() error {
 	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "requestPasswordResetBody")
 }
 
-type confirmActionBody struct {
+type confirmEmailBody struct {
 	Token string `json:"token"`
 }
 
-func (b confirmActionBody) Validate() error {
+func (b confirmEmailBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Token, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "confirmActionBody")
+	return helpers.ValidationError(err, "passwordResetControllers_requestBody.go", "confirmEmailBody")
 }
 
 type resetPasswordBody struct {

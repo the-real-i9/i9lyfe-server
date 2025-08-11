@@ -23,18 +23,23 @@ func Send(ctx context.Context, clientUsername, toUser, msgType, msgProps string,
 		ctx,
 		`
 		MATCH (clientUser:User{ username: $client_username }), (partnerUser:User{ username: $partner_username })
+
 		MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })-[:WITH_USER]->(partnerUser)
 		MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_username: $partner_username, partner_username: $client_username })-[:WITH_USER]->(clientUser)
+
 		SET clientChat.last_activity_type = "message", 
 			partnerChat.last_activity_type = "message",
 			clientChat.updated_at = $msg_at, 
 			partnerChat.updated_at = $msg_at
+
 		WITH clientUser, clientChat, partnerUser, partnerChat
 		CREATE (message:Message{ id: randomUUID(), type: $msg_type, props: $msg_props, delivery_status: "sent", created_at: $msg_at }),
 			(clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
 			(partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)
+
 		SET clientChat.last_message_id = message.id,
 			partnerChat.last_message_id = message.id
+
 		WITH message, toString(message.created_at) AS created_at, clientUser { .username, .profile_pic_url, .presence } AS sender
 		RETURN { new_msg_id: message.id } AS client_res,
 			message { .*, created_at, sender } AS partner_res
@@ -130,6 +135,7 @@ func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, reacti
 		`
 		MATCH (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message{ id: $message_id }),
 			(clientChat)-[:WITH_USER]->(partnerChat)
+			
 		MERGE (clientUser)-[crxn:REACTS_TO_MESSAGE]->(message)
 		ON CREATE
 			SET crxn.reaction = $reaction, 

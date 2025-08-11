@@ -37,18 +37,18 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 
-	c.Cookie(helpers.Cookie("passwordReset", string(sd), "/api/auth/forgot_password/confirm_action", int(time.Hour/time.Second)))
+	c.Cookie(helpers.Cookie("passwordReset", string(sd), "/api/auth/forgot_password/confirm_email", int(time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
 
-func ConfirmAction(c *fiber.Ctx) error {
+func ConfirmEmail(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	sessionData := c.Locals("passwordReset_sess_data").(map[string]any)
 
-	var body confirmActionBody
+	var body confirmEmailBody
 
 	body_err := c.BodyParser(&body)
 	if body_err != nil {
@@ -59,14 +59,14 @@ func ConfirmAction(c *fiber.Ctx) error {
 		return val_err
 	}
 
-	respData, newSessionData, app_err := passwordResetService.ConfirmAction(ctx, sessionData, body.Token)
+	respData, newSessionData, app_err := passwordResetService.ConfirmEmail(ctx, sessionData, body.Token)
 	if app_err != nil {
 		return app_err
 	}
 
 	nsd, err := json.Marshal(newSessionData)
 	if err != nil {
-		log.Println("passwordResetControllers.go: ConfirmAction: json.Marshal:", err)
+		log.Println("passwordResetControllers.go: ConfirmEmail: json.Marshal:", err)
 		return fiber.ErrInternalServerError
 	}
 

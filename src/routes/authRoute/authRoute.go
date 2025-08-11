@@ -38,9 +38,9 @@ func Route(router fiber.Router) {
 	)
 
 	router.Post(
-		"/forgot_password/confirm_action",
+		"/forgot_password/confirm_email",
 		authMiddlewares.PasswordResetSession,
-		passwordResetControllers.ConfirmAction,
+		passwordResetControllers.ConfirmEmail,
 	)
 
 	router.Post(

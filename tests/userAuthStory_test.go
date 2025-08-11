@@ -273,7 +273,7 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"token": "011111"})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_action", reqBody)
+		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
@@ -301,7 +301,7 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"token": token})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_action", reqBody)
+		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")

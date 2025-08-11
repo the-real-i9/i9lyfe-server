@@ -40,7 +40,7 @@ func RequestPasswordReset(ctx context.Context, email string) (any, map[string]an
 	return respData, sessionData, nil
 }
 
-func ConfirmAction(ctx context.Context, sessionData map[string]any, inputResetToken string) (any, map[string]any, error) {
+func ConfirmEmail(ctx context.Context, sessionData map[string]any, inputResetToken string) (any, map[string]any, error) {
 	var sd struct {
 		Email            string
 		PwdrToken        string
