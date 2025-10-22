@@ -1,16 +1,16 @@
 on:
   push:
     branches:
-      - main
+      - mainx
 name: "Test i9lyfe"
 jobs:
   Tests:
     runs-on: ubuntu-latest
     services:
       neo4j:
-        image: 'neo4j:latest'
+        image: "neo4j:latest"
         ports:
-          - '7687:7687'
+          - "7687:7687"
         env:
           NEO4J_AUTH: "neo4j/pa@sw$!d"
 
@@ -18,7 +18,7 @@ jobs:
       matrix:
         go-version:
           - 1.24.x
-          
+
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: '${{ matrix.go-version }}'
+          go-version: "${{ matrix.go-version }}"
 
       - name: Build server
         run: go build -o i9lyfe_server
@@ -46,7 +46,7 @@ jobs:
           DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
           GO_ENV: test
-        
+
       - name: Run Test
         run: sleep 2; cd ./tests && go test ./... -v -race
         env:

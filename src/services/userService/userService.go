@@ -51,7 +51,7 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 		return nil, fiber.NewError(400, fmt.Sprintf("invalid file type %s, for picture_data, expected image/*", fileType))
 	}
 
-	pictureUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("profile_pictures/%s", clientUsername), pictureData, fileExt)
+	pictureUrl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("profile_pictures/%s/ppic-%d%s", clientUsername, time.Now().UnixNano(), fileExt), pictureData)
 	if err != nil {
 		return nil, err
 	}

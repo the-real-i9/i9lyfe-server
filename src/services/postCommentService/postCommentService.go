@@ -12,6 +12,7 @@ import (
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/utilServices"
 	"strings"
+	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v2"
@@ -29,7 +30,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
 		}
 
-		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s", clientUsername), mediaData, mediaExt)
+		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s/media-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), mediaData)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +160,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 		}
 
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s", clientUsername), attachmentData, mediaExt)
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s/att-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), attachmentData)
 		if err != nil {
 			return nil, err
 		}
@@ -319,7 +320,7 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 		}
 
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s", clientUsername), attachmentData, mediaExt)
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s/att-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), attachmentData)
 		if err != nil {
 			return nil, err
 		}

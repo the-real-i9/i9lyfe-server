@@ -1,21 +1,23 @@
 package realtimeController
 
 import (
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"slices"
+	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type clientMessageBody struct {
-	Event string `json:"event"`
-	Data  any    `json:"data"`
+type rtActionBody struct {
+	Action string `json:"action"`
+	Data   any    `json:"data"`
 }
 
-func (b clientMessageBody) Validate() error {
+func (b rtActionBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Event, validation.Required),
+		validation.Field(&b.Action, validation.Required),
 		validation.Field(&b.Data,
 			validation.Required.When(
 				!slices.Contains([]string{
@@ -23,67 +25,89 @@ func (b clientMessageBody) Validate() error {
 					"stop receiving post updates",
 					"start receiving comment updates",
 					"stop receiving comment updates",
-				}, b.Event),
+				}, b.Action),
 			),
 		),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "clientMessageBody")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "rtActionBody")
 }
 
-type getChatHistoryEvd struct {
+type getChatHistoryAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	Offset          int64  `json:"offset"`
 }
 
-func (d getChatHistoryEvd) Validate() error {
+func (d getChatHistoryAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "getChatHistoryEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "getChatHistoryAcd")
 }
 
-type ackChatMsgDeliveredEvd struct {
+type sendChatMsgAcd struct {
+	PartnerUsername  string               `json:"partnerUsername"`
+	IsReply          bool                 `json:"isReply"`
+	ReplyTargetMsgId string               `json:"replyTargetMsgId"`
+	Msg              *appTypes.MsgContent `json:"msg"`
+	At               int64                `json:"at"`
+}
+
+func (vb sendChatMsgAcd) Validate() error {
+	err := validation.ValidateStruct(&vb,
+		validation.Field(&vb.PartnerUsername, validation.Required),
+		validation.Field(&vb.ReplyTargetMsgId, is.UUID),
+		validation.Field(&vb.Msg, validation.Required),
+		validation.Field(&vb.At,
+			validation.Required,
+			validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time"),
+		),
+	)
+
+	return helpers.ValidationError(err, "realtimeController_validation.go", "sendChatMsgAcd")
+}
+
+type ackChatMsgDeliveredAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
-func (d ackChatMsgDeliveredEvd) Validate() error {
+func (d ackChatMsgDeliveredAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "ackChatMsgDeliveredEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "ackChatMsgDeliveredAcd")
 }
 
-type ackChatMsgReadEvd struct {
+type ackChatMsgReadAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
-func (d ackChatMsgReadEvd) Validate() error {
+func (d ackChatMsgReadAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "ackChatMsgReadEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "ackChatMsgReadAcd")
 }
 
-type reactToChatMsgEvd struct {
+type reactToChatMsgAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
 	Reaction        string `json:"reaction"`
 	At              int64  `json:"at"`
 }
 
-func (d reactToChatMsgEvd) Validate() error {
+func (d reactToChatMsgAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
@@ -91,37 +115,37 @@ func (d reactToChatMsgEvd) Validate() error {
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "reactToChatMsgEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "reactToChatMsgAcd")
 }
 
-type removeReactionToChatMsgEvd struct {
+type removeReactionToChatMsgAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
 	At              int64  `json:"at"`
 }
 
-func (d removeReactionToChatMsgEvd) Validate() error {
+func (d removeReactionToChatMsgAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "removeReactionToChatMsgEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "removeReactionToChatMsgAcd")
 }
 
-type deleteChatMsgEvd struct {
+type deleteChatMsgAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
 	DeleteFor       string `json:"deleteFor"`
 }
 
-func (d deleteChatMsgEvd) Validate() error {
+func (d deleteChatMsgAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
 		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone", "").Error("expected value: 'me' or 'everyone', or no value. but found "+d.DeleteFor)),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_clientSockMsg.go", "deleteChatMsgEvd")
+	return helpers.ValidationError(err, "realtimeController_validation.go", "deleteChatMsgAcd")
 }
