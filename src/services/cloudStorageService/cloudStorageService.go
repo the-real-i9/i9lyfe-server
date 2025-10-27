@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"i9lyfe/appErrors/userErrors"
+	"i9lyfe/src/appErrors/userErrors"
 	"i9lyfe/src/appGlobals"
 	"log"
 	"os"

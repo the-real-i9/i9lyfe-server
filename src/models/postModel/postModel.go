@@ -4,7 +4,6 @@ import (
 	"context"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
 	"maps"
 	"slices"
 	"time"
@@ -13,53 +12,45 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-type NewResT struct {
-	NewPostData   map[string]any   `json:"new_post_data"`
-	MentionNotifs []map[string]any `json:"mention_notifs"`
-}
-
-func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, mentions, hashtags []string) (NewResT, error) {
-	var resData NewResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 2)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
-		)
-
-		res, err = tx.Run(
-			ctx,
-			`
+func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at time.Time) (map[string]any, error) {
+	res, err := db.Query(
+		ctx,
+		`
 			MATCH (clientUser:User{ username: $client_username })
 
-      CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: $at, reactions_count: 0, comments_count: 0, reposts_count: 0, saves_count: 0 })
+      CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: $at })
 			SET clientUser.posts_count = coalesce(clientUser.posts_count, 0) + 1
 
       WITH post, toString(post.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
-      RETURN post { .*, created_at, owner_user, client_reaction: "", client_reposted: false, client_saved: false } AS new_post_data
+      RETURN post { .*, created_at, owner_user } AS new_post_data
 			`,
-			map[string]any{
-				"client_username": clientUsername,
-				"media_urls":      mediaUrls,
-				"type":            postType,
-				"description":     description,
-				"at":              at,
-			},
+		map[string]any{
+			"client_username": clientUsername,
+			"media_urls":      mediaUrls,
+			"type":            postType,
+			"description":     description,
+			"at":              at,
+		},
+	)
+	if err != nil {
+		helpers.LogError(err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, nil
+	}
+
+	npd, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_post_data")
+
+	return npd, nil
+}
+
+func NewPostExtras(ctx context.Context, clientUsername, newPostId string, mentions, hashtags []string, at time.Time) error {
+	_, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		var (
+			err error
 		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		newPostId := resMap["new_post_data"].(map[string]any)["id"]
 
 		if len(mentions) > 0 {
 
@@ -67,7 +58,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 				ctx,
 				`
 				MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (post:Post{ id: $postId })
-        CREATE (post)-[:MENTIONS_USER]->(mentionUser)
+        MERGE (post)-[:MENTIONS_USER]->(mentionUser)
 				`,
 				map[string]any{
 					"mentions": mentions,
@@ -76,40 +67,6 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			)
 			if err != nil {
 				return nil, err
-			}
-
-			mentionsExcClient := slices.DeleteFunc(mentions, func(uname string) bool {
-				return uname == clientUsername
-			})
-
-			// handle mentions
-			if len(mentionsExcClient) > 0 {
-				res, err = tx.Run(
-					ctx,
-					`
-				MATCH (mentionUser:User WHERE mentionUser.username IN $mentionsExcClient), (clientUser:User{ username: $client_username })
-
-        CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_post", is_read: false, created_at: $at, details: ["in_post_id", $postId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-        WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
-        RETURN collect(mentionNotif { .*, created_at, receiver_username }) AS mention_notifs
-				`,
-					map[string]any{
-						"mentionsExcClient": mentionsExcClient,
-						"postId":            newPostId,
-						"client_username":   clientUsername,
-						"at":                at,
-					},
-				)
-				if err != nil {
-					return nil, err
-				}
-
-				if !res.Next(ctx) {
-					return nil, nil
-				}
-
-				maps.Copy(resMap, res.Record().AsMap())
 			}
 		}
 
@@ -120,8 +77,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 
 			UNWIND $hashtags AS hashtagName
 			MERGE (ht:Hashtag{ name: hashtagName })
-			CREATE (post)-[:INCLUDES_HASHTAG]->(ht)
-			SET ht.posts_count = coalesce(ht.posts_count, 0) + 1
+			MERGE (post)-[:INCLUDES_HASHTAG]->(ht)
 			`,
 			map[string]any{
 				"hashtags": hashtags,
@@ -132,16 +88,14 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 			return nil, err
 		}
 
-		return resMap, nil
+		return nil, nil
 	})
 	if err != nil {
-		log.Println("postModel.go: New:", err)
-		return resData, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return err
 	}
 
-	helpers.ToStruct(res, &resData)
-
-	return resData, nil
+	return nil
 }
 
 func Get(ctx context.Context, clientUsername, postId string) (map[string]any, error) {
@@ -177,7 +131,7 @@ func Get(ctx context.Context, clientUsername, postId string) (map[string]any, er
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: Get:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -195,7 +149,7 @@ func Delete(ctx context.Context, clientUsername, postId string) error {
 		ctx,
 		`
 		MATCH (clientUser:User{ username: $client_username })-[:CREATES_POST]->(post:Post{ id: $post_id })
-		SET clientUser.posts_count = clientUser.posts_count - 1
+		SET clientUser.posts_count = CASE WHEN clientUser.posts_count > 0 THEN clientUser.posts_count - 1 ELSE 0 END
 
 		DETACH DELETE post
 		`,
@@ -205,7 +159,7 @@ func Delete(ctx context.Context, clientUsername, postId string) error {
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: Delete:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -236,9 +190,9 @@ func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (Reac
 
       MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
       ON CREATE
-        SET crxn.reaction = $reaction,
-          crxn.at = $at,
-          post.reactions_count = post.reactions_count + 1
+				SET post.reactions_count = post.reactions_count + 1
+      
+			SET crxn.reaction = $reaction, crxn.at = $at
 
       RETURN post.reactions_count AS latest_reactions_count, postOwner.username AS post_owner_username
       `,
@@ -294,7 +248,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (Reac
 		return resMap, nil
 	})
 	if err != nil {
-		log.Println("postModel.go: ReactTo:", err)
+		helpers.LogError(err)
 		return resData, fiber.ErrInternalServerError
 	}
 
@@ -328,7 +282,7 @@ func GetReactors(ctx context.Context, clientUsername, postId string, limit int, 
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: GetReactors:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -367,7 +321,7 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reacti
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: GetReactorsWithReaction:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -388,7 +342,7 @@ func UndoReaction(ctx context.Context, clientUsername, postId string) (any, erro
 		DELETE crxn
 
 		WITH post
-		SET post.reactions_count = post.reactions_count - 1
+		SET post.reactions_count = CASE WHEN post.reactions_count > 0 THEN post.reactions_count - 1 ELSE 0 END
 
 		RETURN post.reactions_count AS latest_reactions_count
 		`,
@@ -398,7 +352,7 @@ func UndoReaction(ctx context.Context, clientUsername, postId string) (any, erro
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: UndoReaction:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -554,7 +508,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		return resMap, nil
 	})
 	if err != nil {
-		log.Println("postModel.go: CommentOn:", err)
+		helpers.LogError(err)
 		return resData, fiber.ErrInternalServerError
 	}
 
@@ -578,7 +532,7 @@ func GetComments(ctx context.Context, clientUsername, postId string, limit int, 
 				WHEN IS NULL THEN "" 
 				ELSE crxn.reaction 
 			END AS client_reaction
-		ORDER BY comment.created_at DESC, comment.reactions_count DESC, comment.comments_count DESC
+		ORDER BY comment.created_at DESC
 		LIMIT $limit
 		RETURN collect(comment {.*, owner_user, created_at, client_reaction }) AS comments
 		`,
@@ -590,7 +544,7 @@ func GetComments(ctx context.Context, clientUsername, postId string, limit int, 
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: GetComments:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -611,7 +565,7 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 		DETACH DELETE comment
 
 		WITH post
-		SET post.comments_count = post.comments_count - 1
+		SET post.comments_count = CASE WHEN post.comments_count > 0 THEN post.comments_count - 1 ELSE 0 END
 
 		RETURN post.comments_count AS latest_comments_count
 		`,
@@ -622,7 +576,7 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: RemoveComment:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -713,7 +667,7 @@ func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, err
 		return resMap, nil
 	})
 	if err != nil {
-		log.Println("postModel.go: Repost:", err)
+		helpers.LogError(err)
 		return resData, fiber.ErrInternalServerError
 	}
 
@@ -739,7 +693,7 @@ func Save(ctx context.Context, clientUsername, postId string) (any, error) {
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: Save:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -760,7 +714,7 @@ func UndoSave(ctx context.Context, clientUsername, postId string) (any, error) {
       DELETE csave
 
 			WITH post
-      SET post.saves_count = post.saves_count - 1
+      SET post.saves_count = CASE WHEN post.saves_count > 0 THEN post.saves_count - 1 ELSE 0 END
 
       RETURN post.saves_count AS latest_saves_count
       `,
@@ -770,7 +724,7 @@ func UndoSave(ctx context.Context, clientUsername, postId string) (any, error) {
 		},
 	)
 	if err != nil {
-		log.Println("postModel.go: UndoSave:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 

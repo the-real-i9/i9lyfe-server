@@ -164,10 +164,10 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
 
 			user.WSConn = wsConn
-			user.ServerWSMsg = make(chan map[string]any)
+			user.ServerEventMsg = make(chan map[string]any)
 
 			go func() {
-				userCommChan := user.ServerWSMsg
+				userCommChan := user.ServerEventMsg
 
 				for {
 					userCommChan := userCommChan
@@ -278,9 +278,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rb)
 
-		serverWSMsg := <-user2.ServerWSMsg
+		ServerEventMsg := <-user2.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -312,9 +312,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rb)
 
-		serverWSMsg := <-user2.ServerWSMsg
+		ServerEventMsg := <-user2.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -346,9 +346,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rb)
 
-		serverWSMsg := <-user3.ServerWSMsg
+		ServerEventMsg := <-user3.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -415,9 +415,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rb)
 
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),
@@ -625,9 +625,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 			user1PostId = rb["id"].(string)
 
-			serverWSMsg_mentionNotif := <-user2.ServerWSMsg
+			ServerEventMsg_mentionNotif := <-user2.ServerEventMsg
 
-			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.Map(map[string]any{
+			td.Cmp(td.Require(t), ServerEventMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":              td.Ignore(),
@@ -637,16 +637,16 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			}, nil))
 
 			// user2 receives this post in her home feed | due to her follow network
-			user2_serverWSMsg_newPost := <-user2.ServerWSMsg
+			user2_ServerEventMsg_newPost := <-user2.ServerEventMsg
 
-			td.Cmp(td.Require(t), user2_serverWSMsg_newPost, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), user2_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user1PostId,
 			}, nil))
 
 			// user3 also receives this post in her home feed | due to her follow network
-			user3_serverWSMsg_newPost := <-user3.ServerWSMsg
+			user3_ServerEventMsg_newPost := <-user3.ServerEventMsg
 
-			td.Cmp(td.Require(t), user3_serverWSMsg_newPost, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), user3_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user1PostId,
 			}, nil))
 		}
@@ -691,9 +691,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 			user3PostId = rb["id"].(string)
 
-			serverWSMsg_mentionNotif := <-user2.ServerWSMsg
+			ServerEventMsg_mentionNotif := <-user2.ServerEventMsg
 
-			td.Cmp(td.Require(t), serverWSMsg_mentionNotif, td.Map(map[string]any{
+			td.Cmp(td.Require(t), ServerEventMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":              td.Ignore(),
@@ -703,16 +703,16 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			}, nil))
 
 			// user2 receives this post in her home feed | due to her follow network
-			user2_serverWSMsg_newPost := <-user2.ServerWSMsg
+			user2_ServerEventMsg_newPost := <-user2.ServerEventMsg
 
-			td.Cmp(td.Require(t), user2_serverWSMsg_newPost, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), user2_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user3PostId,
 			}, nil))
 
 			// user1 also receives this post in her home feed | due to his follow network
-			user1_serverWSMsg_newPost := <-user1.ServerWSMsg
+			user1_ServerEventMsg_newPost := <-user1.ServerEventMsg
 
-			td.Cmp(td.Require(t), user1_serverWSMsg_newPost, td.SuperMapOf(map[string]any{
+			td.Cmp(td.Require(t), user1_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user3PostId,
 			}, nil))
 		}
@@ -745,9 +745,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			require.True(t, rb)
 
 			// user1 is notified
-			serverWSMsg := <-user1.ServerWSMsg
+			ServerEventMsg := <-user1.ServerEventMsg
 
-			td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+			td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":           td.Ignore(),
@@ -785,9 +785,9 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			require.True(t, rb)
 
 			// user3 is notified
-			serverWSMsg := <-user3.ServerWSMsg
+			ServerEventMsg := <-user3.ServerEventMsg
 
-			td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+			td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
 					"id":           td.Ignore(),

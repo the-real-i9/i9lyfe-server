@@ -28,15 +28,15 @@ const appPathPublic = HOST_URL + "/api/app/public"
 const wsPath = WSHOST_URL + "/api/app/private/ws"
 
 type UserT struct {
-	Email         string
-	Username      string
-	Name          string
-	Password      string
-	Birthday      int64
-	Bio           string
-	SessionCookie string
-	WSConn        *websocket.Conn
-	ServerWSMsg   chan map[string]any
+	Email          string
+	Username       string
+	Name           string
+	Password       string
+	Birthday       int64
+	Bio            string
+	SessionCookie  string
+	WSConn         *websocket.Conn
+	ServerEventMsg chan map[string]any
 }
 
 func TestMain(m *testing.M) {

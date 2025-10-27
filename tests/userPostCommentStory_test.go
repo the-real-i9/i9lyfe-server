@@ -164,10 +164,10 @@ func TestUserPostCommentStory(t *testing.T) {
 			defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
 
 			user.WSConn = wsConn
-			user.ServerWSMsg = make(chan map[string]any)
+			user.ServerEventMsg = make(chan map[string]any)
 
 			go func() {
-				userCommChan := user.ServerWSMsg
+				userCommChan := user.ServerEventMsg
 
 				for {
 					userCommChan := userCommChan
@@ -261,9 +261,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -301,9 +301,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -466,9 +466,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		user2Comment1User1Post1Id = rb["id"].(string)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -514,9 +514,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		user3Comment1User1Post1Id = rb["id"].(string)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -681,9 +681,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		user1Reply1User2Comment1User1Post1Id = rb["id"].(string)
 
 		// user2 is notified
-		serverWSMsg := <-user2.ServerWSMsg
+		ServerEventMsg := <-user2.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -729,9 +729,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		user3Reply1User2Comment1User1Post1Id = rb["id"].(string)
 
 		// user2 is notified
-		serverWSMsg := <-user2.ServerWSMsg
+		ServerEventMsg := <-user2.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":             td.Ignore(),
@@ -864,9 +864,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -905,9 +905,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 
 		// user1 is notified
-		serverWSMsg := <-user1.ServerWSMsg
+		ServerEventMsg := <-user1.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":           td.Ignore(),
@@ -1075,9 +1075,9 @@ func TestUserPostCommentStory(t *testing.T) {
 
 		user1Post2Id = rb["id"].(string)
 
-		serverWSMsg := <-user2.ServerWSMsg
+		ServerEventMsg := <-user2.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":              td.Ignore(),
@@ -1174,9 +1174,9 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rb)
 
-		serverWSMsg := <-user3.ServerWSMsg
+		ServerEventMsg := <-user3.ServerEventMsg
 
-		td.Cmp(td.Require(t), serverWSMsg, td.Map(map[string]any{
+		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
 				"id":            td.Ignore(),

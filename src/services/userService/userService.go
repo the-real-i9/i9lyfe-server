@@ -7,7 +7,7 @@ import (
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
-	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/realtimeService"
 	"strings"
 	"time"
 
@@ -72,7 +72,7 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any
 
 	go func() {
 		if followNotif != nil {
-			eventStreamService.Send(targetUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(targetUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  followNotif,
 			})
@@ -173,37 +173,28 @@ func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, li
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {
-	dmPartners, err := user.ChangePresence(ctx, clientUsername, "online", time.Time{})
+	err := user.ChangePresence(ctx, clientUsername, "online", time.Time{})
 	if err != nil {
 		return
 	}
 
-	for _, dmp := range dmPartners {
-		eventStreamService.Send(dmp.(string), appTypes.ServerWSMsg{
-			Event: "user online",
-			Data: map[string]any{
-				"user": clientUsername,
-			},
-		})
-	}
-
+	realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
+		"user":     clientUsername,
+		"presence": "online",
+	})
 }
 
 func GoOffline(ctx context.Context, clientUsername string) {
 	lastSeen := time.Now().UTC()
 
-	dmPartners, err := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
+	err := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
 	if err != nil {
 		return
 	}
 
-	for _, dmp := range dmPartners {
-		eventStreamService.Send(dmp.(string), appTypes.ServerWSMsg{
-			Event: "user offline",
-			Data: map[string]any{
-				"user":      clientUsername,
-				"last_seen": lastSeen,
-			},
-		})
-	}
+	realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
+		"user":      clientUsername,
+		"presence":  "offline",
+		"last_seen": lastSeen,
+	})
 }

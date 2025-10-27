@@ -2,130 +2,29 @@ package eventStreamService
 
 import (
 	"context"
-	"encoding/json"
-	"i9lyfe/src/appTypes"
-	"i9lyfe/src/models/db"
-	"log"
-	"sync"
-	"time"
+	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/eventStreamService/eventTypes"
 
-	"github.com/gofiber/contrib/websocket"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/redis/go-redis/v9"
 )
 
-var usersEventPipes = &sync.Map{}
+var rdb = appGlobals.RedisClient
 
-func Send(receiverUser string, message appTypes.ServerWSMsg) {
-	if userPipe, ok := usersEventPipes.Load(receiverUser); ok {
-		pipe := userPipe.(*websocket.Conn)
+func QueueNewPost(ctx context.Context, npe eventTypes.NewPostEvent) {
+	var npeMap map[string]any
 
-		if err := pipe.WriteJSON(message); err != nil {
-			log.Println("error: eventStreamService.go: Send: pipe.WriteJSON", err)
-		}
+	helpers.StructToMap(npe, &npeMap)
 
-		return
-	}
-
-	strMsg, err := json.Marshal(message)
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "new_posts",
+		Values: npe,
+	}).Err()
 	if err != nil {
-		log.Println("error: eventStreamService.go: Send: json.Marshal:", err)
-		return
-	}
-
-	storeUndeliveredEventMsg(receiverUser, strMsg)
-}
-
-func Subscribe(clientUsername string, pipe *websocket.Conn) {
-	undEventMsgs := getUndeliveredEventMsgs(clientUsername)
-
-	for _, eventMsg := range undEventMsgs {
-		eventMsg := eventMsg.(map[string]any)
-
-		var msg appTypes.ServerWSMsg
-
-		if err := json.Unmarshal(eventMsg["msg"].([]byte), &msg); err != nil {
-			log.Println("error: eventStreamService.go: Subscribe: json.Unmarshal", err)
-			return
-		}
-
-		if err := pipe.WriteJSON(msg); err != nil {
-			log.Println("error: eventStreamService.go: Subscribe: pipe.WriteJSON", err)
-			return
-		}
-
-		deleteDeliveredEventMsg(clientUsername, eventMsg["id"].(string))
-	}
-
-	// add user pipe to user event pipes
-	usersEventPipes.Store(clientUsername, pipe)
-}
-
-func Unsubscribe(clientUsername string) {
-	usersEventPipes.Delete(clientUsername)
-}
-
-func storeUndeliveredEventMsg(username string, msg []byte) {
-	_, err := db.Query(
-		context.Background(),
-		`
-		MATCH (clientUser:User{ username: $username })
-
-		CREATE (clientUser)-[:HAS_UNDELIVERED_EVENT_MSG { at: $at }]->(:UndEventMessage{ id: randomUUID(), msg: $msg })
-		`,
-		map[string]any{
-			"username": username,
-			"msg":      msg,
-			"at":       time.Now().UTC(),
-		},
-	)
-	if err != nil {
-		log.Println("eventStreamService.go: storeUndeliveredEventMsg:", err)
+		helpers.LogError(err)
 	}
 }
 
-func deleteDeliveredEventMsg(username, msgId string) {
-	_, err := db.Query(
-		context.Background(),
-		`
-		MATCH (clientUser:User{ username: $username })-[:HAS_UNDELIVERED_EVENT_MSG]->(dEventMsg:UndEventMessage{ id: $msgId })
+func QueuePostReaction( /* { post_id, reactor, emoji } */ ) {
 
-		DETACH DELETE dEventMsg
-		`,
-		map[string]any{
-			"username": username,
-			"msgId":    msgId,
-			"at":       time.Now().UTC(),
-		},
-	)
-	if err != nil {
-		log.Println("eventStreamService.go: deleteDeliveredEventMsg:", err)
-	}
-}
-
-func getUndeliveredEventMsgs(username string) []any {
-	res, err := db.Query(
-		context.Background(),
-		`
-		MATCH (clientUser:User{ username: $username })-[rel:HAS_UNDELIVERED_EVENT_MSG]->(undEventMsg:UndEventMessage)
-
-		ORDER BY rel.at ASC
-
-		RETURN collect(undEventMsg { .* }) AS und_event_msgs
-		`,
-		map[string]any{
-			"username": username,
-		},
-	)
-	if err != nil {
-		log.Println("eventStreamService.go: getUndeliveredEventMsgs:", err)
-		return nil
-	}
-
-	if len(res.Records) == 0 {
-		return nil
-	}
-
-	undEventMsgs, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "und_event_msgs")
-
-	return undEventMsgs
 }

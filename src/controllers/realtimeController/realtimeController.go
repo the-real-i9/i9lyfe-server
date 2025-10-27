@@ -7,7 +7,6 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/chatService"
 	"i9lyfe/src/services/chatService/chatMessageService"
-	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/userService"
 	"log"
@@ -21,11 +20,9 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	realtimeService.AllClientSockets.Store(clientUser.Username, c)
-
 	go userService.GoOnline(context.Background(), clientUser.Username)
 
-	eventStreamService.Subscribe(clientUser.Username, c)
+	realtimeService.AddPipe(ctx, clientUser.Username, c)
 
 	var w_err error
 
@@ -47,15 +44,54 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
+		var (
+			lcmCtx       context.Context
+			cancelLcmSub context.CancelFunc
+		)
+
+		cancelUserPresenceSub := make(map[string]context.CancelFunc)
+
 		switch body.Action {
-		case "start receiving post updates":
-			realtimeService.PostUpdateSubscribers.Store(clientUser.Username, c)
-		case "stop receiving post updates":
-			realtimeService.PostUpdateSubscribers.Delete(clientUser.Username)
-		case "start receiving comment updates":
-			realtimeService.CommentUpdateSubscribers.Store(clientUser.Username, c)
-		case "stop receiving comment updates":
-			realtimeService.CommentUpdateSubscribers.Delete(clientUser.Username)
+		case "subscribe to live content metrics":
+			lcmCtx, cancelLcmSub = context.WithCancel(ctx)
+
+			realtimeService.SubscribeToLiveContentMetrics(lcmCtx, clientUser.Username, cancelLcmSub)
+		case "unsubscribe from live content metrics":
+			cancelLcmSub()
+		case "subscribe to user presence change":
+			var data subToUserPresenceAcd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
+				continue
+			}
+
+			for _, u := range data.Usernames {
+				ctx, cancel := context.WithCancel(ctx)
+
+				realtimeService.SubscribeToUserPresence(ctx, clientUser.Username, u)
+
+				cancelUserPresenceSub[u] = cancel
+			}
+		case "unsubscribe from user presence change":
+			var data unsubFromUserPresenceAcd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
+				continue
+			}
+
+			for _, u := range data.Usernames {
+				if cancel, ok := cancelUserPresenceSub[u]; ok {
+					cancel()
+				}
+
+				delete(cancelUserPresenceSub, u)
+			}
 		case "chat: send message":
 			var data sendChatMsgAcd
 
@@ -182,9 +218,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 		}
 	}
 
-	realtimeService.AllClientSockets.Delete(clientUser.Username)
-
 	go userService.GoOffline(context.Background(), clientUser.Username)
 
-	eventStreamService.Unsubscribe(clientUser.Username)
+	realtimeService.RemovePipe(clientUser.Username)
 })

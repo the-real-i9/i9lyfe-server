@@ -46,6 +46,30 @@ func (d getChatHistoryAcd) Validate() error {
 	return helpers.ValidationError(err, "realtimeController_validation.go", "getChatHistoryAcd")
 }
 
+type subToUserPresenceAcd struct {
+	Usernames []string `json:"users"`
+}
+
+func (vb subToUserPresenceAcd) Validate() error {
+	err := validation.ValidateStruct(&vb,
+		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
+	)
+
+	return helpers.ValidationError(err, "realtimeController_validation.go", "subToUserPresenceAcd")
+}
+
+type unsubFromUserPresenceAcd struct {
+	Usernames []string `json:"users"`
+}
+
+func (vb unsubFromUserPresenceAcd) Validate() error {
+	err := validation.ValidateStruct(&vb,
+		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
+	)
+
+	return helpers.ValidationError(err, "realtimeController_validation.go", "unsubFromUserPresenceAcd")
+}
+
 type sendChatMsgAcd struct {
 	PartnerUsername  string               `json:"partnerUsername"`
 	IsReply          bool                 `json:"isReply"`

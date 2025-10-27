@@ -71,9 +71,10 @@ func ReactTo(ctx context.Context, clientUsername, commentId, reaction string) (R
 
 			MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment)
 			ON CREATE
-				SET crxn.reaction = $reaction,
-					crxn.at = $at,
-					comment.reactions_count = comment.reactions_count + 1
+				SET comment.reactions_count = comment.reactions_count + 1
+			
+			SET crxn.reaction = $reaction,
+					crxn.at = $at
 
 			RETURN comment.reactions_count AS latest_reactions_count, 
 				commentOwner.username AS comment_owner_username
@@ -224,7 +225,7 @@ func UndoReaction(ctx context.Context, clientUsername, commentId string) (any, e
 		DELETE crxn
 
 		WITH comment
-		SET comment.reactions_count = comment.reactions_count - 1
+		SET comment.reactions_count = CASE WHEN comment.reactions_count > 0 THEN comment.reactions_count - 1 ELSE 0 END
 
 		RETURN comment.reactions_count AS latest_reactions_count
 		`,
@@ -446,7 +447,7 @@ func RemoveChildComment(ctx context.Context, clientUsername, parentCommentId, ch
 		DETACH DELETE childComment
 
 		WITH parentComment
-		SET parentComment.comments_count = parentComment.comments_count - 1
+		SET parentComment.comments_count = CASE WHEN parentComment.comments_count > 0 THEN parentComment.comments_count - 1 ELSE 0 END
 
 		RETURN parentComment.comments_count AS latest_comments_count
 		`,

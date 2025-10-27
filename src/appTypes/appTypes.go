@@ -10,7 +10,7 @@ type ClientUser struct {
 	Username string
 }
 
-type ServerWSMsg struct {
+type ServerEventMsg struct {
 	Event string `json:"event"`
 	Data  any    `json:"data"`
 }

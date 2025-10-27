@@ -580,7 +580,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 	return ups, nil
 }
 
-func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen time.Time) ([]any, error) {
+func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen time.Time) error {
 	var lastSeenVal string
 	if presence == "online" {
 		lastSeenVal = "null"
@@ -588,14 +588,11 @@ func ChangePresence(ctx context.Context, clientUsername, presence string, lastSe
 		lastSeenVal = "$last_seen"
 	}
 
-	res, err := db.Query(ctx,
+	_, err := db.Query(ctx,
 		fmt.Sprintf(`
 		MATCH (clientUser:User{ username: $client_username })
 		SET clientUser.presence = $presence, clientUser.last_seen = %s
 
-		WITH clientUser
-		OPTIONAL MATCH (clientUser)-[:HAS_CHAT]->()-[:WITH_USER]->(partnerUser)
-		RETURN collect(partnerUser.username) AS partner_usernames
 		`, lastSeenVal),
 		map[string]any{
 			"client_username": clientUsername,
@@ -605,10 +602,8 @@ func ChangePresence(ctx context.Context, clientUsername, presence string, lastSe
 	)
 	if err != nil {
 		log.Println("userModel.go: ChangePresence:", err)
-		return nil, err
+		return err
 	}
 
-	pus, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "partner_usernames")
-
-	return pus, nil
+	return nil
 }

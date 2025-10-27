@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"i9lyfe/src/appTypes"
 	chatMessage "i9lyfe/src/models/chatModel/chatMessageModel"
-	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/realtimeService"
 	"log"
 	"time"
 
@@ -40,7 +40,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 	}
 
 	if newMessage.PartnerData != nil {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: new message",
 			Data:  newMessage.PartnerData,
 		})
@@ -56,7 +56,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId
 	}
 
 	if done {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message delivered",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -76,7 +76,7 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId stri
 	}
 
 	if done {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message read",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -96,7 +96,7 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, rea
 	}
 
 	if rxnToMessage.PartnerData != nil {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message reaction",
 			Data:  rxnToMessage.PartnerData,
 		})
@@ -112,7 +112,7 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 	}
 
 	if done {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message reaction removed",
 			Data: map[string]any{
 				"partner_username": clientUsername,
@@ -131,7 +131,7 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 	}
 
 	if done && deleteFor == "everyone" {
-		go eventStreamService.Send(partnerUsername, appTypes.ServerWSMsg{
+		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message deleted",
 			Data: map[string]any{
 				"partner_username": clientUsername,

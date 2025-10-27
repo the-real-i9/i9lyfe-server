@@ -14,7 +14,10 @@ import (
 - Bear with me, a more sophisticated content recommendation algorithm will be implemented in the future.
 */
 
-func RecommendPost(clientUsername, postId string) any {
+// TODO: Proper implementation.
+//
+// It's from here you queue new posts
+func FanOutPost(postId string) any {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -28,12 +31,10 @@ func RecommendPost(clientUsername, postId string) any {
       MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
     }
     
-    WITH post, toString(post.created_at) AS created_at, ownerUser { .username, .profile_pic_url } AS owner_user
-    RETURN post { .*, created_at, owner_user } AS the_post
+    RETURN true
     `,
 		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
+			"post_id": postId,
 		},
 	)
 	if err != nil {
@@ -49,6 +50,7 @@ func RecommendPost(clientUsername, postId string) any {
 	return thePost
 }
 
+// TODO: Build from cache
 func FetchPosts(ctx context.Context, clientUsername string, types, hashtags []string) ([]any, error) {
 	var hashtagCondPatt = ""
 	var query = ""

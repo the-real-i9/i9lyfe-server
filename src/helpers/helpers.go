@@ -6,11 +6,29 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+func LogError(err error) {
+	if err == nil {
+		return
+	}
+
+	pc, file, line, ok := runtime.Caller(1)
+	fn := "unknown"
+	if !ok {
+		file = "???"
+		line = 0
+	} else {
+		fn = runtime.FuncForPC(pc).Name()
+	}
+
+	log.Printf("[ERROR] %s:%d %s(): %v\n", file, line, fn, err)
+}
 
 func ToStruct(val any, dest any) {
 	if reflect.TypeOf(dest).Elem().Kind() != reflect.Struct {
@@ -19,11 +37,11 @@ func ToStruct(val any, dest any) {
 
 	bt, err := json.Marshal(val)
 	if err != nil {
-		log.Println("helpers.go: ToStruct: json.Marshal:", err)
+		LogError(err)
 	}
 
 	if err := json.Unmarshal(bt, dest); err != nil {
-		log.Println("helpers.go: ToStruct: json.Unmarshal:", err)
+		LogError(err)
 	}
 }
 
@@ -114,4 +132,55 @@ func Cookie(name, value, path string, maxAge int) *fiber.Cookie {
 	c.MaxAge = maxAge
 
 	return c
+}
+
+func ToJson(data any) string {
+	d, err := json.Marshal(data)
+	if err != nil {
+		LogError(err)
+	}
+	return string(d)
+}
+
+func Json2Map(jsonStr string) (res map[string]any) {
+	err := json.Unmarshal([]byte(jsonStr), &res)
+	if err != nil {
+		LogError(err)
+	}
+
+	return
+}
+
+func BuildPostMentionNotification(notifId, postId, mentioningUser string, at time.Time) map[string]any {
+	notif := ToJson(map[string]any{
+		"type": "mention_in_post",
+		"at":   at.UnixMilli(),
+		"details": map[string]any{
+			"in_post_id":      postId,
+			"mentioning_user": mentioningUser,
+		},
+	})
+
+	return map[string]any{
+		"id":      notifId,
+		"notif":   notif,
+		"is_read": false,
+	}
+}
+
+func BuildCommentMentionNotification(notifId, commentId, mentioningUser string, at time.Time) map[string]any {
+	notif := ToJson(map[string]any{
+		"type": "mention_in_comment",
+		"at":   at.UnixMilli(),
+		"details": map[string]any{
+			"in_post_id":      commentId,
+			"mentioning_user": mentioningUser,
+		},
+	})
+
+	return map[string]any{
+		"notifId": notifId,
+		"notif":   notif,
+		"is_read": false,
+	}
 }

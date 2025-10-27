@@ -156,10 +156,10 @@ func TestUserChatStory(t *testing.T) {
 			defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
 
 			user.WSConn = wsConn
-			user.ServerWSMsg = make(chan map[string]any)
+			user.ServerEventMsg = make(chan map[string]any)
 
 			go func() {
-				userCommChan := user.ServerWSMsg
+				userCommChan := user.ServerEventMsg
 
 				for {
 					userCommChan := userCommChan
@@ -203,7 +203,7 @@ func TestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		// user1's server reply (response) to event sent
-		user1ServerReply := <-user1.ServerWSMsg
+		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -219,7 +219,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 receives the message | acknowledges 'delivered'")
 
-		user2NewMsgReceived := <-user2.ServerWSMsg
+		user2NewMsgReceived := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2NewMsgReceived, td.Map(map[string]any{
 			"event": "chat: new message",
@@ -244,7 +244,7 @@ func TestUserChatStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		user2ServerReply := <-user2.ServerWSMsg
+		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -256,7 +256,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 receives the 'delivered' acknowledgement | marks message as 'delivered'")
 
-		user1DelvAckReceipt := <-user1.ServerWSMsg
+		user1DelvAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1DelvAckReceipt, td.Map(map[string]any{
 			"event": "chat: message delivered",
@@ -280,7 +280,7 @@ func TestUserChatStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		user2ServerReply := <-user2.ServerWSMsg
+		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -292,7 +292,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 receives the 'read' acknowledgement | marks message as 'read'")
 
-		user1ReadAckReceipt := <-user1.ServerWSMsg
+		user1ReadAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message read",
@@ -318,7 +318,7 @@ func TestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		// user2's server reply (response) to event sent
-		user2ServerReply := <-user2.ServerWSMsg
+		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -330,7 +330,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 receives user2's reaction to his message | attaches it to chat snippet")
 
-		user1ReadAckReceipt := <-user1.ServerWSMsg
+		user1ReadAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message reaction",
@@ -365,7 +365,7 @@ func TestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		// user2's server reply (response) to event sent
-		user2ServerReply := <-user2.ServerWSMsg
+		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -381,7 +381,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 receives the message | acknowledges 'delivered'")
 
-		user1NewMsgReceived := <-user1.ServerWSMsg
+		user1NewMsgReceived := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1NewMsgReceived, td.Map(map[string]any{
 			"event": "chat: new message",
@@ -406,7 +406,7 @@ func TestUserChatStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		user1ServerReply := <-user1.ServerWSMsg
+		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -418,7 +418,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 receives the 'delivered' acknowledgement | marks message as 'delivered'")
 
-		user2DelvAckReceipt := <-user2.ServerWSMsg
+		user2DelvAckReceipt := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2DelvAckReceipt, td.Map(map[string]any{
 			"event": "chat: message delivered",
@@ -442,7 +442,7 @@ func TestUserChatStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		user1ServerReply := <-user1.ServerWSMsg
+		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -454,7 +454,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 receives the 'read' acknowledgement | marks message as 'read'")
 
-		user2ReadAckReceipt := <-user2.ServerWSMsg
+		user2ReadAckReceipt := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message read",
@@ -477,7 +477,7 @@ func TestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		// user1's server reply (response) to event sent
-		user1ServerReply := <-user1.ServerWSMsg
+		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -528,7 +528,7 @@ func TestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		// user2's server reply (response) to event sent
-		user2ServerReply := <-user2.ServerWSMsg
+		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":   "server reply",
@@ -540,7 +540,7 @@ func TestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 is notified of user2's reaction removal to his message")
 
-		user1ReadAckReceipt := <-user1.ServerWSMsg
+		user1ReadAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message reaction removed",

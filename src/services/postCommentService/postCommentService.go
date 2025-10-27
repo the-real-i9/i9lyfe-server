@@ -9,6 +9,7 @@ import (
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/utilServices"
 	"strings"
@@ -41,12 +42,23 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	res, err := post.New(ctx, clientUsername, mediaUrls, postType, description, mentions, hashtags)
+	at := time.Now().UTC()
+
+	newPost, err := post.New(ctx, clientUsername, mediaUrls, postType, description, at)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
+	eventStreamService.QueueNewPost(ctx, eventTypes.NewPostEvent{
+		ClientUsername: clientUsername,
+		PostId:         newPost["id"].(string),
+		PostData:       newPost,
+		Hashtags:       hashtags,
+		Mentions:       mentions,
+		At:             at,
+	})
+
+	/* go func() {
 		if len(res.MentionNotifs) > 0 {
 			for _, mn := range res.MentionNotifs {
 				mn := mn
@@ -54,17 +66,17 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 
 				delete(mn, "receiver_username")
 
-				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 					Event: "new notification",
 					Data:  mn,
 				})
 			}
 		}
 
-		realtimeService.BroadcastNewPost(res.NewPostData["id"].(string), clientUsername)
-	}()
+		contentRecommendationService.FanOutPost(res.NewPostData["id"].(string))
+	}() */
 
-	return res.NewPostData, nil
+	return newPost, nil
 }
 
 func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
@@ -97,14 +109,14 @@ func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (
 
 			delete(rn, "receiver_username")
 
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 
 		}
 
-		realtimeService.SendPostUpdate(map[string]any{
+		realtimeService.PublishPostMetric(ctx, map[string]any{
 			"post_id":                postId,
 			"latest_reactions_count": res.LatestReactionsCount,
 		})
@@ -137,7 +149,7 @@ func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(map[string]any{
+	go realtimeService.PublishPostMetric(ctx, map[string]any{
 		"post_id":                postId,
 		"latest_reactions_count": latestReactionsCount,
 	})
@@ -181,7 +193,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 
 				delete(mn, "receiver_username")
 
-				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 					Event: "new notification",
 					Data:  mn,
 				})
@@ -194,14 +206,14 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 
 			delete(cn, "receiver_username")
 
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
 
 		}
 
-		realtimeService.SendPostUpdate(map[string]any{
+		realtimeService.PublishPostMetric(ctx, map[string]any{
 			"post_id":               postId,
 			"latest_comments_count": res.LatestCommentsCount,
 		})
@@ -235,7 +247,7 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(map[string]any{
+	go realtimeService.PublishPostMetric(ctx, map[string]any{
 		"post_id":               postId,
 		"latest_comments_count": latestCommentsCount,
 	})
@@ -256,14 +268,14 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, reaction str
 
 			delete(rn, "receiver_username")
 
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 
 		}
 
-		realtimeService.SendCommentUpdate(map[string]any{
+		realtimeService.PublishCommentMetric(ctx, map[string]any{
 			"comment_id":             commentId,
 			"latest_reactions_count": res.LatestReactionsCount,
 		})
@@ -296,7 +308,7 @@ func UndoReactionToComment(ctx context.Context, clientUsername, commentId string
 		return nil, err
 	}
 
-	go realtimeService.SendCommentUpdate(map[string]any{
+	go realtimeService.PublishCommentMetric(ctx, map[string]any{
 		"comment_id":             commentId,
 		"latest_reactions_count": latestReactionsCount,
 	})
@@ -342,7 +354,7 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 
 				delete(mn, "receiver_username")
 
-				eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 					Event: "new notification",
 					Data:  mn,
 				})
@@ -356,13 +368,13 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 
 			delete(cn, "receiver_username")
 
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  cn,
 			})
 		}
 
-		realtimeService.SendCommentUpdate(map[string]any{
+		realtimeService.PublishCommentMetric(ctx, map[string]any{
 			"comment_id":            commentId,
 			"latest_comments_count": res.LatestCommentsCount,
 		})
@@ -386,7 +398,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 		return nil, err
 	}
 
-	go realtimeService.SendCommentUpdate(map[string]any{
+	go realtimeService.PublishCommentMetric(ctx, map[string]any{
 		"comment_id":            parentCommentId,
 		"latest_comments_count": latestCommentsCount,
 	})
@@ -407,14 +419,14 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 
 			delete(rn, "receiver_username")
 
-			eventStreamService.Send(receiverUsername, appTypes.ServerWSMsg{
+			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
 				Event: "new notification",
 				Data:  rn,
 			})
 
 		}
 
-		realtimeService.SendPostUpdate(map[string]any{
+		realtimeService.PublishPostMetric(ctx, map[string]any{
 			"post_id":              postId,
 			"latest_reposts_count": res.LatestRepostsCount,
 		})
@@ -429,7 +441,7 @@ func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(map[string]any{
+	go realtimeService.PublishPostMetric(ctx, map[string]any{
 		"post_id":            postId,
 		"latest_saves_count": latestSavesCount,
 	})
@@ -443,7 +455,7 @@ func UndoSavePost(ctx context.Context, clientUsername, postId string) (any, erro
 		return nil, err
 	}
 
-	go realtimeService.SendPostUpdate(map[string]any{
+	go realtimeService.PublishPostMetric(ctx, map[string]any{
 		"post_id":            postId,
 		"latest_saves_count": latestSavesCount,
 	})
