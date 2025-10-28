@@ -18,36 +18,37 @@ import (
 //
 // It's from here you queue new posts
 func FanOutPost(postId string) any {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	/* ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-	res, err := db.Query(
-		ctx,
-		`
-    MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User)
-		WHERE EXISTS {
-      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(ownerUser)
-      UNION
-      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
-    }
-    
-    RETURN true
-    `,
-		map[string]any{
-			"post_id": postId,
-		},
-	)
-	if err != nil {
-		log.Println("contentRecommendationService.go: GetPost:", err)
-	}
+		res, err := db.Query(
+			ctx,
+			`
+	    MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User)
+			WHERE EXISTS {
+	      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(ownerUser)
+	      UNION
+	      MATCH (:User{ username: $client_username })-[:FOLLOWS_USER]->(:User)-[:FOLLOWS_USER]->(ownerUser)
+	    }
 
-	if len(res.Records) == 0 {
-		return nil
-	}
+	    RETURN true
+	    `,
+			map[string]any{
+				"post_id": postId,
+			},
+		)
+		if err != nil {
+			log.Println("contentRecommendationService.go: GetPost:", err)
+		}
 
-	thePost, _ := res.Records[0].Get("the_post")
+		if len(res.Records) == 0 {
+			return nil
+		}
 
-	return thePost
+		thePost, _ := res.Records[0].Get("the_post")
+
+		return thePost */
+	return nil
 }
 
 // TODO: Build from cache

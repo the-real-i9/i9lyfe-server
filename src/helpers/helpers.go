@@ -31,8 +31,10 @@ func LogError(err error) {
 }
 
 func ToStruct(val any, dest any) {
-	if reflect.TypeOf(dest).Elem().Kind() != reflect.Struct {
-		panic("expected 'dest' to be a pointer to struct")
+	destElem := reflect.TypeOf(dest).Elem()
+
+	if destElem.Kind() != reflect.Struct && !(destElem.Kind() == reflect.Slice && destElem.Elem().Kind() == reflect.Struct) {
+		panic("expected 'dest' to be a pointer to struct or slice of structs")
 	}
 
 	bt, err := json.Marshal(val)
