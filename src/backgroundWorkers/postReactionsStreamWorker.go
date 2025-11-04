@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cacheService"
-	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
+	"slices"
 	"sync"
 
 	"github.com/redis/go-redis/v9"
@@ -19,7 +18,7 @@ import (
 func postReactionsStreamBgWorker(rdb *redis.Client) {
 	var (
 		streamName   = "post_reactions"
-		groupName    = "post_reactions_listeners"
+		groupName    = "post_reaction_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -33,7 +32,6 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 	go func() {
 		// cache new post and publish to subscribers
-	readLoop:
 		for {
 			streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
 				Group:    groupName,
@@ -62,121 +60,126 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			msgsLen := len(msgs)
 
-			postReactions := make(map[string]map[string]any) // key: %s: postId > field: %s: username | value: %s: emoji
+			postReactions := make(map[string]map[string][2]any)
 
-			postReactorsWithReaction := make(map[string][]any) // key: %s-%s: postId-emoji
+			userReactedPosts := make(map[string][][2]string)
 
-			userReactedPosts := make(map[string][]any) // key: %s: username > [...postId]
+			notifications := make(map[string][2]any)
 
-			notifications := make(map[string]map[string]any)
+			userNotifications := make(map[string][][2]string)
 
-			userNotifications := make(map[string][]any)
-
-			postReactionExtrasFuncs := make([]func() error, msgsLen)
-
-			sendEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := make([]func(), msgsLen)
 
 			// batch data for batch processing
-			for _, msg := range msgs {
-				msg := msg
-				postsMSet[fmt.Sprintf("post:%s", msg.PostId)] = msg.PostData
+			for i, msg := range msgs {
+				postReactions[msg.PostId][msg.ReactorUser] = [2]any{msg.ReactionData, stmsgIds[i]}
 
-				for _, ht := range msg.Hashtags {
-					ht := ht
-					hashtagPosts[ht] = append(hashtagPosts[ht], msg.PostId)
-				}
+				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
+				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
+					"to_post_id":   msg.PostId,
+					"reactor_user": msg.ReactorUser,
+					"emoji":        msg.ReactionData["emoji"],
+				})
 
-				for _, mu := range msg.Mentions {
-					mu := mu
-					userMentionedPosts[mu] = append(userMentionedPosts[mu], msg.PostId)
+				notifications[notifUniqueId] = [2]any{notif, stmsgIds[i]}
 
-					notifUniqueId := fmt.Sprintf("user_%s_mentioned_in_post_%s", mu, msg.PostId)
-					notif := helpers.BuildPostMentionNotification(notifUniqueId, msg.PostId, msg.OwnerUser, msg.At)
+				userNotifications[msg.PostId] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
-					notifications[notifUniqueId] = notif
+				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+					notif["notif"] = helpers.Json2Map(notif["notif"].(string))
 
-					userNotifications[mu] = append(userNotifications[mu], notifUniqueId)
-
-					sendEventMsgFuncs = append(sendEventMsgFuncs, func() {
-						notif["notif"] = helpers.Json2Map(notif["notif"].(string))
-
-						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
-							Event: "new notification",
-							Data:  notif,
-						})
+					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
+						Event: "new notification",
+						Data:  notif,
 					})
-				}
-
-				newPostExtrasFuncs = append(newPostExtrasFuncs, func() error {
-					return postModel.NewPostExtras(ctx, msg.OwnerUser, msg.PostId, msg.Mentions, msg.Hashtags, msg.At)
 				})
 
-				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					contentRecommendationService.FanOutPost(msg.PostId)
-				})
+				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
 			}
 
 			// batch processing
-
-			// store new posts
-			if err := cacheService.StoreNewPosts(ctx, postsMSet); err != nil {
-				continue
-			}
-
-			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
-				continue
-			}
-
 			wg := new(sync.WaitGroup)
-			errs := make(chan error)
 
-			wg.Go(func() {
-				for k, v := range hashtagPosts {
-					if err := cacheService.StoreHashtagPosts(ctx, k, v...); err != nil {
-						errs <- err
+			failedStreamMsgIds := make(map[string]bool)
+
+			for postId, userTo_Reaction_stmsgId_Pair := range postReactions {
+				userToReactionDataMap := make(map[string]any)
+				stmsgIds := []string{}
+
+				for user, reactionData_stmsgId_Pair := range userTo_Reaction_stmsgId_Pair {
+					userToReactionDataMap[user] = reactionData_stmsgId_Pair[0].(map[string]any)
+					stmsgIds = append(stmsgIds, reactionData_stmsgId_Pair[1].(string))
+				}
+
+				wg.Go(func() {
+					if err := cacheService.StorePostReactions(ctx, postId, userToReactionDataMap); err != nil {
+						for _, id := range stmsgIds {
+							failedStreamMsgIds[id] = true
+						}
 					}
-				}
-			})
-
-			wg.Go(func() {
-				for k, v := range userMentionedPosts {
-					if err := cacheService.StoreUserMentionedPosts(ctx, k, v...); err != nil {
-						errs <- err
-					}
-				}
-			})
-
-			wg.Go(func() {
-				for k, v := range userNotifications {
-					if err := cacheService.StoreUserNotifications(ctx, k, v...); err != nil {
-						errs <- err
-					}
-				}
-			})
-
-			wg.Go(func() {
-				for _, fn := range newPostExtrasFuncs {
-					if err := fn(); err != nil {
-						errs <- err
-					}
-				}
-			})
-
-			wg.Go(func() {
-				for _, fn := range fanOutPostFuncs {
-					fn()
-				}
-
-				for _, fn := range sendEventMsgFuncs {
-					fn()
-				}
-			})
+				})
+			}
 
 			wg.Wait()
 
-			for range errs {
-				continue readLoop
+			for notifId, notif_stmsgId_Pair := range notifications {
+				wg.Go(func() {
+					notifId, notifData, stmsgId := notifId, notif_stmsgId_Pair[0], notif_stmsgId_Pair[1].(string)
+
+					if err := cacheService.StoreNewNotifications(ctx, notifId, notifData); err != nil {
+						failedStreamMsgIds[stmsgId] = true
+					}
+				})
 			}
+
+			go func() {
+				for postId := range postReactions {
+					totalRxnsCount, err := rdb.HLen(ctx, fmt.Sprintf("post:%s:reactions", postId)).Result()
+					if err != nil {
+						continue
+					}
+
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":                postId,
+						"latest_reactions_count": totalRxnsCount,
+					})
+				}
+			}()
+
+			for k, postId_stmsgId_Pairs := range userReactedPosts {
+				wg.Go(func() {
+					k, postId_stmsgId_Pairs := k, postId_stmsgId_Pairs
+
+					if err := cacheService.StoreUserReactedPosts(ctx, k, postId_stmsgId_Pairs); err != nil {
+						for _, d := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[d[1]] = true
+						}
+					}
+				})
+			}
+
+			for k, notifId_stmsgId_Pairs := range userNotifications {
+				wg.Go(func() {
+					k, notifId_stmsgId_Pairs := k, notifId_stmsgId_Pairs
+
+					err = cacheService.StoreUserNotifications(ctx, k, notifId_stmsgId_Pairs)
+					if err != nil {
+						for _, d := range notifId_stmsgId_Pairs {
+							failedStreamMsgIds[d[1]] = true
+						}
+					}
+				})
+			}
+
+			for _, fn := range sendNotifEventMsgFuncs {
+				fn()
+			}
+
+			wg.Wait()
+
+			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
+				return failedStreamMsgIds[stmsgId]
+			})
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

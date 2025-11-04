@@ -47,7 +47,7 @@ func ToStruct(val any, dest any) {
 	}
 }
 
-func StructToMap(val any, dest *map[string]any) {
+func StructToMap(val any) (dest map[string]any) {
 	if reflect.TypeOf(val).Kind() != reflect.Struct {
 		panic("expected 'val' to be a struct")
 	}
@@ -60,10 +60,12 @@ func StructToMap(val any, dest *map[string]any) {
 		key := ""
 		jsonTag := reflect.TypeOf(val).Field(i).Tag.Get("json")
 
-		if jsonTag != "" {
-			key = jsonTag
-		} else {
+		if jsonTag == "" {
 			key = strings.ToLower(reflect.TypeOf(val).Field(i).Name)
+		} else if jsonTag == "-" {
+			continue
+		} else {
+			key = jsonTag
 		}
 
 		fieldVal := reflect.ValueOf(val).Field(i).Interface()
@@ -71,7 +73,9 @@ func StructToMap(val any, dest *map[string]any) {
 		resMap[key] = fieldVal
 	}
 
-	*dest = resMap
+	dest = resMap
+
+	return
 }
 
 // Includes a business-specific functionality for a default offset time
@@ -153,35 +157,16 @@ func Json2Map(jsonStr string) (res map[string]any) {
 	return
 }
 
-func BuildPostMentionNotification(notifId, postId, mentioningUser string, at time.Time) map[string]any {
+func BuildNotification(notifId, notifType string, at int64, details map[string]any) map[string]any {
 	notif := ToJson(map[string]any{
-		"type": "mention_in_post",
-		"at":   at.UnixMilli(),
-		"details": map[string]any{
-			"in_post_id":      postId,
-			"mentioning_user": mentioningUser,
-		},
+		"id":      notifId,
+		"type":    notifType,
+		"at":      at,
+		"details": details,
 	})
 
 	return map[string]any{
 		"id":      notifId,
-		"notif":   notif,
-		"is_read": false,
-	}
-}
-
-func BuildCommentMentionNotification(notifId, commentId, mentioningUser string, at time.Time) map[string]any {
-	notif := ToJson(map[string]any{
-		"type": "mention_in_comment",
-		"at":   at.UnixMilli(),
-		"details": map[string]any{
-			"in_post_id":      commentId,
-			"mentioning_user": mentioningUser,
-		},
-	})
-
-	return map[string]any{
-		"notifId": notifId,
 		"notif":   notif,
 		"is_read": false,
 	}

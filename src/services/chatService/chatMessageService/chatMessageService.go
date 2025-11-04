@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/helpers"
 	chatMessage "i9lyfe/src/models/chatModel/chatMessageModel"
+	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -21,32 +23,39 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 
 	msgContentJson, err := json.Marshal(*msgContent)
 	if err != nil {
-		log.Println("chatMessageService.go: SendMessage: json.Marshal:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	var newMessage chatMessage.NewMessage
+	var newMessage chatMessage.NewMessageT
 
 	if !isReply {
-		newMessage, err = chatMessage.Send(ctx, clientUsername, partnerUsername, string(msgContentJson), time.UnixMilli(at).UTC())
+		newMessage, err = chatMessage.Send(ctx, clientUsername, partnerUsername, string(msgContentJson), at)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		newMessage, err = chatMessage.Reply(ctx, clientUsername, partnerUsername, replyTargetMsgId, string(msgContentJson), time.UnixMilli(at).UTC())
+		newMessage, err = chatMessage.Reply(ctx, clientUsername, partnerUsername, replyTargetMsgId, string(msgContentJson), at)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if newMessage.PartnerData != nil {
-		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-			Event: "chat: new message",
-			Data:  newMessage.PartnerData,
+	if newMessage.Id != "" {
+		msgData := helpers.StructToMap(newMessage)
+		msgData["sender"] = clientUsername
+
+		// store message data to cache, direct
+		// push message id to each user's chat with status: sent or received
+		go eventStreamService.QueueNewMessageEvent(context.Background(), eventTypes.NewMessageEvent{
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			MsgId:    newMessage.Id,
+			MsgData:  msgData,
 		})
 	}
 
-	return newMessage.ClientData, nil
+	return map[string]any{"new_msg_id": newMessage.Id}, nil
 }
 
 func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId string, at int64) (any, error) {

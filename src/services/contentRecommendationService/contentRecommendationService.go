@@ -3,8 +3,8 @@ package contentRecommendationService
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -38,7 +38,7 @@ func FanOutPost(postId string) any {
 			},
 		)
 		if err != nil {
-			log.Println("contentRecommendationService.go: GetPost:", err)
+			helpers.LogError(err)
 		}
 
 		if len(res.Records) == 0 {
@@ -111,7 +111,7 @@ func FetchPosts(ctx context.Context, clientUsername string, types, hashtags []st
 		},
 	)
 	if err != nil {
-		log.Println("contentRecommendationService.go: FetchPosts:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 

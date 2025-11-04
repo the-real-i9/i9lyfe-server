@@ -93,10 +93,6 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUsername, targetUsername := clientUser.Username, c.Params("username")
 
-	if clientUsername == targetUsername {
-		return fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
-	}
-
 	respData, app_err := userService.FollowUser(ctx, clientUsername, targetUsername)
 	if app_err != nil {
 		return app_err

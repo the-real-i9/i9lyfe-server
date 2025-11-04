@@ -4,56 +4,35 @@ import (
 	"context"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-type NewMessage struct {
-	ClientData  map[string]any `json:"client_resp"`
-	PartnerData map[string]any `json:"partner_resp"`
+type NewMessageT struct {
+	Id                   string         `json:"id" db:"id_"`
+	ChatHistoryEntryType string         `json:"chat_history_entry_type" db:"che_type"`
+	Content              map[string]any `json:"content" db:"content_"`
+	DeliveryStatus       string         `json:"delivery_status" db:"delivery_status"`
+	CreatedAt            int64          `json:"created_at" db:"created_at"`
+	Sender               map[string]any `json:"sender" db:"sender"`
+	ReplyTargetMsg       map[string]any `json:"reply_target_msg" db:"reply_target_msg"`
 }
 
-func Send(ctx context.Context, clientUsername, partnerUsername, msgContent string, at time.Time) (NewMessage, error) {
-	var newMsg NewMessage
-
-	res, err := db.Query(
+func Send(ctx context.Context, clientUsername, partnerUsername, msgContent string, at int64) (NewMessageT, error) {
+	newMessage, err := db.QueryRowType[NewMessageT](
 		ctx,
-		`/*cypher*/
-		MATCH (clientUser:User{ username: $client_username }), (partnerUser:User{ username: $partner_username })
-		MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })-[:WITH_USER]->(partnerUser)
-		MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_username: $partner_username, partner_username: $client_username })-[:WITH_USER]->(clientUser)
-
-		WITH clientUser, clientChat, partnerUser, partnerChat
-		CREATE (message:DMMessage:ChatEntry{ id: randomUUID(), chat_hist_entry_type: "message", content: $message_content, delivery_status: "sent", created_at: $at }),
-			(clientUser)-[:SENDS_MESSAGE]->(message)-[:IN_CHAT]->(clientChat),
-			(partnerUser)-[:RECEIVES_MESSAGE]->(message)-[:IN_CHAT]->(partnerChat)
-			
-		WITH message, message.created_at.epochMillis AS created_at, clientUser { .username, .profile_pic_url, .presence } AS sender
-		RETURN { new_msg_id: message.id } AS client_resp,
-			message { .*, is_own: false, content: apoc.convert.fromJsonMap(message.content), created_at, sender } AS partner_resp
-		`,
-		map[string]any{
-			"client_username":  clientUsername,
-			"partner_username": partnerUsername,
-			"message_content":  msgContent,
-			"at":               at,
-		},
+		/* sql */ `
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM send_message($1, $2, $3, $4, $5, $6);
+		`, clientUsername, partnerUsername, msgContent, at, false, nil,
 	)
 	if err != nil {
-		log.Println("ChatModel.go: SendMessage:", err)
-		return newMsg, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return NewMessageT{}, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return newMsg, nil
-	}
-
-	helpers.ToStruct(res.Records[0].AsMap(), &newMsg)
-
-	return newMsg, nil
+	return *newMessage, nil
 }
 
 func AckDelivered(ctx context.Context, clientUsername, partnerUsername, msgId string, deliveredAt time.Time) (bool, error) {
@@ -74,7 +53,7 @@ func AckDelivered(ctx context.Context, clientUsername, partnerUsername, msgId st
 		},
 	)
 	if err != nil {
-		log.Println("ChatModel.go: AckMessageDelivered", err)
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -107,7 +86,7 @@ func AckRead(ctx context.Context, clientUsername, partnerUsername, msgId string,
 		},
 	)
 	if err != nil {
-		log.Println("ChatModel.go: AckMessageRead", err)
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -120,50 +99,19 @@ func AckRead(ctx context.Context, clientUsername, partnerUsername, msgId string,
 	return done, nil
 }
 
-func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, msgContent string, at time.Time) (NewMessage, error) {
-	var newMsg NewMessage
-
-	res, err := db.Query(
+func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, msgContent string, at int64) (NewMessageT, error) {
+	newMessage, err := db.QueryRowType[NewMessageT](
 		ctx,
-		`/*cypher*/
-		MATCH (clientUser:User{ username: $client_username }), (partnerUser:User{ username: $partner_username })
-		MATCH (targetMsg:DMMessage { id: $target_msg_id })<-[:SENDS_MESSAGE]-(targetMsgSender)
-		MERGE (clientUser)-[:HAS_CHAT]->(clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })-[:WITH_USER]->(partnerUser)
-		MERGE (partnerUser)-[:HAS_CHAT]->(partnerChat:Chat{ owner_username: $partner_username, partner_username: $client_username })-[:WITH_USER]->(clientUser)
-
-		WITH clientUser, clientChat, partnerUser, partnerChat, targetMsg, targetMsgSender
-		CREATE (replyMsg:DMMessage:ChatEntry{ id: randomUUID(), chat_hist_entry_type: "message", content: $message_content, delivery_status: "sent", created_at: $at }),
-			(clientUser)-[:SENDS_MESSAGE]->(replyMsg)-[:IN_CHAT]->(clientChat),
-			(partnerUser)-[:RECEIVES_MESSAGE]->(replyMsg)-[:IN_CHAT]->(partnerChat),
-			(replyMsg)-[:REPLIES_TO]->(targetMsg)
-
-		WITH replyMsg, targetMsgSender, replyMsg.created_at.epochMillis AS created_at,
-			clientUser { .username, .profile_pic_url, .presence } AS sender,
-			targetMsg { .id, content: apoc.convert.fromJsonMap(targetMsg.content), sender_username: targetMsgSender.username, is_own: targetMsgSender.username = $client_username } AS reply_target_msg
-
-		RETURN { new_msg_id: replyMsg.id } AS client_resp,
-			replyMsg { .*, is_own: false, content: apoc.convert.fromJsonMap(replyMsg.content), created_at, sender, reply_target_msg } AS partner_resp
-		`,
-		map[string]any{
-			"client_username":  clientUsername,
-			"partner_username": partnerUsername,
-			"message_content":  msgContent,
-			"target_msg_id":    targetMsgId,
-			"at":               at,
-		},
+		/* sql */ `
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM send_message($1, $2, $3, $4, $5, $6);
+		`, clientUsername, partnerUsername, msgContent, at, true, targetMsgId,
 	)
 	if err != nil {
-		log.Println("ChatModel.go: ReplyToMessage:", err)
-		return newMsg, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return NewMessageT{}, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return newMsg, nil
-	}
-
-	helpers.ToStruct(res.Records[0].AsMap(), &newMsg)
-
-	return newMsg, nil
+	return *newMessage, nil
 }
 
 type RxnToMessage struct {
@@ -207,7 +155,7 @@ func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, reacti
 		},
 	)
 	if err != nil {
-		log.Println("ChatModel.go: ReactToMessage:", err)
+		helpers.LogError(err)
 		return rxnToMessage, fiber.ErrInternalServerError
 	}
 
@@ -242,7 +190,7 @@ func RemoveReaction(ctx context.Context, clientUsername, partnerUsername, msgId 
 		},
 	)
 	if err != nil {
-		log.Println("ChatModel.go: RemoveReactionToMessage:", err)
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 
@@ -327,7 +275,7 @@ func ChatHistory(ctx context.Context, clientUsername, partnerUsername string, li
 		},
 	)
 	if err != nil {
-		log.Println("ChatModel.go: ChatHistory", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -377,7 +325,7 @@ func Delete(ctx context.Context, clientUsername, partnerUsername, msgId, deleteF
 		},
 	)
 	if err != nil {
-		log.Println("chatMessageModel.go: DeleteMsg:", err)
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 

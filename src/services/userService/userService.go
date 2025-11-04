@@ -3,7 +3,6 @@ package userService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
@@ -25,9 +24,7 @@ func GetClientUser(ctx context.Context, clientUsername string) (any, error) {
 }
 
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (any, error) {
-	var updateKVMap map[string]any
-
-	helpers.StructToMap(updateKVStruct, &updateKVMap)
+	updateKVMap := helpers.StructToMap(updateKVStruct)
 
 	if _, ok := updateKVMap["birthday"]; ok {
 		updateKVMap["birthday"] = time.UnixMilli(updateKVMap["birthday"].(int64)).UTC()
@@ -65,18 +62,18 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 }
 
 func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	followNotif, err := user.Follow(ctx, clientUsername, targetUsername)
+	if clientUsername == targetUsername {
+		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
+	}
+
+	err := user.Follow(ctx, clientUsername, targetUsername, time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: follow user event: cache following, send notification
 	go func() {
-		if followNotif != nil {
-			realtimeService.SendEventMsg(targetUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  followNotif,
-			})
-		}
+
 	}()
 
 	return true, nil
@@ -87,6 +84,11 @@ func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (a
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: unfollow user event: remove following from cache
+	go func() {
+
+	}()
 
 	return true, nil
 }

@@ -9,7 +9,6 @@ import (
 	"i9lyfe/src/services/chatService/chatMessageService"
 	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/userService"
-	"log"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -30,12 +29,12 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 		var body rtActionBody
 
 		if w_err != nil {
-			log.Println(w_err)
+			helpers.LogError(w_err)
 			break
 		}
 
 		if r_err := c.ReadJSON(&body); r_err != nil {
-			log.Println(r_err)
+			helpers.LogError(r_err)
 			break
 		}
 

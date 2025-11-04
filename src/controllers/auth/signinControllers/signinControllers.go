@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/signinService"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +32,7 @@ func Signin(c *fiber.Ctx) error {
 
 	usd, err := json.Marshal(map[string]any{"authJwt": authJwt})
 	if err != nil {
-		log.Println("signinControllers.go: Signin: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 

@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"i9lyfe/src/appGlobals"
-	"log"
+	"i9lyfe/src/helpers"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -17,7 +17,7 @@ func MultiQuery(ctx context.Context, work func(tx neo4j.ManagedTransaction) (any
 
 	defer func() {
 		if err := sess.Close(ctx); err != nil {
-			log.Println("db.go: error closing session:", err)
+			helpers.LogError(err)
 		}
 	}()
 

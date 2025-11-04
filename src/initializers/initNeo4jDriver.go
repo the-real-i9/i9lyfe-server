@@ -3,7 +3,7 @@ package initializers
 import (
 	"context"
 	"i9lyfe/src/appGlobals"
-	"log"
+	"i9lyfe/src/helpers"
 	"os"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -22,7 +22,7 @@ func initNeo4jDriver() error {
 
 	defer func() {
 		if err := sess.Close(ctx); err != nil {
-			log.Println("initializers.go: initNeo4jDriver: sess.Close:", err)
+			helpers.LogError(err)
 		}
 	}()
 

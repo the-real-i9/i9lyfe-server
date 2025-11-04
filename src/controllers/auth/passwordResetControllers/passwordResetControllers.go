@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/passwordResetService"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +32,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 
 	sd, err := json.Marshal(sessionData)
 	if err != nil {
-		log.Println("passwordResetControllers.go: RequestPasswordReset: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -66,7 +65,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 
 	nsd, err := json.Marshal(newSessionData)
 	if err != nil {
-		log.Println("passwordResetControllers.go: ConfirmEmail: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -89,7 +88,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	}
 
 	if val_err := body.Validate(); val_err != nil {
-		log.Println(val_err)
+		helpers.LogError(val_err)
 		return val_err
 	}
 

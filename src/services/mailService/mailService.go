@@ -3,7 +3,7 @@ package mailService
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
+	"i9lyfe/src/helpers"
 	"os"
 
 	"gopkg.in/gomail.v2"
@@ -23,7 +23,7 @@ func SendMail(email string, subject string, body string) {
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: os.Getenv("GO_ENV") != "production"}
 
 	if err := d.DialAndSend(m); err != nil {
-		log.Println(err)
+		helpers.LogError(err)
 		return
 	}
 }

@@ -3,8 +3,8 @@ package authMiddlewares
 import (
 	"encoding/json"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/securityServices"
-	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +20,7 @@ func UserAuthRequired(c *fiber.Ctx) error {
 	var userSessionData map[string]string
 
 	if err := json.Unmarshal([]byte(usStr), &userSessionData); err != nil {
-		log.Println("auth.go: UserAuth: json.Unmarshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -47,7 +47,7 @@ func UserAuthOptional(c *fiber.Ctx) error {
 	var userSessionData map[string]string
 
 	if err := json.Unmarshal([]byte(usStr), &userSessionData); err != nil {
-		log.Println("auth.go: UserAuth: json.Unmarshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 

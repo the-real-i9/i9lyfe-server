@@ -1,6 +1,6 @@
 package appRoute
 
-import (
+/* import (
 	AC "i9lyfe/src/controllers/appControllers"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,3 +17,4 @@ func Route(router fiber.Router) {
 	router.Get("/search", AC.Search)
 
 }
+*/

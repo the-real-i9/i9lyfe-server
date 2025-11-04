@@ -7,7 +7,8 @@ import (
 )
 
 type ClientUser struct {
-	Username string
+	Username      string `json:"username"`
+	ProfilePicUrl string `json:"profile_pic_url"`
 }
 
 type ServerEventMsg struct {

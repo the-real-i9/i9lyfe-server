@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appErrors/userErrors"
 	"i9lyfe/src/appGlobals"
-	"log"
+	"i9lyfe/src/helpers"
 	"os"
 	"time"
 
@@ -34,7 +34,7 @@ func Upload(ctx context.Context, filePath string, data []byte) (string, error) {
 			return "", fiber.NewError(fiber.StatusRequestTimeout, userErrors.MediaUploadTimedOut)
 		}
 
-		log.Println("cloudStorageService.go: UploadFile:", err)
+		helpers.LogError(err)
 		return "", fiber.ErrInternalServerError
 	}
 

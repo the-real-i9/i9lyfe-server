@@ -2,94 +2,91 @@ package postModel
 
 import (
 	"context"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at time.Time) (map[string]any, error) {
-	res, err := db.Query(
+var dbPool = appGlobals.DBPool
+
+type newPostT struct {
+	Id          string    `json:"id" db:"id_"`
+	Type        string    `json:"type" db:"type_"`
+	MediaUrls   []string  `json:"media_urls" db:"media_urls"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	OwnerUser   any       `json:"owner_user" db:"owner_user"`
+}
+
+func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at int64) (post newPostT, err error) {
+	newPost, err := db.QueryRowType[newPostT](
 		ctx,
-		`
-			MATCH (clientUser:User{ username: $client_username })
-
-      CREATE (clientUser)-[:CREATES_POST]->(post:Post{ id: randomUUID(), type: $type, media_urls: $media_urls, description: $description, created_at: $at })
-			SET clientUser.posts_count = coalesce(clientUser.posts_count, 0) + 1
-
-      WITH post, toString(post.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user
-      RETURN post { .*, created_at, owner_user } AS new_post_data
-			`,
-		map[string]any{
-			"client_username": clientUsername,
-			"media_urls":      mediaUrls,
-			"type":            postType,
-			"description":     description,
-			"at":              at,
-		},
+		/* sql */ `
+		WITH new_post AS (
+			INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING id_, owner_user, type_, media_urls, description, created_at
+		)
+		SELECT id_,
+			(SELECT json_build_object(
+				'username', username, 
+				'profile_pic_url', profile_pic_url)
+			FROM users u
+			WHERE u.username = owner_user) AS owner_user,
+			type_, media_urls, description, created_at 
+		FROM new_post np
+		`, clientUsername, postType, mediaUrls, description, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return newPostT{}, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	npd, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_post_data")
-
-	return npd, nil
+	return *newPost, nil
 }
 
-func NewPostExtras(ctx context.Context, clientUsername, newPostId string, mentions, hashtags []string, at time.Time) error {
-	_, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		var (
-			err error
-		)
+func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []string) error {
+	var err error
 
-		if len(mentions) > 0 {
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return err
+	}
 
-			_, err = tx.Run(
-				ctx,
-				`
-				MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (post:Post{ id: $postId })
-        MERGE (post)-[:MENTIONS_USER]->(mentionUser)
-				`,
-				map[string]any{
-					"mentions": mentions,
-					"postId":   newPostId,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		_, err = tx.Run(
+	for _, mu := range mentions {
+		_, err := tx.Exec(
 			ctx,
-			`
-			MATCH (post:Post{ id: $postId })
-
-			UNWIND $hashtags AS hashtagName
-			MERGE (ht:Hashtag{ name: hashtagName })
-			MERGE (post)-[:INCLUDES_HASHTAG]->(ht)
-			`,
-			map[string]any{
-				"hashtags": hashtags,
-				"postId":   newPostId,
-			},
+			/* sql */ `
+				INSERT INTO post_mentions_user (post_id, username)
+				VALUES ($1, $2)
+				`, newPostId, mu,
 		)
 		if err != nil {
-			return nil, err
+			helpers.LogError(err)
+			return err
 		}
+	}
 
-		return nil, nil
-	})
+	for _, ht := range hashtags {
+		_, err := tx.Exec(
+			ctx,
+			/* sql */ `
+				INSERT INTO post_includes_hashtag (post_id, htname)
+				VALUES ($1, $2)
+				`, newPostId, ht,
+		)
+		if err != nil {
+			helpers.LogError(err)
+			return err
+		}
+	}
+
+	err = tx.Commit(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -144,131 +141,59 @@ func Get(ctx context.Context, clientUsername, postId string) (map[string]any, er
 	return foundPost, nil
 }
 
-func Delete(ctx context.Context, clientUsername, postId string) error {
-	_, err := db.Query(
+func Delete(ctx context.Context, clientUsername, postId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username })-[:CREATES_POST]->(post:Post{ id: $post_id })
-		SET clientUser.posts_count = CASE WHEN clientUser.posts_count > 0 THEN clientUser.posts_count - 1 ELSE 0 END
-
-		DETACH DELETE post
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		UPDATE posts
+		SET owner_user = '[deleted_content_owner]'
+		WHERE id_ = $1 AND owner_user = $2
+		RETURNNG true AS done
+		`, postId, clientUsername,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *done, nil
 }
 
-type ReactToResT struct {
-	LatestReactionsCount any            `json:"latest_reactions_count"`
-	ReactionNotif        map[string]any `json:"reaction_notif"`
-}
-
-func ReactTo(ctx context.Context, clientUsername, postId, reaction string) (ReactToResT, error) {
-	var resData ReactToResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 3)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
+func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64) (string, error) {
+	postOwnerUser, err := db.QueryRowField[string](
+		ctx,
+		/* sql */ `
+		WITH react_to AS (
+			INSERT INTO user_reacts_to_post(username, post_id, emoji, at_)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT ON CONSTRAINT no_dup_post_rxn DO UPDATE 
+			SET emoji = $3, at_ = $4
+			RETURNING true AS done
 		)
-
-		res, err = tx.Run(
-			ctx,
-			`
-      MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-
-      MERGE (clientUser)-[crxn:REACTS_TO_POST]->(post)
-      ON CREATE
-				SET post.reactions_count = post.reactions_count + 1
-      
-			SET crxn.reaction = $reaction, crxn.at = $at
-
-      RETURN post.reactions_count AS latest_reactions_count, postOwner.username AS post_owner_username
-      `,
-			map[string]any{
-				"client_username": clientUsername,
-				"post_id":         postId,
-				"reaction":        reaction,
-				"at":              at,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		postOwnerUsername := resMap["post_owner_username"].(string)
-
-		// handle mentions
-		if postOwnerUsername != clientUsername {
-			res, err = tx.Run(
-				ctx,
-				`
-          MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-  
-          CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_post", is_read: false, created_at: $at, details: ["reaction", $reaction, "to_post_id", $post_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-  
-          WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, postOwner.username AS receiver_username
-          RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
-          `,
-				map[string]any{
-					"post_id":         postId,
-					"client_username": clientUsername,
-					"reaction":        reaction,
-					"at":              at,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			if !res.Next(ctx) {
-				return resMap, nil
-			}
-
-			maps.Copy(resMap, res.Record().AsMap())
-		}
-
-		return resMap, nil
-	})
+		SELECT owner_user FROM posts
+		WHERE id_ = $2 AND (SELECT done FROM react_to) = true
+		`, clientUsername, postId, emoji, at,
+	)
 	if err != nil {
 		helpers.LogError(err)
-		return resData, fiber.ErrInternalServerError
+		return "", fiber.ErrInternalServerError
 	}
 
-	helpers.ToStruct(res, &resData)
-
-	return resData, nil
+	return *postOwnerUser, nil
 }
 
-func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
+/* func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
 		MATCH (:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
 		WHERE rxn.at < $offset
 		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor, 
-			rxn, 
-			CASE fur 
+		WITH reactor,
+			rxn,
+			CASE fur
 				WHEN IS NULL THEN false
-				ELSE true 
+				ELSE true
 			END AS client_follows
 		ORDER BY rxn.at DESC
 		LIMIT $limit
@@ -293,20 +218,20 @@ func GetReactors(ctx context.Context, clientUsername, postId string, limit int, 
 	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors")
 
 	return reactors, nil
-}
+} */
 
-func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
+/* func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
 		MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: toString($reaction) }]-(reactor:User)
 		WHERE rxn.at < $offset
 		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor, 
-			rxn, 
-			CASE fur 
+		WITH reactor,
+			rxn,
+			CASE fur
 				WHEN IS NULL THEN false
-				ELSE true 
+				ELSE true
 			END AS client_follows
 		ORDER BY rxn.at DESC
 		LIMIT $limit
@@ -332,189 +257,83 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reacti
 	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors_wrxn")
 
 	return reactors, nil
-}
+} */
 
-func UndoReaction(ctx context.Context, clientUsername, postId string) (any, error) {
-	res, err := db.Query(
+func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-		MATCH (:User{ username: $client_username })-[crxn:REACTS_TO_POST]->(post:Post{ id: $post_id })
-		DELETE crxn
-
-		WITH post
-		SET post.reactions_count = CASE WHEN post.reactions_count > 0 THEN post.reactions_count - 1 ELSE 0 END
-
-		RETURN post.reactions_count AS latest_reactions_count
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		DELETE FROM user_reacts_to_post
+		WHERE username = $1 AND post_id = $2
+		RETURNING true AS done
+		`, clientUsername, postId,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	lrc, _ := res.Records[0].Get("latest_reactions_count")
-
-	return lrc, nil
+	return *done, nil
 }
 
-type CommentOnResT struct {
-	NewCommentData      map[string]any   `json:"new_comment_data"`
-	MentionNotifs       []map[string]any `json:"mention_notifs"`
-	CommentNotif        map[string]any   `json:"comment_notif"`
-	LatestCommentsCount any              `json:"latest_comments_count"`
+type newCommentT struct {
+	Id            string `json:"id" db:"comment_id"`
+	CommentText   string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
+	At            int64  `json:"at" db:"at_"`
+	PostOwner     string `json:"-" db:"post_owner"`
 }
 
-func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentUrl string, mentions []string) (CommentOnResT, error) {
-	var resData CommentOnResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 5)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
+func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentUrl string, at int64) (newCommentT, error) {
+	newComment, err := db.QueryRowType[newCommentT](
+		ctx,
+		/* sql */ `
+		WITH comment_on AS (
+			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_url, at_)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING comment_id, comment_text, attachment_url, at_
 		)
-
-		res, err = tx.Run(
-			ctx,
-			`
-			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-			CREATE (clientUser)-[:WRITES_COMMENT]->(comment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url, reactions_count: 0, comments_count: 0, created_at: $at })-[:COMMENT_ON_POST]->(post)
-
-			WITH post, comment, toString(comment.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user, postOwner.username AS post_owner_username
-			
-			SET post.comments_count = post.comments_count + 1
-
-			RETURN post.comments_count AS latest_comments_count,
-				comment { .*, created_at, owner_user, client_reaction: "" } AS new_comment_data,
-				post_owner_username
-			`,
-			map[string]any{
-				"client_username": clientUsername,
-				"post_id":         postId,
-				"comment_text":    commentText,
-				"attachment_url":  attachmentUrl,
-				"at":              at,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		newCommentId := resMap["new_comment_data"].(map[string]any)["id"]
-
-		if len(mentions) > 0 {
-
-			_, err = tx.Run(
-				ctx,
-				`
-				MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (comment:Comment{ id: $commentId })
-        CREATE (comment)-[:MENTIONS_USER]->(mentionUser)
-				`,
-				map[string]any{
-					"mentions":  mentions,
-					"commentId": newCommentId,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			mentionsExcClient := slices.DeleteFunc(mentions, func(uname string) bool {
-				return uname == clientUsername
-			})
-
-			// handle mentions
-			if len(mentionsExcClient) > 0 {
-				res, err = tx.Run(
-					ctx,
-					`
-					MATCH (mentionUser:User WHERE mentionUser.username IN $mentionsExcClient), (clientUser:User{ username: $client_username })
-
-					CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: $at, details: ["in_comment_id", $commentId], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-					WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
-					RETURN collect(mentionNotif { .*, receiver_username, created_at }) AS mention_notifs
-					`,
-					map[string]any{
-						"mentionsExcClient": mentionsExcClient,
-						"commentId":         newCommentId,
-						"client_username":   clientUsername,
-						"at":                at,
-					},
-				)
-				if err != nil {
-					return nil, err
-				}
-
-				if !res.Next(ctx) {
-					return nil, nil
-				}
-
-				maps.Copy(resMap, res.Record().AsMap())
-			}
-		}
-
-		postOwnerUsername := resMap["post_owner_username"].(string)
-
-		if postOwnerUsername != clientUsername {
-			res, err = tx.Run(
-				ctx,
-				`
-				MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-				
-				CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_post", is_read: false, created_at: $at, details: ["on_post_id", $post_id, "comment_id", $commentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-				WITH commentNotif, 
-					toString(commentNotif.created_at) AS created_at, 
-					postOwner.username AS receiver_username
-				RETURN commentNotif { .*, created_at, receiver_username } AS comment_notif
-				`,
-				map[string]any{
-					"client_username": clientUsername,
-					"post_id":         postId,
-					"commentId":       newCommentId,
-					"comment_text":    commentText,
-					"attachment_url":  attachmentUrl,
-					"at":              at,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			if !res.Next(ctx) {
-				return nil, nil
-			}
-
-			maps.Copy(resMap, res.Record().AsMap())
-		}
-
-		return resMap, nil
-	})
+		SELECT comment_id, comment_text, attachment_url, at_, (SELECT owner_user FROM posts WHERE id_ = $2) AS post_owner FROM comment_on
+		`, clientUsername, postId, commentText, attachmentUrl, at,
+	)
 	if err != nil {
 		helpers.LogError(err)
-		return resData, fiber.ErrInternalServerError
+		return newCommentT{}, fiber.ErrInternalServerError
 	}
 
-	helpers.ToStruct(res, &resData)
+	return *newComment, nil
+}
 
-	return resData, nil
+func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string) error {
+	var err error
+
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return err
+	}
+
+	for _, mu := range mentions {
+		_, err := tx.Exec(
+			ctx,
+			/* sql */ `
+				INSERT INTO comment_mentions_user (comment_id, username)
+				VALUES ($1, $2)
+				`, newCommentId, mu,
+		)
+		if err != nil {
+			helpers.LogError(err)
+			return err
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return err
+	}
+
+	return nil
 }
 
 func GetComments(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
@@ -557,182 +376,81 @@ func GetComments(ctx context.Context, clientUsername, postId string, limit int, 
 	return comments, nil
 }
 
-func RemoveComment(ctx context.Context, clientUsername, postId, commentId string) (any, error) {
-	res, err := db.Query(
+func RemoveComment(ctx context.Context, clientUsername, postId, commentId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username })-[:WRITES_COMMENT]->(comment:Comment{ id: $comment_id })-[:COMMENT_ON_POST]->(post:Post{ id: $post_id })
-		DETACH DELETE comment
-
-		WITH post
-		SET post.comments_count = CASE WHEN post.comments_count > 0 THEN post.comments_count - 1 ELSE 0 END
-
-		RETURN post.comments_count AS latest_comments_count
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		DELETE FROM user_comments_on
+		WHERE username = $1 AND post_id = $2 AND comment_id = $3
+		RETURNING true AS done
+		`, clientUsername, postId, commentId,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	lcc, _ := res.Records[0].Get("latest_comments_count")
-
-	return lcc, nil
+	return *done, nil
 }
 
-type RepostResT struct {
-	LatestRepostsCount any            `json:"latest_reposts_count"`
-	RepostNotif        map[string]any `json:"repost_notif"`
+type repostT struct {
+	Id             string    `json:"id" db:"id_"`
+	Type           string    `json:"type" db:"type_"`
+	MediaUrls      []string  `json:"media_urls" db:"media_urls"`
+	Description    string    `json:"description"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+	OwnerUser      string    `json:"owner_user" db:"owner_user"`
+	ReposterByUser string    `json:"reposted_by_user" db:"reposted_by_user"`
 }
 
-func Repost(ctx context.Context, clientUsername, postId string) (RepostResT, error) {
-	var resData RepostResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 3)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
-		)
-
-		res, err = tx.Run(
-			ctx,
-			`
-			MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-
-			MERGE (clientUser)-[crep:REPOSTS_POST]->(post)
-			ON CREATE
-				SET post.reposts_count = post.reposts_count + 1,
-					crep.at = $at
-
-			RETURN post.reposts_count AS latest_reposts_count, postOwner.username AS post_owner_username
-			`,
-			map[string]any{
-				"client_username": clientUsername,
-				"post_id":         postId,
-				"at":              at,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		postOwnerUsername := resMap["post_owner_username"].(string)
-
-		// handle mentions
-		if postOwnerUsername != clientUsername {
-			res, err = tx.Run(
-				ctx,
-				`
-        MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })<-[:CREATES_POST]-(postOwner)
-
-        CREATE (postOwner)-[:RECEIVES_NOTIFICATION]->(repostNotif:Notification:RepostNotification{ id: randomUUID(), type: "repost", is_read: false, created_at: $at, details: ["post_id", $post_id], reposter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-        WITH repostNotif, toString(repostNotif.created_at) AS created_at, postOwner.username AS receiver_username
-        RETURN repostNotif { .*, created_at, receiver_username } AS repost_notif
-        `,
-				map[string]any{
-					"post_id":         postId,
-					"client_username": clientUsername,
-					"at":              at,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			if !res.Next(ctx) {
-				return resMap, nil
-			}
-
-			maps.Copy(resMap, res.Record().AsMap())
-		}
-
-		return resMap, nil
-	})
-	if err != nil {
-		helpers.LogError(err)
-		return resData, fiber.ErrInternalServerError
-	}
-
-	helpers.ToStruct(res, &resData)
-
-	return resData, nil
-}
-
-func Save(ctx context.Context, clientUsername, postId string) (any, error) {
-	res, err := db.Query(
+func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {
+	repost, err := db.QueryRowType[repostT](
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username }), (post:Post{ id: $post_id })
-		MERGE (clientUser)-[:SAVES_POST]->(post)
-		ON CREATE
-			SET post.saves_count = post.saves_count + 1
-
-		RETURN post.saves_count AS latest_saves_count
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
+		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
+		WHERE id_ = $2
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user
+		`, clientUsername, postId, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return repostT{}, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	lsc, _ := res.Records[0].Get("latest_saves_count")
-
-	return lsc, nil
+	return *repost, nil
 }
 
-func UndoSave(ctx context.Context, clientUsername, postId string) (any, error) {
-	res, err := db.Query(
+func Save(ctx context.Context, clientUsername, postId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-      MATCH (:User{ username: $client_username })-[csave:SAVES_POST]->(post:Post{ id: $post_id })
-      DELETE csave
-
-			WITH post
-      SET post.saves_count = CASE WHEN post.saves_count > 0 THEN post.saves_count - 1 ELSE 0 END
-
-      RETURN post.saves_count AS latest_saves_count
-      `,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		INSERT INTO user_saves_post(username, post_id)
+		VALUES ($1, $2)
+		RETURNING true AS done
+		`, clientUsername, postId,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
+	return *done, nil
+}
+
+func Unsave(ctx context.Context, clientUsername, postId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
+		ctx,
+		/* sql */ `
+		DELETE FROM user_saves_post
+		WHERE username = $1 AND post_id = $2
+		RETURNING true AS done
+		`, clientUsername, postId,
+	)
+	if err != nil {
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
 	}
 
-	lsc, _ := res.Records[0].Get("latest_saves_count")
-
-	return lsc, nil
+	return *done, nil
 }

@@ -2,7 +2,7 @@ package authMiddlewares
 
 import (
 	"encoding/json"
-	"log"
+	"i9lyfe/src/helpers"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,7 +17,7 @@ func PasswordResetSession(c *fiber.Ctx) error {
 	var passwordResetSessionData map[string]any
 
 	if err := json.Unmarshal([]byte(prsStr), &passwordResetSessionData); err != nil {
-		log.Println("prsm.go: PasswordResetSession: json.Unmarshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 

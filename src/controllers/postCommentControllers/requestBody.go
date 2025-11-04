@@ -11,6 +11,7 @@ type createNewPostBody struct {
 	MediaDataList [][]byte `json:"media_data_list"`
 	Type          string   `json:"type"`
 	Description   string   `json:"description"`
+	At            int64    `json:"at"`
 }
 
 func (b createNewPostBody) Validate() error {
@@ -32,6 +33,7 @@ func (b createNewPostBody) Validate() error {
 			validation.In("photo", "video", "reel").Error("invalid post type. expected 'photo', 'video', or 'reel'"),
 		),
 		validation.Field(&b.Description, validation.Length(0, 300)),
+		validation.Field(&b.At, validation.Required, is.Int),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "createNewPostBody")
@@ -39,12 +41,14 @@ func (b createNewPostBody) Validate() error {
 
 type reactToPostBody struct {
 	Reaction string `json:"reaction"`
+	At       int64  `json:"at"`
 }
 
 func (b reactToPostBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Reaction, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
+		validation.Field(&b.At, validation.Required, is.Int),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "createNewPostBody")
@@ -53,6 +57,7 @@ func (b reactToPostBody) Validate() error {
 type commentOnPostBody struct {
 	CommentText    string `json:"comment_text"`
 	AttachmentData []byte `json:"attachment_data"`
+	At             int64  `json:"at"`
 }
 
 func (b commentOnPostBody) Validate() error {
@@ -61,6 +66,7 @@ func (b commentOnPostBody) Validate() error {
 			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(0, 300))),
 		validation.Field(&b.AttachmentData,
 			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
+		validation.Field(&b.At, validation.Required, is.Int),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "commentOnPostBody")
@@ -68,12 +74,14 @@ func (b commentOnPostBody) Validate() error {
 
 type reactToCommentBody struct {
 	Reaction string `json:"reaction"`
+	At       int64  `json:"at"`
 }
 
 func (b reactToCommentBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Reaction, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
+		validation.Field(&b.At, validation.Required, is.Int),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "reactToCommentBody")
@@ -82,6 +90,7 @@ func (b reactToCommentBody) Validate() error {
 type commentOnCommentBody struct {
 	CommentText    string `json:"comment_text"`
 	AttachmentData []byte `json:"attachment_data"`
+	At             int64  `json:"at"`
 }
 
 func (b commentOnCommentBody) Validate() error {
@@ -90,6 +99,7 @@ func (b commentOnCommentBody) Validate() error {
 			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(0, 300))),
 		validation.Field(&b.AttachmentData,
 			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
+		validation.Field(&b.At, validation.Required, is.Int),
 	)
 
 	return helpers.ValidationError(err, "postCommentControllers_requestBody.go", "commentOnCommentBody")

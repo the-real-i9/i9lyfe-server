@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/signupService"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +32,7 @@ func RequestNewAccount(c *fiber.Ctx) error {
 
 	sd, err := json.Marshal(sessionData)
 	if err != nil {
-		log.Println("signupControllers.go: RequestNewAccount: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -66,7 +65,7 @@ func VerifyEmail(c *fiber.Ctx) error {
 
 	nsd, err := json.Marshal(newSessionData)
 	if err != nil {
-		log.Println("signupControllers.go: VerifyEmail: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -89,7 +88,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	if val_err := body.Validate(); val_err != nil {
-		log.Println(val_err)
+		helpers.LogError(val_err)
 		return val_err
 	}
 
@@ -100,7 +99,7 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	usd, err := json.Marshal(map[string]any{"authJwt": authJwt})
 	if err != nil {
-		log.Println("signupControllers.go: RegisterUser: json.Marshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 

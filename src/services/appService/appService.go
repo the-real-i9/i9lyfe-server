@@ -1,6 +1,6 @@
 package appService
 
-import (
+/* import (
 	"context"
 	"fmt"
 	"i9lyfe/src/models/appModel"
@@ -76,3 +76,4 @@ func Search(ctx context.Context, clientUsername, term, filter string, limit int,
 
 	return results, nil
 }
+*/

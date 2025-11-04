@@ -3,8 +3,8 @@ package userModel
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,116 +12,113 @@ import (
 )
 
 func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
-	res, err := db.Query(ctx,
-		`
-		RETURN EXISTS {
-      MATCH (user:User WHERE user.username = $uniqueIdent OR user.email = $uniqueIdent)
-    } AS user_exists
-		`,
-		map[string]any{
-			"uniqueIdent": uniqueIdent,
-		},
+	userExists, err := db.QueryRowField[bool](
+		ctx,
+		/* sql */ `
+		SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $1) AS exists
+		`, uniqueIdent,
 	)
 	if err != nil {
-		log.Println("userModel.go: Exists:", err)
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 
-	userExists, _, _ := neo4j.GetRecordValue[bool](res.Records[0], "user_exists")
-
-	return userExists, nil
+	return *userExists, nil
 }
 
-func New(ctx context.Context, email, username, password, name, bio string, birthday time.Time) (map[string]any, error) {
-	res, err := db.Query(ctx,
-		`
-		CREATE (user:User{ email: $email, username: $username, password: $password, name: $name, birthday: $birthday, bio: $bio, profile_pic_url: "", presence: "offline", last_seen: $at })
-    RETURN user { .email, .username, .name, .profile_pic_url, .presence } AS new_user
-		`,
-		map[string]any{
-			"email":    email,
-			"username": username,
-			"password": password,
-			"name":     name,
-			"birthday": birthday,
-			"bio":      bio,
-			"at":       time.Now().UTC(),
-		},
+type newUserT struct {
+	Email         string `json:"email,omitempty"`
+	Username      string `json:"username,omitempty"`
+	Name          string `json:"name,omitempty"`
+	ProfilePicUrl string `json:"profile_pic_url,omitempty"`
+	Presence      string `json:"presence,omitempty"`
+}
+
+func New(ctx context.Context, email, username, password, name, bio string, birthday time.Time) (newUserT, error) {
+	err := db.Exec(ctx,
+		/* sql */ `
+		INSERT INTO users (username, email, password_, name_, bio, birthday)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		`, username, email, password, name, bio, birthday,
 	)
 	if err != nil {
-		log.Println("userModel.go: New:", err)
-		return nil, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return newUserT{}, fiber.ErrInternalServerError
 	}
 
-	newUser, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_user")
+	newUser := newUserT{
+		Email:         email,
+		Username:      username,
+		Name:          name,
+		ProfilePicUrl: "{notset}",
+		Presence:      "online",
+	}
 
 	return newUser, nil
 }
 
-func AuthFind(ctx context.Context, uniqueIdent string) (map[string]any, error) {
-	res, err := db.Query(
-		ctx,
-		`
-		MATCH (user:User WHERE user.username = $unique_ident OR user.email = $unique_ident)
-		RETURN user { .email, .username, .name, .profile_pic_url, .presence, .password } AS found_user
-		`,
-		map[string]any{
-			"unique_ident": uniqueIdent,
-		},
-	)
-	if err != nil {
-		log.Println("userModel.go: AuthFind:", err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	fu, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_user")
-
-	return fu, nil
+type toAuthUserT struct {
+	Email         string `json:"email"`
+	Username      string `json:"username"`
+	Name          string `json:"name" db:"name_"`
+	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
+	Presence      string `json:"presence"`
+	Password      string `json:"-" db:"password_"`
 }
 
-func Client(ctx context.Context, clientUsername string) (map[string]any, error) {
-	res, err := db.Query(
+func AuthFind(ctx context.Context, uniqueIdent string) (*toAuthUserT, error) {
+	user, err := db.QueryRowType[toAuthUserT](
 		ctx,
-		`
-		MATCH (user:User { username: $client_username })
-		RETURN user { .email, .username, .name, .profile_pic_url, .presence } AS client_user
-		`,
-		map[string]any{
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		SELECT email, username, name_, profile_pic_url, presence, password_ 
+		FROM users 
+		WHERE username = $1 OR email = $1
+		`, uniqueIdent,
 	)
 	if err != nil {
-		log.Println("userModel.go: Client:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
+	return user, nil
+}
+
+type clientUserT struct {
+	Email         string `json:"email"`
+	Username      string `json:"username"`
+	Name          string `json:"name" db:"name_"`
+	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
+	Presence      string `json:"presence"`
+}
+
+func Client(ctx context.Context, clientUsername string) (clientUserT, error) {
+	user, err := db.QueryRowType[clientUserT](
+		ctx,
+		/* sql */ `
+		SELECT email, username, name_, profile_pic_url, presence 
+		FROM users 
+		WHERE username = $1
+		`, clientUsername,
+	)
+	if err != nil {
+		helpers.LogError(err)
+		return clientUserT{}, fiber.ErrInternalServerError
 	}
 
-	cu, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "client_user")
-
-	return cu, nil
+	return *user, nil
 }
 
 func ChangePassword(ctx context.Context, email, newPassword string) error {
-	_, err := db.Query(
+	err := db.Exec(
 		ctx,
-		`
-		MATCH (user:User{ email: $email })
-		SET user.password = $newPassword
-		`,
-		map[string]any{
-			"email":       email,
-			"newPassword": newPassword,
-		},
+		/* sql */ `
+		UPDATE users
+		SET password_ = $2
+		WHERE email = $1
+		`, email, newPassword,
 	)
 	if err != nil {
-		log.Println("userModel.go: ChangePassword:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -129,19 +126,27 @@ func ChangePassword(ctx context.Context, email, newPassword string) error {
 }
 
 func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[string]any) error {
-	_, err := db.Query(
+	setChanges, params, place := "", []any{clientUsername}, 2
+
+	for col, val := range updateKVMap {
+		if setChanges != "" {
+			setChanges += ", "
+		}
+		setChanges += fmt.Sprintf("%s = $%d", col, place)
+		params = append(params, val)
+		place++
+	}
+
+	err := db.Exec(
 		ctx,
-		`
-		MATCH (user:User{ username: $client_username })
-    SET user += $update_kv_map
-		`,
-		map[string]any{
-			"client_username": clientUsername,
-			"update_kv_map":   updateKVMap,
-		},
+		fmt.Sprintf( /* sql */ `
+		UPDATE users
+		SET %s 
+		WHERE username = $1
+		`, setChanges), params...,
 	)
 	if err != nil {
-		log.Println("userModel.go: EditProfile:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -149,79 +154,49 @@ func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[str
 }
 
 func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string) error {
-	_, err := db.Query(
+	err := db.Exec(
 		ctx,
-		`
-		MATCH (user:User{ username: $client_username })
-		SET user.profile_pic_url = $profile_pic_url
-		`,
-		map[string]any{
-			"client_username": clientUsername,
-			"profile_pic_url": pictureUrl,
-		},
+		/* sql */ `
+		UPDATE users
+		SET profile_pic_url = $2
+		WHERE username = $1
+		`, clientUsername, pictureUrl,
 	)
 	if err != nil {
-		log.Println("userModel.go: ChangeProfilePicture:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
 	return nil
 }
 
-func Follow(ctx context.Context, clientUsername, targetUsername string) (map[string]any, error) {
-	res, err := db.Query(
+func Follow(ctx context.Context, clientUsername, targetUsername string, at time.Time) error {
+	err := db.Exec(
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username }), (targetUser:User{ username: $target_username })
-		MERGE (clientUser)-[fur:FOLLOWS_USER]->(targetUser)
-		ON CREATE
-			SET fur.at = $at,
-				clientUser.following_count = coalesce(clientUser.following_count, 0) + 1,
-				targetUser.followers_count = coalesce(targetUser.followers_count, 0) + 1
-
-		WITH targetUser, clientUser
-		CREATE (targetUser)-[:RECEIVES_NOTIFICATION]->(followNotif:Notification:FollowNotification{ id: randomUUID(), type: "follow", is_read: false, created_at: $at, follower_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-		WITH followNotif, toString(followNotif.created_at) AS created_at
-		RETURN followNotif { .*,  created_at } AS follow_notif
-		`,
-		map[string]any{
-			"client_username": clientUsername,
-			"target_username": targetUsername,
-			"at":              time.Now().UTC(),
-		},
+		/* sql */ `
+		INSERT INTO user_follows_user (follower_username, following_username, at_)
+		VALUES ($1, $2, $3)
+		`, clientUsername, targetUsername, at,
 	)
 	if err != nil {
-		log.Println("userModel.go: Follow:", err)
-		return nil, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	fn, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "follow_notif")
-
-	return fn, nil
+	return nil
 }
 
 func Unfollow(ctx context.Context, clientUsername, targetUsername string) error {
-	_, err := db.Query(
+	err := db.Exec(
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username })-[fur:FOLLOWS_USER]->(targetUser:User{ username: $target_username })
-		SET clientUser.following_count = clientUser.following_count - 1,
-				targetUser.followers_count = clientUser.followers_count - 1
-    DELETE fur
-		`,
-		map[string]any{
-			"client_username": clientUsername,
-			"target_username": targetUsername,
-		},
+		/* sql */ `
+		DELETE FROM user_follows_user
+		WHERE follower_username = $1 AND following_username = $2
+		`, clientUsername, targetUsername,
 	)
 	if err != nil {
-		log.Println("userModel.go: Unfollow:", err)
-		return nil
+		helpers.LogError(err)
+		return fiber.ErrInternalServerError
 	}
 
 	return nil
@@ -261,7 +236,7 @@ func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, of
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetMentionedPosts:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -304,7 +279,7 @@ func GetReactedPosts(ctx context.Context, clientUsername string, limit int, offs
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetReactedPosts:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -347,7 +322,7 @@ func GetSavedPosts(ctx context.Context, clientUsername string, limit int, offset
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetSavedPosts:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -378,7 +353,7 @@ func GetNotifications(ctx context.Context, clientUsername string, limit int, off
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetNotifications:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -404,7 +379,7 @@ func ReadNotification(ctx context.Context, clientUsername, notificationId string
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: ReadNotification:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -440,7 +415,7 @@ func GetProfile(ctx context.Context, clientUsername, targetUsername string) (map
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetProfile:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -480,7 +455,7 @@ func GetFollowers(ctx context.Context, clientUsername, targetUsername string, li
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetFollowers:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -519,7 +494,7 @@ func GetFollowing(ctx context.Context, clientUsername, targetUsername string, li
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetFollowing:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -567,7 +542,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 		},
 	)
 	if err != nil {
-		log.Println("userModel.go: GetPosts:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -581,27 +556,23 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 }
 
 func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen time.Time) error {
-	var lastSeenVal string
+	var lastSeenVal any
 	if presence == "online" {
-		lastSeenVal = "null"
+		lastSeenVal = nil
 	} else {
-		lastSeenVal = "$last_seen"
+		lastSeenVal = lastSeen
 	}
 
-	_, err := db.Query(ctx,
-		fmt.Sprintf(`
-		MATCH (clientUser:User{ username: $client_username })
-		SET clientUser.presence = $presence, clientUser.last_seen = %s
-
-		`, lastSeenVal),
-		map[string]any{
-			"client_username": clientUsername,
-			"presence":        presence,
-			"last_seen":       lastSeen,
-		},
+	err := db.Exec(
+		ctx,
+		/* sql */ `
+		UPDATE users
+		SET presence = $2, last_seen = $3
+		WHERE username = $1
+		`, clientUsername, presence, lastSeenVal,
 	)
 	if err != nil {
-		log.Println("userModel.go: ChangePresence:", err)
+		helpers.LogError(err)
 		return err
 	}
 

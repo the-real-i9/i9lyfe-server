@@ -3,10 +3,11 @@ package initializers
 import (
 	"context"
 	"i9lyfe/src/appGlobals"
-	"log"
+	"i9lyfe/src/helpers"
 	"os"
 
 	"cloud.google.com/go/storage"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/api/option"
 
@@ -24,12 +25,22 @@ func initGCSClient() error {
 	return nil
 }
 
+func initDBPool() error {
+	pool, err := pgxpool.New(context.Background(), os.Getenv("PGDATABASE_URL"))
+	if err != nil {
+		return err
+	}
+
+	appGlobals.DBPool = pool
+
+	return nil
+}
+
 func initRedisClient() error {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-		Protocol: 2,  // Connection protocol
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASS"),
+		DB:       0,
 	})
 
 	appGlobals.RedisClient = client
@@ -49,6 +60,10 @@ func InitApp() error {
 		return err
 	}
 
+	if err := initDBPool(); err != nil {
+		return err
+	}
+
 	if err := initGCSClient(); err != nil {
 		return err
 	}
@@ -62,6 +77,8 @@ func InitApp() error {
 
 func CleanUp() {
 	if err := appGlobals.Neo4jDriver.Close(context.TODO()); err != nil {
-		log.Println("error closing neo4j driver", err)
+		helpers.LogError(err)
 	}
+
+	appGlobals.DBPool.Close()
 }

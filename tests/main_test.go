@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"i9lyfe/src/helpers"
 	"io"
 	"log"
 	"os"
@@ -94,7 +95,7 @@ func errResBody(body io.ReadCloser) (string, error) {
 func bday(bdaystr string) int64 {
 	bd, err := time.Parse(time.DateOnly, bdaystr)
 	if err != nil {
-		log.Println("main_test.go", err)
+		helpers.LogError(err)
 	}
 
 	return bd.UTC().UnixMilli()

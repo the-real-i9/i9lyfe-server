@@ -2,16 +2,16 @@ package commentModel
 
 import (
 	"context"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
+
+var dbPool = appGlobals.DBPool
 
 func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
 	res, err := db.Query(
@@ -34,7 +34,7 @@ func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
 		},
 	)
 	if err != nil {
-		log.Println("commentModel.go: Get:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -47,97 +47,27 @@ func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
 	return foundComment, nil
 }
 
-type ReactToResT struct {
-	LatestReactionsCount any            `json:"latest_reactions_count"`
-	ReactionNotif        map[string]any `json:"reaction_notif"`
-}
-
-func ReactTo(ctx context.Context, clientUsername, commentId, reaction string) (ReactToResT, error) {
-	var resData ReactToResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 3)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
+func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (string, error) {
+	commentOwner, err := db.QueryRowField[string](
+		ctx,
+		/* sql */ `
+		WITH react_to AS (
+			INSERT INTO user_reacts_to_comment(username, comment_id, emoji, at_)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT ON CONSTRAINT no_dup_comment_rxn DO UPDATE 
+			SET emoji = $3, at_ = $4
+			RETURNING true AS done
 		)
-
-		res, err = tx.Run(
-			ctx,
-			`
-			MATCH (clientUser:User{ username: $client_username }), (comment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(commentOwner)
-
-			MERGE (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment)
-			ON CREATE
-				SET comment.reactions_count = comment.reactions_count + 1
-			
-			SET crxn.reaction = $reaction,
-					crxn.at = $at
-
-			RETURN comment.reactions_count AS latest_reactions_count, 
-				commentOwner.username AS comment_owner_username
-			`,
-			map[string]any{
-				"client_username": clientUsername,
-				"comment_id":      commentId,
-				"reaction":        reaction,
-				"at":              at,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		commentOwnerUsername := resMap["comment_owner_username"].(string)
-
-		// handle mentions
-		if commentOwnerUsername != clientUsername {
-			res, err = tx.Run(
-				ctx,
-				`
-				MATCH (clientUser:User{ username: $client_username }), (comment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(commentOwner)
-				
-				CREATE (commentOwner)-[:RECEIVES_NOTIFICATION]->(reactionNotif:Notification:ReactionNotification{ id: randomUUID(), type: "reaction_to_comment", is_read: false, created_at: $at, details: ["reaction", $reaction, "to_comment_id", $comment_id], reactor_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-				WITH reactionNotif, toString(reactionNotif.created_at) AS created_at, commentOwner.username AS receiver_username
-				RETURN reactionNotif { .*, created_at, receiver_username } AS reaction_notif
-				`,
-				map[string]any{
-					"comment_id":      commentId,
-					"client_username": clientUsername,
-					"reaction":        reaction,
-					"at":              at,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			if !res.Next(ctx) {
-				return resMap, nil
-			}
-
-			maps.Copy(resMap, res.Record().AsMap())
-		}
-
-		return resMap, nil
-	})
+		SELECT username FROM user_comments_on
+		WHERE comment_id = $2 AND (SELECT done FROM react_to) = true
+		`, clientUsername, commentId, emoji, at,
+	)
 	if err != nil {
-		log.Println("commentModel.go: ReactTo:", err)
-		return resData, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return "", fiber.ErrInternalServerError
 	}
 
-	helpers.ToStruct(res, &resData)
-
-	return resData, nil
+	return *commentOwner, nil
 }
 
 func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
@@ -165,7 +95,7 @@ func GetReactors(ctx context.Context, clientUsername, commentId string, limit in
 		},
 	)
 	if err != nil {
-		log.Println("commentModel.go: GetReactors:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -204,7 +134,7 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, rea
 		},
 	)
 	if err != nil {
-		log.Println("commentModel.go: GetReactorsWithReaction:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -217,187 +147,81 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, rea
 	return reactors, nil
 }
 
-func UndoReaction(ctx context.Context, clientUsername, commentId string) (any, error) {
-	res, err := db.Query(
+func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-		MATCH (:User{ username: $client_username })-[crxn:REACTS_TO_COMMENT]->(comment:Comment{ id: $comment_id })
-		DELETE crxn
-
-		WITH comment
-		SET comment.reactions_count = CASE WHEN comment.reactions_count > 0 THEN comment.reactions_count - 1 ELSE 0 END
-
-		RETURN comment.reactions_count AS latest_reactions_count
-		`,
-		map[string]any{
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-		},
+		/* sql */ `
+		DELETE FROM user_reacts_to_comment
+		WHERE username = $1 AND comment_id = $2
+		RETURNING true AS done
+		`, clientUsername, commentId,
 	)
 	if err != nil {
-		log.Println("commentModel.go: UndoReaction:", err)
-		return nil, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	lrc, _ := res.Records[0].Get("latest_reactions_count")
-
-	return lrc, nil
+	return *done, nil
 }
 
-type CommentOnResT struct {
-	NewCommentData      map[string]any   `json:"new_comment_data"`
-	MentionNotifs       []map[string]any `json:"mention_notifs"`
-	CommentNotif        map[string]any   `json:"comment_notif"`
-	LatestCommentsCount any              `json:"latest_comments_count"`
+type newCommentT struct {
+	Id                 string `json:"id" db:"comment_id"`
+	CommentText        string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
+	At                 int64  `json:"at" db:"at_"`
+	ParentCommentOwner string `json:"-" db:"parent_comment_owner"`
 }
 
-func CommentOn(ctx context.Context, clientUsername, commentId, commentText, attachmentUrl string, mentions []string) (CommentOnResT, error) {
-	var resData CommentOnResT
-
-	res, err := db.MultiQuery(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		resMap := make(map[string]any, 5)
-
-		var (
-			res neo4j.ResultWithContext
-			err error
-			at  = time.Now().UTC()
+func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentUrl string, at int64) (newCommentT, error) {
+	newComment, err := db.QueryRowType[newCommentT](
+		ctx,
+		/* sql */ `
+		WITH comment_on AS (
+			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_url, at_)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING comment_id, comment_text, attachment_url, at_
 		)
+		SELECT comment_id, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE parent_comment_id = $2) AS parent_comment_owner FROM comment_on
+		`, clientUsername, parentCommentId, commentText, attachmentUrl, at,
+	)
+	if err != nil {
+		helpers.LogError(err)
+		return newCommentT{}, fiber.ErrInternalServerError
+	}
 
-		res, err = tx.Run(
+	return *newComment, nil
+}
+
+func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string) error {
+	var err error
+
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return err
+	}
+
+	for _, mu := range mentions {
+		_, err := tx.Exec(
 			ctx,
-			`
-			MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(parentCommentOwner)
-
-			CREATE (clientUser)-[:WRITES_COMMENT]->(childComment:Comment{ id: randomUUID(), comment_text: $comment_text, attachment_url: $attachment_url,  reactions_count: 0, comments_count: 0, created_at: $at })-[:COMMENT_ON_COMMENT]->(parentComment)
-
-			WITH parentComment, childComment, toString(childComment.created_at) AS created_at, clientUser { .username, .profile_pic_url } AS owner_user, parentCommentOwner.username AS parent_comment_owner_username
-
-			SET parentComment.comments_count = parentComment.comments_count + 1
-
-			RETURN parentComment.comments_count AS latest_comments_count,
-				childComment { .*, created_at, owner_user, client_reaction: "" } AS new_comment_data,
-				parent_comment_owner_username
-			`,
-			map[string]any{
-				"client_username": clientUsername,
-				"comment_id":      commentId,
-				"comment_text":    commentText,
-				"attachment_url":  attachmentUrl,
-				"at":              at,
-			},
+			/* sql */ `
+				INSERT INTO comment_mentions_user (comment_id, username)
+				VALUES ($1, $2)
+				`, newCommentId, mu,
 		)
 		if err != nil {
-			return nil, err
+			helpers.LogError(err)
+			return err
 		}
-
-		if !res.Next(ctx) {
-
-			return nil, nil
-		}
-
-		maps.Copy(resMap, res.Record().AsMap())
-
-		newCommentId := resMap["new_comment_data"].(map[string]any)["id"]
-
-		if len(mentions) > 0 {
-
-			_, err = tx.Run(
-				ctx,
-				`
-				MATCH (mentionUser:User WHERE mentionUser.username IN $mentions), (childComment:Comment{ id: $childCommentId })
-				CREATE (childComment)-[:MENTIONS_USER]->(mentionUser)
-				`,
-				map[string]any{
-					"mentions":     mentions,
-					"childComment": newCommentId,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			mentionsExcClient := slices.DeleteFunc(mentions, func(uname string) bool {
-				return uname == clientUsername
-			})
-
-			// handle mentions
-			if len(mentionsExcClient) > 0 {
-				res, err = tx.Run(
-					ctx,
-					`
-					MATCH (mentionUser:User WHERE mentionUser.username IN $mentionsExcClient), (childComment:Comment{ id: $childCommentId }), (clientUser:User{ username: $client_username })
-					
-					CREATE (mentionUser)-[:RECEIVES_NOTIFICATION]->(mentionNotif:Notification:MentionNotification{ id: randomUUID(), type: "mention_in_comment", is_read: false, created_at: $at, details: ["in_comment_id", childComment.id], mentioning_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-
-					WITH mentionNotif, toString(mentionNotif.created_at) AS created_at, mentionUser.username AS receiver_username
-					RETURN collect(mentionNotif { .*, created_at, receiver_username }) AS mention_notifs
-					`,
-					map[string]any{
-						"mentionsExcClient": mentionsExcClient,
-						"childCommentId":    newCommentId,
-						"client_username":   clientUsername,
-						"at":                at,
-					},
-				)
-				if err != nil {
-					return nil, err
-				}
-
-				if !res.Next(ctx) {
-					return nil, nil
-				}
-
-				maps.Copy(resMap, res.Record().AsMap())
-			}
-		}
-
-		parentCommentOwnerUsername := resMap["parent_comment_owner_username"].(string)
-
-		if parentCommentOwnerUsername != clientUsername {
-			res, err = tx.Run(
-				ctx,
-				`
-				MATCH (clientUser:User{ username: $client_username }), (parentComment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(parentCommentOwner)
-				
-				CREATE (parentCommentOwner)-[:RECEIVES_NOTIFICATION]->(commentNotif:Notification:CommentNotification{ id: randomUUID(), type: "comment_on_comment", is_read: false, created_at: $at, details: ["on_comment_id", $comment_id, "child_comment_id", $childCommentId, "comment_text", $comment_text, "attachment_url", $attachment_url], commenter_user: ["username", clientUser.username, "profile_pic_url", clientUser.profile_pic_url] })
-				
-				WITH commentNotif, toString(commentNotif.created_at) AS created_at, parentCommentOwner.username AS receiver_username
-				RETURN commentNotif { .*, created_at, receiver_username } AS comment_notif
-				`,
-				map[string]any{
-					"client_username": clientUsername,
-					"comment_id":      commentId,
-					"childCommentId":  newCommentId,
-					"comment_text":    commentText,
-					"attachment_url":  attachmentUrl,
-					"at":              at,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			if !res.Next(ctx) {
-				return nil, nil
-			}
-
-			maps.Copy(resMap, res.Record().AsMap())
-		}
-
-		return resMap, nil
-	})
-	if err != nil {
-		log.Println("commentModel.go: CommentOn:", err)
-		return resData, fiber.ErrInternalServerError
 	}
 
-	helpers.ToStruct(res, &resData)
+	err = tx.Commit(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return err
+	}
 
-	return resData, nil
+	return nil
 }
 
 func GetComments(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
@@ -426,7 +250,7 @@ func GetComments(ctx context.Context, clientUsername, commentId string, limit in
 		},
 	)
 	if err != nil {
-		log.Println("commentModel.go: GetComments:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -439,34 +263,19 @@ func GetComments(ctx context.Context, clientUsername, commentId string, limit in
 	return comments, nil
 }
 
-func RemoveChildComment(ctx context.Context, clientUsername, parentCommentId, childCommentId string) (any, error) {
-	res, err := db.Query(
+func RemoveComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
-		`
-		MATCH (clientUser:User{ username: $client_username })-[:WRITES_COMMENT]->(childComment:Comment{ id: $child_comment_id })-[:COMMENT_ON_COMMENT]->(parentComment:Comment{ id: $parent_comment_id })
-		DETACH DELETE childComment
-
-		WITH parentComment
-		SET parentComment.comments_count = CASE WHEN parentComment.comments_count > 0 THEN parentComment.comments_count - 1 ELSE 0 END
-
-		RETURN parentComment.comments_count AS latest_comments_count
-		`,
-		map[string]any{
-			"parent_comment_id": parentCommentId,
-			"child_comment_id":  childCommentId,
-			"client_username":   clientUsername,
-		},
+		/* sql */ `
+		DELETE FROM user_comments_on
+		WHERE username = $1 AND parent_comment_id = $2 AND comment_id = $3
+		RETURNING true AS done
+		`, clientUsername, parentCommentId, commentId,
 	)
 	if err != nil {
-		log.Println("commentModel.go: RemoveComment:", err)
-		return nil, fiber.ErrInternalServerError
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	lcc, _ := res.Records[0].Get("latest_comments_count")
-
-	return lcc, nil
+	return *done, nil
 }

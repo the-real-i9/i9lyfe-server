@@ -2,8 +2,8 @@ package chatModel
 
 import (
 	"context"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/db"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +33,7 @@ func All(ctx context.Context, clientUsername string, limit int, offset time.Time
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: All:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -59,7 +59,7 @@ func Delete(ctx context.Context, clientUsername, partnerUsername string) error {
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: Delete:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 
@@ -93,7 +93,7 @@ func History(ctx context.Context, clientUsername, partnerUsername string, offset
 		},
 	)
 	if err != nil {
-		log.Println("chatModel.go: History:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 

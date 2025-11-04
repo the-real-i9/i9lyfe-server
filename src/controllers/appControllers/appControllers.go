@@ -1,6 +1,6 @@
 package appControllers
 
-import (
+/* import (
 	"context"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/appService"
@@ -66,3 +66,4 @@ func Search(c *fiber.Ctx) error {
 
 	return c.JSON(respData)
 }
+*/

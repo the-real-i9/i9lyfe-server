@@ -3,14 +3,12 @@ package postCommentService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
-	"i9lyfe/src/services/realtimeService"
 	"i9lyfe/src/services/utilServices"
 	"strings"
 	"time"
@@ -19,7 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][]byte, postType, description string) (map[string]any, error) {
+func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][]byte, postType, description string, at int64) (any, error) {
 
 	mediaUrls := make([]string, len(mediaDataList))
 
@@ -42,44 +40,30 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	at := time.Now().UTC()
-
 	newPost, err := post.New(ctx, clientUsername, mediaUrls, postType, description, at)
 	if err != nil {
 		return nil, err
 	}
 
-	eventStreamService.QueueNewPost(ctx, eventTypes.NewPostEvent{
-		ClientUsername: clientUsername,
-		PostId:         newPost["id"].(string),
-		PostData:       newPost,
-		Hashtags:       hashtags,
-		Mentions:       mentions,
-		At:             at,
-	})
+	if newPost.Id != "" {
+		newPost := newPost
+		newPost.OwnerUser = clientUsername
 
-	/* go func() {
-		if len(res.MentionNotifs) > 0 {
-			for _, mn := range res.MentionNotifs {
-				mn := mn
-				receiverUsername := mn["receiver_username"].(string)
-
-				delete(mn, "receiver_username")
-
-				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-					Event: "new notification",
-					Data:  mn,
-				})
-			}
-		}
-
-		contentRecommendationService.FanOutPost(res.NewPostData["id"].(string))
-	}() */
+		go eventStreamService.QueueNewPostEvent(context.Background(), eventTypes.NewPostEvent{
+			OwnerUser: clientUsername,
+			PostId:    newPost.Id,
+			PostData:  helpers.StructToMap(newPost),
+			Hashtags:  hashtags,
+			Mentions:  mentions,
+			At:        at,
+		})
+	}
 
 	return newPost, nil
 }
 
 func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
+	// we'll build post from the cache
 	thePost, err := post.Get(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
@@ -89,40 +73,37 @@ func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
 }
 
 func DeletePost(ctx context.Context, clientUsername, postId string) (any, error) {
-	if err := post.Delete(ctx, clientUsername, postId); err != nil {
-		return nil, err
-	}
-
-	return true, nil
-}
-
-func ReactToPost(ctx context.Context, clientUsername, postId, reaction string) (any, error) {
-	res, err := post.ReactTo(ctx, clientUsername, postId, reaction)
+	done, err := post.Delete(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		if res.ReactionNotif != nil {
-			rn := res.ReactionNotif
-			receiverUsername := rn["receiver_username"].(string)
+	// run a bg worker that:
+	// removes this post and all related data from cache
+	// mark post and all related data (likes, comments, etc.) as deleted
 
-			delete(rn, "receiver_username")
+	return done, nil
+}
 
-			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  rn,
-			})
+func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (any, error) {
+	postOwner, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
+	if err != nil {
+		return nil, err
+	}
 
-		}
+	done := postOwner != ""
 
-		realtimeService.PublishPostMetric(ctx, map[string]any{
-			"post_id":                postId,
-			"latest_reactions_count": res.LatestReactionsCount,
+	if done {
+		go eventStreamService.QueuePostReactionEvent(context.Background(), eventTypes.PostReactionEvent{
+			ReactorUser:  clientUsername,
+			PostOwner:    postOwner,
+			PostId:       postId,
+			ReactionData: map[string]any{"emoji": emoji, "at": at},
+			At:           at,
 		})
-	}()
+	}
 
-	return true, nil
+	return done, nil
 }
 
 func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
@@ -143,21 +124,23 @@ func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, 
 	return reactors, nil
 }
 
-func UndoReactionToPost(ctx context.Context, clientUsername, postId string) (any, error) {
-	latestReactionsCount, err := post.UndoReaction(ctx, clientUsername, postId)
+func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (any, error) {
+	done, err := post.RemoveReaction(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishPostMetric(ctx, map[string]any{
-		"post_id":                postId,
-		"latest_reactions_count": latestReactionsCount,
-	})
+	if done {
+		go eventStreamService.QueueRemovePostReactionEvent(context.Background(), eventTypes.RemovePostReactionEvent{
+			ReactorUser: clientUsername,
+			PostId:      postId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }
 
-func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte) (map[string]any, error) {
+func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte, at int64) (any, error) {
 
 	var (
 		attachmentUrl string
@@ -180,47 +163,30 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 
 	mentions := utilServices.ExtractMentions(commentText)
 
-	res, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentUrl, mentions)
+	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentUrl, at)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		if len(res.MentionNotifs) > 0 {
-			for _, mn := range res.MentionNotifs {
-				mn := mn
-				receiverUsername := mn["receiver_username"].(string)
-
-				delete(mn, "receiver_username")
-
-				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-					Event: "new notification",
-					Data:  mn,
-				})
-			}
-		}
-
-		if res.CommentNotif != nil {
-			cn := res.CommentNotif
-			receiverUsername := cn["receiver_username"].(string)
-
-			delete(cn, "receiver_username")
-
-			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  cn,
-			})
-
-		}
-
-		realtimeService.PublishPostMetric(ctx, map[string]any{
-			"post_id":               postId,
-			"latest_comments_count": res.LatestCommentsCount,
+	// create comment, direct
+	// add comment id to post comments
+	// create and add user mention_in_comment notifications (for mentioned users)
+	// and comment_on_post notifications (for postOwner user),
+	// notifying both users in realtime
+	// publish post metric update
+	if newComment.Id != "" {
+		go eventStreamService.QueuePostCommentEvent(context.Background(), eventTypes.PostCommentEvent{
+			CommenterUser: clientUsername,
+			PostId:        postId,
+			PostOwner:     newComment.PostOwner,
+			CommentId:     newComment.Id,
+			CommentData:   helpers.StructToMap(newComment),
+			Mentions:      mentions,
+			At:            at,
 		})
+	}
 
-	}()
-
-	return res.NewCommentData, nil
+	return newComment, nil
 }
 
 func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
@@ -242,46 +208,46 @@ func GetComment(ctx context.Context, clientUsername, commentId string) (any, err
 }
 
 func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId string) (any, error) {
-	latestCommentsCount, err := post.RemoveComment(ctx, clientUsername, postId, commentId)
+	done, err := post.RemoveComment(ctx, clientUsername, postId, commentId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishPostMetric(ctx, map[string]any{
-		"post_id":               postId,
-		"latest_comments_count": latestCommentsCount,
-	})
+	if done {
+		// run a bg worker that:
+		// removes this comment and all related data from cache
+		// mark comment and all related data (likes, comments, etc.) as deleted
+		// publish latest post metric
+		go eventStreamService.QueueRemovePostCommentEvent(context.Background(), eventTypes.RemovePostCommentEvent{
+			CommenterUser: clientUsername,
+			PostId:        postId,
+			CommentId:     commentId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }
 
-func ReactToComment(ctx context.Context, clientUsername, commentId, reaction string) (any, error) {
-	res, err := comment.ReactTo(ctx, clientUsername, commentId, reaction)
+func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (any, error) {
+	commentOwner, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		if res.ReactionNotif != nil {
-			rn := res.ReactionNotif
-			receiverUsername := rn["receiver_username"].(string)
+	done := commentOwner != ""
 
-			delete(rn, "receiver_username")
-
-			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  rn,
-			})
-
-		}
-
-		realtimeService.PublishCommentMetric(ctx, map[string]any{
-			"comment_id":             commentId,
-			"latest_reactions_count": res.LatestReactionsCount,
+	if done {
+		// look to post reaction bg worker for todos
+		go eventStreamService.QueueCommentReactionEvent(context.Background(), eventTypes.CommentReactionEvent{
+			ReactorUser:  clientUsername,
+			CommentId:    commentId,
+			CommentOwner: commentOwner,
+			ReactionData: map[string]any{"emoji": emoji, "at": at},
+			At:           at,
 		})
-	}()
+	}
 
-	return true, nil
+	return done, nil
 }
 
 func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
@@ -302,21 +268,24 @@ func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, comme
 	return reactors, nil
 }
 
-func UndoReactionToComment(ctx context.Context, clientUsername, commentId string) (any, error) {
-	latestReactionsCount, err := comment.UndoReaction(ctx, clientUsername, commentId)
+func RemoveReactionToComment(ctx context.Context, clientUsername, commentId string) (any, error) {
+	done, err := comment.RemoveReaction(ctx, clientUsername, commentId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishCommentMetric(ctx, map[string]any{
-		"comment_id":             commentId,
-		"latest_reactions_count": latestReactionsCount,
-	})
+	if done {
+		// look to post reaction removal worker for todos
+		go eventStreamService.QueueRemoveCommentReactionEvent(context.Background(), eventTypes.RemoveCommentReactionEvent{
+			ReactorUser: clientUsername,
+			CommentId:   commentId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }
 
-func CommentOnComment(ctx context.Context, clientUsername, commentId, commentText string, attachmentData []byte) (map[string]any, error) {
+func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText string, attachmentData []byte, at int64) (any, error) {
 
 	var (
 		attachmentUrl string
@@ -340,47 +309,30 @@ func CommentOnComment(ctx context.Context, clientUsername, commentId, commentTex
 
 	mentions := utilServices.ExtractMentions(commentText)
 
-	res, err := comment.CommentOn(ctx, clientUsername, commentId, commentText, attachmentUrl, mentions)
+	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentUrl, at)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		if len(res.MentionNotifs) > 0 {
-			for _, mn := range res.MentionNotifs {
-				mn := mn
-
-				receiverUsername := mn["receiver_username"].(string)
-
-				delete(mn, "receiver_username")
-
-				realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-					Event: "new notification",
-					Data:  mn,
-				})
-			}
-		}
-
-		if res.CommentNotif != nil {
-			cn := res.CommentNotif
-
-			receiverUsername := cn["receiver_username"].(string)
-
-			delete(cn, "receiver_username")
-
-			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  cn,
-			})
-		}
-
-		realtimeService.PublishCommentMetric(ctx, map[string]any{
-			"comment_id":            commentId,
-			"latest_comments_count": res.LatestCommentsCount,
+	// create comment, direct
+	// add comment id to parentComment comments
+	// create and add user mention_in_comment notifications (for mentioned users)
+	// and comment_on_comment notifications (for parentCommentOwner user),
+	// notifying both users in realtime
+	// publish comment metric update
+	if newComment.Id != "" {
+		go eventStreamService.QueueCommentCommentEvent(context.Background(), eventTypes.CommentCommentEvent{
+			CommenterUser:      clientUsername,
+			ParentCommentId:    parentCommentId,
+			ParentCommentOwner: newComment.ParentCommentOwner,
+			CommentId:          newComment.Id,
+			CommentData:        helpers.StructToMap(newComment),
+			Mentions:           mentions,
+			At:                 at,
 		})
-	}()
+	}
 
-	return res.NewCommentData, nil
+	return newComment, nil
 }
 
 func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
@@ -392,73 +344,88 @@ func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string,
 	return comments, nil
 }
 
-func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, childCommentId string) (any, error) {
-	latestCommentsCount, err := comment.RemoveChildComment(ctx, clientUsername, parentCommentId, childCommentId)
+func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (any, error) {
+	done, err := comment.RemoveComment(ctx, clientUsername, parentCommentId, commentId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishCommentMetric(ctx, map[string]any{
-		"comment_id":            parentCommentId,
-		"latest_comments_count": latestCommentsCount,
-	})
+	if done {
+		// run a bg worker that:
+		// removes this comment and all related data from cache
+		// mark comment and all related data (likes, comments, etc.) as deleted
+		// publish latest comment metric
+		go eventStreamService.QueueRemoveCommentCommentEvent(context.Background(), eventTypes.RemoveCommentCommentEvent{
+			CommenterUser:   clientUsername,
+			ParentCommentId: parentCommentId,
+			CommentId:       commentId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }
 
 func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
-	res, err := post.Repost(ctx, clientUsername, postId)
+	at := time.Now().UnixMilli()
+
+	repost, err := post.Repost(ctx, clientUsername, postId, at)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		if res.RepostNotif != nil {
-			rn := res.RepostNotif
-			receiverUsername := rn["receiver_username"].(string)
-
-			delete(rn, "receiver_username")
-
-			realtimeService.SendEventMsg(receiverUsername, appTypes.ServerEventMsg{
-				Event: "new notification",
-				Data:  rn,
-			})
-
-		}
-
-		realtimeService.PublishPostMetric(ctx, map[string]any{
-			"post_id":              postId,
-			"latest_reposts_count": res.LatestRepostsCount,
+	// cache (re)post list a new post created
+	// bg worker: add to (re)post to user posts
+	// notify post owner
+	// publish post metric
+	// fan out repost
+	if repost.Id != "" {
+		go eventStreamService.QueueRepostEvent(context.Background(), eventTypes.RepostEvent{
+			ReposterUser: clientUsername,
+			PostId:       postId,
+			PostOwner:    repost.OwnerUser,
+			RepostId:     repost.Id,
+			RepostData:   helpers.StructToMap(repost),
+			At:           at,
 		})
-	}()
+	}
 
-	return true, nil
+	return repost.Id != "", nil
 }
 
 func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
-	latestSavesCount, err := post.Save(ctx, clientUsername, postId)
+	done, err := post.Save(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishPostMetric(ctx, map[string]any{
-		"post_id":            postId,
-		"latest_saves_count": latestSavesCount,
-	})
+	if done {
+		// add saves (saver users) to post
+		// add postId to saved posts for saver user
+		// publish latest post metric
+		go eventStreamService.QueuePostSaveEvent(context.Background(), eventTypes.PostSaveEvent{
+			SaverUser: clientUsername,
+			PostId:    postId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }
 
-func UndoSavePost(ctx context.Context, clientUsername, postId string) (any, error) {
-	latestSavesCount, err := post.UndoSave(ctx, clientUsername, postId)
+func UnsavePost(ctx context.Context, clientUsername, postId string) (any, error) {
+	done, err := post.Unsave(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	go realtimeService.PublishPostMetric(ctx, map[string]any{
-		"post_id":            postId,
-		"latest_saves_count": latestSavesCount,
-	})
+	if done {
+		// add saves (saver users) to post
+		// add postId to saved posts for saver user
+		// publish latest post metric
+		go eventStreamService.QueuePostUnsaveEvent(context.Background(), eventTypes.PostUnsaveEvent{
+			SaverUser: clientUsername,
+			PostId:    postId,
+		})
+	}
 
-	return true, nil
+	return done, nil
 }

@@ -17,7 +17,7 @@ func Route(router fiber.Router) {
 	router.Post("/posts/:postId/react", PCC.ReactToPost)
 	router.Get("/posts/:postId/reactors", PCC.GetReactorsToPost)
 	router.Get("/posts/:postId/reactors/:reaction", PCC.GetReactorsWithReactionToPost)
-	router.Delete("/posts/:postId/undo_reaction", PCC.UndoReactionToPost)
+	router.Delete("/posts/:postId/undo_reaction", PCC.RemoveReactionToPost)
 
 	/* ====== POST'S COMMENT ====== */
 
@@ -38,7 +38,7 @@ func Route(router fiber.Router) {
 	router.Post("/comments/:commentId/react", PCC.ReactToComment)
 	router.Get("/comments/:commentId/reactors", PCC.GetReactorsToComment)
 	router.Get("/comments/:commentId/reactors/:reaction", PCC.GetReactorsWithReactionToComment)
-	router.Delete("/comments/:commentId/undo_reaction", PCC.UndoReactionToComment)
+	router.Delete("/comments/:commentId/undo_reaction", PCC.RemoveReactionToComment)
 
 	/* ====== COMMENT'S COMMENT ===== */
 
@@ -53,5 +53,5 @@ func Route(router fiber.Router) {
 	/* ====== POST SAVE ====== */
 
 	router.Post("/posts/:postId/save", PCC.SavePost)
-	router.Delete("/posts/:postId/undo_save", PCC.UndoSavePost)
+	router.Delete("/posts/:postId/undo_save", PCC.UnsavePost)
 }

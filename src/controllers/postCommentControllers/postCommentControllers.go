@@ -29,7 +29,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser.Username, body.MediaDataList, body.Type, body.Description)
+	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser.Username, body.MediaDataList, body.Type, body.Description, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -84,7 +84,7 @@ func ReactToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToPost(ctx, clientUser.Username, c.Params("postId"), body.Reaction)
+	respData, app_err := postCommentService.ReactToPost(ctx, clientUser.Username, c.Params("postId"), body.Reaction, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -125,13 +125,13 @@ func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func UndoReactionToPost(c *fiber.Ctx) error {
+func RemoveReactionToPost(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.UndoReactionToPost(ctx, clientUser.Username, c.Params("postId"))
+	respData, app_err := postCommentService.RemoveReactionToPost(ctx, clientUser.Username, c.Params("postId"))
 	if app_err != nil {
 		return app_err
 	}
@@ -158,7 +158,7 @@ func CommentOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CommentOnPost(ctx, clientUser.Username, c.Params("postId"), body.CommentText, body.AttachmentData)
+	respData, app_err := postCommentService.CommentOnPost(ctx, clientUser.Username, c.Params("postId"), body.CommentText, body.AttachmentData, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -227,7 +227,7 @@ func ReactToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToComment(ctx, clientUser.Username, c.Params("commentId"), body.Reaction)
+	respData, app_err := postCommentService.ReactToComment(ctx, clientUser.Username, c.Params("commentId"), body.Reaction, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -268,13 +268,13 @@ func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func UndoReactionToComment(c *fiber.Ctx) error {
+func RemoveReactionToComment(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.UndoReactionToComment(ctx, clientUser.Username, c.Params("commentId"))
+	respData, app_err := postCommentService.RemoveReactionToComment(ctx, clientUser.Username, c.Params("commentId"))
 	if app_err != nil {
 		return app_err
 	}
@@ -301,7 +301,7 @@ func CommentOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CommentOnComment(ctx, clientUser.Username, c.Params("commentId"), body.CommentText, body.AttachmentData)
+	respData, app_err := postCommentService.CommentOnComment(ctx, clientUser.Username, c.Params("commentId"), body.CommentText, body.AttachmentData, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -365,13 +365,13 @@ func SavePost(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func UndoSavePost(c *fiber.Ctx) error {
+func UnsavePost(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.UndoSavePost(ctx, clientUser.Username, c.Params("postId"))
+	respData, app_err := postCommentService.UnsavePost(ctx, clientUser.Username, c.Params("postId"))
 	if app_err != nil {
 		return app_err
 	}

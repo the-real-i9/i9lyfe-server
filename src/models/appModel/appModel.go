@@ -1,5 +1,7 @@
 package appModel
 
+/*
+
 import (
 	"context"
 	"i9lyfe/src/models/db"
@@ -9,7 +11,7 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-func TopUsers(ctx context.Context) ([]any, error) {
+ func TopUsers(ctx context.Context) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
@@ -22,7 +24,7 @@ func TopUsers(ctx context.Context) ([]any, error) {
 		nil,
 	)
 	if err != nil {
-		log.Println("appModel.go: TopUsers:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -50,7 +52,7 @@ func SearchUsers(ctx context.Context, term string) ([]any, error) {
 		},
 	)
 	if err != nil {
-		log.Println("appModel.go: SearchUsers:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -76,7 +78,7 @@ func TopHashtags(ctx context.Context) ([]any, error) {
 		nil,
 	)
 	if err != nil {
-		log.Println("appModel.go: TopHashtags:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -104,7 +106,7 @@ func SearchHashtags(ctx context.Context, term string) ([]any, error) {
 		},
 	)
 	if err != nil {
-		log.Println("appModel.go: SearchHashtags:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -124,25 +126,25 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 		query = `
 			MATCH (clientUser:User{ username: $client_username })
 			MATCH (ownerUser:User)-[:CREATES_POST]->(post:Post { type: $type } WHERE post.description CONTAINS $term)
-	
+
 			OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
 			OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
 			OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
-	
-			WITH post, 
-				toString(post.created_at) AS created_at, 
+
+			WITH post,
+				toString(post.created_at) AS created_at,
 				ownerUser { .username, .profile_pic_url } AS owner_user,
-				CASE crxn 
-					WHEN IS NULL THEN "" 
-					ELSE crxn.reaction 
-				END AS client_reaction, 
-				CASE csaves 
-					WHEN IS NULL THEN false 
-					ELSE true 
-				END AS client_saved, 
-				CASE creposts 
-					WHEN IS NULL THEN false 
-					ELSE true 
+				CASE crxn
+					WHEN IS NULL THEN ""
+					ELSE crxn.reaction
+				END AS client_reaction,
+				CASE csaves
+					WHEN IS NULL THEN false
+					ELSE true
+				END AS client_saved,
+				CASE creposts
+					WHEN IS NULL THEN false
+					ELSE true
 				END AS client_reposted
 			ORDER BY post.created_at DESC
 			LIMIT 500
@@ -151,7 +153,7 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 	} else {
 		query = `
 			MATCH (ownerUser:User)-[:CREATES_POST]->(post:Post { type: $type } WHERE post.description CONTAINS $term)
-	
+
 			WITH post, toString(post.created_at) AS created_at, ownerUser { .username, .profile_pic_url } AS owner_user
 			ORDER BY post.created_at DESC
 			LIMIT 500
@@ -169,7 +171,7 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 		},
 	)
 	if err != nil {
-		log.Println("appModel.go: SearchPost:", err)
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -181,3 +183,4 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 
 	return resPosts, nil
 }
+*/

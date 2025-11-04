@@ -2,7 +2,7 @@ package authMiddlewares
 
 import (
 	"encoding/json"
-	"log"
+	"i9lyfe/src/helpers"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,7 +17,7 @@ func SignupSession(c *fiber.Ctx) error {
 	var signupSessionData map[string]any
 
 	if err := json.Unmarshal([]byte(ssStr), &signupSessionData); err != nil {
-		log.Println("ssm.go: SignupSession: json.Unmarshal:", err)
+		helpers.LogError(err)
 		return fiber.ErrInternalServerError
 	}
 

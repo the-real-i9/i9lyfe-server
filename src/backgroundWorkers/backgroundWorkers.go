@@ -14,7 +14,8 @@ import (
 // Courtesy of Redis Streams
 func Start() error {
 	newPostsStreamBgWorker(appGlobals.RedisClient)
-	// postReactionsStreamBgWorker(appGlobals.RedisClient)
+	postReactionsStreamBgWorker(appGlobals.RedisClient)
+	postReactionRemovalStreamBgWorker(appGlobals.RedisClient)
 	// go postCommentBgTasks()
 
 	return nil
