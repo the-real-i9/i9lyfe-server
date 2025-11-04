@@ -26,11 +26,13 @@ func SendEventMsg(toUser string, msg appTypes.ServerEventMsg) {
 
 		if err := pipe.WriteJSON(msg); err != nil {
 			helpers.LogError(err)
+			return
 		}
 
-		rdb.RPop(ctx, fmt.Sprintf("user_event_msgs_queue:%s", toUser))
-
-		return
+		err := rdb.RPop(ctx, fmt.Sprintf("user_event_msgs_queue:%s", toUser)).Err()
+		if err != nil {
+			helpers.LogError(err)
+		}
 	}
 }
 

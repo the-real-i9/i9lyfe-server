@@ -21,10 +21,10 @@ func (b rtActionBody) Validate() error {
 		validation.Field(&b.Data,
 			validation.Required.When(
 				!slices.Contains([]string{
-					"start receiving post updates",
-					"stop receiving post updates",
-					"start receiving comment updates",
-					"stop receiving comment updates",
+					"subscribe to live content metrics",
+					"unsubscribe from live content metrics",
+					"subscribe to user presence change",
+					"unsubscribe from user presence change",
 				}, b.Action),
 			),
 		),
@@ -168,7 +168,7 @@ func (d deleteChatMsgAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
-		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone", "").Error("expected value: 'me' or 'everyone', or no value. but found "+d.DeleteFor)),
+		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone").Error("expected value: 'me' or 'everyone'. but found "+d.DeleteFor)),
 	)
 
 	return helpers.ValidationError(err, "realtimeController_validation.go", "deleteChatMsgAcd")

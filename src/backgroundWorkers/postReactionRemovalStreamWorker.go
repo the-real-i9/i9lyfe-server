@@ -14,7 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func postReactionRemovalStreamBgWorker(rdb *redis.Client) {
+func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
 	var (
 		streamName   = "post_reaction_removal"
 		groupName    = "post_reaction_removal_listeners"
@@ -54,7 +54,7 @@ func postReactionRemovalStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.RemovePostReactionEvent
+			var msgs []eventTypes.PostReactionRemovedEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
 			postReactionsRemoved := make(map[string][][2]string)

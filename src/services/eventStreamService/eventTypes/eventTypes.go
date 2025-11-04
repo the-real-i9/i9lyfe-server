@@ -9,6 +9,12 @@ type NewPostEvent struct {
 	At        int64
 }
 
+type PostDeletionEvent struct {
+	OwnerUser string
+	PostId    string
+	Mentions  []*string
+}
+
 type PostReactionEvent struct {
 	ReactorUser  string
 	PostOwner    string
@@ -17,7 +23,7 @@ type PostReactionEvent struct {
 	At           int64
 }
 
-type RemovePostReactionEvent struct {
+type PostReactionRemovedEvent struct {
 	ReactorUser string
 	PostId      string
 }
@@ -32,7 +38,7 @@ type PostCommentEvent struct {
 	At            int64
 }
 
-type RemovePostCommentEvent struct {
+type PostCommentRemovedEvent struct {
 	CommenterUser string
 	PostId        string
 	CommentId     string
@@ -46,7 +52,7 @@ type CommentReactionEvent struct {
 	At           int64
 }
 
-type RemoveCommentReactionEvent struct {
+type CommentReactionRemovedEvent struct {
 	ReactorUser string
 	CommentId   string
 }
@@ -61,7 +67,7 @@ type CommentCommentEvent struct {
 	At                 int64
 }
 
-type RemoveCommentCommentEvent struct {
+type CommentCommentRemovedEvent struct {
 	CommenterUser   string
 	ParentCommentId string
 	CommentId       string
@@ -89,6 +95,28 @@ type PostUnsaveEvent struct {
 type NewMessageEvent struct {
 	FromUser string
 	ToUser   string
-	MsgId    string
+	CHEId    string
 	MsgData  map[string]any
+}
+
+type NewMsgReactionEvent struct {
+	FromUser string
+	ToUser   string
+	CHEId    string
+	RxnData  map[string]any
+}
+
+type MsgAckEvent struct {
+	CHEId string
+	Ack   string
+	At    int64
+}
+
+type MsgDeletionEvent struct {
+	CHEId string
+	For   string
+}
+
+type MsgReactionRemovedEvent struct {
+	CHEId string
 }

@@ -141,22 +141,26 @@ func Get(ctx context.Context, clientUsername, postId string) (map[string]any, er
 	return foundPost, nil
 }
 
-func Delete(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+func Delete(ctx context.Context, clientUsername, postId string) ([]*string, error) {
+	mentionedUsers, err := db.QueryRowsField[string](
 		ctx,
 		/* sql */ `
-		UPDATE posts
-		SET owner_user = '[deleted_content_owner]'
-		WHERE id_ = $1 AND owner_user = $2
-		RETURNNG true AS done
+		WITH delete_post AS (
+			UPDATE posts
+			SET deleted = true, deleted_at = now()
+			WHERE id_ = $1 AND owner_user = $2
+			RETURNING true AS done
+		)
+		SELECT username FROM post_mentions_user
+		WHERE post_id = $1 AND (SELECT done FROM delete_post) = true
 		`, postId, clientUsername,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
+		return nil, fiber.ErrInternalServerError
 	}
 
-	return *done, nil
+	return mentionedUsers, nil
 }
 
 func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64) (string, error) {

@@ -49,7 +49,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 		newPost := newPost
 		newPost.OwnerUser = clientUsername
 
-		go eventStreamService.QueueNewPostEvent(context.Background(), eventTypes.NewPostEvent{
+		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
 			OwnerUser: clientUsername,
 			PostId:    newPost.Id,
 			PostData:  helpers.StructToMap(newPost),
@@ -73,14 +73,23 @@ func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
 }
 
 func DeletePost(ctx context.Context, clientUsername, postId string) (any, error) {
-	done, err := post.Delete(ctx, clientUsername, postId)
+	mentionedUsers, err := post.Delete(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
 
-	// run a bg worker that:
-	// removes this post and all related data from cache
-	// mark post and all related data (likes, comments, etc.) as deleted
+	done := mentionedUsers != nil
+
+	if done {
+		// run a bg worker that:
+		// removes this post and all related data (likes, comments, etc.) from cache
+		// mark post and all related data (likes, comments, etc.) as deleted
+		go eventStreamService.QueuePostDeletionEvent(eventTypes.PostDeletionEvent{
+			OwnerUser: clientUsername,
+			PostId:    postId,
+			Mentions:  mentionedUsers,
+		})
+	}
 
 	return done, nil
 }
@@ -94,7 +103,7 @@ func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at i
 	done := postOwner != ""
 
 	if done {
-		go eventStreamService.QueuePostReactionEvent(context.Background(), eventTypes.PostReactionEvent{
+		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
 			ReactorUser:  clientUsername,
 			PostOwner:    postOwner,
 			PostId:       postId,
@@ -131,7 +140,7 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 	}
 
 	if done {
-		go eventStreamService.QueueRemovePostReactionEvent(context.Background(), eventTypes.RemovePostReactionEvent{
+		go eventStreamService.QueuePostReactionRemovedEvent(eventTypes.PostReactionRemovedEvent{
 			ReactorUser: clientUsername,
 			PostId:      postId,
 		})
@@ -175,7 +184,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 	// notifying both users in realtime
 	// publish post metric update
 	if newComment.Id != "" {
-		go eventStreamService.QueuePostCommentEvent(context.Background(), eventTypes.PostCommentEvent{
+		go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
 			CommenterUser: clientUsername,
 			PostId:        postId,
 			PostOwner:     newComment.PostOwner,
@@ -218,7 +227,7 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 		// removes this comment and all related data from cache
 		// mark comment and all related data (likes, comments, etc.) as deleted
 		// publish latest post metric
-		go eventStreamService.QueueRemovePostCommentEvent(context.Background(), eventTypes.RemovePostCommentEvent{
+		go eventStreamService.QueuePostCommentRemovedEvent(eventTypes.PostCommentRemovedEvent{
 			CommenterUser: clientUsername,
 			PostId:        postId,
 			CommentId:     commentId,
@@ -238,7 +247,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string
 
 	if done {
 		// look to post reaction bg worker for todos
-		go eventStreamService.QueueCommentReactionEvent(context.Background(), eventTypes.CommentReactionEvent{
+		go eventStreamService.QueueCommentReactionEvent(eventTypes.CommentReactionEvent{
 			ReactorUser:  clientUsername,
 			CommentId:    commentId,
 			CommentOwner: commentOwner,
@@ -276,7 +285,7 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 
 	if done {
 		// look to post reaction removal worker for todos
-		go eventStreamService.QueueRemoveCommentReactionEvent(context.Background(), eventTypes.RemoveCommentReactionEvent{
+		go eventStreamService.QueueCommentReactionRemovedEvent(eventTypes.CommentReactionRemovedEvent{
 			ReactorUser: clientUsername,
 			CommentId:   commentId,
 		})
@@ -321,7 +330,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 	// notifying both users in realtime
 	// publish comment metric update
 	if newComment.Id != "" {
-		go eventStreamService.QueueCommentCommentEvent(context.Background(), eventTypes.CommentCommentEvent{
+		go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
 			CommenterUser:      clientUsername,
 			ParentCommentId:    parentCommentId,
 			ParentCommentOwner: newComment.ParentCommentOwner,
@@ -355,7 +364,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 		// removes this comment and all related data from cache
 		// mark comment and all related data (likes, comments, etc.) as deleted
 		// publish latest comment metric
-		go eventStreamService.QueueRemoveCommentCommentEvent(context.Background(), eventTypes.RemoveCommentCommentEvent{
+		go eventStreamService.QueueCommentCommentRemovedEvent(eventTypes.CommentCommentRemovedEvent{
 			CommenterUser:   clientUsername,
 			ParentCommentId: parentCommentId,
 			CommentId:       commentId,
@@ -379,7 +388,7 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 	// publish post metric
 	// fan out repost
 	if repost.Id != "" {
-		go eventStreamService.QueueRepostEvent(context.Background(), eventTypes.RepostEvent{
+		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
 			ReposterUser: clientUsername,
 			PostId:       postId,
 			PostOwner:    repost.OwnerUser,
@@ -402,7 +411,7 @@ func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
 		// add saves (saver users) to post
 		// add postId to saved posts for saver user
 		// publish latest post metric
-		go eventStreamService.QueuePostSaveEvent(context.Background(), eventTypes.PostSaveEvent{
+		go eventStreamService.QueuePostSaveEvent(eventTypes.PostSaveEvent{
 			SaverUser: clientUsername,
 			PostId:    postId,
 		})
@@ -421,7 +430,7 @@ func UnsavePost(ctx context.Context, clientUsername, postId string) (any, error)
 		// add saves (saver users) to post
 		// add postId to saved posts for saver user
 		// publish latest post metric
-		go eventStreamService.QueuePostUnsaveEvent(context.Background(), eventTypes.PostUnsaveEvent{
+		go eventStreamService.QueuePostUnsaveEvent(eventTypes.PostUnsaveEvent{
 			SaverUser: clientUsername,
 			PostId:    postId,
 		})

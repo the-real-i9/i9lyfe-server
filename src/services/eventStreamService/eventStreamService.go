@@ -11,7 +11,9 @@ import (
 
 var rdb = appGlobals.RedisClient
 
-func QueueNewPostEvent(ctx context.Context, npe eventTypes.NewPostEvent) {
+func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
+	ctx := context.Background()
+
 	npeMap := helpers.StructToMap(npe)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -23,7 +25,22 @@ func QueueNewPostEvent(ctx context.Context, npe eventTypes.NewPostEvent) {
 	}
 }
 
-func QueuePostReactionEvent(ctx context.Context, pre eventTypes.PostReactionEvent) {
+func QueuePostDeletionEvent(pde eventTypes.PostDeletionEvent) {
+	ctx := context.Background()
+
+	pdeMap := helpers.StructToMap(pde)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "post_deletions",
+		Values: pdeMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueuePostReactionEvent(pre eventTypes.PostReactionEvent) {
+	ctx := context.Background()
 	preMap := helpers.StructToMap(pre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -35,7 +52,8 @@ func QueuePostReactionEvent(ctx context.Context, pre eventTypes.PostReactionEven
 	}
 }
 
-func QueueRemovePostReactionEvent(ctx context.Context, rpre eventTypes.RemovePostReactionEvent) {
+func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
+	ctx := context.Background()
 	rpreMap := helpers.StructToMap(rpre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -47,7 +65,8 @@ func QueueRemovePostReactionEvent(ctx context.Context, rpre eventTypes.RemovePos
 	}
 }
 
-func QueuePostCommentEvent(ctx context.Context, pce eventTypes.PostCommentEvent) {
+func QueuePostCommentEvent(pce eventTypes.PostCommentEvent) {
+	ctx := context.Background()
 	pceMap := helpers.StructToMap(pce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -59,7 +78,8 @@ func QueuePostCommentEvent(ctx context.Context, pce eventTypes.PostCommentEvent)
 	}
 }
 
-func QueueRemovePostCommentEvent(ctx context.Context, rpce eventTypes.RemovePostCommentEvent) {
+func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
+	ctx := context.Background()
 	rpceMap := helpers.StructToMap(rpce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -71,7 +91,8 @@ func QueueRemovePostCommentEvent(ctx context.Context, rpce eventTypes.RemovePost
 	}
 }
 
-func QueueCommentReactionEvent(ctx context.Context, cre eventTypes.CommentReactionEvent) {
+func QueueCommentReactionEvent(cre eventTypes.CommentReactionEvent) {
+	ctx := context.Background()
 	creMap := helpers.StructToMap(cre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -83,7 +104,8 @@ func QueueCommentReactionEvent(ctx context.Context, cre eventTypes.CommentReacti
 	}
 }
 
-func QueueRemoveCommentReactionEvent(ctx context.Context, rcre eventTypes.RemoveCommentReactionEvent) {
+func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEvent) {
+	ctx := context.Background()
 	rcreMap := helpers.StructToMap(rcre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -95,7 +117,8 @@ func QueueRemoveCommentReactionEvent(ctx context.Context, rcre eventTypes.Remove
 	}
 }
 
-func QueueCommentCommentEvent(ctx context.Context, cce eventTypes.CommentCommentEvent) {
+func QueueCommentCommentEvent(cce eventTypes.CommentCommentEvent) {
+	ctx := context.Background()
 	cceMap := helpers.StructToMap(cce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -107,7 +130,8 @@ func QueueCommentCommentEvent(ctx context.Context, cce eventTypes.CommentComment
 	}
 }
 
-func QueueRemoveCommentCommentEvent(ctx context.Context, rcce eventTypes.RemoveCommentCommentEvent) {
+func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent) {
+	ctx := context.Background()
 	rcceMap := helpers.StructToMap(rcce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -119,7 +143,8 @@ func QueueRemoveCommentCommentEvent(ctx context.Context, rcce eventTypes.RemoveC
 	}
 }
 
-func QueueRepostEvent(ctx context.Context, re eventTypes.RepostEvent) {
+func QueueRepostEvent(re eventTypes.RepostEvent) {
+	ctx := context.Background()
 	reMap := helpers.StructToMap(re)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -131,7 +156,8 @@ func QueueRepostEvent(ctx context.Context, re eventTypes.RepostEvent) {
 	}
 }
 
-func QueuePostSaveEvent(ctx context.Context, pse eventTypes.PostSaveEvent) {
+func QueuePostSaveEvent(pse eventTypes.PostSaveEvent) {
+	ctx := context.Background()
 	pseMap := helpers.StructToMap(pse)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -143,7 +169,8 @@ func QueuePostSaveEvent(ctx context.Context, pse eventTypes.PostSaveEvent) {
 	}
 }
 
-func QueuePostUnsaveEvent(ctx context.Context, pue eventTypes.PostUnsaveEvent) {
+func QueuePostUnsaveEvent(pue eventTypes.PostUnsaveEvent) {
+	ctx := context.Background()
 	pueMap := helpers.StructToMap(pue)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
@@ -155,12 +182,65 @@ func QueuePostUnsaveEvent(ctx context.Context, pue eventTypes.PostUnsaveEvent) {
 	}
 }
 
-func QueueNewMessageEvent(ctx context.Context, nme eventTypes.NewMessageEvent) {
+func QueueNewMessageEvent(nme eventTypes.NewMessageEvent) {
+	ctx := context.Background()
 	nmeMap := helpers.StructToMap(nme)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_messages",
 		Values: nmeMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueNewMsgReactionEvent(nmre eventTypes.NewMsgReactionEvent) {
+	ctx := context.Background()
+	nmreMap := helpers.StructToMap(nmre)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "msg_reactions",
+		Values: nmreMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueMsgAckEvent(mae eventTypes.MsgAckEvent) {
+	ctx := context.Background()
+	maeMap := helpers.StructToMap(mae)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "msg_acks",
+		Values: maeMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueMsgDeletionEvent(mde eventTypes.MsgDeletionEvent) {
+	ctx := context.Background()
+	mdeMap := helpers.StructToMap(mde)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "msg_deletions",
+		Values: mdeMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueMsgReactionRemovedEvent(mrre eventTypes.MsgReactionRemovedEvent) {
+	ctx := context.Background()
+	mrreMap := helpers.StructToMap(mrre)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "msg_deletions",
+		Values: mrreMap,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
