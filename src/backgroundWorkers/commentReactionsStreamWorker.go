@@ -15,10 +15,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func postReactionsStreamBgWorker(rdb *redis.Client) {
+func commentReactionsStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "post_reactions"
-		groupName    = "post_reaction_listeners"
+		streamName   = "comment_reactions"
+		groupName    = "comment_reaction_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -54,14 +54,12 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.PostReactionEvent
+			var msgs []eventTypes.CommentReactionEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
 			msgsLen := len(msgs)
 
-			postReactions := make(map[string][][2]any)
-
-			userReactedPosts := make(map[string][][2]string)
+			commentReactions := make(map[string][][2]any)
 
 			notifications := make(map[any]any, msgsLen)
 
@@ -71,29 +69,27 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				postReactions[msg.PostId] = append(postReactions[msg.PostId], [2]any{[]string{msg.ReactorUser, msg.Emoji}, stmsgIds[i]})
+				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], [2]any{[]string{msg.ReactorUser, msg.Emoji}, stmsgIds[i]})
 
-				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
-
-				if msg.PostOwner == msg.ReactorUser {
+				if msg.CommentOwner == msg.ReactorUser {
 					continue
 				}
 
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
-				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
-					"to_post_id":   msg.PostId,
-					"reactor_user": msg.ReactorUser,
-					"emoji":        msg.Emoji,
+				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_comment_%s", msg.ReactorUser, msg.CommentId)
+				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_comment", msg.At, map[string]any{
+					"to_comment_id": msg.CommentId,
+					"reactor_user":  msg.ReactorUser,
+					"emoji":         msg.Emoji,
 				})
 
 				notifications[notifUniqueId] = helpers.ToJson(notif)
 
-				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
+				userNotifications[msg.CommentOwner] = append(userNotifications[msg.CommentOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notif["is_read"] = false
 
-					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
+					realtimeService.SendEventMsg(msg.CommentOwner, appTypes.ServerEventMsg{
 						Event: "new notification",
 						Data:  helpers.ToJson(notif),
 					})
@@ -109,9 +105,9 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			for postId, userWithEmoji_stmsgId_Pairs := range postReactions {
+			for commentId, userWithEmoji_stmsgId_Pairs := range commentReactions {
 				wg.Go(func() {
-					postId, userWithEmoji_stmsgId_Pairs := postId, userWithEmoji_stmsgId_Pairs
+					commentId, userWithEmoji_stmsgId_Pairs := commentId, userWithEmoji_stmsgId_Pairs
 
 					userWithEmojiPairs := [][]string{}
 
@@ -119,7 +115,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
 					}
 
-					if err := cacheService.StorePostReactions(ctx, postId, slices.Concat(userWithEmojiPairs...)); err != nil {
+					if err := cacheService.StorePostReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
 						for _, d := range userWithEmoji_stmsgId_Pairs {
 							failedStreamMsgIds[d[1].(string)] = true
 						}
@@ -130,30 +126,18 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 			wg.Wait()
 
 			go func() {
-				for postId := range postReactions {
-					totalRxnsCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
+				for commentId := range commentReactions {
+					totalRxnsCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId)).Result()
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
-						"post_id":                postId,
+					realtimeService.PublishCommentMetric(ctx, map[string]any{
+						"comment_id":             commentId,
 						"latest_reactions_count": totalRxnsCount,
 					})
 				}
 			}()
-
-			for user, postId_stmsgId_Pairs := range userReactedPosts {
-				wg.Go(func() {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-
-					if err := cacheService.StoreUserReactedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
-				})
-			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
 				wg.Go(func() {

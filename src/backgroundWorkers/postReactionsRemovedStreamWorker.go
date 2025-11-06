@@ -14,10 +14,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
+func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "post_reaction_removal"
-		groupName    = "post_reaction_removal_listeners"
+		streamName   = "post_reactions_removed"
+		groupName    = "post_reaction_removed_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -30,7 +30,6 @@ func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
 	}
 
 	go func() {
-		// cache new post and publish to subscribers
 		for {
 			streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
 				Group:    groupName,
@@ -59,31 +58,31 @@ func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			postReactionsRemoved := make(map[string][][2]string)
 
-			postIdsUndoed := []any{}
+			userReactionRemovedPosts := make(map[string][][2]string)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
 
-				postReactionsRemoved[msg.ReactorUser] = append(postReactionsRemoved[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
+				postReactionsRemoved[msg.PostId] = append(postReactionsRemoved[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
 
-				postIdsUndoed = append(postIdsUndoed, msg.PostId)
+				userReactionRemovedPosts[msg.ReactorUser] = append(userReactionRemovedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
 			}
 
 			// batch processing
 			wg := new(sync.WaitGroup)
 			failedStreamMsgIds := make(map[string]bool)
 
-			for user, postId_stmsgId_Pairs := range postReactionsRemoved {
-				postIds := []any{}
+			for postId, user_stmsgId_Pairs := range postReactionsRemoved {
+				users := []string{}
 				stmsgIds := []string{}
 
-				for _, postId_stmsgId_Pair := range postId_stmsgId_Pairs {
-					postIds = append(postIds, postId_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, postId_stmsgId_Pair[1])
+				for _, user_stmsgId_Pair := range user_stmsgId_Pairs {
+					users = append(users, user_stmsgId_Pair[0])
+					stmsgIds = append(stmsgIds, user_stmsgId_Pair[1])
 				}
 
 				wg.Go(func() {
-					if err := cacheService.RemoveReactionToPost(ctx, user, postIds); err != nil {
+					if err := cacheService.RemovePostReactions(ctx, postId, users); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}
@@ -91,9 +90,11 @@ func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for _, postId := range postIdsUndoed {
+			wg.Wait()
+
+			for postId := range postReactionsRemoved {
 				go func() {
-					latestCount, err := rdb.HLen(ctx, fmt.Sprintf("post:%s:reactions", postId)).Result()
+					latestCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
 					if err != nil {
 						return
 					}
@@ -103,6 +104,24 @@ func PostReactionRemovedStreamBgWorker(rdb *redis.Client) {
 						"latest_reactions_count": latestCount,
 					})
 				}()
+			}
+
+			for user, postId_stmsgId_Pairs := range userReactionRemovedPosts {
+				postIds := []any{}
+				stmsgIds := []string{}
+
+				for _, postId_stmsgId_Pair := range postId_stmsgId_Pairs {
+					postIds = append(postIds, postId_stmsgId_Pair[0])
+					stmsgIds = append(stmsgIds, postId_stmsgId_Pair[1])
+				}
+
+				wg.Go(func() {
+					if err := cacheService.RemoveUserReactedPosts(ctx, user, postIds); err != nil {
+						for _, id := range stmsgIds {
+							failedStreamMsgIds[id] = true
+						}
+					}
+				})
 			}
 
 			wg.Wait()

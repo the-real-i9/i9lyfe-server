@@ -3,7 +3,7 @@ package eventTypes
 type NewPostEvent struct {
 	OwnerUser string
 	PostId    string
-	PostData  map[string]any
+	PostData  string
 	Hashtags  []string
 	Mentions  []string
 	At        int64
@@ -16,11 +16,11 @@ type PostDeletionEvent struct {
 }
 
 type PostReactionEvent struct {
-	ReactorUser  string
-	PostOwner    string
-	PostId       string
-	ReactionData map[string]any
-	At           int64
+	ReactorUser string
+	PostOwner   string
+	PostId      string
+	Emoji       string
+	At          int64
 }
 
 type PostReactionRemovedEvent struct {
@@ -33,7 +33,7 @@ type PostCommentEvent struct {
 	PostId        string
 	PostOwner     string
 	CommentId     string
-	CommentData   map[string]any
+	CommentData   string
 	Mentions      []string
 	At            int64
 }
@@ -48,7 +48,7 @@ type CommentReactionEvent struct {
 	ReactorUser  string
 	CommentId    string
 	CommentOwner string
-	ReactionData map[string]any
+	Emoji        string
 	At           int64
 }
 
@@ -62,7 +62,7 @@ type CommentCommentEvent struct {
 	ParentCommentId    string
 	ParentCommentOwner string
 	CommentId          string
-	CommentData        map[string]any
+	CommentData        string
 	Mentions           []string
 	At                 int64
 }
@@ -78,7 +78,7 @@ type RepostEvent struct {
 	PostId       string
 	PostOwner    string
 	RepostId     string
-	RepostData   map[string]any
+	RepostData   string
 	At           int64
 }
 

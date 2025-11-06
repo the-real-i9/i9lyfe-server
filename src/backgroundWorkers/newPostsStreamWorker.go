@@ -33,7 +33,6 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 	}
 
 	go func() {
-		// cache new post and publish to subscribers
 		for {
 			streams, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
 				Group:    groupName,
@@ -62,30 +61,38 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			msgsLen := len(msgs)
 
-			newPosts := make(map[string][2]any, msgsLen)
+			newPosts := make(map[string]any, msgsLen)
 
 			userPosts := make(map[string][][2]string)
 
 			userMentionedPosts := make(map[string][][2]string)
 
-			notifications := make(map[string][2]any)
+			notifications := make(map[any]any)
 
 			userNotifications := make(map[string][][2]string)
 
-			newPostExtrasFuncs := make([][2]any, msgsLen)
+			newPostDBExtrasFuncs := make([][2]any, msgsLen)
 
 			fanOutPostFuncs := make([]func(), msgsLen)
 
-			sendEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := make([]func(), msgsLen)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newPosts[msg.PostId] = [2]any{msg.PostData, stmsgIds[i]}
+				newPosts[msg.PostId] = msg.PostData
 
 				userPosts[msg.OwnerUser] = append(userPosts[msg.OwnerUser], [2]string{msg.PostId, stmsgIds[i]})
 
+				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, [2]any{func() error {
+					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
+				}, stmsgIds[i]})
+
 				for _, mu := range msg.Mentions {
 					userMentionedPosts[mu] = append(userMentionedPosts[mu], [2]string{msg.PostId, stmsgIds[i]})
+
+					if mu == msg.OwnerUser {
+						continue
+					}
 
 					notifUniqueId := fmt.Sprintf("user_%s_mentioned_in_post_%s", mu, msg.PostId)
 					notif := helpers.BuildNotification(notifUniqueId, "mention_in_post", msg.At, map[string]any{
@@ -93,23 +100,19 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 						"mentioning_user": msg.OwnerUser,
 					})
 
-					notifications[notifUniqueId] = [2]any{notif, stmsgIds[i]}
+					notifications[notifUniqueId] = helpers.ToJson(notif)
 
 					userNotifications[mu] = append(userNotifications[mu], [2]string{notifUniqueId, stmsgIds[i]})
 
-					sendEventMsgFuncs = append(sendEventMsgFuncs, func() {
-						notif["notif"] = helpers.Json2Map(notif["notif"].(string))
+					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+						notif["is_read"] = false
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  notif,
+							Data:  helpers.ToJson(notif),
 						})
 					})
 				}
-
-				newPostExtrasFuncs = append(newPostExtrasFuncs, [2]any{func() error {
-					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
-				}, stmsgIds[i]})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
 					contentRecommendationService.FanOutPost(msg.PostId)
@@ -121,34 +124,18 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			for postId, postData_stmsgId_Pair := range newPosts {
-				wg.Go(func() {
-					postId, postData, stmsgId := postId, postData_stmsgId_Pair[0], postData_stmsgId_Pair[1].(string)
-
-					if err := cacheService.StoreNewPosts(ctx, postId, postData); err != nil {
-						failedStreamMsgIds[stmsgId] = true
-					}
-				})
+			if err := cacheService.StoreNewPosts(ctx, newPosts); err != nil {
+				return
 			}
 
-			wg.Wait()
-
-			for notifId, notif_stmsgId_Pair := range notifications {
-				wg.Go(func() {
-					notifId, notifData, stmsgId := notifId, notif_stmsgId_Pair[0], notif_stmsgId_Pair[1].(string)
-
-					if err := cacheService.StoreNewNotifications(ctx, notifId, notifData); err != nil {
-						failedStreamMsgIds[stmsgId] = true
-					}
-				})
+			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
+				return
 			}
 
-			wg.Wait()
-
-			for k, postId_stmsgId_Pairs := range userPosts {
+			for user, postId_stmsgId_Pairs := range userPosts {
 				wg.Go(func() {
-					k, postId_stmsgId_Pairs := k, postId_stmsgId_Pairs
-					if err := cacheService.StoreUserPosts(ctx, k, postId_stmsgId_Pairs); err != nil {
+					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					if err := cacheService.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -156,11 +143,11 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for k, postId_stmsgId_Pairs := range userMentionedPosts {
+			for user, postId_stmsgId_Pairs := range userMentionedPosts {
 				wg.Go(func() {
-					k, postId_stmsgId_Pairs := k, postId_stmsgId_Pairs
+					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserMentionedPosts(ctx, k, postId_stmsgId_Pairs); err != nil {
+					if err := cacheService.StoreUserMentionedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -168,11 +155,11 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for k, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_stmsgId_Pairs := range userNotifications {
 				wg.Go(func() {
-					k, notifId_stmsgId_Pairs := k, notifId_stmsgId_Pairs
+					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserNotifications(ctx, k, notifId_stmsgId_Pairs); err != nil {
+					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
 						for _, d := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -180,7 +167,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for _, fn_stmsgId_Pair := range newPostExtrasFuncs {
+			for _, fn_stmsgId_Pair := range newPostDBExtrasFuncs {
 				wg.Go(func() {
 					fn, stmsgId := fn_stmsgId_Pair[0].(func() error), fn_stmsgId_Pair[1].(string)
 
@@ -197,7 +184,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			go func() {
-				for _, fn := range sendEventMsgFuncs {
+				for _, fn := range sendNotifEventMsgFuncs {
 					fn()
 				}
 			}()

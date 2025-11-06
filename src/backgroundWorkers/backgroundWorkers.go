@@ -1,7 +1,7 @@
 package backgroundWorkers
 
 import (
-	"i9lyfe/src/appGlobals"
+	"github.com/redis/go-redis/v9"
 )
 
 // These workers allows for mad scalability. Thundering herds are a piece of cake.
@@ -12,11 +12,22 @@ import (
 // This is, in fact, a rare case.
 //
 // Courtesy of Redis Streams
-func Start() error {
-	newPostsStreamBgWorker(appGlobals.RedisClient)
-	postReactionsStreamBgWorker(appGlobals.RedisClient)
-	PostReactionRemovedStreamBgWorker(appGlobals.RedisClient)
-	// go postCommentBgTasks()
+func Start(rdc *redis.Client) error {
+	newPostsStreamBgWorker(rdc)
+
+	postReactionsStreamBgWorker(rdc)
+	postReactionRemovedStreamBgWorker(rdc)
+
+	postCommentsStreamBgWorker(rdc)
+
+	commentReactionsStreamBgWorker(rdc)
+	commentReactionRemovedStreamBgWorker(rdc)
+
+	commentCommentsStreamBgWorker(rdc)
+
+	repostsStreamBgWorker(rdc)
+
+	postSavesStreamBgWorker(rdc)
 
 	return nil
 }

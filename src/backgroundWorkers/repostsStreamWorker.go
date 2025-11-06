@@ -6,6 +6,7 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/cacheService"
+	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -15,10 +16,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func postReactionsStreamBgWorker(rdb *redis.Client) {
+func repostsStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "post_reactions"
-		groupName    = "post_reaction_listeners"
+		streamName   = "reposts"
+		groupName    = "repost_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -54,36 +55,42 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.PostReactionEvent
+			var msgs []eventTypes.RepostEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
 			msgsLen := len(msgs)
 
-			postReactions := make(map[string][][2]any)
+			reposts := make(map[string]any, msgsLen)
 
-			userReactedPosts := make(map[string][][2]string)
+			userPosts := make(map[string][][2]string)
 
-			notifications := make(map[any]any, msgsLen)
+			notifications := make(map[any]any)
 
-			userNotifications := make(map[string][][2]string, msgsLen)
+			userNotifications := make(map[string][][2]string)
+
+			fanOutPostFuncs := make([]func(), msgsLen)
 
 			sendNotifEventMsgFuncs := make([]func(), msgsLen)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				postReactions[msg.PostId] = append(postReactions[msg.PostId], [2]any{[]string{msg.ReactorUser, msg.Emoji}, stmsgIds[i]})
+				reposts[msg.RepostId] = msg.RepostData
 
-				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
+				fanOutPostFuncs = append(fanOutPostFuncs, func() {
+					contentRecommendationService.FanOutPost(msg.RepostId)
+				})
 
-				if msg.PostOwner == msg.ReactorUser {
+				if msg.ReposterUser == msg.PostOwner {
 					continue
 				}
 
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
-				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
-					"to_post_id":   msg.PostId,
-					"reactor_user": msg.ReactorUser,
-					"emoji":        msg.Emoji,
+				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]string{msg.RepostId, stmsgIds[i]})
+
+				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser, msg.PostId)
+				notif := helpers.BuildNotification(notifUniqueId, "repost", msg.At, map[string]any{
+					"reposted_post_id": msg.PostId,
+					"repost_id":        msg.RepostId,
+					"reposter_user":    msg.ReposterUser,
 				})
 
 				notifications[notifUniqueId] = helpers.ToJson(notif)
@@ -100,54 +107,23 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			// batch processing
 			wg := new(sync.WaitGroup)
 
 			failedStreamMsgIds := make(map[string]bool)
+
+			// batch processing
+			if err := cacheService.StoreNewPosts(ctx, reposts); err != nil {
+				return
+			}
 
 			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
 				return
 			}
 
-			for postId, userWithEmoji_stmsgId_Pairs := range postReactions {
-				wg.Go(func() {
-					postId, userWithEmoji_stmsgId_Pairs := postId, userWithEmoji_stmsgId_Pairs
-
-					userWithEmojiPairs := [][]string{}
-
-					for _, userWithEmoji_stmsgId_Pair := range userWithEmoji_stmsgId_Pairs {
-						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
-					}
-
-					if err := cacheService.StorePostReactions(ctx, postId, slices.Concat(userWithEmojiPairs...)); err != nil {
-						for _, d := range userWithEmoji_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
-						}
-					}
-				})
-			}
-
-			wg.Wait()
-
-			go func() {
-				for postId := range postReactions {
-					totalRxnsCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
-					if err != nil {
-						continue
-					}
-
-					realtimeService.PublishPostMetric(ctx, map[string]any{
-						"post_id":                postId,
-						"latest_reactions_count": totalRxnsCount,
-					})
-				}
-			}()
-
-			for user, postId_stmsgId_Pairs := range userReactedPosts {
+			for user, postId_stmsgId_Pairs := range userPosts {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-
-					if err := cacheService.StoreUserReactedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cacheService.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -159,14 +135,19 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					err = cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs)
-					if err != nil {
+					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
 						for _, d := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
 					}
 				})
 			}
+
+			go func() {
+				for _, fn := range fanOutPostFuncs {
+					fn()
+				}
+			}()
 
 			go func() {
 				for _, fn := range sendNotifEventMsgFuncs {

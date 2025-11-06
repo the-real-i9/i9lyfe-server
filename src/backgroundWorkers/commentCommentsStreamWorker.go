@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/postModel"
+	"i9lyfe/src/models/commentModel"
 	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
@@ -16,10 +16,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func postCommentsStreamBgWorker(rdb *redis.Client) {
+func commentCommentsStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "post_comments"
-		groupName    = "post_comment_listeners"
+		streamName   = "comment_comments"
+		groupName    = "comment_comment_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -55,16 +55,14 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.PostCommentEvent
+			var msgs []eventTypes.CommentCommentEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
 			msgsLen := len(msgs)
 
 			newComments := make(map[string]any, msgsLen)
 
-			postComments := make(map[string][][2]string)
-
-			userCommentedPosts := make(map[string][][2]string)
+			commentComments := make(map[string][][2]string)
 
 			newCommentDBExtrasFuncs := make([][2]any, msgsLen)
 
@@ -78,33 +76,31 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newComments[msg.CommentId] = msg.CommentData
 
-				postComments[msg.PostId] = append(postComments[msg.PostId], [2]string{msg.CommentId, stmsgIds[i]})
-
-				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]string{msg.PostId, stmsgIds[i]})
+				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]string{msg.CommentId, stmsgIds[i]})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, [2]any{func() error {
-					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
+					return commentModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
 				}, stmsgIds[i]})
 
-				if msg.PostOwner == msg.CommenterUser {
+				if msg.ParentCommentOwner == msg.CommenterUser {
 
-					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser, msg.CommentId, msg.PostId)
-					copNotif := helpers.BuildNotification(copNotifUniqueId, "comment_on_post", msg.At, map[string]any{
-						"on_post_id":     msg.PostId,
+					cocNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_comment_%s", msg.CommenterUser, msg.CommentId, msg.ParentCommentId)
+					cocNotif := helpers.BuildNotification(cocNotifUniqueId, "comment_on_comment", msg.At, map[string]any{
+						"on_comment_id":  msg.CommentId,
 						"commenter_user": msg.CommenterUser,
 						"comment_id":     msg.CommentId,
 					})
 
-					notifications[copNotifUniqueId] = helpers.ToJson(copNotif)
+					notifications[cocNotifUniqueId] = helpers.ToJson(cocNotif)
 
-					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
+					userNotifications[msg.ParentCommentOwner] = append(userNotifications[msg.ParentCommentOwner], [2]string{cocNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						copNotif["is_read"] = false
+						cocNotif["is_read"] = false
 
-						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
+						realtimeService.SendEventMsg(msg.ParentCommentOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  helpers.ToJson(copNotif),
+							Data:  helpers.ToJson(cocNotif),
 						})
 					})
 				}
@@ -148,11 +144,11 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			for postId, commentId_stmsgId_Pairs := range postComments {
+			for parentCommentId, commentId_stmsgId_Pairs := range commentComments {
 				wg.Go(func() {
-					postId, commentId_stmsgId_Pairs := postId, commentId_stmsgId_Pairs
+					parentCommentId, commentId_stmsgId_Pairs := parentCommentId, commentId_stmsgId_Pairs
 
-					if err := cacheService.StorePostComments(ctx, postId, commentId_stmsgId_Pairs); err != nil {
+					if err := cacheService.StoreCommentComments(ctx, parentCommentId, commentId_stmsgId_Pairs); err != nil {
 						for _, d := range commentId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -163,30 +159,18 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			wg.Wait()
 
 			go func() {
-				for postId := range postComments {
-					totalCommentsCount, err := rdb.ZCard(ctx, fmt.Sprintf("post:%s:comments", postId)).Result()
+				for parentCommentId := range commentComments {
+					totalCommentsCount, err := rdb.ZCard(ctx, fmt.Sprintf("comment:%s:comments", parentCommentId)).Result()
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
-						"post_id":               postId,
+					realtimeService.PublishCommentMetric(ctx, map[string]any{
+						"comment_id":            parentCommentId,
 						"latest_comments_count": totalCommentsCount,
 					})
 				}
 			}()
-
-			for user, postId_stmsgId_Pairs := range userCommentedPosts {
-				wg.Go(func() {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-
-					if err := cacheService.StoreUserCommentedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
-				})
-			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
 				wg.Go(func() {

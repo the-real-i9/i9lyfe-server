@@ -52,7 +52,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
 			OwnerUser: clientUsername,
 			PostId:    newPost.Id,
-			PostData:  helpers.StructToMap(newPost),
+			PostData:  helpers.ToJson(newPost),
 			Hashtags:  hashtags,
 			Mentions:  mentions,
 			At:        at,
@@ -104,11 +104,11 @@ func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at i
 
 	if done {
 		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
-			ReactorUser:  clientUsername,
-			PostOwner:    postOwner,
-			PostId:       postId,
-			ReactionData: map[string]any{"emoji": emoji, "at": at},
-			At:           at,
+			ReactorUser: clientUsername,
+			PostOwner:   postOwner,
+			PostId:      postId,
+			Emoji:       emoji,
+			At:          at,
 		})
 	}
 
@@ -177,19 +177,13 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 		return nil, err
 	}
 
-	// create comment, direct
-	// add comment id to post comments
-	// create and add user mention_in_comment notifications (for mentioned users)
-	// and comment_on_post notifications (for postOwner user),
-	// notifying both users in realtime
-	// publish post metric update
 	if newComment.Id != "" {
 		go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
 			CommenterUser: clientUsername,
 			PostId:        postId,
 			PostOwner:     newComment.PostOwner,
 			CommentId:     newComment.Id,
-			CommentData:   helpers.StructToMap(newComment),
+			CommentData:   helpers.ToJson(newComment),
 			Mentions:      mentions,
 			At:            at,
 		})
@@ -251,7 +245,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string
 			ReactorUser:  clientUsername,
 			CommentId:    commentId,
 			CommentOwner: commentOwner,
-			ReactionData: map[string]any{"emoji": emoji, "at": at},
+			Emoji:        emoji,
 			At:           at,
 		})
 	}
@@ -335,7 +329,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 			ParentCommentId:    parentCommentId,
 			ParentCommentOwner: newComment.ParentCommentOwner,
 			CommentId:          newComment.Id,
-			CommentData:        helpers.StructToMap(newComment),
+			CommentData:        helpers.ToJson(newComment),
 			Mentions:           mentions,
 			At:                 at,
 		})
@@ -393,7 +387,7 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 			PostId:       postId,
 			PostOwner:    repost.OwnerUser,
 			RepostId:     repost.Id,
-			RepostData:   helpers.StructToMap(repost),
+			RepostData:   helpers.ToJson(repost),
 			At:           at,
 		})
 	}

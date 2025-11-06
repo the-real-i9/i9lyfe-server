@@ -7,7 +7,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,6 +30,10 @@ func LogError(err error) {
 }
 
 func ToStruct(val any, dest any) {
+	if reflect.TypeOf(val).Kind() != reflect.Map {
+		panic("expected 'val' to be a struct")
+	}
+
 	destElem := reflect.TypeOf(dest).Elem()
 
 	if destElem.Kind() != reflect.Struct && !(destElem.Kind() == reflect.Slice && destElem.Elem().Kind() == reflect.Struct) {
@@ -52,30 +55,18 @@ func StructToMap(val any) (dest map[string]any) {
 		panic("expected 'val' to be a struct")
 	}
 
-	valNumField := reflect.TypeOf(val).NumField()
+	var mp map[string]any
 
-	var resMap = make(map[string]any, valNumField)
-
-	for i := range valNumField {
-		key := ""
-		jsonTag := reflect.TypeOf(val).Field(i).Tag.Get("json")
-
-		if jsonTag == "" {
-			key = strings.ToLower(reflect.TypeOf(val).Field(i).Name)
-		} else if jsonTag == "-" {
-			continue
-		} else {
-			key = jsonTag
-		}
-
-		fieldVal := reflect.ValueOf(val).Field(i).Interface()
-
-		resMap[key] = fieldVal
+	bt, err := json.Marshal(val)
+	if err != nil {
+		LogError(err)
 	}
 
-	dest = resMap
+	if err := json.Unmarshal(bt, &mp); err != nil {
+		LogError(err)
+	}
 
-	return
+	return mp
 }
 
 // Includes a business-specific functionality for a default offset time
@@ -158,16 +149,10 @@ func Json2Map(jsonStr string) (res map[string]any) {
 }
 
 func BuildNotification(notifId, notifType string, at int64, details map[string]any) map[string]any {
-	notif := ToJson(map[string]any{
+	return map[string]any{
 		"id":      notifId,
 		"type":    notifType,
 		"at":      at,
 		"details": details,
-	})
-
-	return map[string]any{
-		"id":      notifId,
-		"notif":   notif,
-		"is_read": false,
 	}
 }

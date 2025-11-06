@@ -14,12 +14,12 @@ import (
 var dbPool = appGlobals.DBPool
 
 type newPostT struct {
-	Id          string    `json:"id" db:"id_"`
-	Type        string    `json:"type" db:"type_"`
-	MediaUrls   []string  `json:"media_urls" db:"media_urls"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	OwnerUser   any       `json:"owner_user" db:"owner_user"`
+	Id          string   `json:"id" db:"id_"`
+	Type        string   `json:"type" db:"type_"`
+	MediaUrls   []string `json:"media_urls" db:"media_urls"`
+	Description string   `json:"description"`
+	CreatedAt   int64    `json:"created_at" db:"created_at"`
+	OwnerUser   any      `json:"owner_user" db:"owner_user"`
 }
 
 func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at int64) (post newPostT, err error) {
@@ -64,6 +64,7 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 			/* sql */ `
 				INSERT INTO post_mentions_user (post_id, username)
 				VALUES ($1, $2)
+				ON CONFLICT ON CONSTRAINT no_dup_post_ment DO NOTHING
 				`, newPostId, mu,
 		)
 		if err != nil {
@@ -78,6 +79,7 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 			/* sql */ `
 				INSERT INTO post_includes_hashtag (post_id, htname)
 				VALUES ($1, $2)
+				ON CONFLICT ON CONSTRAINT no_dup_htname DO NOTHING
 				`, newPostId, ht,
 		)
 		if err != nil {
@@ -323,6 +325,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 			/* sql */ `
 				INSERT INTO comment_mentions_user (comment_id, username)
 				VALUES ($1, $2)
+				ON CONFLICT ON CONSTRAINT no_dup_comment_ment DO NOTHING
 				`, newCommentId, mu,
 		)
 		if err != nil {
@@ -398,13 +401,13 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type repostT struct {
-	Id             string    `json:"id" db:"id_"`
-	Type           string    `json:"type" db:"type_"`
-	MediaUrls      []string  `json:"media_urls" db:"media_urls"`
-	Description    string    `json:"description"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	OwnerUser      string    `json:"owner_user" db:"owner_user"`
-	ReposterByUser string    `json:"reposted_by_user" db:"reposted_by_user"`
+	Id             string   `json:"id" db:"id_"`
+	Type           string   `json:"type" db:"type_"`
+	MediaUrls      []string `json:"media_urls" db:"media_urls"`
+	Description    string   `json:"description"`
+	CreatedAt      int64    `json:"created_at" db:"created_at"`
+	OwnerUser      string   `json:"owner_user" db:"owner_user"`
+	ReposterByUser string   `json:"reposted_by_user" db:"reposted_by_user"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {

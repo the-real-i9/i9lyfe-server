@@ -57,7 +57,7 @@ func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
 	rpreMap := helpers.StructToMap(rpre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: "post_reaction_removal",
+		Stream: "post_reactions_removed",
 		Values: rpreMap,
 	}).Err()
 	if err != nil {
@@ -83,7 +83,7 @@ func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
 	rpceMap := helpers.StructToMap(rpce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: "post_comment_removal",
+		Stream: "post_comments_removed",
 		Values: rpceMap,
 	}).Err()
 	if err != nil {
@@ -109,7 +109,7 @@ func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEven
 	rcreMap := helpers.StructToMap(rcre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: "comment_reaction_removal",
+		Stream: "comment_reactions_removed",
 		Values: rcreMap,
 	}).Err()
 	if err != nil {
@@ -135,7 +135,7 @@ func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent)
 	rcceMap := helpers.StructToMap(rcce)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: "comment_comment_removal",
+		Stream: "comment_comments_removed",
 		Values: rcceMap,
 	}).Err()
 	if err != nil {

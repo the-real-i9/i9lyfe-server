@@ -207,6 +207,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 			/* sql */ `
 				INSERT INTO comment_mentions_user (comment_id, username)
 				VALUES ($1, $2)
+				ON CONFLICT ON CONSTRAINT no_dup_comment_ment DO NOTHING
 				`, newCommentId, mu,
 		)
 		if err != nil {
