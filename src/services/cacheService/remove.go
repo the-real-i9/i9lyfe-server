@@ -6,8 +6,8 @@ import (
 	"i9lyfe/src/helpers"
 )
 
-func RemovePostReactions(ctx context.Context, postId string, users []string) error {
-	if err := rdb.HDel(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), users...).Err(); err != nil {
+func RemovePostReactions(ctx context.Context, postId string, reactorUsers []string) error {
+	if err := rdb.HDel(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), reactorUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -26,8 +26,8 @@ func RemovePostSaves(ctx context.Context, postId string, users []any) error {
 	return nil
 }
 
-func RemoveCommentReactions(ctx context.Context, commentId string, users []string) error {
-	if err := rdb.HDel(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), users...).Err(); err != nil {
+func RemoveCommentReactions(ctx context.Context, commentId string, reactorUsers []string) error {
+	if err := rdb.HDel(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), reactorUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -48,6 +48,42 @@ func RemoveUserReactedPosts(ctx context.Context, user string, postIds []any) err
 
 func RemoveUserSavedPosts(ctx context.Context, user string, postIds []any) error {
 	if err := rdb.ZRem(ctx, fmt.Sprintf("user:%s:saved_posts", user), postIds...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveChatHistoryEntries(ctx context.Context, CHEIds []string) error {
+	if err := rdb.HDel(ctx, "chat_history_entries", CHEIds...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, CHEIds []any) error {
+	if err := rdb.ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), CHEIds...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	if err := rdb.ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), CHEIds...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveMsgReactions(ctx context.Context, msgId string, reactorUsers []string) error {
+	if err := rdb.HDel(ctx, fmt.Sprintf("message:%s:reactions", msgId), reactorUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

@@ -239,7 +239,7 @@ func QueueMsgReactionRemovedEvent(mrre eventTypes.MsgReactionRemovedEvent) {
 	mrreMap := helpers.StructToMap(mrre)
 
 	err := rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: "msg_deletions",
+		Stream: "msg_reactions_removed",
 		Values: mrreMap,
 	}).Err()
 	if err != nil {

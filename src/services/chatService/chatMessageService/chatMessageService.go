@@ -63,7 +63,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 				FromUser: clientUsername,
 				ToUser:   partnerUsername,
 				CHEId:    newMessage.Id,
-				MsgData:  msgData,
+				MsgData:  helpers.ToJson(msgData),
 			})
 		}(msgDataMap)
 	}
@@ -147,13 +147,15 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 			delete(rxnData, "reactor")
 			rxnData["reactor_username"] = clientUsername
 
-			// store CHE data to cache, direct
 			// push CHE id to each user's chat history
+			// store Rxn data to ToMsg reactions
 			eventStreamService.QueueNewMsgReactionEvent(eventTypes.NewMsgReactionEvent{
 				FromUser: clientUsername,
 				ToUser:   partnerUsername,
 				CHEId:    rxnToMessage.Id,
-				RxnData:  rxnData,
+				RxnData:  helpers.ToJson(rxnData),
+				ToMsgId:  rxnToMessage.ToMsgId,
+				Emoji:    rxnToMessage.Emoji,
 			})
 		}(helpers.StructToMap(rxnToMessage))
 	}
@@ -179,7 +181,10 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 		})
 
 		go eventStreamService.QueueMsgReactionRemovedEvent(eventTypes.MsgReactionRemovedEvent{
-			CHEId: CHEId,
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			ToMsgId:  msgId,
+			CHEId:    CHEId,
 		})
 	}
 

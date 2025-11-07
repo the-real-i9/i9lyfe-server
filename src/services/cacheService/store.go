@@ -285,3 +285,59 @@ func StoreNewNotifications(ctx context.Context, newNotifs map[any]any) error {
 
 	return nil
 }
+
+func StoreChatHistoryEntries(ctx context.Context, newCHEs map[string]any) error {
+	if err := rdb.HSet(ctx, "chat_history_entries", newCHEs).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, CHEId_stmsgId_Pairs [][2]string) error {
+	members := []redis.Z{}
+	for _, pair := range CHEId_stmsgId_Pairs {
+		CHEId := pair[0]
+
+		members = append(members, redis.Z{
+			Score:  stmsgIdToScore(pair[1]),
+			Member: CHEId,
+		})
+	}
+
+	if err := rdb.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), members...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	if err := rdb.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), members...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreUnreadMessages(ctx context.Context, unreadMessages []string) error {
+	if err := rdb.HSet(ctx, "unread_messages", unreadMessages).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreMsgReactions(ctx context.Context, msgId string, userWithEmojiPairs []string) error {
+	if err := rdb.HSet(ctx, fmt.Sprintf("message:%s:reactions", msgId), userWithEmojiPairs).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}

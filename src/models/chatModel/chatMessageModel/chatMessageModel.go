@@ -86,7 +86,7 @@ type rxnToMessageT struct {
 	Emoji                string         `json:"emoji" db:"emoji"`
 	At                   int64          `json:"at" db:"at_"`
 	Reactor              map[string]any `json:"reactor" db:"reactor"`
-	ToMsgId              map[string]any `json:"to_msg_id" db:"to_msg_id"`
+	ToMsgId              string         `json:"-" db:"to_msg_id"`
 }
 
 func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (rxnToMessageT, error) {

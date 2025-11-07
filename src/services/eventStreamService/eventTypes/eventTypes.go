@@ -96,14 +96,16 @@ type NewMessageEvent struct {
 	FromUser string
 	ToUser   string
 	CHEId    string
-	MsgData  map[string]any
+	MsgData  string
 }
 
 type NewMsgReactionEvent struct {
 	FromUser string
 	ToUser   string
 	CHEId    string
-	RxnData  map[string]any
+	RxnData  string
+	ToMsgId  string
+	Emoji    string
 }
 
 type MsgAckEvent struct {
@@ -118,5 +120,8 @@ type MsgDeletionEvent struct {
 }
 
 type MsgReactionRemovedEvent struct {
-	CHEId string
+	FromUser string
+	ToUser   string
+	ToMsgId  string
+	CHEId    string
 }
