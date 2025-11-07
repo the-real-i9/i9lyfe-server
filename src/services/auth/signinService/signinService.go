@@ -11,25 +11,32 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Signin(ctx context.Context, emailOrUsername, inputPassword string) (any, string, error) {
+type SigninRespT struct {
+	Msg  string                `json:"msg"`
+	User userModel.ToAuthUserT `json:"user"`
+}
+
+func Signin(ctx context.Context, emailOrUsername, inputPassword string) (SigninRespT, string, error) {
+	var resp SigninRespT
+
 	theUser, err := userModel.AuthFind(ctx, emailOrUsername)
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
 	if theUser == nil {
-		return nil, "", fiber.NewError(fiber.StatusNotFound, "Incorrect email or password")
+		return resp, "", fiber.NewError(fiber.StatusNotFound, "Incorrect email or password")
 	}
 
 	hashedPassword := theUser.Password
 
 	yes, err := securityServices.PasswordMatchesHash(hashedPassword, inputPassword)
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
 	if !yes {
-		return nil, "", fiber.NewError(fiber.StatusNotFound, "Incorrect email or password")
+		return resp, "", fiber.NewError(fiber.StatusNotFound, "Incorrect email or password")
 	}
 
 	authJwt, err := securityServices.JwtSign(appTypes.ClientUser{
@@ -38,13 +45,11 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (any, st
 	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(10*24*time.Hour))
 
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
-	respData := map[string]any{
-		"msg":  "Signin success!",
-		"user": theUser,
-	}
+	resp.Msg = "Signin success!"
+	resp.User = *theUser
 
-	return respData, authJwt, nil
+	return resp, authJwt, nil
 }

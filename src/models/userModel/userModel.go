@@ -57,7 +57,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 	return newUser, nil
 }
 
-type toAuthUserT struct {
+type ToAuthUserT struct {
 	Email         string `json:"email"`
 	Username      string `json:"username"`
 	Name          string `json:"name" db:"name_"`
@@ -66,8 +66,8 @@ type toAuthUserT struct {
 	Password      string `json:"-" db:"password_"`
 }
 
-func AuthFind(ctx context.Context, uniqueIdent string) (*toAuthUserT, error) {
-	user, err := db.QueryRowType[toAuthUserT](
+func AuthFind(ctx context.Context, uniqueIdent string) (*ToAuthUserT, error) {
+	user, err := db.QueryRowType[ToAuthUserT](
 		ctx,
 		/* sql */ `
 		SELECT email, username, name_, profile_pic_url, presence, password_ 

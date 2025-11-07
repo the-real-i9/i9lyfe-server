@@ -188,7 +188,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	return *postOwnerUser, nil
 }
 
-/* func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
+func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
@@ -224,9 +224,9 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors")
 
 	return reactors, nil
-} */
+}
 
-/* func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
+func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
 	res, err := db.Query(
 		ctx,
 		`
@@ -263,7 +263,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors_wrxn")
 
 	return reactors, nil
-} */
+}
 
 func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := db.QueryRowField[bool](

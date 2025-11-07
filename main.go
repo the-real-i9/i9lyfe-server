@@ -20,6 +20,24 @@ func init() {
 	}
 }
 
+//	@title			i9lyfe Backend API
+//	@version		1.0
+//	@description	i9lyfe Social Media Backend API.
+
+//	@contact.name	i9ine
+//	@contact.email	oluwarinolasam@gmail.com
+
+//	@host		localhost:8000
+//	@BasePath	/api
+
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						Cookie
+
+//	@accepts	json
+//	@produces	json
+
+// @schemes	http https
 func main() {
 	defer initializers.CleanUp()
 

@@ -1,0 +1,87 @@
+basePath: /api
+definitions:
+  appErrors.HTTPError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  signinService.SigninRespT:
+    properties:
+      msg:
+        type: string
+      user:
+        $ref: '#/definitions/userModel.ToAuthUserT'
+    type: object
+  userModel.ToAuthUserT:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      presence:
+        type: string
+      profile_pic_url:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: oluwarinolasam@gmail.com
+    name: i9ine
+  description: i9lyfe Social Media Backend API.
+  title: i9lyfe Backend API
+  version: "1.0"
+paths:
+  /auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: Signin with email/username and password
+      parameters:
+      - description: Email or Username
+        in: body
+        name: EmailOrUsername
+        required: true
+        schema:
+          type: string
+      - description: User Password
+        in: body
+        name: Password
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signin Success!
+          schema:
+            $ref: '#/definitions/signinService.SigninRespT'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "404":
+          description: Incorrect credentials
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Signin user
+      tags:
+      - auth
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Cookie
+    type: apiKey
+swagger: "2.0"
