@@ -6,6 +6,8 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
+	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
 	"os"
@@ -87,13 +89,19 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 		return nil, "", err
 	}
 
-	newUser, err := user.New(ctx, email, username, hashedPassword, name, bio, time.UnixMilli(birthday).UTC())
+	newUser, err := user.New(ctx, email, username, hashedPassword, name, bio, birthday)
 	if err != nil {
 		return nil, "", err
 	}
 
+	go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
+		Username: newUser.Username,
+		UserData: helpers.ToJson(newUser),
+	})
+
 	authJwt, err := securityServices.JwtSign(appTypes.ClientUser{
 		Username:      newUser.Username,
+		Name:          newUser.Name,
 		ProfilePicUrl: newUser.ProfilePicUrl,
 	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(10*24*time.Hour)) // 10 days
 

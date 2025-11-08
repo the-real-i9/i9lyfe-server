@@ -61,7 +61,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			msgsLen := len(msgs)
 
-			newPosts := make(map[string]any, msgsLen)
+			newPosts := []string{}
 
 			userPosts := make(map[string][][2]string)
 
@@ -79,7 +79,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newPosts[msg.PostId] = msg.PostData
+				newPosts = append(newPosts, msg.PostId, msg.PostData)
 
 				userPosts[msg.OwnerUser] = append(userPosts[msg.OwnerUser], [2]string{msg.PostId, stmsgIds[i]})
 
@@ -136,8 +136,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 					if err := cacheService.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
+						for _, pair := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[pair[1]] = true
 						}
 					}
 				})
@@ -148,8 +148,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
 					if err := cacheService.StoreUserMentionedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
+						for _, pair := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[pair[1]] = true
 						}
 					}
 				})
@@ -160,8 +160,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
 					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
-						for _, d := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
+						for _, pair := range notifId_stmsgId_Pairs {
+							failedStreamMsgIds[pair[1]] = true
 						}
 					}
 				})

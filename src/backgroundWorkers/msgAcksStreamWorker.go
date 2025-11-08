@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -12,7 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func newMessagesStreamBgWorker(rdb *redis.Client) {
+func msgAcksStreamBgWorker(rdb *redis.Client) {
 	var (
 		streamName   = "new_messages"
 		groupName    = "new_message_listeners"
@@ -51,45 +52,51 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.NewMessageEvent
+			var msgs []eventTypes.MsgAckEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
-			newMessageEntries := []string{}
+			// set message delivery status
 
-			chatMessages := make(map[[2]string][][2]string)
+			ackMessages := [][4]any{}
 
-			unreadMessages := []string{}
+			deliveredMessages := []string{}
+			readMessages := []string{}
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
+				ackMessages = append(ackMessages, [4]any{msg.CHEId, msg.Ack, msg.At, stmsgIds[i]})
 
-				chatMessages[[2]string{msg.FromUser, msg.ToUser}] = append(chatMessages[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
+				if msg.Ack == "delivered" {
+					deliveredMessages = append(deliveredMessages, msg.CHEId, "delivered")
+				} else {
+					readMessages = append(readMessages, msg.CHEId)
+				}
 
-				unreadMessages = append(unreadMessages, msg.CHEId, "sent")
 			}
 
+			// batch processing
 			wg := new(sync.WaitGroup)
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			// batch processing
-			if err := cacheService.StoreChatHistoryEntries(ctx, newMessageEntries); err != nil {
+			if err := cacheService.StoreUnreadMessages(ctx, deliveredMessages); err != nil {
 				return
 			}
 
-			if err := cacheService.StoreUnreadMessages(ctx, unreadMessages); err != nil {
+			if err := cacheService.RemoveUnreadMessages(ctx, readMessages); err != nil {
 				return
 			}
 
-			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMessages {
+			for _, CHEId_ack_ackAt_stmsgId := range ackMessages {
+
 				wg.Go(func() {
-					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
+					CHEId, ack, ackAt, stmsgId := CHEId_ack_ackAt_stmsgId[0], CHEId_ack_ackAt_stmsgId[1], CHEId_ack_ackAt_stmsgId[2], CHEId_ack_ackAt_stmsgId[3]
 
-					if err := cacheService.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
-						for _, d := range CHEId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
+					if err := cacheService.UpdateMessage(ctx, CHEId.(string), map[string]any{
+						"delivery_status":         ack,
+						fmt.Sprintf("%s_at", ack): ackAt.(int64),
+					}); err != nil {
+						failedStreamMsgIds[stmsgId.(string)] = true
 					}
 				})
 			}

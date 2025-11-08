@@ -28,6 +28,19 @@ func Start(rdc *redis.Client) error {
 	repostsStreamBgWorker(rdc)
 
 	postSavesStreamBgWorker(rdc)
+	postUnsavesStreamBgWorker(rdc)
+
+	newMessagesStreamBgWorker(rdc)
+	msgAcksStreamBgWorker(rdc)
+
+	msgReactionsStreamBgWorker(rdc)
+	msgReactionsRemovedStreamBgWorker(rdc)
+
+	newUsersStreamBgWorker(rdc)
+	editUsersStreamBgWorker(rdc)
+
+	usersFollowedStreamBgWorker(rdc)
+	usersUnfollowedStreamBgWorker(rdc)
 
 	return nil
 }

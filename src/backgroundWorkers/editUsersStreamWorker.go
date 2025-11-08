@@ -12,10 +12,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func newMessagesStreamBgWorker(rdb *redis.Client) {
+func editUsersStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "new_messages"
-		groupName    = "new_message_listeners"
+		streamName   = "edit_users"
+		groupName    = "edit_user_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -51,45 +51,29 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.NewMessageEvent
+			var msgs []eventTypes.EditUserEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
-			newMessageEntries := []string{}
-
-			chatMessages := make(map[[2]string][][2]string)
-
-			unreadMessages := []string{}
+			editUsers := make(map[string][2]any, len(msgs))
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
-
-				chatMessages[[2]string{msg.FromUser, msg.ToUser}] = append(chatMessages[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
-
-				unreadMessages = append(unreadMessages, msg.CHEId, "sent")
+				editUsers[msg.Username] = [2]any{msg.UpdateKVMap, stmsgIds[i]}
 			}
+
+			// batch processing
 
 			wg := new(sync.WaitGroup)
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			// batch processing
-			if err := cacheService.StoreChatHistoryEntries(ctx, newMessageEntries); err != nil {
-				return
-			}
+			for user, updateKVMap_stmsgId_Pair := range editUsers {
 
-			if err := cacheService.StoreUnreadMessages(ctx, unreadMessages); err != nil {
-				return
-			}
-
-			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMessages {
 				wg.Go(func() {
-					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
+					user, updateKVMap_stmsgId_Pair := user, updateKVMap_stmsgId_Pair
 
-					if err := cacheService.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
-						for _, d := range CHEId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
+					if err := cacheService.UpdateUser(ctx, user, updateKVMap_stmsgId_Pair[0].(map[string]any)); err != nil {
+						failedStreamMsgIds[updateKVMap_stmsgId_Pair[1].(string)] = true
 					}
 				})
 			}

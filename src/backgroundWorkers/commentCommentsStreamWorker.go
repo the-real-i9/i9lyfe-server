@@ -60,7 +60,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 			msgsLen := len(msgs)
 
-			newComments := make(map[string]any, msgsLen)
+			newComments := []string{}
 
 			commentComments := make(map[string][][2]string)
 
@@ -74,7 +74,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newComments[msg.CommentId] = msg.CommentData
+				newComments = append(newComments, msg.CommentId, msg.CommentData)
 
 				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]string{msg.CommentId, stmsgIds[i]})
 

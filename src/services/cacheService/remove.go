@@ -82,8 +82,38 @@ func RemoveUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, 
 	return nil
 }
 
+func RemoveUserFollowers(ctx context.Context, followingUser string, followerUsers []any) error {
+	if err := rdb.ZRem(ctx, fmt.Sprintf("user:%s:followers", followingUser), followerUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveUserFollowings(ctx context.Context, followerUser string, followingUsers []any) error {
+	if err := rdb.ZRem(ctx, fmt.Sprintf("user:%s:following", followerUser), followingUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func RemoveMsgReactions(ctx context.Context, msgId string, reactorUsers []string) error {
 	if err := rdb.HDel(ctx, fmt.Sprintf("message:%s:reactions", msgId), reactorUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveUnreadMessages(ctx context.Context, readMessages []string) error {
+	if err := rdb.HDel(ctx, "unread_messages", readMessages...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

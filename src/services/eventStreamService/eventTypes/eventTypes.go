@@ -1,5 +1,26 @@
 package eventTypes
 
+type NewUserEvent struct {
+	Username string
+	UserData string
+}
+
+type EditUserEvent struct {
+	Username    string
+	UpdateKVMap map[string]any
+}
+
+type UserFollowEvent struct {
+	FollowerUser  string
+	FollowingUser string
+	At            int64
+}
+
+type UserUnfollowEvent struct {
+	FollowerUser  string
+	FollowingUser string
+}
+
 type NewPostEvent struct {
 	OwnerUser string
 	PostId    string

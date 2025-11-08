@@ -5,22 +5,15 @@ import (
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/userService"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetClientUser(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func GetSessionUser(c *fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetClientUser(ctx, clientUser.Username)
-	if app_err != nil {
-		return app_err
-	}
-
-	return c.JSON(respData)
+	return c.JSON(clientUser)
 }
 
 func Signout(c *fiber.Ctx) error {
@@ -93,7 +86,7 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUsername, targetUsername := clientUser.Username, c.Params("username")
 
-	respData, app_err := userService.FollowUser(ctx, clientUsername, targetUsername)
+	respData, app_err := userService.FollowUser(ctx, clientUsername, targetUsername, time.Now().UnixMilli())
 	if app_err != nil {
 		return app_err
 	}

@@ -2,7 +2,6 @@ package cacheService
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/helpers"
 )
 
@@ -15,11 +14,11 @@ func GetMPosts(postId ...string) []map[string]any {
 }
 
 func GetPost(ctx context.Context, postId string) (map[string]any, error) {
-	post, err := rdb.HGetAll(ctx, fmt.Sprintf("post:%s", postId)).Result()
+	post, err := rdb.HGet(ctx, "posts", postId).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return nil, err
 	}
 
-	return helpers.Json2Map(helpers.ToJson(post)), nil
+	return helpers.FromJson[map[string]any](post), nil
 }

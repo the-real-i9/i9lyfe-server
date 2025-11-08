@@ -6,6 +6,8 @@ import (
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/cloudStorageService"
+	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"strings"
 	"time"
@@ -14,28 +16,22 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetClientUser(ctx context.Context, clientUsername string) (any, error) {
-	clientUser, err := user.Client(ctx, clientUsername)
-	if err != nil {
-		return nil, err
-	}
-
-	return clientUser, nil
-}
-
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (any, error) {
 	updateKVMap := helpers.StructToMap(updateKVStruct)
 
-	if _, ok := updateKVMap["birthday"]; ok {
-		updateKVMap["birthday"] = time.UnixMilli(updateKVMap["birthday"].(int64)).UTC()
-	}
-
-	err := user.EditProfile(ctx, clientUsername, updateKVMap)
+	done, err := user.EditProfile(ctx, clientUsername, updateKVMap)
 	if err != nil {
 		return nil, err
 	}
 
-	return true, nil
+	if done {
+		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
+			Username:    clientUsername,
+			UpdateKVMap: updateKVMap,
+		})
+	}
+
+	return done, nil
 }
 
 func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictureData []byte) (any, error) {
@@ -53,44 +49,56 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 		return nil, err
 	}
 
-	err = user.ChangeProfilePicture(ctx, clientUsername, pictureUrl)
+	done, err := user.ChangeProfilePicture(ctx, clientUsername, pictureUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return true, nil
+	if done {
+		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
+			Username:    clientUsername,
+			UpdateKVMap: map[string]any{"profile_pic_url": pictureUrl},
+		})
+	}
+
+	return done, nil
 }
 
-func FollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
+func FollowUser(ctx context.Context, clientUsername, targetUsername string, at int64) (any, error) {
 	if clientUsername == targetUsername {
 		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	err := user.Follow(ctx, clientUsername, targetUsername, time.Now().UTC())
+	done, err := user.Follow(ctx, clientUsername, targetUsername, at)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: follow user event: cache following, send notification
-	go func() {
+	if done {
+		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
+			FollowerUser:  clientUsername,
+			FollowingUser: targetUsername,
+			At:            at,
+		})
+	}
 
-	}()
-
-	return true, nil
+	return done, nil
 }
 
 func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	err := user.Unfollow(ctx, clientUsername, targetUsername)
+	done, err := user.Unfollow(ctx, clientUsername, targetUsername)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: unfollow user event: remove following from cache
-	go func() {
+	if done {
+		go eventStreamService.QueueUserUnfollowEvent(eventTypes.UserUnfollowEvent{
+			FollowerUser:  clientUsername,
+			FollowingUser: targetUsername,
+		})
+	}
 
-	}()
-
-	return true, nil
+	return done, nil
 }
 
 func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int, offset int64) (any, error) {

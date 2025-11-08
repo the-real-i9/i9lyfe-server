@@ -54,9 +54,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			var msgs []eventTypes.NewMsgReactionEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
-			msgsLen := len(msgs)
-
-			newMsgReactionEntries := make(map[string]any, msgsLen)
+			newMsgReactionEntries := []string{}
 
 			chatMsgReactions := make(map[[2]string][][2]string)
 
@@ -64,7 +62,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				newMsgReactionEntries[msg.CHEId] = msg.RxnData
+				newMsgReactionEntries = append(newMsgReactionEntries, msg.CHEId, msg.RxnData)
 
 				chatMsgReactions[[2]string{msg.FromUser, msg.ToUser}] = append(chatMsgReactions[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
 

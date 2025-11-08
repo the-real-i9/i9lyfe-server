@@ -8,7 +8,7 @@ import (
 
 func Route(router fiber.Router) {
 
-	router.Get("/client_user", UC.GetClientUser)
+	router.Get("/session_user", UC.GetSessionUser)
 
 	router.Get("/me/signout", UC.Signout)
 

@@ -139,7 +139,7 @@ func ToJson(data any) string {
 	return string(d)
 }
 
-func Json2Map(jsonStr string) (res map[string]any) {
+func FromJson[T any](jsonStr string) (res T) {
 	err := json.Unmarshal([]byte(jsonStr), &res)
 	if err != nil {
 		LogError(err)

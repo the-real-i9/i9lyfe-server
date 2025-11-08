@@ -27,18 +27,20 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 }
 
 type newUserT struct {
-	Email         string `json:"email,omitempty"`
-	Username      string `json:"username,omitempty"`
-	Name          string `json:"name,omitempty"`
-	ProfilePicUrl string `json:"profile_pic_url,omitempty"`
-	Presence      string `json:"presence,omitempty"`
+	Email         string `json:"email"`
+	Username      string `json:"username"`
+	Name          string `json:"name" db:"name_"`
+	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
+	Bio           string `json:"bio"`
+	Presence      string `json:"presence"`
 }
 
-func New(ctx context.Context, email, username, password, name, bio string, birthday time.Time) (newUserT, error) {
-	err := db.Exec(ctx,
+func New(ctx context.Context, email, username, password, name, bio string, birthday int64) (newUserT, error) {
+	newUser, err := db.QueryRowType[newUserT](ctx,
 		/* sql */ `
 		INSERT INTO users (username, email, password_, name_, bio, birthday)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING email, username, name_, profile_pic_url, bio, presence
 		`, username, email, password, name, bio, birthday,
 	)
 	if err != nil {
@@ -46,15 +48,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 		return newUserT{}, fiber.ErrInternalServerError
 	}
 
-	newUser := newUserT{
-		Email:         email,
-		Username:      username,
-		Name:          name,
-		ProfilePicUrl: "{notset}",
-		Presence:      "online",
-	}
-
-	return newUser, nil
+	return *newUser, nil
 }
 
 type ToAuthUserT struct {
@@ -83,31 +77,6 @@ func AuthFind(ctx context.Context, uniqueIdent string) (*ToAuthUserT, error) {
 	return user, nil
 }
 
-type clientUserT struct {
-	Email         string `json:"email"`
-	Username      string `json:"username"`
-	Name          string `json:"name" db:"name_"`
-	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Presence      string `json:"presence"`
-}
-
-func Client(ctx context.Context, clientUsername string) (clientUserT, error) {
-	user, err := db.QueryRowType[clientUserT](
-		ctx,
-		/* sql */ `
-		SELECT email, username, name_, profile_pic_url, presence 
-		FROM users 
-		WHERE username = $1
-		`, clientUsername,
-	)
-	if err != nil {
-		helpers.LogError(err)
-		return clientUserT{}, fiber.ErrInternalServerError
-	}
-
-	return *user, nil
-}
-
 func ChangePassword(ctx context.Context, email, newPassword string) error {
 	err := db.Exec(
 		ctx,
@@ -125,7 +94,7 @@ func ChangePassword(ctx context.Context, email, newPassword string) error {
 	return nil
 }
 
-func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[string]any) error {
+func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[string]any) (bool, error) {
 	setChanges, params, place := "", []any{clientUsername}, 2
 
 	for col, val := range updateKVMap {
@@ -137,69 +106,73 @@ func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[str
 		place++
 	}
 
-	err := db.Exec(
+	done, err := db.QueryRowField[bool](
 		ctx,
 		fmt.Sprintf( /* sql */ `
 		UPDATE users
 		SET %s 
 		WHERE username = $1
+		RETURNING true AS done
 		`, setChanges), params...,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *done, nil
 }
 
-func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string) error {
-	err := db.Exec(
+func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		UPDATE users
 		SET profile_pic_url = $2
 		WHERE username = $1
+		RETURNING done AS true
 		`, clientUsername, pictureUrl,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *done, nil
 }
 
-func Follow(ctx context.Context, clientUsername, targetUsername string, at time.Time) error {
-	err := db.Exec(
+func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		INSERT INTO user_follows_user (follower_username, following_username, at_)
 		VALUES ($1, $2, $3)
+		RETURNING true AS done
 		`, clientUsername, targetUsername, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *done, nil
 }
 
-func Unfollow(ctx context.Context, clientUsername, targetUsername string) error {
-	err := db.Exec(
+func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool, error) {
+	done, err := db.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_follows_user
 		WHERE follower_username = $1 AND following_username = $2
+		RETURNING true AS done
 		`, clientUsername, targetUsername,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return false, fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *done, nil
 }
 
 func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, offset time.Time) ([]any, error) {

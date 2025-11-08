@@ -11,6 +11,62 @@ import (
 
 var rdb = appGlobals.RedisClient
 
+func QueueNewUserEvent(nue eventTypes.NewUserEvent) {
+	ctx := context.Background()
+
+	nueMap := helpers.StructToMap(nue)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "new_users",
+		Values: nueMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueEditUserEvent(eue eventTypes.EditUserEvent) {
+	ctx := context.Background()
+
+	eueMap := helpers.StructToMap(eue)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "edit_users",
+		Values: eueMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
+	ctx := context.Background()
+
+	ufeMap := helpers.StructToMap(ufe)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "users_followed",
+		Values: ufeMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
+func QueueUserUnfollowEvent(uue eventTypes.UserUnfollowEvent) {
+	ctx := context.Background()
+
+	uueMap := helpers.StructToMap(uue)
+
+	err := rdb.XAdd(ctx, &redis.XAddArgs{
+		Stream: "users_unfollowed",
+		Values: uueMap,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
 func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
 	ctx := context.Background()
 

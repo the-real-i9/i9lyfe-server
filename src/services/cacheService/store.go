@@ -21,7 +21,7 @@ func stmsgIdToScore(val string) (res float64) {
 	return
 }
 
-func StoreUserFollowers(ctx context.Context, user string, followerUser_stmsgId_Pair [][2]string) error {
+func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_stmsgId_Pair [][2]string) error {
 	members := []redis.Z{}
 	for _, pair := range followerUser_stmsgId_Pair {
 		user := pair[0]
@@ -32,7 +32,7 @@ func StoreUserFollowers(ctx context.Context, user string, followerUser_stmsgId_P
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:followers", user), members...).Err(); err != nil {
+	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:followers", followingUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -41,9 +41,9 @@ func StoreUserFollowers(ctx context.Context, user string, followerUser_stmsgId_P
 	return nil
 }
 
-func StoreUserFollowing(ctx context.Context, user string, followingUser_stmsgId_Pair [][2]string) error {
+func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_stmsgId_Pairs [][2]string) error {
 	members := []redis.Z{}
-	for _, pair := range followingUser_stmsgId_Pair {
+	for _, pair := range followingUser_stmsgId_Pairs {
 		user := pair[0]
 
 		members = append(members, redis.Z{
@@ -52,7 +52,7 @@ func StoreUserFollowing(ctx context.Context, user string, followingUser_stmsgId_
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:following", user), members...).Err(); err != nil {
+	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:following", followerUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -250,7 +250,17 @@ func StoreCommentComments(ctx context.Context, parentCommentId string, commentId
 	return nil
 }
 
-func StoreNewPosts(ctx context.Context, newPosts map[string]any) error {
+func StoreNewUsers(ctx context.Context, newUsers []string) error {
+	if err := rdb.HSet(ctx, "users", newUsers).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreNewPosts(ctx context.Context, newPosts []string) error {
 	if err := rdb.HSet(ctx, "posts", newPosts).Err(); err != nil {
 		helpers.LogError(err)
 
@@ -260,7 +270,7 @@ func StoreNewPosts(ctx context.Context, newPosts map[string]any) error {
 	return nil
 }
 
-func StoreNewComments(ctx context.Context, newComments map[string]any) error {
+func StoreNewComments(ctx context.Context, newComments []string) error {
 	if err := rdb.HSet(ctx, "comments", newComments).Err(); err != nil {
 		helpers.LogError(err)
 
@@ -286,7 +296,7 @@ func StoreNewNotifications(ctx context.Context, newNotifs map[any]any) error {
 	return nil
 }
 
-func StoreChatHistoryEntries(ctx context.Context, newCHEs map[string]any) error {
+func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
 	if err := rdb.HSet(ctx, "chat_history_entries", newCHEs).Err(); err != nil {
 		helpers.LogError(err)
 
