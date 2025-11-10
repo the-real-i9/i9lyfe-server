@@ -17,12 +17,19 @@ import (
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json
+//
 //	@Param			EmailOrUsername	body		string						true	"Email or Username"
 //	@Param			Password		body		string						true	"User Password"
+//
 //	@Success		200				{object}	signinService.SigninRespT	"Signin Success!"
+//	@Header			200				{array}		Set-Cookie					"User session response cookie containing auth JWT"
+//
 //	@Failure		400				{object}	appErrors.HTTPError
+//
 //	@Failure		404				{object}	appErrors.HTTPError	"Incorrect credentials"
+//
 //	@Failure		500				{object}	appErrors.HTTPError
+//
 //	@Router			/auth/signin [post]
 func Signin(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())

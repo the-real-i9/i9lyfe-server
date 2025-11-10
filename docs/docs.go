@@ -18,6 +18,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/forgot_password/request_password_reset": {
+            "post": {
+                "description": "Submit your email to request a password reset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Password Reset - Step 1",
+                "parameters": [
+                    {
+                        "description": "Provide your email address",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proceed to email confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/passwordResetService.passReset1RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session response cookie"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No user with this email exists",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/signin": {
             "post": {
                 "description": "Signin with email/username and password",
@@ -56,6 +108,12 @@ const docTemplate = `{
                         "description": "Signin Success!",
                         "schema": {
                             "$ref": "#/definitions/signinService.SigninRespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "User session response cookie containing auth JWT"
+                            }
                         }
                     },
                     "400": {
@@ -74,6 +132,77 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/confirm_email": {
+            "post": {
+                "description": "Provide the 6-digit token sent to email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Password Reset - Step 2",
+                "parameters": [
+                    {
+                        "description": "6-digit token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "description": "Password Reset session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email confirmed. You're about to reset your password",
+                        "schema": {
+                            "$ref": "#/definitions/passwordResetService.passReset2RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Incorrect or expired confirmation token",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
                         }
                     }
                 }
@@ -317,6 +446,30 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "passwordResetService.passReset1RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "passwordResetService.passReset2RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "passwordResetService.passReset3RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
                     "type": "string"
                 }
             }

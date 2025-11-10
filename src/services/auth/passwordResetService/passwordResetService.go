@@ -12,15 +12,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RequestPasswordReset(ctx context.Context, email string) (any, map[string]any, error) {
+type passReset1RespT struct {
+	Msg string `json:"msg"`
+}
+
+func RequestPasswordReset(ctx context.Context, email string) (passReset1RespT, map[string]any, error) {
+	var resp passReset1RespT
 
 	userExists, err := user.Exists(ctx, email)
 	if err != nil {
-		return nil, nil, err
+		return resp, nil, err
 	}
 
 	if !userExists {
-		return nil, nil, fiber.NewError(fiber.StatusNotFound, "No user with this email exists.")
+		return resp, nil, fiber.NewError(fiber.StatusNotFound, "No user with this email exists.")
 	}
 
 	pwdrToken, expires := securityServices.GenerateTokenCodeExp()
@@ -33,14 +38,18 @@ func RequestPasswordReset(ctx context.Context, email string) (any, map[string]an
 		"pwdrTokenExpires": expires,
 	}
 
-	respData := map[string]any{
-		"msg": fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", email),
-	}
+	resp.Msg = fmt.Sprintf("Enter the 6-digit number token sent to %s to reset your password", email)
 
-	return respData, sessionData, nil
+	return resp, sessionData, nil
 }
 
-func ConfirmEmail(ctx context.Context, sessionData map[string]any, inputResetToken string) (any, map[string]any, error) {
+type passReset2RespT struct {
+	Msg string `json:"msg"`
+}
+
+func ConfirmEmail(ctx context.Context, sessionData map[string]any, inputResetToken string) (passReset2RespT, map[string]any, error) {
+	var resp passReset2RespT
+
 	var sd struct {
 		Email            string
 		PwdrToken        string
@@ -50,40 +59,42 @@ func ConfirmEmail(ctx context.Context, sessionData map[string]any, inputResetTok
 	helpers.ToStruct(sessionData, &sd)
 
 	if sd.PwdrToken != inputResetToken {
-		return "", nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect password reset token! Check or Re-submit your email.")
+		return resp, nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect password reset token! Check or Re-submit your email.")
 	}
 
 	if sd.PwdrTokenExpires.Before(time.Now()) {
-		return "", nil, fiber.NewError(fiber.StatusBadRequest, "Password reset token expired! Re-submit your email.")
+		return resp, nil, fiber.NewError(fiber.StatusBadRequest, "Password reset token expired! Re-submit your email.")
 	}
 
 	newSessionData := map[string]any{"email": sd.Email}
 
-	respData := map[string]any{
-		"msg": fmt.Sprintf("%s, you're about to reset your password!", sd.Email),
-	}
+	resp.Msg = fmt.Sprintf("%s, you're about to reset your password!", sd.Email)
 
-	return respData, newSessionData, nil
+	return resp, newSessionData, nil
 }
 
-func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword string) (map[string]any, error) {
+type passReset3RespT struct {
+	Msg string `json:"msg"`
+}
+
+func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword string) (passReset3RespT, error) {
+	var resp passReset3RespT
+
 	email := sessionData["email"].(string)
 
 	hashedPassword, err := securityServices.HashPassword(newPassword)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 
 	m_err := user.ChangePassword(ctx, email, hashedPassword)
 	if m_err != nil {
-		return nil, m_err
+		return resp, m_err
 	}
 
 	go mailService.SendMail(email, "Password Reset Success", fmt.Sprintf("<p>%s, your password has been changed successfully!</p>", email))
 
-	respData := map[string]any{
-		"msg": "Your password has been changed successfully",
-	}
+	resp.Msg = "Your password has been changed successfully"
 
-	return respData, nil
+	return resp, nil
 }

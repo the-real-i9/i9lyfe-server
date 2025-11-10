@@ -17,11 +17,16 @@ import (
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json
+//
 //	@Param			email	body		string						true	"Provide your email address"
+//
 //	@Success		200		{object}	signupService.signup1RespT	"Proceed to email verification"
 //	@Header			200		{array}		Set-Cookie					"Signup session response cookie"
+//
 //	@Failure		400		{object}	appErrors.HTTPError			"An account with email already exists"
+//
 //	@Failure		500		{object}	appErrors.HTTPError
+//
 //	@Router			/auth/signup/request_new_account [post]
 func RequestNewAccount(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -72,7 +77,7 @@ func RequestNewAccount(c *fiber.Ctx) error {
 //	@Header			400		{array}		Set-Cookie					"Signup session response cookie"
 //
 //	@Failure		500		{object}	appErrors.HTTPError
-//	@Header			500		{array}		Set-Cookie					"Signup session response cookie"
+//	@Header			500		{array}		Set-Cookie	"Signup session response cookie"
 //
 //	@Router			/auth/signup/verify_email [post]
 func VerifyEmail(c *fiber.Ctx) error {
@@ -115,18 +120,24 @@ func VerifyEmail(c *fiber.Ctx) error {
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json
+//
 //	@Param			username	body		string						true	"Choose a username"
 //	@Param			password	body		string						true	"Choose a password"
 //	@Param			name		body		string						true	"User display name"
 //	@Param			birthday	body		int64						true	"User birthday in milliseconds since Unix Epoch"
 //	@Param			bio			body		string						false	"User bio (optional)"
+//
 //	@Param			Cookie		header		array						true	"Signup session request cookie"
+//
 //	@Success		200			{object}	signupService.signup3RespT	"Signup Success"
 //	@Header			200			{array}		Set-Cookie					"User session response cookie containing auth JWT"
+//
 //	@Failure		400			{object}	appErrors.HTTPError			"Incorrect or expired verification code"
 //	@Header			400			{array}		Set-Cookie					"Signup session response cookie"
+//
 //	@Failure		500			{object}	appErrors.HTTPError
-//	@Header			500			{array}		Set-Cookie					"Signup session response cookie"
+//	@Header			500			{array}		Set-Cookie	"Signup session response cookie"
+//
 //	@Router			/auth/signup/register_user [post]
 func RegisterUser(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
