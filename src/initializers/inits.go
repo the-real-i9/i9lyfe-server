@@ -66,6 +66,12 @@ func InitApp() error {
 		}
 	}
 
+	if os.Getenv("GO_ENV") == "test" {
+		if err := godotenv.Load(".test.env"); err != nil {
+			return err
+		}
+	}
+
 	if err := initDBPool(); err != nil {
 		return err
 	}

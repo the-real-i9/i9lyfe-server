@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
@@ -423,4 +424,8 @@ func TestUserAuthStory(t *testing.T) {
 
 		require.Equal(t, "A user with this email already exists.", rb)
 	}
+
+	timer := time.NewTimer(5 * time.Second)
+
+	<-timer.C
 }

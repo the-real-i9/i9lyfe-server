@@ -14,9 +14,36 @@ definitions:
       user:
         $ref: '#/definitions/userModel.ToAuthUserT'
     type: object
-  signupService.Signup1RespT:
+  signupService.signup1RespT:
     properties:
       msg:
+        type: string
+    type: object
+  signupService.signup2RespT:
+    properties:
+      msg:
+        type: string
+    type: object
+  signupService.signup3RespT:
+    properties:
+      msg:
+        type: string
+      user:
+        $ref: '#/definitions/userModel.NewUserT'
+    type: object
+  userModel.NewUserT:
+    properties:
+      bio:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      presence:
+        type: string
+      profile_pic_url:
+        type: string
+      username:
         type: string
     type: object
   userModel.ToAuthUserT:
@@ -81,6 +108,76 @@ paths:
       summary: Signin user
       tags:
       - auth
+  /auth/signup/register_user:
+    post:
+      consumes:
+      - application/json
+      description: Provide remaining user credentials
+      parameters:
+      - description: Choose a username
+        in: body
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: Choose a password
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      - description: User display name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: User birthday in milliseconds since Unix Epoch
+        in: body
+        name: birthday
+        required: true
+        schema:
+          type: integer
+      - description: User bio (optional)
+        in: body
+        name: bio
+        schema:
+          type: string
+      - description: Signup session request cookie
+        in: header
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signup Success
+          headers:
+            Set-Cookie:
+              description: User session response cookie containing auth JWT
+              type: array
+          schema:
+            $ref: '#/definitions/signupService.signup3RespT'
+        "400":
+          description: Incorrect or expired verification code
+          headers:
+            Set-Cookie:
+              description: Signup session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          headers:
+            Set-Cookie:
+              description: Signup session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Signup user - Step 3
+      tags:
+      - auth
   /auth/signup/request_new_account:
     post:
       consumes:
@@ -100,10 +197,10 @@ paths:
           description: Proceed to email verification
           headers:
             Set-Cookie:
-              description: A session cookie to continue the signup process
+              description: Signup session response cookie
               type: array
           schema:
-            $ref: '#/definitions/signupService.Signup1RespT'
+            $ref: '#/definitions/signupService.signup1RespT'
         "400":
           description: An account with email already exists
           schema:
@@ -113,6 +210,53 @@ paths:
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 1
+      tags:
+      - auth
+  /auth/signup/verify_email:
+    post:
+      consumes:
+      - application/json
+      description: Provide the 6-digit code sent to email
+      parameters:
+      - description: 6-digit code
+        in: body
+        name: code
+        required: true
+        schema:
+          type: string
+      - description: Signup session request cookie
+        in: header
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified
+          headers:
+            Set-Cookie:
+              description: Signup session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/signupService.signup2RespT'
+        "400":
+          description: Incorrect or expired verification code
+          headers:
+            Set-Cookie:
+              description: Signup session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          headers:
+            Set-Cookie:
+              description: Signup session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Signup user - Step 2
       tags:
       - auth
 schemes:

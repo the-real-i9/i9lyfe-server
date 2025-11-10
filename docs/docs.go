@@ -79,6 +79,112 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/signup/register_user": {
+            "post": {
+                "description": "Provide remaining user credentials",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Signup user - Step 3",
+                "parameters": [
+                    {
+                        "description": "Choose a username",
+                        "name": "username",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Choose a password",
+                        "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User display name",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User birthday in milliseconds since Unix Epoch",
+                        "name": "birthday",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "User bio (optional)",
+                        "name": "bio",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "description": "Signup session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Signup Success",
+                        "schema": {
+                            "$ref": "#/definitions/signupService.signup3RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "User session response cookie containing auth JWT"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Incorrect or expired verification code",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Signup session response cookie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Signup session response cookie"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/signup/request_new_account": {
             "post": {
                 "description": "Submit email to request a new account",
@@ -107,12 +213,12 @@ const docTemplate = `{
                     "200": {
                         "description": "Proceed to email verification",
                         "schema": {
-                            "$ref": "#/definitions/signupService.Signup1RespT"
+                            "$ref": "#/definitions/signupService.signup1RespT"
                         },
                         "headers": {
                             "Set-Cookie": {
                                 "type": "array",
-                                "description": "A session cookie to continue the signup process"
+                                "description": "Signup session response cookie"
                             }
                         }
                     },
@@ -126,6 +232,77 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/verify_email": {
+            "post": {
+                "description": "Provide the 6-digit code sent to email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Signup user - Step 2",
+                "parameters": [
+                    {
+                        "description": "6-digit code",
+                        "name": "code",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "description": "Signup session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email verified",
+                        "schema": {
+                            "$ref": "#/definitions/signupService.signup2RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Signup session response cookie"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Incorrect or expired verification code",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Signup session response cookie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Signup session response cookie"
+                            }
                         }
                     }
                 }
@@ -155,10 +332,52 @@ const docTemplate = `{
                 }
             }
         },
-        "signupService.Signup1RespT": {
+        "signupService.signup1RespT": {
             "type": "object",
             "properties": {
                 "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "signupService.signup2RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "signupService.signup3RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/userModel.NewUserT"
+                }
+            }
+        },
+        "userModel.NewUserT": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "presence": {
+                    "type": "string"
+                },
+                "profile_pic_url": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

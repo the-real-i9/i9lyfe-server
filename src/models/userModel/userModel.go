@@ -26,7 +26,7 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 	return *userExists, nil
 }
 
-type newUserT struct {
+type NewUserT struct {
 	Email         string `json:"email"`
 	Username      string `json:"username"`
 	Name          string `json:"name" db:"name_"`
@@ -35,8 +35,8 @@ type newUserT struct {
 	Presence      string `json:"presence"`
 }
 
-func New(ctx context.Context, email, username, password, name, bio string, birthday int64) (newUserT, error) {
-	newUser, err := db.QueryRowType[newUserT](ctx,
+func New(ctx context.Context, email, username, password, name, bio string, birthday int64) (NewUserT, error) {
+	newUser, err := db.QueryRowType[NewUserT](ctx,
 		/* sql */ `
 		INSERT INTO users (username, email, password_, name_, bio, birthday)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -45,7 +45,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newUserT{}, fiber.ErrInternalServerError
+		return NewUserT{}, fiber.ErrInternalServerError
 	}
 
 	return *newUser, nil

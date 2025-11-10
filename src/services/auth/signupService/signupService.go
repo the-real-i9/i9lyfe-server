@@ -16,12 +16,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Signup1RespT struct {
+type signup1RespT struct {
 	Msg string `json:"msg"`
 }
 
-func RequestNewAccount(ctx context.Context, email string) (Signup1RespT, map[string]any, error) {
-	var resp Signup1RespT
+func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[string]any, error) {
+	var resp signup1RespT
 
 	userExists, err := user.Exists(ctx, email)
 	if err != nil {
@@ -47,7 +47,13 @@ func RequestNewAccount(ctx context.Context, email string) (Signup1RespT, map[str
 	return resp, sessionData, nil
 }
 
-func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode string) (any, map[string]any, error) {
+type signup2RespT struct {
+	Msg string `json:"msg"`
+}
+
+func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode string) (signup2RespT, map[string]any, error) {
+	var resp signup2RespT
+
 	var sd struct {
 		Email        string
 		VCode        string
@@ -57,44 +63,49 @@ func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode 
 	helpers.ToStruct(sessionData, &sd)
 
 	if sd.VCode != inputVerfCode {
-		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect verification code! Check or Re-submit your email.")
+		return resp, nil, fiber.NewError(fiber.StatusBadRequest, "Incorrect verification code! Check or Re-submit your email.")
 	}
 
 	if sd.VCodeExpires.Before(time.Now()) {
-		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "Verification code expired! Re-submit your email.")
+		return resp, nil, fiber.NewError(fiber.StatusBadRequest, "Verification code expired! Re-submit your email.")
 	}
 
 	go mailService.SendMail(sd.Email, "Email Verification Success", fmt.Sprintf("Your email <strong>%s</strong> has been verified!", sd.Email))
 
 	newSessionData := map[string]any{"email": sd.Email}
 
-	respData := map[string]any{
-		"msg": fmt.Sprintf("Your email, %s, has been verified!", sd.Email),
-	}
+	resp.Msg = fmt.Sprintf("Your email, %s, has been verified!", sd.Email)
 
-	return respData, newSessionData, nil
+	return resp, newSessionData, nil
 }
 
-func RegisterUser(ctx context.Context, sessionData map[string]any, username, password, name, bio string, birthday int64) (any, string, error) {
+type signup3RespT struct {
+	Msg  string        `json:"msg"`
+	User user.NewUserT `json:"user"`
+}
+
+func RegisterUser(ctx context.Context, sessionData map[string]any, username, password, name, bio string, birthday int64) (signup3RespT, string, error) {
+	var resp signup3RespT
+
 	email := sessionData["email"].(string)
 
 	userExists, err := user.Exists(ctx, username)
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
 	if userExists {
-		return nil, "", fiber.NewError(fiber.StatusBadRequest, "Username not available")
+		return resp, "", fiber.NewError(fiber.StatusBadRequest, "Username not available")
 	}
 
 	hashedPassword, err := securityServices.HashPassword(password)
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
 	newUser, err := user.New(ctx, email, username, hashedPassword, name, bio, birthday)
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
 	go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
@@ -109,13 +120,11 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(10*24*time.Hour)) // 10 days
 
 	if err != nil {
-		return nil, "", err
+		return resp, "", err
 	}
 
-	respData := map[string]any{
-		"msg":  "Signup success!",
-		"user": newUser,
-	}
+	resp.Msg = "Signup success!"
+	resp.User = newUser
 
-	return respData, authJwt, nil
+	return resp, authJwt, nil
 }
