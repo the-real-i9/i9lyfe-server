@@ -11,13 +11,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type SigninRespT struct {
+type signinRespT struct {
 	Msg  string                `json:"msg"`
 	User userModel.ToAuthUserT `json:"user"`
 }
 
-func Signin(ctx context.Context, emailOrUsername, inputPassword string) (SigninRespT, string, error) {
-	var resp SigninRespT
+func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {
+	var resp signinRespT
 
 	theUser, err := userModel.AuthFind(ctx, emailOrUsername)
 	if err != nil {

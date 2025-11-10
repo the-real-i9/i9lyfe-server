@@ -21,7 +21,7 @@ import (
 //	@Param			EmailOrUsername	body		string						true	"Email or Username"
 //	@Param			Password		body		string						true	"User Password"
 //
-//	@Success		200				{object}	signinService.SigninRespT	"Signin Success!"
+//	@Success		200				{object}	signinService.signinRespT	"Signin Success!"
 //	@Header			200				{array}		Set-Cookie					"User session response cookie containing auth JWT"
 //
 //	@Failure		400				{object}	appErrors.HTTPError
