@@ -1,5 +1,11 @@
 package cacheService
 
-import "i9lyfe/src/appGlobals"
+import (
+	"i9lyfe/src/appGlobals"
 
-var rdb = appGlobals.RedisClient
+	"github.com/redis/go-redis/v9"
+)
+
+func rdb() *redis.Client {
+	return appGlobals.RedisClient
+}

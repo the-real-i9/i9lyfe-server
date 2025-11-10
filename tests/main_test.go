@@ -5,7 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/initializers"
+	"i9lyfe/src/routes/authRoute"
+	"i9lyfe/src/routes/privateRoutes"
+	"i9lyfe/src/routes/publicRoutes"
 	"io"
 	"log"
 	"os"
@@ -13,7 +18,10 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 )
 
 const HOST_URL string = "http://localhost:8000"
@@ -40,18 +48,31 @@ type UserT struct {
 	ServerEventMsg chan map[string]any
 }
 
+var app *fiber.App
+
 func TestMain(m *testing.M) {
-	dbDriver, err := neo4j.NewDriverWithContext(os.Getenv("NEO4J_URL"), neo4j.BasicAuth(os.Getenv("NEO4J_USER"), os.Getenv("NEO4J_PASSWORD"), ""))
-	if err != nil {
-		log.Fatalln(err)
+	if err := initializers.InitApp(); err != nil {
+		log.Fatal(err)
 	}
 
-	ctx := context.Background()
+	defer initializers.CleanUp()
 
-	defer dbDriver.Close(ctx)
+	_, err := appGlobals.DBPool.Exec(context.Background() /* sql */, `TRUNCATE users * CASCADE`)
+	if err != nil {
+		helpers.LogError(err)
+	}
 
-	// cleaup db
-	neo4j.ExecuteQuery(ctx, dbDriver, `MATCH (n) DETACH DELETE n`, nil, neo4j.EagerResultTransformer)
+	app = fiber.New()
+	app.Use(helmet.New())
+	app.Use(cors.New())
+
+	app.Use(encryptcookie.New(encryptcookie.Config{
+		Key: os.Getenv("COOKIE_SECRET"),
+	}))
+
+	app.Route("/api/auth", authRoute.Route)
+	app.Route("/api/app/private", privateRoutes.Routes)
+	app.Route("/api/app/public", publicRoutes.Routes)
 
 	c := m.Run()
 

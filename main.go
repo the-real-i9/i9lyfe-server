@@ -33,6 +33,7 @@ func init() {
 //	@securityDefinitions.apikey	ApiKeyAuth
 //	@in							header
 //	@name						Cookie
+//	@description				JWT API key in encrypted cookie to protect private endpoints
 
 //	@accepts	json
 //	@produces	json

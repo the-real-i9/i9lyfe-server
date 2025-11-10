@@ -14,6 +14,11 @@ definitions:
       user:
         $ref: '#/definitions/userModel.ToAuthUserT'
     type: object
+  signupService.Signup1RespT:
+    properties:
+      msg:
+        type: string
+    type: object
   userModel.ToAuthUserT:
     properties:
       email:
@@ -76,11 +81,46 @@ paths:
       summary: Signin user
       tags:
       - auth
+  /auth/signup/request_new_account:
+    post:
+      consumes:
+      - application/json
+      description: Submit email to request a new account
+      parameters:
+      - description: Provide your email address
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Proceed to email verification
+          headers:
+            Set-Cookie:
+              description: A session cookie to continue the signup process
+              type: array
+          schema:
+            $ref: '#/definitions/signupService.Signup1RespT'
+        "400":
+          description: An account with email already exists
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Signup user - Step 1
+      tags:
+      - auth
 schemes:
 - http
 - https
 securityDefinitions:
   ApiKeyAuth:
+    description: JWT API key in encrypted cookie to protect private endpoints
     in: header
     name: Cookie
     type: apiKey

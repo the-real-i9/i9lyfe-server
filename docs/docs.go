@@ -78,6 +78,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/auth/signup/request_new_account": {
+            "post": {
+                "description": "Submit email to request a new account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Signup user - Step 1",
+                "parameters": [
+                    {
+                        "description": "Provide your email address",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proceed to email verification",
+                        "schema": {
+                            "$ref": "#/definitions/signupService.Signup1RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "A session cookie to continue the signup process"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "An account with email already exists",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -100,6 +152,14 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/userModel.ToAuthUserT"
+                }
+            }
+        },
+        "signupService.Signup1RespT": {
+            "type": "object",
+            "properties": {
+                "msg": {
+                    "type": "string"
                 }
             }
         },
@@ -126,6 +186,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "ApiKeyAuth": {
+            "description": "JWT API key in encrypted cookie to protect private endpoints",
             "type": "apiKey",
             "name": "Cookie",
             "in": "header"

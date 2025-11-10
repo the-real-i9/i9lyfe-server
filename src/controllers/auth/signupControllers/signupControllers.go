@@ -10,6 +10,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Signup - Request New Account
+//
+//	@Summary		Signup user - Step 1
+//	@Description	Submit email to request a new account
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			email	body		string						true	"Provide your email address"
+//	@Success		200		{object}	signupService.Signup1RespT	"Proceed to email verification"
+//	@Header			200		{array}		Set-Cookie						"A session cookie to continue the signup process"
+//	@Failure		400		{object}	appErrors.HTTPError			"An account with email already exists"
+//	@Failure		500		{object}	appErrors.HTTPError
+//	@Router			/auth/signup/request_new_account [post]
 func RequestNewAccount(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

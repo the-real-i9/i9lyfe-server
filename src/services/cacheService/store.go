@@ -32,7 +32,7 @@ func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:followers", followingUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:followers", followingUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -52,7 +52,7 @@ func StoreUserFollowings(ctx context.Context, followerUser string, followingUser
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:following", followerUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:following", followerUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -72,7 +72,7 @@ func StoreUserPosts(ctx context.Context, user string, postId_stmsgId_Pairs [][2]
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:posts", user), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:posts", user), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -92,7 +92,7 @@ func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_s
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:mentioned_posts", mentionedUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:mentioned_posts", mentionedUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -112,7 +112,7 @@ func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_stmsg
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:reacted_posts", reactorUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:reacted_posts", reactorUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -132,7 +132,7 @@ func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_s
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:commented_posts", commenterUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:commented_posts", commenterUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -151,7 +151,7 @@ func StoreUserNotifications(ctx context.Context, user string, notifId_stmsgId_Pa
 			Member: notifId,
 		})
 	}
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -171,7 +171,7 @@ func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_stmsgId_P
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("user:%s:saved_posts", saverUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:saved_posts", saverUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -181,7 +181,7 @@ func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_stmsgId_P
 }
 
 func StorePostReactions(ctx context.Context, postId string, userWithEmojiPairs []string) error {
-	if err := rdb.HSet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), userWithEmojiPairs).Err(); err != nil {
+	if err := rdb().HSet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), userWithEmojiPairs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -191,7 +191,7 @@ func StorePostReactions(ctx context.Context, postId string, userWithEmojiPairs [
 }
 
 func StoreCommentReactions(ctx context.Context, commentId string, userWithEmojiPairs []string) error {
-	if err := rdb.HSet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), userWithEmojiPairs).Err(); err != nil {
+	if err := rdb().HSet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), userWithEmojiPairs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -211,7 +211,7 @@ func StorePostComments(ctx context.Context, postId string, commentId_stmsgId_Pai
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("post:%s:comments", postId), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("post:%s:comments", postId), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -221,7 +221,7 @@ func StorePostComments(ctx context.Context, postId string, commentId_stmsgId_Pai
 }
 
 func StorePostSaves(ctx context.Context, postId string, saverUsers []any) error {
-	if err := rdb.SAdd(ctx, fmt.Sprintf("saved_post:%s:saves", postId), saverUsers...).Err(); err != nil {
+	if err := rdb().SAdd(ctx, fmt.Sprintf("saved_post:%s:saves", postId), saverUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -241,7 +241,7 @@ func StoreCommentComments(ctx context.Context, parentCommentId string, commentId
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("comment:%s:comments", parentCommentId), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("comment:%s:comments", parentCommentId), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -251,7 +251,7 @@ func StoreCommentComments(ctx context.Context, parentCommentId string, commentId
 }
 
 func StoreNewUsers(ctx context.Context, newUsers []string) error {
-	if err := rdb.HSet(ctx, "users", newUsers).Err(); err != nil {
+	if err := rdb().HSet(ctx, "users", newUsers).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -261,7 +261,7 @@ func StoreNewUsers(ctx context.Context, newUsers []string) error {
 }
 
 func StoreNewPosts(ctx context.Context, newPosts []string) error {
-	if err := rdb.HSet(ctx, "posts", newPosts).Err(); err != nil {
+	if err := rdb().HSet(ctx, "posts", newPosts).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -271,7 +271,7 @@ func StoreNewPosts(ctx context.Context, newPosts []string) error {
 }
 
 func StoreNewComments(ctx context.Context, newComments []string) error {
-	if err := rdb.HSet(ctx, "comments", newComments).Err(); err != nil {
+	if err := rdb().HSet(ctx, "comments", newComments).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -281,13 +281,13 @@ func StoreNewComments(ctx context.Context, newComments []string) error {
 }
 
 func StoreNewNotifications(ctx context.Context, newNotifs map[any]any) error {
-	if err := rdb.HSet(ctx, "notifications", newNotifs).Err(); err != nil {
+	if err := rdb().HSet(ctx, "notifications", newNotifs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
 	}
 
-	if err := rdb.SAdd(ctx, "unread_notifications", slices.Collect(maps.Keys(newNotifs))...).Err(); err != nil {
+	if err := rdb().SAdd(ctx, "unread_notifications", slices.Collect(maps.Keys(newNotifs))...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -297,7 +297,7 @@ func StoreNewNotifications(ctx context.Context, newNotifs map[any]any) error {
 }
 
 func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
-	if err := rdb.HSet(ctx, "chat_history_entries", newCHEs).Err(); err != nil {
+	if err := rdb().HSet(ctx, "chat_history_entries", newCHEs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -317,13 +317,13 @@ func StoreUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, C
 		})
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
 	}
 
-	if err := rdb.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -333,7 +333,7 @@ func StoreUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, C
 }
 
 func StoreUnreadMessages(ctx context.Context, unreadMessages []string) error {
-	if err := rdb.HSet(ctx, "unread_messages", unreadMessages).Err(); err != nil {
+	if err := rdb().HSet(ctx, "unread_messages", unreadMessages).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -343,7 +343,7 @@ func StoreUnreadMessages(ctx context.Context, unreadMessages []string) error {
 }
 
 func StoreMsgReactions(ctx context.Context, msgId string, userWithEmojiPairs []string) error {
-	if err := rdb.HSet(ctx, fmt.Sprintf("message:%s:reactions", msgId), userWithEmojiPairs).Err(); err != nil {
+	if err := rdb().HSet(ctx, fmt.Sprintf("message:%s:reactions", msgId), userWithEmojiPairs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

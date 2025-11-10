@@ -16,15 +16,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RequestNewAccount(ctx context.Context, email string) (any, map[string]any, error) {
+type Signup1RespT struct {
+	Msg string `json:"msg"`
+}
+
+func RequestNewAccount(ctx context.Context, email string) (Signup1RespT, map[string]any, error) {
+	var resp Signup1RespT
 
 	userExists, err := user.Exists(ctx, email)
 	if err != nil {
-		return nil, nil, err
+		return resp, nil, err
 	}
 
 	if userExists {
-		return nil, nil, fiber.NewError(fiber.StatusBadRequest, "A user with this email already exists.")
+		return resp, nil, fiber.NewError(fiber.StatusBadRequest, "A user with this email already exists.")
 	}
 
 	verfCode, expires := securityServices.GenerateTokenCodeExp()
@@ -37,11 +42,9 @@ func RequestNewAccount(ctx context.Context, email string) (any, map[string]any, 
 		"vCodeExpires": expires,
 	}
 
-	respData := map[string]any{
-		"msg": fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", email),
-	}
+	resp.Msg = fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", email)
 
-	return respData, sessionData, nil
+	return resp, sessionData, nil
 }
 
 func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode string) (any, map[string]any, error) {

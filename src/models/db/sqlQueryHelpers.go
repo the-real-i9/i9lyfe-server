@@ -7,15 +7,18 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var dbPool = appGlobals.DBPool
+func dbPool() *pgxpool.Pool {
+	return appGlobals.DBPool
+}
 
 func Exec(ctx context.Context, sql string, params ...any) error {
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	if _, err := dbPool.Exec(dbOpCtx, sql, params...); err != nil {
+	if _, err := dbPool().Exec(dbOpCtx, sql, params...); err != nil {
 		return err
 	}
 
@@ -26,7 +29,7 @@ func QueryRowField[T any](ctx context.Context, sql string, params ...any) (*T, e
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	rows, _ := dbPool.Query(dbOpCtx, sql, params...)
+	rows, _ := dbPool().Query(dbOpCtx, sql, params...)
 
 	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[T])
 	if err != nil {
@@ -43,7 +46,7 @@ func QueryRowsField[T any](ctx context.Context, sql string, params ...any) ([]*T
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	rows, _ := dbPool.Query(dbOpCtx, sql, params...)
+	rows, _ := dbPool().Query(dbOpCtx, sql, params...)
 
 	res, err := pgx.CollectRows(rows, pgx.RowToAddrOf[T])
 	if err != nil {
@@ -60,7 +63,7 @@ func QueryRowType[T any](ctx context.Context, sql string, params ...any) (*T, er
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	rows, _ := dbPool.Query(dbOpCtx, sql, params...)
+	rows, _ := dbPool().Query(dbOpCtx, sql, params...)
 
 	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByNameLax[T])
 	if err != nil {
@@ -77,7 +80,7 @@ func QueryRowsType[T any](ctx context.Context, sql string, params ...any) ([]*T,
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	rows, _ := dbPool.Query(dbOpCtx, sql, params...)
+	rows, _ := dbPool().Query(dbOpCtx, sql, params...)
 
 	res, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByNameLax[T])
 	if err != nil {
@@ -112,7 +115,7 @@ func BatchQuery[T any](ctx context.Context, sqls []string, params [][]any) ([]*T
 		})
 	}
 
-	s_err := dbPool.SendBatch(dbOpCtx, batch).Close()
+	s_err := dbPool().SendBatch(dbOpCtx, batch).Close()
 
 	return res, s_err
 }

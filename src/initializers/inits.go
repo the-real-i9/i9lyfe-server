@@ -3,6 +3,7 @@ package initializers
 import (
 	"context"
 	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/backgroundWorkers"
 	"i9lyfe/src/helpers"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 )
 
 func initGCSClient() error {
@@ -41,9 +43,17 @@ func initRedisClient() error {
 		Addr:     os.Getenv("REDIS_ADDR"),
 		Password: os.Getenv("REDIS_PASS"),
 		DB:       0,
+
+		// Explicitly disable maintenance notifications
+		// This prevents the client from sending CLIENT MAINT_NOTIFICATIONS ON
+		MaintNotificationsConfig: &maintnotifications.Config{
+			Mode: maintnotifications.ModeDisabled,
+		},
 	})
 
 	appGlobals.RedisClient = client
+
+	backgroundWorkers.Start(client)
 
 	return nil
 }
@@ -54,10 +64,6 @@ func InitApp() error {
 		if err := godotenv.Load(".env"); err != nil {
 			return err
 		}
-	}
-
-	if err := initNeo4jDriver(); err != nil {
-		return err
 	}
 
 	if err := initDBPool(); err != nil {

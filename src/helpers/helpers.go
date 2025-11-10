@@ -30,8 +30,10 @@ func LogError(err error) {
 }
 
 func ToStruct(val any, dest any) {
-	if reflect.TypeOf(val).Kind() != reflect.Map {
-		panic("expected 'val' to be a struct")
+	valType := reflect.TypeOf(val)
+
+	if valType.Kind() != reflect.Map && !(valType.Kind() == reflect.Slice && valType.Elem().Kind() == reflect.Map) {
+		panic("expected 'val' to be a map or slice of maps")
 	}
 
 	destElem := reflect.TypeOf(dest).Elem()

@@ -9,14 +9,16 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var rdb = appGlobals.RedisClient
+func rdb() *redis.Client {
+	return appGlobals.RedisClient
+}
 
 func QueueNewUserEvent(nue eventTypes.NewUserEvent) {
 	ctx := context.Background()
 
 	nueMap := helpers.StructToMap(nue)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_users",
 		Values: nueMap,
 	}).Err()
@@ -30,7 +32,7 @@ func QueueEditUserEvent(eue eventTypes.EditUserEvent) {
 
 	eueMap := helpers.StructToMap(eue)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "edit_users",
 		Values: eueMap,
 	}).Err()
@@ -44,7 +46,7 @@ func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
 
 	ufeMap := helpers.StructToMap(ufe)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_followed",
 		Values: ufeMap,
 	}).Err()
@@ -58,7 +60,7 @@ func QueueUserUnfollowEvent(uue eventTypes.UserUnfollowEvent) {
 
 	uueMap := helpers.StructToMap(uue)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_unfollowed",
 		Values: uueMap,
 	}).Err()
@@ -72,7 +74,7 @@ func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
 
 	npeMap := helpers.StructToMap(npe)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_posts",
 		Values: npeMap,
 	}).Err()
@@ -86,7 +88,7 @@ func QueuePostDeletionEvent(pde eventTypes.PostDeletionEvent) {
 
 	pdeMap := helpers.StructToMap(pde)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_deletions",
 		Values: pdeMap,
 	}).Err()
@@ -99,7 +101,7 @@ func QueuePostReactionEvent(pre eventTypes.PostReactionEvent) {
 	ctx := context.Background()
 	preMap := helpers.StructToMap(pre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions",
 		Values: preMap,
 	}).Err()
@@ -112,7 +114,7 @@ func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
 	ctx := context.Background()
 	rpreMap := helpers.StructToMap(rpre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions_removed",
 		Values: rpreMap,
 	}).Err()
@@ -125,7 +127,7 @@ func QueuePostCommentEvent(pce eventTypes.PostCommentEvent) {
 	ctx := context.Background()
 	pceMap := helpers.StructToMap(pce)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments",
 		Values: pceMap,
 	}).Err()
@@ -138,7 +140,7 @@ func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
 	ctx := context.Background()
 	rpceMap := helpers.StructToMap(rpce)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments_removed",
 		Values: rpceMap,
 	}).Err()
@@ -151,7 +153,7 @@ func QueueCommentReactionEvent(cre eventTypes.CommentReactionEvent) {
 	ctx := context.Background()
 	creMap := helpers.StructToMap(cre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions",
 		Values: creMap,
 	}).Err()
@@ -164,7 +166,7 @@ func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEven
 	ctx := context.Background()
 	rcreMap := helpers.StructToMap(rcre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions_removed",
 		Values: rcreMap,
 	}).Err()
@@ -177,7 +179,7 @@ func QueueCommentCommentEvent(cce eventTypes.CommentCommentEvent) {
 	ctx := context.Background()
 	cceMap := helpers.StructToMap(cce)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments",
 		Values: cceMap,
 	}).Err()
@@ -190,7 +192,7 @@ func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent)
 	ctx := context.Background()
 	rcceMap := helpers.StructToMap(rcce)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments_removed",
 		Values: rcceMap,
 	}).Err()
@@ -203,7 +205,7 @@ func QueueRepostEvent(re eventTypes.RepostEvent) {
 	ctx := context.Background()
 	reMap := helpers.StructToMap(re)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "reposts",
 		Values: reMap,
 	}).Err()
@@ -216,7 +218,7 @@ func QueuePostSaveEvent(pse eventTypes.PostSaveEvent) {
 	ctx := context.Background()
 	pseMap := helpers.StructToMap(pse)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_saves",
 		Values: pseMap,
 	}).Err()
@@ -229,7 +231,7 @@ func QueuePostUnsaveEvent(pue eventTypes.PostUnsaveEvent) {
 	ctx := context.Background()
 	pueMap := helpers.StructToMap(pue)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_unsaves",
 		Values: pueMap,
 	}).Err()
@@ -242,7 +244,7 @@ func QueueNewMessageEvent(nme eventTypes.NewMessageEvent) {
 	ctx := context.Background()
 	nmeMap := helpers.StructToMap(nme)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_messages",
 		Values: nmeMap,
 	}).Err()
@@ -255,7 +257,7 @@ func QueueNewMsgReactionEvent(nmre eventTypes.NewMsgReactionEvent) {
 	ctx := context.Background()
 	nmreMap := helpers.StructToMap(nmre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_reactions",
 		Values: nmreMap,
 	}).Err()
@@ -268,7 +270,7 @@ func QueueMsgAckEvent(mae eventTypes.MsgAckEvent) {
 	ctx := context.Background()
 	maeMap := helpers.StructToMap(mae)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_acks",
 		Values: maeMap,
 	}).Err()
@@ -281,7 +283,7 @@ func QueueMsgDeletionEvent(mde eventTypes.MsgDeletionEvent) {
 	ctx := context.Background()
 	mdeMap := helpers.StructToMap(mde)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_deletions",
 		Values: mdeMap,
 	}).Err()
@@ -294,7 +296,7 @@ func QueueMsgReactionRemovedEvent(mrre eventTypes.MsgReactionRemovedEvent) {
 	ctx := context.Background()
 	mrreMap := helpers.StructToMap(mrre)
 
-	err := rdb.XAdd(ctx, &redis.XAddArgs{
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_reactions_removed",
 		Values: mrreMap,
 	}).Err()

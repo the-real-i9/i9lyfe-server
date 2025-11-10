@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -29,7 +30,10 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"email": user1.Email})
 		require.NoError(t, err)
 
-		res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
+		req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -56,12 +60,11 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"code": "011111"})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusBadRequest, res.StatusCode) {
@@ -85,12 +88,11 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"code": verfCode})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -123,12 +125,11 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", signupPath+"/register_user", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -153,11 +154,10 @@ func TestUserAuthStory(t *testing.T) {
 	{
 		t.Log("Action: user1 signs out")
 
-		req, err := http.NewRequest("GET", signoutPath, nil)
-		require.NoError(t, err)
+		req := httptest.NewRequest("GET", signoutPath, nil)
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -177,7 +177,10 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		res, err := http.Post(signinPath, "application/json", reqBody)
+		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusNotFound, res.StatusCode) {
@@ -201,7 +204,10 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		res, err := http.Post(signinPath, "application/json", reqBody)
+		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -225,11 +231,10 @@ func TestUserAuthStory(t *testing.T) {
 	{
 		t.Log("Action: user1 signs out again")
 
-		req, err := http.NewRequest("GET", signoutPath, nil)
-		require.NoError(t, err)
+		req := httptest.NewRequest("GET", signoutPath, nil)
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -246,7 +251,10 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"email": user1.Email})
 		require.NoError(t, err)
 
-		res, err := http.Post(forgotPasswordPath+"/request_password_reset", "application/json", reqBody)
+		req := httptest.NewRequest("POST", forgotPasswordPath+"/request_password_reset", reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -273,12 +281,11 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"token": "011111"})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusBadRequest, res.StatusCode) {
@@ -301,12 +308,11 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"token": token})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -337,12 +343,11 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", forgotPasswordPath+"/reset_password", reqBody)
-		require.NoError(t, err)
+		req := httptest.NewRequest("POST", forgotPasswordPath+"/reset_password", reqBody)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -372,7 +377,10 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		res, err := http.Post(signinPath, "application/json", reqBody)
+		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -397,7 +405,10 @@ func TestUserAuthStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"email": user1.Email})
 		require.NoError(t, err)
 
-		res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
+		req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		res, err := app.Test(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusBadRequest, res.StatusCode) {

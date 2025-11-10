@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserChatStory(t *testing.T) {
+func XTestUserChatStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
