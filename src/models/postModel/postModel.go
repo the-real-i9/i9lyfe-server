@@ -29,19 +29,9 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 	newPost, err := pgDB.QueryRowType[newPostT](
 		ctx,
 		/* sql */ `
-		WITH new_post AS (
-			INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING id_, owner_user, type_, media_urls, description, created_at
-		)
-		SELECT id_,
-			(SELECT json_build_object(
-				'username', username, 
-				'profile_pic_url', profile_pic_url)
-			FROM users u
-			WHERE u.username = owner_user) AS owner_user,
-			type_, media_urls, description, created_at 
-		FROM new_post np
+		INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id_, owner_user, type_, media_urls, description, created_at
 		`, clientUsername, postType, mediaUrls, description, at,
 	)
 	if err != nil {

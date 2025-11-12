@@ -46,9 +46,6 @@ func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaDat
 	}
 
 	if newPost.Id != "" {
-		newPost := newPost
-		newPost.OwnerUser = clientUser.Username
-
 		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
 			OwnerUser: clientUser,
 			PostId:    newPost.Id,
