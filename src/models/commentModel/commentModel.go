@@ -4,7 +4,7 @@ import (
 	"context"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/db"
+	"i9lyfe/src/helpers/pgDB"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,7 +14,7 @@ import (
 var dbPool = appGlobals.DBPool
 
 func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (comment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(ownerUser:User), (clientUser:User{ username: $client_username })
@@ -48,7 +48,7 @@ func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
 }
 
 func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (string, error) {
-	commentOwner, err := db.QueryRowField[string](
+	commentOwner, err := pgDB.QueryRowField[string](
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
@@ -71,7 +71,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 }
 
 func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT]-(reactor:User)
@@ -109,7 +109,7 @@ func GetReactors(ctx context.Context, clientUsername, commentId string, limit in
 }
 
 func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT { reaction: $reaction }]-(reactor:User)
@@ -148,7 +148,7 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, rea
 }
 
 func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_reacts_to_comment
@@ -173,7 +173,7 @@ type newCommentT struct {
 }
 
 func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentUrl string, at int64) (newCommentT, error) {
-	newComment, err := db.QueryRowType[newCommentT](
+	newComment, err := pgDB.QueryRowType[newCommentT](
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
@@ -226,7 +226,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 }
 
 func GetComments(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (parentComment:Comment{ id: $comment_id })<-[:COMMENT_ON_COMMENT]-(childComment:Comment WHERE childComment.created_at < $offset)<-[:WRITES_COMMENT]-(ownerUser:User)
@@ -265,7 +265,7 @@ func GetComments(ctx context.Context, clientUsername, commentId string, limit in
 }
 
 func RemoveComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_comments_on

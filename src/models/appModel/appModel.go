@@ -12,7 +12,7 @@ import (
 )
 
  func TopUsers(ctx context.Context) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
     MATCH (user:User)
@@ -38,7 +38,7 @@ import (
 }
 
 func SearchUsers(ctx context.Context, term string) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
     MATCH (user:User WHERE user.username CONTAINS $term OR user.name CONTAINS $term)
@@ -66,7 +66,7 @@ func SearchUsers(ctx context.Context, term string) ([]any, error) {
 }
 
 func TopHashtags(ctx context.Context) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
     MATCH (ht:Hashtag)
@@ -92,7 +92,7 @@ func TopHashtags(ctx context.Context) ([]any, error) {
 }
 
 func SearchHashtags(ctx context.Context, term string) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
     MATCH (ht:Hashtag WHERE ht.name CONTAINS $term)
@@ -161,7 +161,7 @@ func SearchPost(ctx context.Context, clientUsername, postType, term string) ([]a
 		`
 	}
 
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		query,
 		map[string]any{

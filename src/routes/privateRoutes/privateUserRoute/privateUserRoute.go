@@ -8,7 +8,7 @@ import (
 
 func Route(router fiber.Router) {
 
-	router.Get("/session_user", UC.GetSessionUser)
+	router.Get("/me", UC.GetSessionUser)
 
 	router.Get("/me/signout", UC.Signout)
 
@@ -28,5 +28,5 @@ func Route(router fiber.Router) {
 
 	router.Get("/me/notifications", UC.GetUserNotifications)
 
-	router.Put("/me/notifications/:notification_id/read", UC.ReadUserNotification)
+	router.Put("/me/notifications/:year/:month/:notification_id/read", UC.ReadUserNotification)
 }

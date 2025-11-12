@@ -3,8 +3,8 @@ package backgroundWorkers
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -79,11 +79,11 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			if err := cacheService.StoreUnreadMessages(ctx, deliveredMessages); err != nil {
+			if err := cache.StoreUnreadMessages(ctx, deliveredMessages); err != nil {
 				return
 			}
 
-			if err := cacheService.RemoveUnreadMessages(ctx, readMessages); err != nil {
+			if err := cache.RemoveUnreadMessages(ctx, readMessages); err != nil {
 				return
 			}
 
@@ -92,7 +92,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					CHEId, ack, ackAt, stmsgId := CHEId_ack_ackAt_stmsgId[0], CHEId_ack_ackAt_stmsgId[1], CHEId_ack_ackAt_stmsgId[2], CHEId_ack_ackAt_stmsgId[3]
 
-					if err := cacheService.UpdateMessage(ctx, CHEId.(string), map[string]any{
+					if err := cache.UpdateMessage(ctx, CHEId.(string), map[string]any{
 						"delivery_status":         ack,
 						fmt.Sprintf("%s_at", ack): ackAt.(int64),
 					}); err != nil {

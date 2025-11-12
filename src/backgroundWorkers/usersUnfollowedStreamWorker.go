@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -82,7 +82,7 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 						followingUsers = append(followingUsers, pair[0])
 					}
 
-					if err := cacheService.RemoveUserFollowings(ctx, followerUser, followingUsers); err != nil {
+					if err := cache.RemoveUserFollowings(ctx, followerUser, followingUsers); err != nil {
 						for _, pair := range followingUser_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}
@@ -100,7 +100,7 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 						followerUsers = append(followerUsers, pair[0])
 					}
 
-					if err := cacheService.RemoveUserFollowers(ctx, followingUser, followerUsers); err != nil {
+					if err := cache.RemoveUserFollowers(ctx, followingUser, followerUsers); err != nil {
 						for _, pair := range followerUser_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}

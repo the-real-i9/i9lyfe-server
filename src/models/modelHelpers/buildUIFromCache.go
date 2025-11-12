@@ -1,0 +1,166 @@
+package modelHelpers
+
+import (
+	"context"
+	"i9lyfe/src/appTypes/UITypes"
+	"i9lyfe/src/cache"
+)
+
+func buildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
+	nilVal := UITypes.Post{}
+
+	postUI, err = cache.GetPost[UITypes.Post](ctx, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.OwnerUser, err = cache.GetUser[UITypes.PostOwnerUser](ctx, postUI.OwnerUser.(string))
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.ReactionsCount, err = cache.GetPostReactionsCount(ctx, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.CommentsCount, err = cache.GetPostCommentsCount(ctx, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.RepostsCount, err = cache.GetPostRepostsCount(ctx, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.SavesCount, err = cache.GetPostSavesCount(ctx, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.MeReaction, err = cache.GetUserPostReaction(ctx, clientUsername, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.MeSaved, err = cache.UserSavedPost(ctx, clientUsername, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	postUI.MeReposted, err = cache.UserRepostedPost(ctx, clientUsername, postId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	return postUI, nil
+}
+
+func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername string) (userSnippetUI UITypes.UserSnippet, err error) {
+	nilVal := UITypes.UserSnippet{}
+
+	userSnippetUI, err = cache.GetUser[UITypes.UserSnippet](ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userSnippetUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userSnippetUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	return userSnippetUI, nil
+}
+
+func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername string) (userProfileUI UITypes.UserProfile, err error) {
+	nilVal := UITypes.UserProfile{}
+
+	userProfileUI, err = cache.GetUser[UITypes.UserProfile](ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI.FollowersCount, err = cache.GetUserFollowersCount(ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI.FollowingsCount, err = cache.GetUserFollowingsCount(ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	return userProfileUI, nil
+}
+
+func buildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSnippetUI UITypes.NotifSnippet, err error) {
+	nilVal := UITypes.NotifSnippet{}
+
+	notifSnippetUI, err = cache.GetNotification[UITypes.NotifSnippet](ctx, notifId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	notifSnippetUI.Unread, err = cache.NotificationIsUnread(ctx, notifId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	setNotifUserDetail := func(userKey string) error {
+		uname := notifSnippetUI.Details[userKey].(string)
+		user, err := cache.GetUser[UITypes.NotifUser](ctx, uname)
+		if err != nil {
+			return err
+		}
+
+		notifSnippetUI.Details[userKey] = user
+
+		return nil
+	}
+
+	switch notifSnippetUI.Type {
+	case "user_follow_user":
+		if err := setNotifUserDetail("follower_user"); err != nil {
+			return nilVal, err
+		}
+	case "repost":
+		if err := setNotifUserDetail("reposter_user"); err != nil {
+			return nilVal, err
+		}
+	case "reaction_to_post", "reaction_to_comment":
+		if err := setNotifUserDetail("reactor_user"); err != nil {
+			return nilVal, err
+		}
+	case "mention_in_post", "mention_in_comment":
+		if err := setNotifUserDetail("mentioning_user"); err != nil {
+			return nilVal, err
+		}
+	case "comment_on_post", "comment_on_comment":
+		if err := setNotifUserDetail("commenter_user"); err != nil {
+			return nilVal, err
+		}
+	}
+
+	return notifSnippetUI, nil
+}

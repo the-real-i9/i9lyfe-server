@@ -1,4 +1,4 @@
-package cacheService
+package cache
 
 import (
 	"context"
@@ -114,6 +114,16 @@ func RemoveMsgReactions(ctx context.Context, msgId string, reactorUsers []string
 
 func RemoveUnreadMessages(ctx context.Context, readMessages []string) error {
 	if err := rdb().HDel(ctx, "unread_messages", readMessages...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveUnreadNotifications(ctx context.Context, readNotifications ...any) error {
+	if err := rdb().SRem(ctx, "unread_notifications", readNotifications...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

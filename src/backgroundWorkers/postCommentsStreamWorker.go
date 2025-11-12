@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -68,7 +68,8 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			newCommentDBExtrasFuncs := make([][2]any, msgsLen)
 
-			notifications := make(map[any]any)
+			notifications := []string{}
+			unreadNotifications := []any{}
 
 			userNotifications := make(map[string][][2]string)
 
@@ -95,7 +96,8 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 						"comment_id":     msg.CommentId,
 					})
 
-					notifications[copNotifUniqueId] = helpers.ToJson(copNotif)
+					notifications = append(notifications, copNotifUniqueId, helpers.ToJson(copNotif))
+					unreadNotifications = append(unreadNotifications, copNotifUniqueId)
 
 					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
 
@@ -120,7 +122,8 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 						"mentioning_user": msg.CommenterUser,
 					})
 
-					notifications[micNotifUniqueId] = helpers.ToJson(micNotif)
+					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
+					unreadNotifications = append(unreadNotifications, micNotifUniqueId)
 
 					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
 
@@ -140,11 +143,15 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			if err := cacheService.StoreNewComments(ctx, newComments); err != nil {
+			if err := cache.StoreNewComments(ctx, newComments); err != nil {
 				return
 			}
 
-			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
+			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+				return
+			}
+
+			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
 				return
 			}
 
@@ -152,7 +159,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					postId, commentId_stmsgId_Pairs := postId, commentId_stmsgId_Pairs
 
-					if err := cacheService.StorePostComments(ctx, postId, commentId_stmsgId_Pairs); err != nil {
+					if err := cache.StorePostComments(ctx, postId, commentId_stmsgId_Pairs); err != nil {
 						for _, d := range commentId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -164,7 +171,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			go func() {
 				for postId := range postComments {
-					totalCommentsCount, err := rdb.ZCard(ctx, fmt.Sprintf("post:%s:comments", postId)).Result()
+					totalCommentsCount, err := cache.GetPostCommentsCount(ctx, postId)
 					if err != nil {
 						continue
 					}
@@ -180,7 +187,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserCommentedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserCommentedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -192,7 +199,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
 						for _, d := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}

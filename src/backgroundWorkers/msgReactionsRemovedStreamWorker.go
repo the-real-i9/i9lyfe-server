@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -74,7 +74,7 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			if err := cacheService.RemoveChatHistoryEntries(ctx, msgReactionEntriesRemoved); err != nil {
+			if err := cache.RemoveChatHistoryEntries(ctx, msgReactionEntriesRemoved); err != nil {
 				return
 			}
 
@@ -88,7 +88,7 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 						CHEIds = append(CHEIds, pair[0])
 					}
 
-					if err := cacheService.RemoveUserChatHistory(ctx, ownerUserPartnerUser, CHEIds); err != nil {
+					if err := cache.RemoveUserChatHistory(ctx, ownerUserPartnerUser, CHEIds); err != nil {
 						for _, pair := range CHEId_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}
@@ -106,7 +106,7 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 						reactorUsers = append(reactorUsers, user_stmsgId_Pair[0])
 					}
 
-					if err := cacheService.RemoveMsgReactions(ctx, msgId, reactorUsers); err != nil {
+					if err := cache.RemoveMsgReactions(ctx, msgId, reactorUsers); err != nil {
 						for _, pair := range user_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}

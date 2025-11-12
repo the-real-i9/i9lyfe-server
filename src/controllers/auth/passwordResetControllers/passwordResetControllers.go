@@ -68,7 +68,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 //	@Produce		json
 //
 //	@Param			token	body		string									true	"6-digit token"
-//	@Param			Cookie	header		array									true	"Password Reset session request cookie"
+//	@Param			Cookie	header		[]string									true	"Password Reset session request cookie"
 //
 //	@Success		200		{object}	passwordResetService.passReset2RespT	"Email confirmed. You're about to reset your password"
 //	@Header			200		{array}		Set-Cookie								"Password Reset session request cookie"
@@ -79,7 +79,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 //	@Failure		500		{object}	appErrors.HTTPError
 //	@Header			500		{array}		Set-Cookie	"Password Reset session request cookie"
 //
-//	@Router			/auth/signup/confirm_email [post]
+//	@Router			/auth/forgot_password/confirm_email [post]
 func ConfirmEmail(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -124,7 +124,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 //	@Param			newPassword			body		string									true	"Choose a new password"
 //	@Param			confirmNewPassword	body		string									true	"Conform new password"
 //
-//	@Param			Cookie				header		array									true	"Password Reset session request cookie"
+//	@Param			Cookie				header		[]string									true	"Password Reset session request cookie"
 //
 //	@Success		200					{object}	passwordResetService.passReset3RespT	"Password changed successfully"
 //
@@ -134,7 +134,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 //	@Failure		500					{object}	appErrors.HTTPError
 //	@Header			500					{array}		Set-Cookie	"Password Reset session response cookie"
 //
-//	@Router			/auth/signup/register_user [post]
+//	@Router			/auth/forgot_password/reset_password [post]
 func ResetPassword(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

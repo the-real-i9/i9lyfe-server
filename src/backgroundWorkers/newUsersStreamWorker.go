@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 
@@ -61,7 +61,7 @@ func newUsersStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			if err := cacheService.StoreNewUsers(ctx, newUsers); err != nil {
+			if err := cache.StoreNewUsers(ctx, newUsers); err != nil {
 				return
 			}
 

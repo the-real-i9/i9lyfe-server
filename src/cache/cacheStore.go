@@ -1,11 +1,9 @@
-package cacheService
+package cache
 
 import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"maps"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -52,7 +50,7 @@ func StoreUserFollowings(ctx context.Context, followerUser string, followingUser
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:following", followerUser), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:followings", followerUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -141,6 +139,26 @@ func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_s
 	return nil
 }
 
+func StoreUserRepostedPosts(ctx context.Context, user string, postId_stmsgId_Pairs [][2]string) error {
+	members := []redis.Z{}
+	for _, pair := range postId_stmsgId_Pairs {
+		postId := pair[0]
+
+		members = append(members, redis.Z{
+			Score:  stmsgIdToScore(pair[1]),
+			Member: postId,
+		})
+	}
+
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:reposted_posts", user), members...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func StoreUserNotifications(ctx context.Context, user string, notifId_stmsgId_Pairs [][2]string) error {
 	members := []redis.Z{}
 	for _, pair := range notifId_stmsgId_Pairs {
@@ -151,7 +169,7 @@ func StoreUserNotifications(ctx context.Context, user string, notifId_stmsgId_Pa
 			Member: notifId,
 		})
 	}
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%s", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -211,7 +229,7 @@ func StorePostComments(ctx context.Context, postId string, commentId_stmsgId_Pai
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("post:%s:comments", postId), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("commented_post:%s:comments", postId), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -222,6 +240,16 @@ func StorePostComments(ctx context.Context, postId string, commentId_stmsgId_Pai
 
 func StorePostSaves(ctx context.Context, postId string, saverUsers []any) error {
 	if err := rdb().SAdd(ctx, fmt.Sprintf("saved_post:%s:saves", postId), saverUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StorePostReposts(ctx context.Context, postId string, repostIds []any) error {
+	if err := rdb().SAdd(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId), repostIds...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -280,14 +308,18 @@ func StoreNewComments(ctx context.Context, newComments []string) error {
 	return nil
 }
 
-func StoreNewNotifications(ctx context.Context, newNotifs map[any]any) error {
+func StoreNewNotifications(ctx context.Context, newNotifs []string) error {
 	if err := rdb().HSet(ctx, "notifications", newNotifs).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
 	}
 
-	if err := rdb().SAdd(ctx, "unread_notifications", slices.Collect(maps.Keys(newNotifs))...).Err(); err != nil {
+	return nil
+}
+
+func StoreUnreadNotifications(ctx context.Context, unreadNotifs []any) error {
+	if err := rdb().SAdd(ctx, "unread_notifications", unreadNotifs...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

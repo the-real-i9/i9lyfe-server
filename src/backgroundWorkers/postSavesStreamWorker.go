@@ -2,9 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -82,7 +81,7 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 						saverUsers = append(saverUsers, user_stmsgId_Pair[0].(string))
 					}
 
-					if err := cacheService.StorePostSaves(ctx, postId, saverUsers); err != nil {
+					if err := cache.StorePostSaves(ctx, postId, saverUsers); err != nil {
 						for _, d := range user_stmsgId_Pairs {
 							failedStreamMsgIds[d[1].(string)] = true
 						}
@@ -94,7 +93,7 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 			go func() {
 				for postId := range postSaves {
-					totalRxnsCount, err := rdb.SCard(ctx, fmt.Sprintf("saved_post:%s:saves", postId)).Result()
+					totalRxnsCount, err := cache.GetPostSavesCount(ctx, postId)
 					if err != nil {
 						continue
 					}
@@ -111,7 +110,7 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserSavedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserSavedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}

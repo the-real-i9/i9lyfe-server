@@ -2,9 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -82,7 +81,7 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				}
 
 				wg.Go(func() {
-					if err := cacheService.RemovePostReactions(ctx, postId, users); err != nil {
+					if err := cache.RemovePostReactions(ctx, postId, users); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}
@@ -94,7 +93,7 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			for postId := range postReactionsRemoved {
 				go func() {
-					latestCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
+					latestCount, err := cache.GetPostReactionsCount(ctx, postId)
 					if err != nil {
 						return
 					}
@@ -116,7 +115,7 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				}
 
 				wg.Go(func() {
-					if err := cacheService.RemoveUserReactedPosts(ctx, user, postIds); err != nil {
+					if err := cache.RemoveUserReactedPosts(ctx, user, postIds); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}

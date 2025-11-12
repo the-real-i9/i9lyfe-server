@@ -3,7 +3,7 @@ package chatMessageModel
 import (
 	"context"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/db"
+	"i9lyfe/src/helpers/pgDB"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -21,7 +21,7 @@ type NewMessageT struct {
 }
 
 func Send(ctx context.Context, clientUsername, partnerUsername, msgContent string, at int64) (NewMessageT, error) {
-	newMessage, err := db.QueryRowType[NewMessageT](
+	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
 		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM send_message($1, $2, $3, $4);
@@ -36,7 +36,7 @@ func Send(ctx context.Context, clientUsername, partnerUsername, msgContent strin
 }
 
 func AckDelivered(ctx context.Context, clientUsername, partnerUsername, msgId string, deliveredAt int64) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
@@ -51,7 +51,7 @@ func AckDelivered(ctx context.Context, clientUsername, partnerUsername, msgId st
 }
 
 func AckRead(ctx context.Context, clientUsername, partnerUsername, msgId string, readAt int64) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
@@ -66,7 +66,7 @@ func AckRead(ctx context.Context, clientUsername, partnerUsername, msgId string,
 }
 
 func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, msgContent string, at int64) (NewMessageT, error) {
-	newMessage, err := db.QueryRowType[NewMessageT](
+	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
 		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM send_message($1, $2, $3, $4, $5);
@@ -90,7 +90,7 @@ type rxnToMessageT struct {
 }
 
 func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (rxnToMessageT, error) {
-	rxnToMessage, err := db.QueryRowType[rxnToMessageT](
+	rxnToMessage, err := pgDB.QueryRowType[rxnToMessageT](
 		ctx,
 		/* sql */ `
 		SELECT che_id, che_type, emoji, at_, reactor, to_msg_id FROM react_to_msg($1, $2, $3, $4, $5)
@@ -105,7 +105,7 @@ func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, emoji 
 }
 
 func RemoveReaction(ctx context.Context, clientUsername, partnerUsername, msgId string) (string, error) {
-	CHEId, err := db.QueryRowField[string](
+	CHEId, err := pgDB.QueryRowField[string](
 		ctx,
 		/* sql */ `
 		SELECT * FROM remove_msg_reaction($1, $2, $3)
@@ -140,7 +140,7 @@ type ChatHistoryEntry struct {
 func ChatHistory(ctx context.Context, clientUsername, partnerUsername string, limit int, offset time.Time) ([]ChatHistoryEntry, error) {
 	var chatHistory []ChatHistoryEntry
 
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`/*cypher*/
 		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })
@@ -207,7 +207,7 @@ func ChatHistory(ctx context.Context, clientUsername, partnerUsername string, li
 }
 
 func Delete(ctx context.Context, clientUsername, partnerUsername, msgId, deleteFor string, at int64) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		SELECT * FROM delete_msg($1, $2, $3, $4, $5)

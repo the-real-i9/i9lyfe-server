@@ -18,6 +18,371 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/app/private/me": {
+            "get": {
+                "description": "Get info on the user currently in session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Get session user",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User info",
+                        "schema": {
+                            "$ref": "#/definitions/appTypes.ClientUser"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/app/private/me/change_profile_picture": {
+            "put": {
+                "description": "Change user profile picture",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Change user profile picture",
+                "parameters": [
+                    {
+                        "description": "Profile picture data",
+                        "name": "picture_data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/app/private/me/edit_profile": {
+            "put": {
+                "description": "Edit user profile",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Edit user profile",
+                "parameters": [
+                    {
+                        "description": "User's Name field",
+                        "name": "name",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User's Birthday field in milliseconds since Unix Epoch",
+                        "name": "birthday",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "User's Bio field",
+                        "name": "bio",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/app/private/me/signout": {
+            "get": {
+                "description": "Signout the user currently in session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Signout user",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Bye message",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/app/private/users/:username/follow": {
+            "post": {
+                "description": "Follow user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Follow user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User to follow",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error | User trying to follow self",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/app/private/users/:username/unfollow": {
+            "delete": {
+                "description": "Unfollow user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app/private"
+                ],
+                "summary": "Unfollow user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User to unfollow",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "User session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Done",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/forgot_password/confirm_email": {
+            "post": {
+                "description": "Provide the 6-digit token sent to email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Password Reset - Step 2",
+                "parameters": [
+                    {
+                        "description": "6-digit token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Password Reset session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email confirmed. You're about to reset your password",
+                        "schema": {
+                            "$ref": "#/definitions/passwordResetService.passReset2RespT"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Incorrect or expired confirmation token",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session request cookie"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/forgot_password/request_password_reset": {
             "post": {
                 "description": "Submit your email to request a password reset",
@@ -70,6 +435,84 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/forgot_password/reset_password": {
+            "post": {
+                "description": "Set new password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Password Reset user - Step 3",
+                "parameters": [
+                    {
+                        "description": "Choose a new password",
+                        "name": "newPassword",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Conform new password",
+                        "name": "confirmNewPassword",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Password Reset session request cookie",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/passwordResetService.passReset3RespT"
+                        }
+                    },
+                    "400": {
+                        "description": "Passwords mismatch.",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session response cookie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/appErrors.HTTPError"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "array",
+                                "description": "Password Reset session response cookie"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/signin": {
             "post": {
                 "description": "Signin with email/username and password",
@@ -107,7 +550,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Signin Success!",
                         "schema": {
-                            "$ref": "#/definitions/signinService.SigninRespT"
+                            "$ref": "#/definitions/signinService.signinRespT"
                         },
                         "headers": {
                             "Set-Cookie": {
@@ -132,77 +575,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/appErrors.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/signup/confirm_email": {
-            "post": {
-                "description": "Provide the 6-digit token sent to email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Password Reset - Step 2",
-                "parameters": [
-                    {
-                        "description": "6-digit token",
-                        "name": "token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "type": "array",
-                        "description": "Password Reset session request cookie",
-                        "name": "Cookie",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Email confirmed. You're about to reset your password",
-                        "schema": {
-                            "$ref": "#/definitions/passwordResetService.passReset2RespT"
-                        },
-                        "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
-                                "description": "Password Reset session request cookie"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Incorrect or expired confirmation token",
-                        "schema": {
-                            "$ref": "#/definitions/appErrors.HTTPError"
-                        },
-                        "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
-                                "description": "Password Reset session request cookie"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/appErrors.HTTPError"
-                        },
-                        "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
-                                "description": "Password Reset session request cookie"
-                            }
                         }
                     }
                 }
@@ -268,6 +640,10 @@ const docTemplate = `{
                     },
                     {
                         "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Signup session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -391,6 +767,10 @@ const docTemplate = `{
                     },
                     {
                         "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Signup session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -450,6 +830,20 @@ const docTemplate = `{
                 }
             }
         },
+        "appTypes.ClientUser": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "profile_pic_url": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "passwordResetService.passReset1RespT": {
             "type": "object",
             "properties": {
@@ -474,7 +868,7 @@ const docTemplate = `{
                 }
             }
         },
-        "signinService.SigninRespT": {
+        "signinService.signinRespT": {
             "type": "object",
             "properties": {
                 "msg": {

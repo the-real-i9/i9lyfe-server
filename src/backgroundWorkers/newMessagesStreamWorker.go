@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -74,11 +74,11 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			if err := cacheService.StoreChatHistoryEntries(ctx, newMessageEntries); err != nil {
+			if err := cache.StoreChatHistoryEntries(ctx, newMessageEntries); err != nil {
 				return
 			}
 
-			if err := cacheService.StoreUnreadMessages(ctx, unreadMessages); err != nil {
+			if err := cache.StoreUnreadMessages(ctx, unreadMessages); err != nil {
 				return
 			}
 
@@ -86,7 +86,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
 						for _, d := range CHEId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}

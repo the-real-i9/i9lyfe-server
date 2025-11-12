@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
@@ -62,9 +62,14 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 			reposts := []string{}
 
+			postReposts := make(map[string][][2]any)
+
+			userRepostedPosts := make(map[string][][2]string)
+
 			userPosts := make(map[string][][2]string)
 
-			notifications := make(map[any]any)
+			notifications := []string{}
+			unreadNotifications := []any{}
 
 			userNotifications := make(map[string][][2]string)
 
@@ -75,6 +80,10 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 				reposts = append(reposts, msg.RepostId, msg.RepostData)
+
+				postReposts[msg.PostId] = append(postReposts[msg.PostId], [2]any{msg.RepostId, stmsgIds[i]})
+
+				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]string{msg.PostId, stmsgIds[i]})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
 					contentRecommendationService.FanOutPost(msg.RepostId)
@@ -93,7 +102,8 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 					"reposter_user":    msg.ReposterUser,
 				})
 
-				notifications[notifUniqueId] = helpers.ToJson(notif)
+				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
@@ -112,18 +122,67 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			if err := cacheService.StoreNewPosts(ctx, reposts); err != nil {
+			if err := cache.StoreNewPosts(ctx, reposts); err != nil {
 				return
 			}
 
-			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
+			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
 				return
 			}
+
+			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
+				return
+			}
+
+			for postId, repostId_stmsgId_Pairs := range postReposts {
+				wg.Go(func() {
+					postId, repostId_stmsgId_Pairs := postId, repostId_stmsgId_Pairs
+
+					repostIds := []any{}
+
+					for _, user_stmsgId_Pair := range repostId_stmsgId_Pairs {
+						repostIds = append(repostIds, user_stmsgId_Pair[0].(string))
+					}
+
+					if err := cache.StorePostReposts(ctx, postId, repostIds); err != nil {
+						for _, d := range repostId_stmsgId_Pairs {
+							failedStreamMsgIds[d[1].(string)] = true
+						}
+					}
+				})
+			}
+
+			wg.Wait()
+
+			go func() {
+				for postId := range postReposts {
+					totalRepostsCount, err := cache.GetPostRepostsCount(ctx, postId)
+					if err != nil {
+						continue
+					}
+
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":              postId,
+						"latest_reposts_count": totalRepostsCount,
+					})
+				}
+			}()
 
 			for user, postId_stmsgId_Pairs := range userPosts {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-					if err := cacheService.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+						for _, d := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[d[1]] = true
+						}
+					}
+				})
+			}
+
+			for user, postId_stmsgId_Pairs := range userRepostedPosts {
+				wg.Go(func() {
+					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					if err := cache.StoreUserRepostedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -135,7 +194,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
 						for _, d := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}

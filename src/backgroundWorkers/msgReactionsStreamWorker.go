@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -74,7 +74,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			if err := cacheService.StoreChatHistoryEntries(ctx, newMsgReactionEntries); err != nil {
+			if err := cache.StoreChatHistoryEntries(ctx, newMsgReactionEntries); err != nil {
 				return
 			}
 
@@ -82,7 +82,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
 						for _, d := range CHEId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
@@ -100,7 +100,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
 					}
 
-					if err := cacheService.StoreMsgReactions(ctx, msgId, slices.Concat(userWithEmojiPairs...)); err != nil {
+					if err := cache.StoreMsgReactions(ctx, msgId, slices.Concat(userWithEmojiPairs...)); err != nil {
 						for _, d := range userWithEmoji_stmsgId_Pairs {
 							failedStreamMsgIds[d[1].(string)] = true
 						}

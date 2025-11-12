@@ -2,9 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -82,7 +81,7 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 				}
 
 				wg.Go(func() {
-					if err := cacheService.RemovePostSaves(ctx, postId, users); err != nil {
+					if err := cache.RemovePostSaves(ctx, postId, users); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}
@@ -94,7 +93,7 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 
 			for postId := range postUnsaves {
 				go func() {
-					latestCount, err := rdb.HLen(ctx, fmt.Sprintf("saved_post:%s:saves", postId)).Result()
+					latestCount, err := cache.GetPostSavesCount(ctx, postId)
 					if err != nil {
 						return
 					}
@@ -116,7 +115,7 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 				}
 
 				wg.Go(func() {
-					if err := cacheService.RemoveUserSavedPosts(ctx, user, postIds); err != nil {
+					if err := cache.RemoveUserSavedPosts(ctx, user, postIds); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}

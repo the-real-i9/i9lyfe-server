@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
@@ -67,7 +67,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			userMentionedPosts := make(map[string][][2]string)
 
-			notifications := make(map[any]any)
+			notifications := []string{}
+			unreadNotifications := []any{}
 
 			userNotifications := make(map[string][][2]string)
 
@@ -100,7 +101,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 						"mentioning_user": msg.OwnerUser,
 					})
 
-					notifications[notifUniqueId] = helpers.ToJson(notif)
+					notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+					unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 					userNotifications[mu] = append(userNotifications[mu], [2]string{notifUniqueId, stmsgIds[i]})
 
@@ -124,18 +126,22 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
-			if err := cacheService.StoreNewPosts(ctx, newPosts); err != nil {
+			if err := cache.StoreNewPosts(ctx, newPosts); err != nil {
 				return
 			}
 
-			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
+			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+				return
+			}
+
+			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
 				return
 			}
 
 			for user, postId_stmsgId_Pairs := range userPosts {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-					if err := cacheService.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, pair := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}
@@ -147,7 +153,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserMentionedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserMentionedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, pair := range postId_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}
@@ -159,7 +165,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
 						for _, pair := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[pair[1]] = true
 						}

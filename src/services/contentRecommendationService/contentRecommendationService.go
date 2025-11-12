@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/db"
+	"i9lyfe/src/helpers/pgDB"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -21,7 +21,7 @@ func FanOutPost(postId string) any {
 	/* ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		res, err := db.Query(
+		res, err := pgDB.Query(
 			ctx,
 			`
 	    MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User)
@@ -101,7 +101,7 @@ func FetchPosts(ctx context.Context, clientUsername string, types, hashtags []st
 		`, hashtagCondPatt)
 	}
 
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		query,
 		map[string]any{

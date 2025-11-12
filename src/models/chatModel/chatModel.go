@@ -3,7 +3,7 @@ package chatModel
 import (
 	"context"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/db"
+	"i9lyfe/src/helpers/pgDB"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +11,7 @@ import (
 )
 
 func All(ctx context.Context, clientUsername string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (clientChat:Chat{ owner_username: $client_username } WHERE clientChat.updated_at < $offset)-[:WITH_USER]->(partnerUser),
@@ -47,7 +47,7 @@ func All(ctx context.Context, clientUsername string, limit int, offset time.Time
 }
 
 func Delete(ctx context.Context, clientUsername, partnerUsername string) error {
-	_, err := db.Query(
+	_, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })
@@ -67,7 +67,7 @@ func Delete(ctx context.Context, clientUsername, partnerUsername string) error {
 }
 
 func History(ctx context.Context, clientUsername, partnerUsername string, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (clientChat:Chat{ owner_username: $client_username, partner_username: $partner_username })<-[:IN_CHAT]-(message:Message WHERE message.created_at < $offset)

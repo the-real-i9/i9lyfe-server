@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -61,7 +61,8 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			commentReactions := make(map[string][][2]any)
 
-			notifications := make(map[any]any, msgsLen)
+			notifications := []string{}
+			unreadNotifications := []any{}
 
 			userNotifications := make(map[string][][2]string, msgsLen)
 
@@ -82,7 +83,8 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 					"emoji":         msg.Emoji,
 				})
 
-				notifications[notifUniqueId] = helpers.ToJson(notif)
+				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 				userNotifications[msg.CommentOwner] = append(userNotifications[msg.CommentOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
@@ -101,7 +103,11 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			if err := cacheService.StoreNewNotifications(ctx, notifications); err != nil {
+			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+				return
+			}
+
+			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
 				return
 			}
 
@@ -115,7 +121,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
 					}
 
-					if err := cacheService.StorePostReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
+					if err := cache.StorePostReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
 						for _, d := range userWithEmoji_stmsgId_Pairs {
 							failedStreamMsgIds[d[1].(string)] = true
 						}
@@ -127,7 +133,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			go func() {
 				for commentId := range commentReactions {
-					totalRxnsCount, err := rdb.HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId)).Result()
+					totalRxnsCount, err := cache.GetCommentReactionsCount(ctx, commentId)
 					if err != nil {
 						continue
 					}
@@ -143,7 +149,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					err = cacheService.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs)
+					err = cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs)
 					if err != nil {
 						for _, d := range notifId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true

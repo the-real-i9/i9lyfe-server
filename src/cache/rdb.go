@@ -1,4 +1,4 @@
-package cacheService
+package cache
 
 import (
 	"i9lyfe/src/appGlobals"

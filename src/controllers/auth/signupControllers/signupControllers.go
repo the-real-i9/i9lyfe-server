@@ -68,7 +68,7 @@ func RequestNewAccount(c *fiber.Ctx) error {
 //	@Produce		json
 //
 //	@Param			code	body		string						true	"6-digit code"
-//	@Param			Cookie	header		array						true	"Signup session request cookie"
+//	@Param			Cookie	header		[]string						true	"Signup session request cookie"
 //
 //	@Success		200		{object}	signupService.signup2RespT	"Email verified"
 //	@Header			200		{array}		Set-Cookie					"Signup session response cookie"
@@ -124,10 +124,10 @@ func VerifyEmail(c *fiber.Ctx) error {
 //	@Param			username	body		string						true	"Choose a username"
 //	@Param			password	body		string						true	"Choose a password"
 //	@Param			name		body		string						true	"User display name"
-//	@Param			birthday	body		int64						true	"User birthday in milliseconds since Unix Epoch"
+//	@Param			birthday	body		int						true	"User birthday in milliseconds since Unix Epoch"
 //	@Param			bio			body		string						false	"User bio (optional)"
 //
-//	@Param			Cookie		header		array						true	"Signup session request cookie"
+//	@Param			Cookie		header		[]string						true	"Signup session request cookie"
 //
 //	@Success		200			{object}	signupService.signup3RespT	"Signup Success"
 //	@Header			200			{array}		Set-Cookie					"User session response cookie containing auth JWT"

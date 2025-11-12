@@ -2,8 +2,8 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cacheService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
 	"slices"
@@ -72,7 +72,7 @@ func editUsersStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					user, updateKVMap_stmsgId_Pair := user, updateKVMap_stmsgId_Pair
 
-					if err := cacheService.UpdateUser(ctx, user, updateKVMap_stmsgId_Pair[0].(map[string]any)); err != nil {
+					if err := cache.UpdateUser(ctx, user, updateKVMap_stmsgId_Pair[0].(map[string]any)); err != nil {
 						failedStreamMsgIds[updateKVMap_stmsgId_Pair[1].(string)] = true
 					}
 				})

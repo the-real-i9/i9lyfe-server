@@ -11,7 +11,7 @@ func Route(router fiber.Router) {
 
 	router.Get("/:username/followers", UC.GetUserFollowers)
 
-	router.Get("/:username/following", UC.GetUserFollowing)
+	router.Get("/:username/followings", UC.GetUserFollowings)
 
 	router.Get("/:username/posts", UC.GetUserPosts)
 }

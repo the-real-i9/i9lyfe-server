@@ -158,3 +158,11 @@ func BuildNotification(notifId, notifType string, at int64, details map[string]a
 		"details": details,
 	}
 }
+
+func MaxCursor(cursor float64) string {
+	if cursor == 0 {
+		return "+inf"
+	}
+
+	return fmt.Sprintf("(%f", cursor)
+}

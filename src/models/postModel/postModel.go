@@ -4,14 +4,17 @@ import (
 	"context"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/db"
+	"i9lyfe/src/helpers/pgDB"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-var dbPool = appGlobals.DBPool
+func dbPool() *pgxpool.Pool {
+	return appGlobals.DBPool
+}
 
 type newPostT struct {
 	Id          string   `json:"id" db:"id_"`
@@ -23,7 +26,7 @@ type newPostT struct {
 }
 
 func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at int64) (post newPostT, err error) {
-	newPost, err := db.QueryRowType[newPostT](
+	newPost, err := pgDB.QueryRowType[newPostT](
 		ctx,
 		/* sql */ `
 		WITH new_post AS (
@@ -52,7 +55,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []string) error {
 	var err error
 
-	tx, err := dbPool.Begin(ctx)
+	tx, err := dbPool().Begin(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -98,7 +101,7 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 }
 
 func Get(ctx context.Context, clientUsername, postId string) (map[string]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
@@ -144,7 +147,7 @@ func Get(ctx context.Context, clientUsername, postId string) (map[string]any, er
 }
 
 func Delete(ctx context.Context, clientUsername, postId string) ([]*string, error) {
-	mentionedUsers, err := db.QueryRowsField[string](
+	mentionedUsers, err := pgDB.QueryRowsField[string](
 		ctx,
 		/* sql */ `
 		WITH delete_post AS (
@@ -166,7 +169,7 @@ func Delete(ctx context.Context, clientUsername, postId string) ([]*string, erro
 }
 
 func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64) (string, error) {
-	postOwnerUser, err := db.QueryRowField[string](
+	postOwnerUser, err := pgDB.QueryRowField[string](
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
@@ -189,7 +192,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 }
 
 func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
@@ -227,7 +230,7 @@ func GetReactors(ctx context.Context, clientUsername, postId string, limit int, 
 }
 
 func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: toString($reaction) }]-(reactor:User)
@@ -266,7 +269,7 @@ func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reacti
 }
 
 func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_reacts_to_post
@@ -291,7 +294,7 @@ type newCommentT struct {
 }
 
 func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentUrl string, at int64) (newCommentT, error) {
-	newComment, err := db.QueryRowType[newCommentT](
+	newComment, err := pgDB.QueryRowType[newCommentT](
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
@@ -313,7 +316,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string) error {
 	var err error
 
-	tx, err := dbPool.Begin(ctx)
+	tx, err := dbPool().Begin(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -344,7 +347,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 }
 
 func GetComments(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
-	res, err := db.Query(
+	res, err := pgDB.Query(
 		ctx,
 		`
 		MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment WHERE comment.created_at < $offset)<-[:WRITES_COMMENT]-(ownerUser:User)
@@ -384,7 +387,7 @@ func GetComments(ctx context.Context, clientUsername, postId string, limit int, 
 }
 
 func RemoveComment(ctx context.Context, clientUsername, postId, commentId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_comments_on
@@ -411,7 +414,7 @@ type repostT struct {
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {
-	repost, err := db.QueryRowType[repostT](
+	repost, err := pgDB.QueryRowType[repostT](
 		ctx,
 		/* sql */ `
 		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
@@ -429,7 +432,7 @@ func Repost(ctx context.Context, clientUsername, postId string, at int64) (repos
 }
 
 func Save(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		INSERT INTO user_saves_post(username, post_id)
@@ -446,7 +449,7 @@ func Save(ctx context.Context, clientUsername, postId string) (bool, error) {
 }
 
 func Unsave(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := db.QueryRowField[bool](
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		DELETE FROM user_saves_post

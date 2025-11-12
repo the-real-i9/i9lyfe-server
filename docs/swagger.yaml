@@ -7,6 +7,15 @@ definitions:
       message:
         type: string
     type: object
+  appTypes.ClientUser:
+    properties:
+      name:
+        type: string
+      profile_pic_url:
+        type: string
+      username:
+        type: string
+    type: object
   passwordResetService.passReset1RespT:
     properties:
       msg:
@@ -22,7 +31,7 @@ definitions:
       msg:
         type: string
     type: object
-  signinService.SigninRespT:
+  signinService.signinRespT:
     properties:
       msg:
         type: string
@@ -83,6 +92,249 @@ info:
   title: i9lyfe Backend API
   version: "1.0"
 paths:
+  /app/private/me:
+    get:
+      description: Get info on the user currently in session
+      parameters:
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info
+          schema:
+            $ref: '#/definitions/appTypes.ClientUser'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Get session user
+      tags:
+      - app/private
+  /app/private/me/change_profile_picture:
+    put:
+      description: Change user profile picture
+      parameters:
+      - description: Profile picture data
+        in: body
+        name: picture_data
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: boolean
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Change user profile picture
+      tags:
+      - app/private
+  /app/private/me/edit_profile:
+    put:
+      description: Edit user profile
+      parameters:
+      - description: User's Name field
+        in: body
+        name: name
+        schema:
+          type: string
+      - description: User's Birthday field in milliseconds since Unix Epoch
+        in: body
+        name: birthday
+        schema:
+          type: integer
+      - description: User's Bio field
+        in: body
+        name: bio
+        schema:
+          type: string
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: boolean
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Edit user profile
+      tags:
+      - app/private
+  /app/private/me/signout:
+    get:
+      description: Signout the user currently in session
+      parameters:
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bye message
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Signout user
+      tags:
+      - app/private
+  /app/private/users/:username/follow:
+    post:
+      description: Follow user
+      parameters:
+      - description: User to follow
+        in: path
+        name: username
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: boolean
+        "400":
+          description: Validation error | User trying to follow self
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Follow user
+      tags:
+      - app/private
+  /app/private/users/:username/unfollow:
+    delete:
+      description: Unfollow user
+      parameters:
+      - description: User to unfollow
+        in: path
+        name: username
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: User session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Done
+          schema:
+            type: boolean
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Unfollow user
+      tags:
+      - app/private
+  /auth/forgot_password/confirm_email:
+    post:
+      consumes:
+      - application/json
+      description: Provide the 6-digit token sent to email
+      parameters:
+      - description: 6-digit token
+        in: body
+        name: token
+        required: true
+        schema:
+          type: string
+      - collectionFormat: csv
+        description: Password Reset session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email confirmed. You're about to reset your password
+          headers:
+            Set-Cookie:
+              description: Password Reset session request cookie
+              type: array
+          schema:
+            $ref: '#/definitions/passwordResetService.passReset2RespT'
+        "400":
+          description: Incorrect or expired confirmation token
+          headers:
+            Set-Cookie:
+              description: Password Reset session request cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          headers:
+            Set-Cookie:
+              description: Password Reset session request cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Password Reset - Step 2
+      tags:
+      - auth
   /auth/forgot_password/request_password_reset:
     post:
       consumes:
@@ -117,6 +369,58 @@ paths:
       summary: Password Reset - Step 1
       tags:
       - auth
+  /auth/forgot_password/reset_password:
+    post:
+      consumes:
+      - application/json
+      description: Set new password
+      parameters:
+      - description: Choose a new password
+        in: body
+        name: newPassword
+        required: true
+        schema:
+          type: string
+      - description: Conform new password
+        in: body
+        name: confirmNewPassword
+        required: true
+        schema:
+          type: string
+      - collectionFormat: csv
+        description: Password Reset session request cookie
+        in: header
+        items:
+          type: string
+        name: Cookie
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/passwordResetService.passReset3RespT'
+        "400":
+          description: Passwords mismatch.
+          headers:
+            Set-Cookie:
+              description: Password Reset session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+        "500":
+          description: Internal Server Error
+          headers:
+            Set-Cookie:
+              description: Password Reset session response cookie
+              type: array
+          schema:
+            $ref: '#/definitions/appErrors.HTTPError'
+      summary: Password Reset user - Step 3
+      tags:
+      - auth
   /auth/signin:
     post:
       consumes:
@@ -145,7 +449,7 @@ paths:
               description: User session response cookie containing auth JWT
               type: array
           schema:
-            $ref: '#/definitions/signinService.SigninRespT'
+            $ref: '#/definitions/signinService.signinRespT'
         "400":
           description: Bad Request
           schema:
@@ -159,53 +463,6 @@ paths:
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Signin user
-      tags:
-      - auth
-  /auth/signup/confirm_email:
-    post:
-      consumes:
-      - application/json
-      description: Provide the 6-digit token sent to email
-      parameters:
-      - description: 6-digit token
-        in: body
-        name: token
-        required: true
-        schema:
-          type: string
-      - description: Password Reset session request cookie
-        in: header
-        name: Cookie
-        required: true
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Email confirmed. You're about to reset your password
-          headers:
-            Set-Cookie:
-              description: Password Reset session request cookie
-              type: array
-          schema:
-            $ref: '#/definitions/passwordResetService.passReset2RespT'
-        "400":
-          description: Incorrect or expired confirmation token
-          headers:
-            Set-Cookie:
-              description: Password Reset session request cookie
-              type: array
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
-        "500":
-          description: Internal Server Error
-          headers:
-            Set-Cookie:
-              description: Password Reset session request cookie
-              type: array
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
-      summary: Password Reset - Step 2
       tags:
       - auth
   /auth/signup/register_user:
@@ -243,8 +500,11 @@ paths:
         name: bio
         schema:
           type: string
-      - description: Signup session request cookie
+      - collectionFormat: csv
+        description: Signup session request cookie
         in: header
+        items:
+          type: string
         name: Cookie
         required: true
         type: array
@@ -324,8 +584,11 @@ paths:
         required: true
         schema:
           type: string
-      - description: Signup session request cookie
+      - collectionFormat: csv
+        description: Signup session request cookie
         in: header
+        items:
+          type: string
         name: Cookie
         required: true
         type: array
