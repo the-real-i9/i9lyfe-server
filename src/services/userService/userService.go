@@ -3,6 +3,7 @@ package userService
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
@@ -65,19 +66,19 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername string, pictur
 	return done, nil
 }
 
-func FollowUser(ctx context.Context, clientUsername, targetUsername string, at int64) (any, error) {
-	if clientUsername == targetUsername {
+func FollowUser(ctx context.Context, clientUser appTypes.ClientUser, targetUsername string, at int64) (any, error) {
+	if clientUser.Username == targetUsername {
 		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	done, err := user.Follow(ctx, clientUsername, targetUsername, at)
+	done, err := user.Follow(ctx, clientUser.Username, targetUsername, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if done {
 		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
-			FollowerUser:  clientUsername,
+			FollowerUser:  clientUser,
 			FollowingUser: targetUsername,
 			At:            at,
 		})
