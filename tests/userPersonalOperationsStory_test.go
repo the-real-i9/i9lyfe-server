@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -47,16 +46,15 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		t.Log("Setup: create new account for users")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
-			user := user
-
 			{
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+				req, err := http.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+				require.NoError(t, err)
 				req.Header.Add("Content-Type", "application/json")
 
-				res, err := app.Test(req)
+				res, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -82,12 +80,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				reqBody, err := makeReqBody(map[string]any{"code": verfCode})
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
+				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
 				require.NoError(t, err)
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/json")
 
-				res, err := app.Test(req)
+				res, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -117,12 +115,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", signupPath+"/register_user", reqBody)
+				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
 				require.NoError(t, err)
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/json")
 
-				res, err := app.Test(req)
+				res, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 
 				if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -149,7 +147,6 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		t.Log("Setup: Init user sockets")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
-			user := user
 
 			header := http.Header{}
 			header.Set("Cookie", user.SessionCookie)
@@ -211,12 +208,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", appPathPriv+"/me/edit_profile", reqBody)
+		req, err := http.NewRequest("PUT", appPathPriv+"/me/edit_profile", reqBody)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -240,12 +237,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		reqBody, err := makeReqBody(map[string]any{"picture_data": ppic})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", appPathPriv+"/me/change_profile_picture", reqBody)
+		req, err := http.NewRequest("PUT", appPathPriv+"/me/change_profile_picture", reqBody)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -263,11 +260,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user1 follows user2 | user2 is notified")
 
-		req := httptest.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
+		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -296,11 +294,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user3 follows user2 | user2 is notified")
 
-		req := httptest.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
+		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -329,11 +328,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 follows user3 | user3 is notified")
 
-		req := httptest.NewRequest("POST", appPathPriv+"/users/"+user3.Username+"/follow", nil)
+		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user3.Username+"/follow", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -362,11 +362,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 checks her followers | confirms new followers")
 
-		req := httptest.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -381,14 +382,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), followers, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"username":       user1.Username,
-				"client_follows": false,
+				"username":  user1.Username,
+				"me_follow": false,
 			}, nil)),
 			td.Contains(td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"username":       user3.Username,
-				"client_follows": true,
+				"username":  user3.Username,
+				"me_follow": true,
 			}, nil)),
 		))
 	}
@@ -396,11 +395,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user3 follows user1 | user1 is notified")
 
-		req := httptest.NewRequest("POST", appPathPriv+"/users/"+user1.Username+"/follow", nil)
+		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user1.Username+"/follow", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -429,11 +429,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user3 checks her following | confirms new following")
 
-		req := httptest.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -448,14 +449,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), following, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"username":       user1.Username,
-				"client_follows": true,
+				"username":  user1.Username,
+				"me_follow": true,
 			}, nil)),
 			td.Contains(td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"username":       user2.Username,
-				"client_follows": true,
+				"username":  user2.Username,
+				"me_follow": true,
 			}, nil)),
 		))
 	}
@@ -463,11 +462,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user3 unfollows user2")
 
-		req := httptest.NewRequest("DELETE", appPathPriv+"/users/"+user2.Username+"/unfollow", nil)
+		req, err := http.NewRequest("DELETE", appPathPriv+"/users/"+user2.Username+"/unfollow", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -485,11 +485,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 rechecks her followers | confirms user3's gone")
 
-		req := httptest.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -515,11 +516,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user3 rechecks her following | confirms user2's gone")
 
-		req := httptest.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -545,11 +547,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user1 views his profile | confirms all changes")
 
-		req := httptest.NewRequest("GET", appPathPublic+"/"+user1.Username, nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user1.Username, nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -595,12 +598,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			req := httptest.NewRequest("POST", appPathPriv+"/new_post", reqBody)
+			req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 			require.NoError(t, err)
 			req.Header.Set("Cookie", user1.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -661,12 +664,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			req := httptest.NewRequest("POST", appPathPriv+"/new_post", reqBody)
+			req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 			require.NoError(t, err)
 			req.Header.Set("Cookie", user3.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -719,12 +722,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/react", reqBody)
+			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/react", reqBody)
 			require.NoError(t, err)
 			req.Header.Set("Cookie", user2.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -759,12 +762,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/react", reqBody)
+			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/react", reqBody)
 			require.NoError(t, err)
 			req.Header.Set("Cookie", user2.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -794,11 +797,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		{
 			// Action: user2 saves user1's post
 
-			req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/save", nil)
+			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/save", nil)
+			require.NoError(t, err)
 			req.Header.Set("Cookie", user2.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -816,11 +820,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		{
 			// Action: user2 saves user3's post
 
-			req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/save", nil)
+			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/save", nil)
+			require.NoError(t, err)
 			req.Header.Set("Cookie", user2.SessionCookie)
 			req.Header.Add("Content-Type", "application/json")
 
-			res, err := app.Test(req)
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 
 			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -841,11 +846,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 checks posts in which she's been mentioned")
 
-		req := httptest.NewRequest("GET", appPathPriv+"/me/mentioned_posts", nil)
+		req, err := http.NewRequest("GET", appPathPriv+"/me/mentioned_posts", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -877,11 +883,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 checks posts she's reacted to")
 
-		req := httptest.NewRequest("GET", appPathPriv+"/me/reacted_posts", nil)
+		req, err := http.NewRequest("GET", appPathPriv+"/me/reacted_posts", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -913,11 +920,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 	{
 		t.Log("Action: user2 checks posts she's saved")
 
-		req := httptest.NewRequest("GET", appPathPriv+"/me/saved_posts", nil)
+		req, err := http.NewRequest("GET", appPathPriv+"/me/saved_posts", nil)
+		require.NoError(t, err)
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
 
-		res, err := app.Test(req)
+		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {

@@ -12,7 +12,7 @@ import (
 )
 
 func publishContentMetric(ctx context.Context, data any, contentType string) {
-	if err := rdb.Publish(ctx, "live_content_metrics", helpers.ToJson(appTypes.ServerEventMsg{
+	if err := rdb().Publish(ctx, "live_content_metrics", helpers.ToJson(appTypes.ServerEventMsg{
 		Event: "latest " + contentType + " metric",
 		Data:  data,
 	})).Err(); err != nil {
@@ -29,7 +29,7 @@ func PublishCommentMetric(ctx context.Context, data any) {
 }
 
 func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, _ context.CancelFunc) {
-	pubsub := rdb.Subscribe(ctx, "live_content_metrics")
+	pubsub := rdb().Subscribe(ctx, "live_content_metrics")
 
 	defer func() {
 		if err := pubsub.Close(); err != nil {
@@ -53,7 +53,7 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, _
 }
 
 func PublishUserPresenceChange(ctx context.Context, targetUsername string, data map[string]any) {
-	if err := rdb.Publish(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername), helpers.ToJson(appTypes.ServerEventMsg{
+	if err := rdb().Publish(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername), helpers.ToJson(appTypes.ServerEventMsg{
 		Event: "user presence changed",
 		Data:  data,
 	})).Err(); err != nil {
@@ -62,7 +62,7 @@ func PublishUserPresenceChange(ctx context.Context, targetUsername string, data 
 }
 
 func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetUsername string) {
-	pubsub := rdb.Subscribe(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername))
+	pubsub := rdb().Subscribe(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername))
 
 	defer func() {
 		if err := pubsub.Close(); err != nil {

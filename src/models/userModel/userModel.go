@@ -9,7 +9,6 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/models/modelHelpers"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
@@ -103,6 +102,12 @@ func ChangePassword(ctx context.Context, email, newPassword string) error {
 }
 
 func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[string]any) (bool, error) {
+	if val, ok := updateKVMap["name"]; ok {
+		updateKVMap["name_"] = val
+
+		delete(updateKVMap, "name")
+	}
+
 	setChanges, params, place := "", []any{clientUsername}, 2
 
 	for col, val := range updateKVMap {
@@ -138,7 +143,7 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 		UPDATE users
 		SET profile_pic_url = $2
 		WHERE username = $1
-		RETURNING done AS true
+		RETURNING true AS done
 		`, clientUsername, pictureUrl,
 	)
 	if err != nil {
@@ -343,7 +348,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 	return userPosts, nil
 }
 
-func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen time.Time) error {
+func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen int64) error {
 	var lastSeenVal any
 	if presence == "online" {
 		lastSeenVal = nil

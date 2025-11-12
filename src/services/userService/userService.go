@@ -185,7 +185,7 @@ func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, li
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {
-	err := user.ChangePresence(ctx, clientUsername, "online", time.Time{})
+	err := user.ChangePresence(ctx, clientUsername, "online", 0)
 	if err != nil {
 		return
 	}
@@ -197,7 +197,7 @@ func GoOnline(ctx context.Context, clientUsername string) {
 }
 
 func GoOffline(ctx context.Context, clientUsername string) {
-	lastSeen := time.Now().UTC()
+	lastSeen := time.Now().UTC().UnixMilli()
 
 	err := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
 	if err != nil {

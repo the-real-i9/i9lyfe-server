@@ -119,15 +119,11 @@ func GetNotification[T any](ctx context.Context, notifId string) (notif T, err e
 }
 
 func NotificationIsUnread(ctx context.Context, notifId string) (bool, error) {
-	checks, err := rdb().SMIsMember(ctx, "unread_notifications", notifId).Result()
+	check, err := rdb().SIsMember(ctx, "unread_notifications", notifId).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return false, err
 	}
 
-	if err == redis.Nil {
-		return false, nil
-	}
-
-	return checks[0], nil
+	return check, nil
 }

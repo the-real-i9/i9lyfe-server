@@ -74,7 +74,27 @@ func TestMain(m *testing.M) {
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
 
+	var PORT string
+
+	if os.Getenv("GO_ENV") != "production" {
+		PORT = "8000"
+	} else {
+		PORT = os.Getenv("PORT")
+	}
+
+	go func() {
+		app.Listen("0.0.0.0:" + PORT)
+	}()
+
+	waitReady := time.NewTimer(2 * time.Second)
+	<-waitReady.C
+
 	c := m.Run()
+
+	waitFinish := time.NewTimer(2 * time.Second)
+	<-waitFinish.C
+
+	app.Shutdown()
 
 	os.Exit(c)
 }
