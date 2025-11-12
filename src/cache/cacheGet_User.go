@@ -68,6 +68,16 @@ func UserFollowsMe(ctx context.Context, me, username string) (bool, error) {
 	return err == nil, nil
 }
 
+func GetUserPostsCount(ctx context.Context, username string) (int64, error) {
+	count, err := rdb().ZCard(ctx, fmt.Sprintf("user:%s:posts", username)).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func GetUserFollowersCount(ctx context.Context, username string) (int64, error) {
 	count, err := rdb().ZCard(ctx, fmt.Sprintf("user:%s:followers", username)).Result()
 	if err != nil && err != redis.Nil {

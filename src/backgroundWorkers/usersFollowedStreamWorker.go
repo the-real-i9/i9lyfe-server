@@ -73,13 +73,13 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 
-				userFollowings[msg.FollowerUser] = append(userFollowings[msg.FollowerUser], [2]string{msg.FollowingUser, stmsgIds[i]})
+				userFollowings[msg.FollowerUser.Username] = append(userFollowings[msg.FollowerUser.Username], [2]string{msg.FollowingUser, stmsgIds[i]})
 
-				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]string{msg.FollowerUser, stmsgIds[i]})
+				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]string{msg.FollowerUser.Username, stmsgIds[i]})
 
-				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser, msg.FollowingUser)
-				notif := helpers.BuildNotification(notifUniqueId, "user_follows_user", msg.At, map[string]any{
-					"follower_user": msg.FollowerUser,
+				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser.Username, msg.FollowingUser)
+				notif := helpers.BuildNotification(notifUniqueId, "user_follow", msg.At, map[string]any{
+					"follower_user": msg.FollowerUser.Username,
 				})
 
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
@@ -88,11 +88,12 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notif["is_read"] = false
+					notif["unread"] = true
+					notif["details"].(map[string]any)["follower_user"] = msg.FollowerUser
 
 					realtimeService.SendEventMsg(msg.FollowingUser, appTypes.ServerEventMsg{
 						Event: "new notification",
-						Data:  helpers.ToJson(notif),
+						Data:  notif,
 					})
 				})
 

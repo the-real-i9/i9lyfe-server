@@ -81,18 +81,18 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 				postComments[msg.PostId] = append(postComments[msg.PostId], [2]string{msg.CommentId, stmsgIds[i]})
 
-				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]string{msg.PostId, stmsgIds[i]})
+				userCommentedPosts[msg.CommenterUser.Username] = append(userCommentedPosts[msg.CommenterUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, [2]any{func() error {
 					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
 				}, stmsgIds[i]})
 
-				if msg.PostOwner == msg.CommenterUser {
+				if msg.PostOwner == msg.CommenterUser.Username {
 
-					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser, msg.CommentId, msg.PostId)
+					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser.Username, msg.CommentId, msg.PostId)
 					copNotif := helpers.BuildNotification(copNotifUniqueId, "comment_on_post", msg.At, map[string]any{
 						"on_post_id":     msg.PostId,
-						"commenter_user": msg.CommenterUser,
+						"commenter_user": msg.CommenterUser.Username,
 						"comment_id":     msg.CommentId,
 					})
 
@@ -102,24 +102,25 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						copNotif["is_read"] = false
+						copNotif["unread"] = true
+						copNotif["details"].(map[string]any)["commenter_user"] = msg.CommenterUser
 
 						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  helpers.ToJson(copNotif),
+							Data:  copNotif,
 						})
 					})
 				}
 
 				for _, mu := range msg.Mentions {
-					if mu == msg.CommenterUser {
+					if mu == msg.CommenterUser.Username {
 						continue
 					}
 
 					micNotifUniqueId := fmt.Sprintf("user_%s_mentioned_in_comment_%s", mu, msg.CommentId)
 					micNotif := helpers.BuildNotification(micNotifUniqueId, "mention_in_comment", msg.At, map[string]any{
 						"in_comment_id":   msg.CommentId,
-						"mentioning_user": msg.CommenterUser,
+						"mentioning_user": msg.CommenterUser.Username,
 					})
 
 					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
@@ -128,11 +129,12 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						micNotif["is_read"] = false
+						micNotif["unread"] = true
+						micNotif["details"].(map[string]any)["mentioning_user"] = msg.CommenterUser
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  helpers.ToJson(micNotif),
+							Data:  micNotif,
 						})
 					})
 				}

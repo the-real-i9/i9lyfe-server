@@ -1,5 +1,7 @@
 package eventTypes
 
+import "i9lyfe/src/appTypes"
+
 type NewUserEvent struct {
 	Username string
 	UserData string
@@ -11,7 +13,7 @@ type EditUserEvent struct {
 }
 
 type UserFollowEvent struct {
-	FollowerUser  string
+	FollowerUser  appTypes.ClientUser
 	FollowingUser string
 	At            int64
 }
@@ -22,7 +24,7 @@ type UserUnfollowEvent struct {
 }
 
 type NewPostEvent struct {
-	OwnerUser string
+	OwnerUser appTypes.ClientUser
 	PostId    string
 	PostData  string
 	Hashtags  []string
@@ -37,7 +39,7 @@ type PostDeletionEvent struct {
 }
 
 type PostReactionEvent struct {
-	ReactorUser string
+	ReactorUser appTypes.ClientUser
 	PostOwner   string
 	PostId      string
 	Emoji       string
@@ -50,7 +52,7 @@ type PostReactionRemovedEvent struct {
 }
 
 type PostCommentEvent struct {
-	CommenterUser string
+	CommenterUser appTypes.ClientUser
 	PostId        string
 	PostOwner     string
 	CommentId     string
@@ -66,7 +68,7 @@ type PostCommentRemovedEvent struct {
 }
 
 type CommentReactionEvent struct {
-	ReactorUser  string
+	ReactorUser  appTypes.ClientUser
 	CommentId    string
 	CommentOwner string
 	Emoji        string
@@ -79,7 +81,7 @@ type CommentReactionRemovedEvent struct {
 }
 
 type CommentCommentEvent struct {
-	CommenterUser      string
+	CommenterUser      appTypes.ClientUser
 	ParentCommentId    string
 	ParentCommentOwner string
 	CommentId          string
@@ -89,13 +91,13 @@ type CommentCommentEvent struct {
 }
 
 type CommentCommentRemovedEvent struct {
-	CommenterUser   string
+	CommenterUser   appTypes.ClientUser
 	ParentCommentId string
 	CommentId       string
 }
 
 type RepostEvent struct {
-	ReposterUser string
+	ReposterUser appTypes.ClientUser
 	PostId       string
 	PostOwner    string
 	RepostId     string

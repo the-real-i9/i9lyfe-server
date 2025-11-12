@@ -83,23 +83,23 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 				postReposts[msg.PostId] = append(postReposts[msg.PostId], [2]any{msg.RepostId, stmsgIds[i]})
 
-				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]string{msg.PostId, stmsgIds[i]})
+				userRepostedPosts[msg.ReposterUser.Username] = append(userRepostedPosts[msg.ReposterUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
 					contentRecommendationService.FanOutPost(msg.RepostId)
 				})
 
-				if msg.ReposterUser == msg.PostOwner {
+				if msg.ReposterUser.Username == msg.PostOwner {
 					continue
 				}
 
-				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]string{msg.RepostId, stmsgIds[i]})
+				userPosts[msg.ReposterUser.Username] = append(userPosts[msg.ReposterUser.Username], [2]string{msg.RepostId, stmsgIds[i]})
 
-				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser, msg.PostId)
+				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser.Username, msg.PostId)
 				notif := helpers.BuildNotification(notifUniqueId, "repost", msg.At, map[string]any{
 					"reposted_post_id": msg.PostId,
+					"reposter_user":    msg.ReposterUser.Username,
 					"repost_id":        msg.RepostId,
-					"reposter_user":    msg.ReposterUser,
 				})
 
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
@@ -108,11 +108,12 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notif["is_read"] = false
+					notif["unread"] = true
+					notif["details"].(map[string]any)["reposter_user"] = msg.ReposterUser
 
 					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 						Event: "new notification",
-						Data:  helpers.ToJson(notif),
+						Data:  notif,
 					})
 				})
 			}

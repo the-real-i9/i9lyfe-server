@@ -72,18 +72,18 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				postReactions[msg.PostId] = append(postReactions[msg.PostId], [2]any{[]string{msg.ReactorUser, msg.Emoji}, stmsgIds[i]})
+				postReactions[msg.PostId] = append(postReactions[msg.PostId], [2]any{[]string{msg.ReactorUser.Username, msg.Emoji}, stmsgIds[i]})
 
-				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
+				userReactedPosts[msg.ReactorUser.Username] = append(userReactedPosts[msg.ReactorUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
-				if msg.PostOwner == msg.ReactorUser {
+				if msg.PostOwner == msg.ReactorUser.Username {
 					continue
 				}
 
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
+				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser.Username, msg.PostId)
 				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
 					"to_post_id":   msg.PostId,
-					"reactor_user": msg.ReactorUser,
+					"reactor_user": msg.ReactorUser.Username,
 					"emoji":        msg.Emoji,
 				})
 
@@ -93,11 +93,12 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notif["is_read"] = false
+					notif["unread"] = true
+					notif["details"].(map[string]any)["reactor_user"] = msg.ReactorUser
 
 					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 						Event: "new notification",
-						Data:  helpers.ToJson(notif),
+						Data:  notif,
 					})
 				})
 			}

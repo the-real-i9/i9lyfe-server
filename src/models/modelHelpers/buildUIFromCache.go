@@ -101,6 +101,11 @@ func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername s
 		return nilVal, err
 	}
 
+	userProfileUI.PostsCount, err = cache.GetUserPostsCount(ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
 	userProfileUI.FollowersCount, err = cache.GetUserFollowersCount(ctx, username)
 	if err != nil {
 		return nilVal, err
@@ -140,7 +145,7 @@ func buildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSni
 	}
 
 	switch notifSnippetUI.Type {
-	case "user_follow_user":
+	case "user_follow":
 		if err := setNotifUserDetail("follower_user"); err != nil {
 			return nilVal, err
 		}

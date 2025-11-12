@@ -51,7 +51,7 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			var msgs []eventTypes.UserFollowEvent
+			var msgs []eventTypes.UserUnfollowEvent
 			helpers.ToStruct(stmsgValues, &msgs)
 
 			userFollowingsRemoved := make(map[string][][2]string)

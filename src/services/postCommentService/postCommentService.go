@@ -3,6 +3,7 @@ package postCommentService
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
@@ -17,8 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][]byte, postType, description string, at int64) (any, error) {
-
+func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaDataList [][]byte, postType, description string, at int64) (any, error) {
 	mediaUrls := make([]string, len(mediaDataList))
 
 	for i, mediaData := range mediaDataList {
@@ -29,7 +29,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
 		}
 
-		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s/media-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), mediaData)
+		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s/media-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), mediaData)
 		if err != nil {
 			return nil, err
 		}
@@ -40,17 +40,17 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaDataList [][
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	newPost, err := post.New(ctx, clientUsername, mediaUrls, postType, description, at)
+	newPost, err := post.New(ctx, clientUser.Username, mediaUrls, postType, description, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if newPost.Id != "" {
 		newPost := newPost
-		newPost.OwnerUser = clientUsername
+		newPost.OwnerUser = clientUser.Username
 
 		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
-			OwnerUser: clientUsername,
+			OwnerUser: clientUser,
 			PostId:    newPost.Id,
 			PostData:  helpers.ToJson(newPost),
 			Hashtags:  hashtags,
@@ -94,8 +94,8 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (any, error)
 	return done, nil
 }
 
-func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (any, error) {
-	postOwner, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
+func ReactToPost(ctx context.Context, clientUser appTypes.ClientUser, postId, emoji string, at int64) (any, error) {
+	postOwner, err := post.ReactTo(ctx, clientUser.Username, postId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at i
 
 	if done {
 		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
-			ReactorUser: clientUsername,
+			ReactorUser: clientUser,
 			PostOwner:   postOwner,
 			PostId:      postId,
 			Emoji:       emoji,
@@ -149,8 +149,7 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 	return done, nil
 }
 
-func CommentOnPost(ctx context.Context, clientUsername, postId, commentText string, attachmentData []byte, at int64) (any, error) {
-
+func CommentOnPost(ctx context.Context, clientUser appTypes.ClientUser, postId, commentText string, attachmentData []byte, at int64) (any, error) {
 	var (
 		attachmentUrl string
 		err           error
@@ -164,7 +163,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 		}
 
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s/att-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), attachmentData)
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s/att-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), attachmentData)
 		if err != nil {
 			return nil, err
 		}
@@ -172,14 +171,14 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText stri
 
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentUrl, at)
+	newComment, err := post.CommentOn(ctx, clientUser.Username, postId, commentText, attachmentUrl, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if newComment.Id != "" {
 		go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
-			CommenterUser: clientUsername,
+			CommenterUser: clientUser,
 			PostId:        postId,
 			PostOwner:     newComment.PostOwner,
 			CommentId:     newComment.Id,
@@ -231,8 +230,8 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 	return done, nil
 }
 
-func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (any, error) {
-	commentOwner, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
+func ReactToComment(ctx context.Context, clientUser appTypes.ClientUser, commentId, emoji string, at int64) (any, error) {
+	commentOwner, err := comment.ReactTo(ctx, clientUser.Username, commentId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +241,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string
 	if done {
 		// look to post reaction bg worker for todos
 		go eventStreamService.QueueCommentReactionEvent(eventTypes.CommentReactionEvent{
-			ReactorUser:  clientUsername,
+			ReactorUser:  clientUser,
 			CommentId:    commentId,
 			CommentOwner: commentOwner,
 			Emoji:        emoji,
@@ -288,7 +287,7 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 	return done, nil
 }
 
-func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText string, attachmentData []byte, at int64) (any, error) {
+func CommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentText string, attachmentData []byte, at int64) (any, error) {
 
 	var (
 		attachmentUrl string
@@ -304,7 +303,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
 		}
 
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s/att-%d%s", clientUsername, time.Now().UnixNano(), mediaExt), attachmentData)
+		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s/att-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), attachmentData)
 		if err != nil {
 			return nil, err
 		}
@@ -312,7 +311,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentUrl, at)
+	newComment, err := comment.CommentOn(ctx, clientUser.Username, parentCommentId, commentText, attachmentUrl, at)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +324,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 	// publish comment metric update
 	if newComment.Id != "" {
 		go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
-			CommenterUser:      clientUsername,
+			CommenterUser:      clientUser,
 			ParentCommentId:    parentCommentId,
 			ParentCommentOwner: newComment.ParentCommentOwner,
 			CommentId:          newComment.Id,
@@ -347,8 +346,8 @@ func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string,
 	return comments, nil
 }
 
-func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (any, error) {
-	done, err := comment.RemoveComment(ctx, clientUsername, parentCommentId, commentId)
+func RemoveCommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentId string) (any, error) {
+	done, err := comment.RemoveComment(ctx, clientUser.Username, parentCommentId, commentId)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +358,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 		// mark comment and all related data (likes, comments, etc.) as deleted
 		// publish latest comment metric
 		go eventStreamService.QueueCommentCommentRemovedEvent(eventTypes.CommentCommentRemovedEvent{
-			CommenterUser:   clientUsername,
+			CommenterUser:   clientUser,
 			ParentCommentId: parentCommentId,
 			CommentId:       commentId,
 		})
@@ -368,10 +367,10 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 	return done, nil
 }
 
-func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
+func RepostPost(ctx context.Context, clientUser appTypes.ClientUser, postId string) (any, error) {
 	at := time.Now().UnixMilli()
 
-	repost, err := post.Repost(ctx, clientUsername, postId, at)
+	repost, err := post.Repost(ctx, clientUser.Username, postId, at)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +382,7 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 	// fan out repost
 	if repost.Id != "" {
 		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
-			ReposterUser: clientUsername,
+			ReposterUser: clientUser,
 			PostId:       postId,
 			PostOwner:    repost.OwnerUser,
 			RepostId:     repost.Id,

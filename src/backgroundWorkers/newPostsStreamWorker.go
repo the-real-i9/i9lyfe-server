@@ -82,7 +82,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newPosts = append(newPosts, msg.PostId, msg.PostData)
 
-				userPosts[msg.OwnerUser] = append(userPosts[msg.OwnerUser], [2]string{msg.PostId, stmsgIds[i]})
+				userPosts[msg.OwnerUser.Username] = append(userPosts[msg.OwnerUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
 				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, [2]any{func() error {
 					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
@@ -91,14 +91,14 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				for _, mu := range msg.Mentions {
 					userMentionedPosts[mu] = append(userMentionedPosts[mu], [2]string{msg.PostId, stmsgIds[i]})
 
-					if mu == msg.OwnerUser {
+					if mu == msg.OwnerUser.Username {
 						continue
 					}
 
 					notifUniqueId := fmt.Sprintf("user_%s_mentioned_in_post_%s", mu, msg.PostId)
 					notif := helpers.BuildNotification(notifUniqueId, "mention_in_post", msg.At, map[string]any{
 						"in_post_id":      msg.PostId,
-						"mentioning_user": msg.OwnerUser,
+						"mentioning_user": msg.OwnerUser.Username,
 					})
 
 					notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
@@ -107,11 +107,12 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{notifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						notif["is_read"] = false
+						notif["unread"] = true
+						notif["details"].(map[string]any)["mentioning_user"] = msg.OwnerUser
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  helpers.ToJson(notif),
+							Data:  notif,
 						})
 					})
 				}
