@@ -188,8 +188,8 @@ func CommentOnPost(ctx context.Context, clientUser appTypes.ClientUser, postId, 
 	return newComment, nil
 }
 
-func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
-	comments, err := post.GetComments(ctx, clientUsername, postId, limit, helpers.OffsetTime(offset))
+func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.Comment, error) {
+	comments, err := post.GetComments(ctx, clientUsername, postId, limit, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -197,10 +197,10 @@ func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit
 	return comments, nil
 }
 
-func GetComment(ctx context.Context, clientUsername, commentId string) (any, error) {
+func GetComment(ctx context.Context, clientUsername, commentId string) (UITypes.Comment, error) {
 	theComment, err := comment.Get(ctx, clientUsername, commentId)
 	if err != nil {
-		return nil, err
+		return UITypes.Comment{}, err
 	}
 
 	return theComment, nil
@@ -249,8 +249,8 @@ func ReactToComment(ctx context.Context, clientUser appTypes.ClientUser, comment
 	return done, nil
 }
 
-func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
-	reactors, err := comment.GetReactors(ctx, clientUsername, commentId, limit, helpers.OffsetTime(offset))
+func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.ReactorSnippet, error) {
+	reactors, err := comment.GetReactors(ctx, clientUsername, commentId, limit, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -258,14 +258,14 @@ func GetReactorsToComment(ctx context.Context, clientUsername, commentId string,
 	return reactors, nil
 }
 
-func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset int64) (any, error) {
+/* func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset int64) (any, error) {
 	reactors, err := comment.GetReactorsWithReaction(ctx, clientUsername, commentId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
 
 	return reactors, nil
-}
+} */
 
 func RemoveReactionToComment(ctx context.Context, clientUsername, commentId string) (any, error) {
 	done, err := comment.RemoveReaction(ctx, clientUsername, commentId)
@@ -334,8 +334,8 @@ func CommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, paren
 	return newComment, nil
 }
 
-func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, offset int64) (any, error) {
-	comments, err := comment.GetComments(ctx, clientUsername, commentId, limit, helpers.OffsetTime(offset))
+func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.Comment, error) {
+	comments, err := comment.GetComments(ctx, clientUsername, commentId, limit, cursor)
 	if err != nil {
 		return nil, err
 	}

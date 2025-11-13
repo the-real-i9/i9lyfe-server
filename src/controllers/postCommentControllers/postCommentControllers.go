@@ -2,10 +2,8 @@ package postCommentControllers
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/postCommentService"
-	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -172,7 +170,7 @@ func GetCommentsOnPost(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
 	if app_err != nil {
 		return app_err
 	}
@@ -241,7 +239,7 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
 	if app_err != nil {
 		return app_err
 	}
@@ -249,7 +247,7 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
+/* func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -266,7 +264,7 @@ func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(respData)
-}
+} */
 
 func RemoveReactionToComment(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -315,7 +313,7 @@ func GetCommentsOnComment(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
 	if app_err != nil {
 		return app_err
 	}

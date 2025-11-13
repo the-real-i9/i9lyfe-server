@@ -6,7 +6,7 @@ type NotifUser struct {
 	ProfilePicUrl string `json:"profile_pic_url"`
 }
 
-type PostOwnerUser struct {
+type ContentOwnerUser struct {
 	Username      string `json:"username"`
 	Name          string `json:"name"`
 	ProfilePicUrl string `json:"profile_pic_url"`
@@ -26,6 +26,18 @@ type Post struct {
 	MeReaction     string   `json:"me_reaction"`
 	MeSaved        bool     `json:"me_saved"`
 	MeReposted     bool     `json:"me_reposted"`
+	Cursor         float64  `json:"cursor"`
+}
+
+type Comment struct {
+	Id             string   `json:"id"`
+	OwnerUser      any      `json:"owner_user"`
+	AttachmentUrl  []string `json:"attachment_url"`
+	CommentText    string   `json:"comment_text"`
+	At             int64    `json:"at"`
+	ReactionsCount int64    `json:"reactions_count"`
+	CommentsCount  int64    `json:"comments_count"`
+	MeReaction     string   `json:"me_reaction"`
 	Cursor         float64  `json:"cursor"`
 }
 

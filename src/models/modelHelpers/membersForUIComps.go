@@ -102,6 +102,53 @@ func PostMembersForUIPosts(ctx context.Context, postMembers []redis.Z, clientUse
 	return postsAcc, nil
 }
 
+func CommentMembersForUIComments(ctx context.Context, commentMembers []redis.Z, clientUsername string) ([]UITypes.Comment, error) {
+
+	cmsLen := len(commentMembers)
+
+	commentsAcc := make([]UITypes.Comment, cmsLen)
+
+	var threadNums int = runtime.NumCPU()
+
+	if cmsLen < threadNums {
+		// it's errorneous to spawn more threads than jobs.
+		// the least we can have is a number of threads
+		// equal to the number of jobs to process
+		threadNums = cmsLen
+	}
+
+	eg, sharedCtx := errgroup.WithContext(ctx)
+
+	for i := range threadNums {
+		eg.Go(func() error {
+			j := i
+			start, end := (cmsLen*j)/threadNums, cmsLen*(j+1)/threadNums
+
+			for pIndx := start; pIndx < end; pIndx++ {
+				commentId := commentMembers[pIndx].Member.(string)
+				cursor := commentMembers[pIndx].Score
+
+				comment, err := BuildCommentUIFromCache(sharedCtx, commentId, clientUsername)
+				if err != nil {
+					return err
+				}
+
+				comment.Cursor = cursor
+
+				commentsAcc[pIndx] = comment
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return commentsAcc, nil
+}
+
 func UserMembersForUIUserSnippets(ctx context.Context, userMembers []redis.Z, clientUsername string) ([]UITypes.UserSnippet, error) {
 
 	umsLen := len(userMembers)

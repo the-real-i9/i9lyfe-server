@@ -8,17 +8,10 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/models/modelHelpers"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/redis/go-redis/v9"
 )
-
-func dbPool() *pgxpool.Pool {
-	return appGlobals.DBPool
-}
 
 func redisDB() *redis.Client {
 	return appGlobals.RedisClient
@@ -53,7 +46,7 @@ func New(ctx context.Context, clientUsername string, mediaUrls []string, postTyp
 func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []string) error {
 	var err error
 
-	tx, err := dbPool().Begin(ctx)
+	tx, err := appGlobals.DBPool.Begin(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -200,6 +193,7 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 
 type newCommentT struct {
 	Id            string `json:"id" db:"comment_id"`
+	OwnerUser     string `json:"owner_user" db:"owner_user"`
 	CommentText   string `json:"comment_text" db:"comment_text"`
 	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
 	At            int64  `json:"at" db:"at_"`
@@ -213,9 +207,9 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		WITH comment_on AS (
 			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, comment_text, attachment_url, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, comment_text, attachment_url, at_, (SELECT owner_user FROM posts WHERE id_ = $2) AS post_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
 		`, clientUsername, postId, commentText, attachmentUrl, at,
 	)
 	if err != nil {
@@ -229,7 +223,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string) error {
 	var err error
 
-	tx, err := dbPool().Begin(ctx)
+	tx, err := appGlobals.DBPool.Begin(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -259,42 +253,22 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 	return nil
 }
 
-func GetComments(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (post:Post{ id: $post_id })<-[:COMMENT_ON_POST]-(comment:Comment WHERE comment.created_at < $offset)<-[:WRITES_COMMENT]-(ownerUser:User)
-
-		OPTIONAL MATCH (comment)<-[crxn:REACTS_TO_COMMENT]-(:User{ username: $client_username })
-
-		WITH comment, 
-			toString(comment.created_at) AS created_at, 
-			ownerUser { .username, .profile_pic_url } AS owner_user,
-			CASE crxn 
-				WHEN IS NULL THEN "" 
-				ELSE crxn.reaction 
-			END AS client_reaction
-		ORDER BY comment.created_at DESC
-		LIMIT $limit
-		RETURN collect(comment {.*, owner_user, created_at, client_reaction }) AS comments
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+func GetComments(ctx context.Context, clientUsername, postId string, limit int, cursor float64) (comments []UITypes.Comment, err error) {
+	commentMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("commented_post:%s:comments", postId), &redis.ZRangeBy{
+		Max:   helpers.MaxCursor(cursor),
+		Min:   "-inf",
+		Count: int64(limit),
+	}).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
+	comments, err = modelHelpers.CommentMembersForUIComments(ctx, commentMembers, clientUsername)
+	if err != nil {
+		helpers.LogError(err)
+		return nil, fiber.ErrInternalServerError
 	}
-
-	comments, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "comments")
 
 	return comments, nil
 }

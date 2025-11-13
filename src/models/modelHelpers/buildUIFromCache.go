@@ -15,7 +15,7 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 		return nilVal, err
 	}
 
-	postUI.OwnerUser, err = cache.GetUser[UITypes.PostOwnerUser](ctx, postUI.OwnerUser.(string))
+	postUI.OwnerUser, err = cache.GetUser[UITypes.ContentOwnerUser](ctx, postUI.OwnerUser.(string))
 	if err != nil {
 		return nilVal, err
 	}
@@ -56,6 +56,37 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 	}
 
 	return postUI, nil
+}
+
+func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername string) (commentUI UITypes.Comment, err error) {
+	nilVal := UITypes.Comment{}
+
+	commentUI, err = cache.GetComment[UITypes.Comment](ctx, commentId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	commentUI.OwnerUser, err = cache.GetUser[UITypes.ContentOwnerUser](ctx, commentUI.OwnerUser.(string))
+	if err != nil {
+		return nilVal, err
+	}
+
+	commentUI.ReactionsCount, err = cache.GetCommentReactionsCount(ctx, commentId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	commentUI.CommentsCount, err = cache.GetCommentCommentsCount(ctx, commentId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	commentUI.MeReaction, err = cache.GetUserCommentReaction(ctx, clientUsername, commentId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	return commentUI, nil
 }
 
 func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername string) (userSnippetUI UITypes.UserSnippet, err error) {

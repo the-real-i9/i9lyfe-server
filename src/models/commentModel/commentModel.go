@@ -2,49 +2,29 @@ package commentModel
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
-	"time"
+	"i9lyfe/src/models/modelHelpers"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/redis/go-redis/v9"
 )
 
-var dbPool = appGlobals.DBPool
+func redisDB() *redis.Client {
+	return appGlobals.RedisClient
+}
 
-func Get(ctx context.Context, clientUsername, commentId string) (any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (comment:Comment{ id: $comment_id })<-[:WRITES_COMMENT]-(ownerUser:User), (clientUser:User{ username: $client_username })
-		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_COMMENT]->(comment)
-		WITH comment, 
-			toString(comment.created_at) AS created_at, 
-			ownerUser { .username, .profile_pic_url } AS owner_user,
-			CASE crxn 
-				WHEN IS NULL THEN "" 
-				ELSE crxn.reaction 
-			END AS client_reaction
-		RETURN comment { .*, owner_user, created_at, client_reaction } AS found_comment
-		`,
-		map[string]any{
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-		},
-	)
+func Get(ctx context.Context, clientUsername, commentId string) (comment UITypes.Comment, err error) {
+	comment, err = modelHelpers.BuildCommentUIFromCache(ctx, commentId, clientUsername)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return UITypes.Comment{}, err
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	foundComment, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_comment")
-
-	return foundComment, nil
+	return comment, nil
 }
 
 func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (string, error) {
@@ -70,82 +50,29 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 	return *commentOwner, nil
 }
 
-func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT]-(reactor:User)
-		WHERE rxn.at < $offset
-		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor, 
-			rxn, 
-			CASE fur 
-				WHEN IS NULL THEN false
-				ELSE true 
-			END AS client_follows
-		ORDER BY rxn.at DESC
-		LIMIT $limit
-		RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors
-		`,
-		map[string]any{
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
+	reactorMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), &redis.ZRangeBy{
+		Max:   helpers.MaxCursor(cursor),
+		Min:   "-inf",
+		Count: int64(limit),
+	}).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors")
-
-	return reactors, nil
-}
-
-func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (:Comment{ id: $comment_id })<-[rxn:REACTS_TO_COMMENT { reaction: $reaction }]-(reactor:User)
-		WHERE rxn.at < $offset
-		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor, 
-			rxn, 
-			CASE fur 
-				WHEN IS NULL THEN false
-				ELSE true 
-			END AS client_follows
-		ORDER BY rxn.at DESC
-		LIMIT $limit
-		RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_wrxn
-		`,
-		map[string]any{
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-			"reaction":        reaction,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+	reactors, err = modelHelpers.ReactorMembersForUIReactorSnippets(ctx, reactorMembers, "comment", commentId)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors_wrxn")
-
 	return reactors, nil
 }
+
+/* func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset time.Time) ([]any, error) {
+
+} */
 
 func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool, error) {
 	done, err := pgDB.QueryRowField[bool](
@@ -166,6 +93,7 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 
 type newCommentT struct {
 	Id                 string `json:"id" db:"comment_id"`
+	OwnerUser          string `json:"owner_user" db:"owner_user"`
 	CommentText        string `json:"comment_text" db:"comment_text"`
 	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
 	At                 int64  `json:"at" db:"at_"`
@@ -179,9 +107,9 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 		WITH comment_on AS (
 			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, comment_text, attachment_url, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE parent_comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE parent_comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentUrl, at,
 	)
 	if err != nil {
@@ -195,7 +123,7 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string) error {
 	var err error
 
-	tx, err := dbPool.Begin(ctx)
+	tx, err := appGlobals.DBPool.Begin(ctx)
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -225,41 +153,22 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 	return nil
 }
 
-func GetComments(ctx context.Context, clientUsername, commentId string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (parentComment:Comment{ id: $comment_id })<-[:COMMENT_ON_COMMENT]-(childComment:Comment WHERE childComment.created_at < $offset)<-[:WRITES_COMMENT]-(ownerUser:User)
-
-		OPTIONAL MATCH (childComment)<-[crxn:REACTS_TO_COMMENT]-(:User{ username: $client_username })
-		WITH childComment, 
-			toString(childComment.created_at) AS created_at, 
-			ownerUser { .username, .profile_pic_url } AS owner_user,
-			CASE crxn 
-				WHEN IS NULL THEN "" 
-				ELSE crxn.reaction 
-			END AS client_reaction
-		ORDER BY childComment.created_at DESC, childComment.reactions_count DESC, childComment.comments_count DESC
-		LIMIT $limit
-		RETURN collect(childComment {.*, created_at, owner_user, client_reaction }) AS comments
-		`,
-		map[string]any{
-			"comment_id":      commentId,
-			"client_username": clientUsername,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+func GetComments(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) (comments []UITypes.Comment, err error) {
+	commentMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("commented_comment:%s:comments", commentId), &redis.ZRangeBy{
+		Max:   helpers.MaxCursor(cursor),
+		Min:   "-inf",
+		Count: int64(limit),
+	}).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
+	comments, err = modelHelpers.CommentMembersForUIComments(ctx, commentMembers, clientUsername)
+	if err != nil {
+		helpers.LogError(err)
+		return nil, fiber.ErrInternalServerError
 	}
-
-	comments, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "comments")
 
 	return comments, nil
 }

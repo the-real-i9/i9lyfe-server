@@ -18,6 +18,16 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 	return helpers.FromJson[T](postJson), nil
 }
 
+func GetComment[T any](ctx context.Context, commentId string) (post T, err error) {
+	commentJson, err := rdb().HGet(ctx, "comments", commentId).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return post, err
+	}
+
+	return helpers.FromJson[T](commentJson), nil
+}
+
 func GetPostReactionsCount(ctx context.Context, postId string) (int64, error) {
 	count, err := rdb().HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
 	if err != nil && err != redis.Nil {
