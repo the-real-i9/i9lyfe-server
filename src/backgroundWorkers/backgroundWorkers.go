@@ -20,11 +20,13 @@ func Start(rdc *redis.Client) error {
 	usersUnfollowedStreamBgWorker(rdc)
 
 	newPostsStreamBgWorker(rdc)
+	postDeletionsStreamBgWorker(rdc)
 
 	postReactionsStreamBgWorker(rdc)
 	postReactionRemovedStreamBgWorker(rdc)
 
 	postCommentsStreamBgWorker(rdc)
+	postCommentsRemovedStreamBgWorker(rdc)
 
 	commentReactionsStreamBgWorker(rdc)
 	commentReactionRemovedStreamBgWorker(rdc)

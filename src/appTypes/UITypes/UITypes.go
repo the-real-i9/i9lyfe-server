@@ -30,15 +30,15 @@ type Post struct {
 }
 
 type Comment struct {
-	Id             string   `json:"id"`
-	OwnerUser      any      `json:"owner_user"`
-	AttachmentUrl  []string `json:"attachment_url"`
-	CommentText    string   `json:"comment_text"`
-	At             int64    `json:"at"`
-	ReactionsCount int64    `json:"reactions_count"`
-	CommentsCount  int64    `json:"comments_count"`
-	MeReaction     string   `json:"me_reaction"`
-	Cursor         float64  `json:"cursor"`
+	Id             string  `json:"id"`
+	OwnerUser      any     `json:"owner_user"`
+	AttachmentUrl  string  `json:"attachment_url"`
+	CommentText    string  `json:"comment_text"`
+	At             int64   `json:"at"`
+	ReactionsCount int64   `json:"reactions_count"`
+	CommentsCount  int64   `json:"comments_count"`
+	MeReaction     string  `json:"me_reaction"`
+	Cursor         float64 `json:"cursor"`
 }
 
 type UserSnippet struct {

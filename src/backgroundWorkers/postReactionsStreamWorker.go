@@ -120,12 +120,15 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-				return
-			}
+			if len(notifications) > 0 {
+				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+					return
+				}
 
-			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-				return
+				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
+					return
+				}
+
 			}
 
 			for postId, userWithEmoji_stmsgId_Pairs := range postReactions {

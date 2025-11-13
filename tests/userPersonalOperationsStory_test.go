@@ -746,8 +746,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			// Action: user2 reacts to user1's post | user1 is notified
 
 			reqBody, err := makeReqBody(map[string]any{
-				"reaction": "🤔",
-				"at":       time.Now().UnixMilli(),
+				"emoji": "🤔",
+				"at":    time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 
@@ -789,8 +789,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			// Action: user2 reacts to user3's post | user3 is notified
 
 			reqBody, err := makeReqBody(map[string]any{
-				"reaction": "🤔",
-				"at":       time.Now().UnixMilli(),
+				"emoji": "🤔",
+				"at":    time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 

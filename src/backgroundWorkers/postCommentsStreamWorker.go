@@ -93,7 +93,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
 				}, stmsgIds[i]})
 
-				if msg.PostOwner == msg.CommenterUser.Username {
+				if msg.PostOwner != msg.CommenterUser.Username {
 
 					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser.Username, msg.CommentId, msg.PostId)
 					copNotif := helpers.BuildNotification(copNotifUniqueId, "comment_on_post", msg.At, map[string]any{
@@ -155,12 +155,14 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-				return
-			}
+			if len(notifications) > 0 {
+				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+					return
+				}
 
-			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-				return
+				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
+					return
+				}
 			}
 
 			for postId, commentId_stmsgId_Pairs := range postComments {

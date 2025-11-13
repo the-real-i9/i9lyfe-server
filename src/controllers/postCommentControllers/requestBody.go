@@ -40,14 +40,14 @@ func (b createNewPostBody) Validate() error {
 }
 
 type reactToPostBody struct {
-	Reaction string `json:"reaction"`
-	At       int64  `json:"at"`
+	Emoji string `json:"emoji"`
+	At    int64  `json:"at"`
 }
 
 func (b reactToPostBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Reaction, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
+		validation.Field(&b.Emoji, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
 		validation.Field(&b.At, validation.Required),
 	)
 
@@ -73,14 +73,14 @@ func (b commentOnPostBody) Validate() error {
 }
 
 type reactToCommentBody struct {
-	Reaction string `json:"reaction"`
-	At       int64  `json:"at"`
+	Emoji string `json:"emoji"`
+	At    int64  `json:"at"`
 }
 
 func (b reactToCommentBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Reaction, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
+		validation.Field(&b.Emoji, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
 		validation.Field(&b.At, validation.Required),
 	)
 

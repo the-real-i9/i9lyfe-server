@@ -132,12 +132,14 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-				return
-			}
+			if len(notifications) > 0 {
+				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+					return
+				}
 
-			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-				return
+				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
+					return
+				}
 			}
 
 			for postId, repostId_stmsgId_Pairs := range postReposts {

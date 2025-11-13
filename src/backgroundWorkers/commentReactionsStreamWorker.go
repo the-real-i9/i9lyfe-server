@@ -116,12 +116,14 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			failedStreamMsgIds := make(map[string]bool)
 
-			if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-				return
-			}
+			if len(notifications) > 0 {
+				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
+					return
+				}
 
-			if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-				return
+				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
+					return
+				}
 			}
 
 			for commentId, userWithEmoji_stmsgId_Pairs := range commentReactions {
@@ -134,7 +136,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
 					}
 
-					if err := cache.StorePostReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
+					if err := cache.StoreCommentReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
 						for _, d := range userWithEmoji_stmsgId_Pairs {
 							failedStreamMsgIds[d[1].(string)] = true
 						}

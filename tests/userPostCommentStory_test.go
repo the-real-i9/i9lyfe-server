@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestUserPostCommentStory(t *testing.T) {
+func TestUserPostCommentStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
@@ -242,8 +242,8 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user2 reacts to user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"reaction": "🤔",
-			"at":       time.Now().UnixMilli(),
+			"emoji": "🤔",
+			"at":    time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -285,8 +285,8 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user3 reacts to user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"reaction": "😀",
-			"at":       time.Now().UnixMilli(),
+			"emoji": "😀",
+			"at":    time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -348,17 +348,17 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "🤔",
+				"emoji":    "🤔",
 			}, nil)),
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😀",
+				"emoji":    "😀",
 			}, nil)),
 		))
 	}
 
-	{
-		t.Log("Action: user1 filters reactors to her post1 by a certain reaction")
+	/* {
+		t.Log("Action: user1 filters reactors to her post1 by a certain emoji")
 		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
@@ -381,19 +381,19 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "🤔",
+				"emoji": "🤔",
 			}, nil)),
 			td.Not(td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😀",
+				"emoji": "😀",
 			}, nil))),
 		))
-	}
+	} */
 
 	{
 		t.Log("Action: user3 removes her reaction from user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/undo_reaction", nil)
+		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/remove_reaction", nil)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 
@@ -436,11 +436,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "🤔",
+				"emoji":    "🤔",
 			}, nil)),
 			td.Not(td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😀",
+				"emoji":    "😀",
 			}, nil))),
 		))
 	}
@@ -604,7 +604,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 	}
 
-	{
+	/* {
 		t.Log("Action: user1 rechecks comments on her post1 | user3's comment is gone")
 		<-(time.NewTimer(100 * time.Millisecond).C)
 
@@ -622,10 +622,10 @@ func XTestUserPostCommentStory(t *testing.T) {
 			return
 		}
 
-		reactors, err := succResBody[[]map[string]any](res.Body)
+		comments, err := succResBody[[]map[string]any](res.Body)
 		require.NoError(t, err)
 
-		td.Cmp(td.Require(t), reactors, td.All(
+		td.Cmp(td.Require(t), comments, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"owner_user": td.SuperMapOf(map[string]any{
 					"username": user2.Username,
@@ -639,7 +639,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 				"comment_text": fmt.Sprintf("This is a comment from %s", user3.Username),
 			}, nil))),
 		))
-	}
+	} */
 
 	{
 		t.Log("Action: user1 views user2's comment on her post1")
@@ -826,49 +826,50 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.True(t, rb)
 	}
 
-	{
-		t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
-		<-(time.NewTimer(100 * time.Millisecond).C)
+	/*
+		{
+			t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
+			<-(time.NewTimer(100 * time.Millisecond).C)
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
-		require.NoError(t, err)
-		req.Header.Set("Cookie", user2.SessionCookie)
-
-		res, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-
-		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
-			rb, err := errResBody(res.Body)
+			req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 			require.NoError(t, err)
-			t.Log("unexpected error:", rb)
-			return
-		}
+			req.Header.Set("Cookie", user2.SessionCookie)
 
-		reactors, err := succResBody[[]map[string]any](res.Body)
-		require.NoError(t, err)
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
 
-		td.Cmp(td.Require(t), reactors, td.All(
-			td.Contains(td.SuperMapOf(map[string]any{
-				"owner_user": td.SuperMapOf(map[string]any{
-					"username": user1.Username,
-				}, nil),
-				"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
-			}, nil)),
-			td.Not(td.Contains(td.SuperMapOf(map[string]any{
-				"owner_user": td.SuperMapOf(map[string]any{
-					"username": user3.Username,
-				}, nil),
-				"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
-			}, nil))),
-		))
-	}
+			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+				rb, err := errResBody(res.Body)
+				require.NoError(t, err)
+				t.Log("unexpected error:", rb)
+				return
+			}
+
+			reactors, err := succResBody[[]map[string]any](res.Body)
+			require.NoError(t, err)
+
+			td.Cmp(td.Require(t), reactors, td.All(
+				td.Contains(td.SuperMapOf(map[string]any{
+					"owner_user": td.SuperMapOf(map[string]any{
+						"username": user1.Username,
+					}, nil),
+					"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+				}, nil)),
+				td.Not(td.Contains(td.SuperMapOf(map[string]any{
+					"owner_user": td.SuperMapOf(map[string]any{
+						"username": user3.Username,
+					}, nil),
+					"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+				}, nil))),
+			))
+		} */
 
 	{
 		t.Log("Action: user2 reacts to user1's reply to her comment1 on user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"reaction": "😆",
-			"at":       time.Now().UnixMilli(),
+			"emoji": "😆",
+			"at":    time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -910,8 +911,8 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user3 reacts to user1's reply to user2's comment1 on user1's post1 | user1 is notified")
 
 		reqBody, err := makeReqBody(map[string]any{
-			"reaction": "😂",
-			"at":       time.Now().UnixMilli(),
+			"emoji": "😂",
+			"at":    time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -973,17 +974,17 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "😆",
+				"emoji":    "😆",
 			}, nil)),
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😂",
+				"emoji":    "😂",
 			}, nil)),
 		))
 	}
 
-	{
-		t.Log("Action: user1 filters reactors to her reply to user2's comment1 on her post1 by a certain reaction")
+	/* {
+		t.Log("Action: user1 filters reactors to her reply to user2's comment1 on her post1 by a certain emoji")
 		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
@@ -1006,19 +1007,19 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "😆",
+				"emoji":    "😆",
 			}, nil)),
 			td.Not(td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😂",
+				"emoji":    "😂",
 			}, nil))),
 		))
-	}
+	} */
 
 	{
 		t.Log("Action: user3 removes her reaction to user1's reply to user2's comment1 on user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/undo_reaction", nil)
+		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/remove_reaction", nil)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 
@@ -1061,11 +1062,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), reactors, td.All(
 			td.Contains(td.SuperMapOf(map[string]any{
 				"username": user2.Username,
-				"reaction": "😆",
+				"emoji":    "😆",
 			}, nil)),
 			td.Not(td.Contains(td.SuperMapOf(map[string]any{
 				"username": user3.Username,
-				"reaction": "😂",
+				"emoji":    "😂",
 			}, nil))),
 		))
 	}

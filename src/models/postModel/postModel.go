@@ -71,6 +71,19 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 		_, err := tx.Exec(
 			ctx,
 			/* sql */ `
+				INSERT INTO hashtags (htname)
+				VALUES ($1)
+				ON CONFLICT ON CONSTRAINT hashtags_pkey DO NOTHING
+				`, ht,
+		)
+		if err != nil {
+			helpers.LogError(err)
+			return err
+		}
+
+		_, err = tx.Exec(
+			ctx,
+			/* sql */ `
 				INSERT INTO post_includes_hashtag (post_id, htname)
 				VALUES ($1, $2)
 				ON CONFLICT ON CONSTRAINT no_dup_htname DO NOTHING

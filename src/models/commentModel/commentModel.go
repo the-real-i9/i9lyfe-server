@@ -109,7 +109,7 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE parent_comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentUrl, at,
 	)
 	if err != nil {

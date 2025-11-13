@@ -82,7 +82,7 @@ func ReactToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToPost(ctx, clientUser, c.Params("postId"), body.Reaction, body.At)
+	respData, app_err := postCommentService.ReactToPost(ctx, clientUser, c.Params("postId"), body.Emoji, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -225,7 +225,7 @@ func ReactToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToComment(ctx, clientUser, c.Params("commentId"), body.Reaction, body.At)
+	respData, app_err := postCommentService.ReactToComment(ctx, clientUser, c.Params("commentId"), body.Emoji, body.At)
 	if app_err != nil {
 		return app_err
 	}
