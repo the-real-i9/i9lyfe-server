@@ -48,18 +48,23 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.NewPostEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.NewPostEvent
+
+				msg.OwnerUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["ownerUser"].(string))
+				msg.PostId = stmsg.Values["postId"].(string)
+				msg.PostData = stmsg.Values["postData"].(string)
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.Hashtags = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
+				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.NewPostEvent
-			helpers.ToStruct(stmsgValues, &msgs)
-
-			msgsLen := len(msgs)
 
 			newPosts := []string{}
 
@@ -72,11 +77,11 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			userNotifications := make(map[string][][2]string)
 
-			newPostDBExtrasFuncs := make([][2]any, msgsLen)
+			newPostDBExtrasFuncs := [][2]any{}
 
-			fanOutPostFuncs := make([]func(), msgsLen)
+			fanOutPostFuncs := []func(){}
 
-			sendNotifEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
 			for i, msg := range msgs {

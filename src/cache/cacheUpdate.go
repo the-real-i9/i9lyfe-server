@@ -6,8 +6,8 @@ import (
 	"maps"
 )
 
-func UpdateUser(ctx context.Context, user string, updateKVMap map[string]any) error {
-	userDataJson, err := rdb().HGet(ctx, "users", user).Result()
+func UpdateUser(ctx context.Context, username string, updateKVMap map[string]any) error {
+	userDataJson, err := rdb().HGet(ctx, "users", username).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -17,7 +17,7 @@ func UpdateUser(ctx context.Context, user string, updateKVMap map[string]any) er
 
 	maps.Copy(userData, updateKVMap)
 
-	err = rdb().HSet(ctx, "users", []string{user, helpers.ToJson(userData)}).Err()
+	err = rdb().HSet(ctx, "users", username, helpers.ToJson(userData)).Err()
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -37,7 +37,7 @@ func UpdateMessage(ctx context.Context, CHEId string, updateKVMap map[string]any
 
 	maps.Copy(msgData, updateKVMap)
 
-	err = rdb().HSet(ctx, "chat_history_entries", []string{CHEId, helpers.ToJson(msgData)}).Err()
+	err = rdb().HSet(ctx, "chat_history_entries", CHEId, helpers.ToJson(msgData)).Err()
 	if err != nil {
 		helpers.LogError(err)
 		return err

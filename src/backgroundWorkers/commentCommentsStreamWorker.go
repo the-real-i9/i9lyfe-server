@@ -47,31 +47,36 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.CommentCommentEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
 
+				var msg eventTypes.CommentCommentEvent
+
+				msg.CommenterUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["commenterUser"].(string))
+				msg.ParentCommentId = stmsg.Values["parentCommentId"].(string)
+				msg.ParentCommentOwner = stmsg.Values["parentCommentOwner"].(string)
+				msg.CommentId = stmsg.Values["commentId"].(string)
+				msg.CommentData = stmsg.Values["commentData"].(string)
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+
+				msgs = append(msgs, msg)
 			}
-
-			var msgs []eventTypes.CommentCommentEvent
-			helpers.ToStruct(stmsgValues, &msgs)
-
-			msgsLen := len(msgs)
 
 			newComments := []string{}
 
 			commentComments := make(map[string][][2]string)
 
-			newCommentDBExtrasFuncs := make([][2]any, msgsLen)
+			newCommentDBExtrasFuncs := [][2]any{}
 
 			notifications := []string{}
 			unreadNotifications := []any{}
 
 			userNotifications := make(map[string][][2]string)
 
-			sendNotifEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
 			for i, msg := range msgs {

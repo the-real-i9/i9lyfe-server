@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
@@ -40,16 +41,22 @@ func postDeletionsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.PostDeletionEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.PostDeletionEvent
+
+				msg.OwnerUser = stmsg.Values["ownerUser"].(string)
+				msg.PostId = stmsg.Values["postId"].(string)
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
 
-			var msgs []eventTypes.PostDeletionEvent
-			helpers.ToStruct(stmsgValues, &msgs)
+			_ = len(msgs)
 
 			/* DO WHAT'S NEEDED */
 

@@ -3,148 +3,148 @@ package eventTypes
 import "i9lyfe/src/appTypes"
 
 type NewUserEvent struct {
-	Username string
-	UserData string
+	Username string `redis:"username" json:"username"`
+	UserData string `redis:"userData" json:"userData"`
 }
 
 type EditUserEvent struct {
-	Username    string
-	UpdateKVMap map[string]any
+	Username    string              `redis:"username" json:"username"`
+	UpdateKVMap appTypes.BinableMap `redis:"updateKVMap" json:"updateKVMap"`
 }
 
 type UserFollowEvent struct {
-	FollowerUser  appTypes.ClientUser
-	FollowingUser string
-	At            int64
+	FollowerUser  appTypes.ClientUser `redis:"followerUser" json:"followerUser"`
+	FollowingUser string              `redis:"followingUser" json:"followingUser"`
+	At            int64               `redis:"at" json:"at"`
 }
 
 type UserUnfollowEvent struct {
-	FollowerUser  string
-	FollowingUser string
+	FollowerUser  string `redis:"followerUser" json:"followerUser"`
+	FollowingUser string `redis:"followingUser" json:"followingUser"`
 }
 
 type NewPostEvent struct {
-	OwnerUser appTypes.ClientUser
-	PostId    string
-	PostData  string
-	Hashtags  []string
-	Mentions  []string
-	At        int64
+	OwnerUser appTypes.ClientUser   `redis:"ownerUser" json:"ownerUser"`
+	PostId    string                `redis:"postId" json:"postId"`
+	PostData  string                `redis:"postData" json:"postData"`
+	Hashtags  appTypes.BinableSlice `redis:"hashtags" json:"hashtags"`
+	Mentions  appTypes.BinableSlice `redis:"mentions" json:"mentions"`
+	At        int64                 `redis:"at" json:"at"`
 }
 
 type PostDeletionEvent struct {
-	OwnerUser string
-	PostId    string
-	Mentions  []*string
+	OwnerUser string                `redis:"ownerUser" json:"ownerUser"`
+	PostId    string                `redis:"postId" json:"postId"`
+	Mentions  appTypes.BinableSlice `redis:"mentions" json:"mentions"`
 }
 
 type PostReactionEvent struct {
-	ReactorUser appTypes.ClientUser
-	PostOwner   string
-	PostId      string
-	Emoji       string
-	At          int64
+	ReactorUser appTypes.ClientUser `redis:"reactorUser" json:"reactorUser"`
+	PostOwner   string              `redis:"postOwner" json:"postOwner"`
+	PostId      string              `redis:"postId" json:"postId"`
+	Emoji       string              `redis:"emoji" json:"emoji"`
+	At          int64               `redis:"at" json:"at"`
 }
 
 type PostReactionRemovedEvent struct {
-	ReactorUser string
-	PostId      string
+	ReactorUser string `redis:"reactorUser" json:"reactorUser"`
+	PostId      string `redis:"postId" json:"postId"`
 }
 
 type PostCommentEvent struct {
-	CommenterUser appTypes.ClientUser
-	PostId        string
-	PostOwner     string
-	CommentId     string
-	CommentData   string
-	Mentions      []string
-	At            int64
+	CommenterUser appTypes.ClientUser   `redis:"commenterUser" json:"commenterUser"`
+	PostId        string                `redis:"postId" json:"postId"`
+	PostOwner     string                `redis:"postOwner" json:"postOwner"`
+	CommentId     string                `redis:"commentId" json:"commentId"`
+	CommentData   string                `redis:"commentData" json:"commentData"`
+	Mentions      appTypes.BinableSlice `redis:"mentions" json:"mentions"`
+	At            int64                 `redis:"at" json:"at"`
 }
 
 type PostCommentRemovedEvent struct {
-	CommenterUser string
-	PostId        string
-	CommentId     string
+	CommenterUser string `redis:"commenterUser" json:"commenterUser"`
+	PostId        string `redis:"postId" json:"postId"`
+	CommentId     string `redis:"commentId" json:"commentId"`
 }
 
 type CommentReactionEvent struct {
-	ReactorUser  appTypes.ClientUser
-	CommentId    string
-	CommentOwner string
-	Emoji        string
-	At           int64
+	ReactorUser  appTypes.ClientUser `redis:"reactorUser" json:"reactorUser"`
+	CommentId    string              `redis:"commentId" json:"commentId"`
+	CommentOwner string              `redis:"commentOwner" json:"commentOwner"`
+	Emoji        string              `redis:"emoji" json:"emoji"`
+	At           int64               `redis:"at" json:"at"`
 }
 
 type CommentReactionRemovedEvent struct {
-	ReactorUser string
-	CommentId   string
+	ReactorUser string `redis:"reactorUser" json:"reactorUser"`
+	CommentId   string `redis:"commentId" json:"commentId"`
 }
 
 type CommentCommentEvent struct {
-	CommenterUser      appTypes.ClientUser
-	ParentCommentId    string
-	ParentCommentOwner string
-	CommentId          string
-	CommentData        string
-	Mentions           []string
-	At                 int64
+	CommenterUser      appTypes.ClientUser   `redis:"commenterUser" json:"commenterUser"`
+	ParentCommentId    string                `redis:"parentCommentId" json:"parentCommentId"`
+	ParentCommentOwner string                `redis:"parentCommentOwner" json:"parentCommentOwner"`
+	CommentId          string                `redis:"commentId" json:"commentId"`
+	CommentData        string                `redis:"commentData" json:"commentData"`
+	Mentions           appTypes.BinableSlice `redis:"mentions" json:"mentions"`
+	At                 int64                 `redis:"at" json:"at"`
 }
 
 type CommentCommentRemovedEvent struct {
-	CommenterUser   appTypes.ClientUser
-	ParentCommentId string
-	CommentId       string
+	CommenterUser   appTypes.ClientUser `redis:"commenterUser" json:"commenterUser"`
+	ParentCommentId string              `redis:"parentCommentId" json:"parentCommentId"`
+	CommentId       string              `redis:"commentId" json:"commentId"`
 }
 
 type RepostEvent struct {
-	ReposterUser appTypes.ClientUser
-	PostId       string
-	PostOwner    string
-	RepostId     string
-	RepostData   string
-	At           int64
+	ReposterUser appTypes.ClientUser `redis:"reposterUser" json:"reposterUser"`
+	PostId       string              `redis:"postId" json:"postId"`
+	PostOwner    string              `redis:"postOwner" json:"postOwner"`
+	RepostId     string              `redis:"repostId" json:"repostId"`
+	RepostData   string              `redis:"repostData" json:"repostData"`
+	At           int64               `redis:"at" json:"at"`
 }
 
 type PostSaveEvent struct {
-	SaverUser string
-	PostId    string
+	SaverUser string `redis:"saverUser" json:"saverUser"`
+	PostId    string `redis:"postId" json:"postId"`
 }
 
 type PostUnsaveEvent struct {
-	SaverUser string
-	PostId    string
+	SaverUser string `redis:"saverUser" json:"saverUser"`
+	PostId    string `redis:"postId" json:"postId"`
 }
 
 type NewMessageEvent struct {
-	FromUser string
-	ToUser   string
-	CHEId    string
-	MsgData  string
+	FromUser string `redis:"fromUser" json:"fromUser"`
+	ToUser   string `redis:"toUser" json:"toUser"`
+	CHEId    string `redis:"CHEId" json:"CHEId"`
+	MsgData  string `redis:"msgData" json:"msgData"`
 }
 
 type NewMsgReactionEvent struct {
-	FromUser string
-	ToUser   string
-	CHEId    string
-	RxnData  string
-	ToMsgId  string
-	Emoji    string
+	FromUser string `redis:"fromUser" json:"fromUser"`
+	ToUser   string `redis:"toUser" json:"toUser"`
+	CHEId    string `redis:"CHEId" json:"CHEId"`
+	RxnData  string `redis:"rxnData" json:"rxnData"`
+	ToMsgId  string `redis:"toMsgId" json:"toMsgId"`
+	Emoji    string `redis:"emoji" json:"emoji"`
 }
 
 type MsgAckEvent struct {
-	CHEId string
-	Ack   string
-	At    int64
+	CHEId string `redis:"CHEId" json:"CHEId"`
+	Ack   string `redis:"ack" json:"ack"`
+	At    int64  `redis:"at" json:"at"`
 }
 
 type MsgDeletionEvent struct {
-	CHEId string
-	For   string
+	CHEId string `redis:"CHEId" json:"CHEId"`
+	For   string `redis:"for" json:"for"`
 }
 
 type MsgReactionRemovedEvent struct {
-	FromUser string
-	ToUser   string
-	ToMsgId  string
-	CHEId    string
+	FromUser string `redis:"fromUser" json:"fromUser"`
+	ToUser   string `redis:"toUser" json:"toUser"`
+	ToMsgId  string `redis:"toMsgId" json:"toMsgId"`
+	CHEId    string `redis:"CHEId" json:"CHEId"`
 }

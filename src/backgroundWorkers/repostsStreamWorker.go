@@ -47,18 +47,23 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.RepostEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.RepostEvent
+
+				msg.ReposterUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["reposterUser"].(string))
+				msg.PostId = stmsg.Values["postId"].(string)
+				msg.PostOwner = stmsg.Values["postOwner"].(string)
+				msg.RepostId = stmsg.Values["repostId"].(string)
+				msg.RepostData = stmsg.Values["repostData"].(string)
+				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.RepostEvent
-			helpers.ToStruct(stmsgValues, &msgs)
-
-			msgsLen := len(msgs)
 
 			reposts := []string{}
 
@@ -73,9 +78,9 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 			userNotifications := make(map[string][][2]string)
 
-			fanOutPostFuncs := make([]func(), msgsLen)
+			fanOutPostFuncs := []func(){}
 
-			sendNotifEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
 			for i, msg := range msgs {

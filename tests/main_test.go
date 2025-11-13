@@ -3,9 +3,7 @@ package tests
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/initializers"
 	"i9lyfe/src/routes/authRoute"
@@ -56,11 +54,6 @@ func TestMain(m *testing.M) {
 	}
 
 	defer initializers.CleanUp()
-
-	_, err := appGlobals.DBPool.Exec(context.Background() /* sql */, `TRUNCATE users * CASCADE`)
-	if err != nil {
-		helpers.LogError(err)
-	}
 
 	app = fiber.New()
 	app.Use(helmet.New())

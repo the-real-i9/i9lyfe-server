@@ -43,16 +43,20 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.NewMessageEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
 
+				var msg eventTypes.NewMessageEvent
+
+				msg.FromUser = stmsg.Values["fromUser"].(string)
+				msg.ToUser = stmsg.Values["toUser"].(string)
+				msg.CHEId = stmsg.Values["CHEId"].(string)
+				msg.MsgData = stmsg.Values["msgData"].(string)
+
+				msgs = append(msgs, msg)
 			}
-
-			var msgs []eventTypes.NewMessageEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			newMessageEntries := []string{}
 

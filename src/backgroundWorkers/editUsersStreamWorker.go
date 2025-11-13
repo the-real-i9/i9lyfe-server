@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -43,22 +44,25 @@ func editUsersStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.EditUserEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.EditUserEvent
+
+				msg.Username = stmsg.Values["username"].(string)
+				msg.UpdateKVMap = helpers.FromJson[appTypes.BinableMap](stmsg.Values["updateKVMap"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.EditUserEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			editUsers := make(map[string][2]any, len(msgs))
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				editUsers[msg.Username] = [2]any{msg.UpdateKVMap, stmsgIds[i]}
+				editUsers[msg.Username] = [2]any{map[string]any(msg.UpdateKVMap), stmsgIds[i]}
 			}
 
 			// batch processing

@@ -21,14 +21,16 @@ func SendEventMsg(toUser string, msg appTypes.ServerEventMsg) {
 			return
 		}
 	}
+
 	if userPipe, ok := AllClientSockets.Load(toUser); ok {
 		pipe := userPipe.(*websocket.Conn)
 
 		if err := pipe.WriteJSON(msg); err != nil {
 			helpers.LogError(err)
 			storeUndelvMsg()
-			return
 		}
+
+		return
 	}
 
 	storeUndelvMsg()

@@ -136,8 +136,8 @@ func Get(ctx context.Context, clientUsername, postId string) (map[string]any, er
 	return foundPost, nil
 }
 
-func Delete(ctx context.Context, clientUsername, postId string) ([]*string, error) {
-	mentionedUsers, err := pgDB.QueryRowsField[string](
+func Delete(ctx context.Context, clientUsername, postId string) (mentionedUsers []string, err error) {
+	mentionedUsersPs, err := pgDB.QueryRowsField[string](
 		ctx,
 		/* sql */ `
 		WITH delete_post AS (
@@ -153,6 +153,10 @@ func Delete(ctx context.Context, clientUsername, postId string) ([]*string, erro
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
+	}
+
+	for _, s := range mentionedUsersPs {
+		mentionedUsers = append(mentionedUsers, *s)
 	}
 
 	return mentionedUsers, nil

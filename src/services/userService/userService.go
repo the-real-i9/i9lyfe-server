@@ -11,6 +11,7 @@ import (
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
+	"maps"
 	"strings"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {
 	updateKVMap := helpers.StructToMap(updateKVStruct)
 
-	done, err := user.EditProfile(ctx, clientUsername, updateKVMap)
+	done, err := user.EditProfile(ctx, clientUsername, maps.Clone(updateKVMap))
 	if err != nil {
 		return false, err
 	}

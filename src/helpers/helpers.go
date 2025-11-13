@@ -36,9 +36,9 @@ func ToStruct(val any, dest any) {
 		panic("expected 'val' to be a map or slice of maps")
 	}
 
-	destElem := reflect.TypeOf(dest).Elem()
+	destType := reflect.TypeOf(dest).Elem()
 
-	if destElem.Kind() != reflect.Struct && !(destElem.Kind() == reflect.Slice && destElem.Elem().Kind() == reflect.Struct) {
+	if destType.Kind() != reflect.Struct && !(destType.Kind() == reflect.Slice && destType.Elem().Kind() == reflect.Struct) {
 		panic("expected 'dest' to be a pointer to struct or slice of structs")
 	}
 
@@ -165,4 +165,26 @@ func MaxCursor(cursor float64) string {
 	}
 
 	return fmt.Sprintf("(%f", cursor)
+}
+
+func MapToPairs(mp map[string]any) (res []any) {
+	for k, v := range mp {
+		res = append(res, k, v)
+	}
+
+	return res
+}
+
+func PairsToMap(pairs []any) map[string]any {
+	if len(pairs)%2 != 0 {
+		panic("expected pairs")
+	}
+
+	mp := make(map[string]any, len(pairs)/2)
+
+	for i := 0; i < len(pairs); i += 2 {
+		mp[pairs[i].(string)] = pairs[i+1]
+	}
+
+	return mp
 }

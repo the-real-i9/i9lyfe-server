@@ -14,7 +14,7 @@ import (
 // Courtesy of Redis Streams
 func Start(rdc *redis.Client) error {
 	newUsersStreamBgWorker(rdc)
-	/* editUsersStreamBgWorker(rdc)
+	editUsersStreamBgWorker(rdc)
 
 	usersFollowedStreamBgWorker(rdc)
 	usersUnfollowedStreamBgWorker(rdc)
@@ -40,7 +40,7 @@ func Start(rdc *redis.Client) error {
 	msgAcksStreamBgWorker(rdc)
 
 	msgReactionsStreamBgWorker(rdc)
-	msgReactionsRemovedStreamBgWorker(rdc) */
+	msgReactionsRemovedStreamBgWorker(rdc)
 
 	return nil
 }

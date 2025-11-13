@@ -28,9 +28,17 @@ func initGCSClient() error {
 }
 
 func initDBPool() error {
-	pool, err := pgxpool.New(context.Background(), os.Getenv("PGDATABASE_URL"))
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, os.Getenv("PGDATABASE_URL"))
 	if err != nil {
 		return err
+	}
+
+	if os.Getenv("GO_ENV") == "test" {
+		_, err := pool.Exec(ctx /* sql */, `TRUNCATE users * CASCADE`)
+		if err != nil {
+			return err
+		}
 	}
 
 	appGlobals.DBPool = pool
@@ -50,6 +58,13 @@ func initRedisClient() error {
 			Mode: maintnotifications.ModeDisabled,
 		},
 	})
+
+	if os.Getenv("GO_ENV") == "test" {
+		err := client.FlushDB(context.Background()).Err()
+		if err != nil {
+			return err
+		}
+	}
 
 	appGlobals.RedisClient = client
 

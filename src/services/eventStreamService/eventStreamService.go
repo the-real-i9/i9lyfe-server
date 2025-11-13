@@ -16,11 +16,9 @@ func rdb() *redis.Client {
 func QueueNewUserEvent(nue eventTypes.NewUserEvent) {
 	ctx := context.Background()
 
-	nueMap := helpers.StructToMap(nue)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_users",
-		Values: nueMap,
+		Values: nue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -30,11 +28,9 @@ func QueueNewUserEvent(nue eventTypes.NewUserEvent) {
 func QueueEditUserEvent(eue eventTypes.EditUserEvent) {
 	ctx := context.Background()
 
-	eueMap := helpers.StructToMap(eue)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "edit_users",
-		Values: eueMap,
+		Values: eue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -44,11 +40,9 @@ func QueueEditUserEvent(eue eventTypes.EditUserEvent) {
 func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
 	ctx := context.Background()
 
-	ufeMap := helpers.StructToMap(ufe)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_followed",
-		Values: ufeMap,
+		Values: ufe,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -58,11 +52,9 @@ func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
 func QueueUserUnfollowEvent(uue eventTypes.UserUnfollowEvent) {
 	ctx := context.Background()
 
-	uueMap := helpers.StructToMap(uue)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_unfollowed",
-		Values: uueMap,
+		Values: uue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -72,11 +64,9 @@ func QueueUserUnfollowEvent(uue eventTypes.UserUnfollowEvent) {
 func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
 	ctx := context.Background()
 
-	npeMap := helpers.StructToMap(npe)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_posts",
-		Values: npeMap,
+		Values: npe,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -86,11 +76,9 @@ func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
 func QueuePostDeletionEvent(pde eventTypes.PostDeletionEvent) {
 	ctx := context.Background()
 
-	pdeMap := helpers.StructToMap(pde)
-
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_deletions",
-		Values: pdeMap,
+		Values: pde,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -99,11 +87,10 @@ func QueuePostDeletionEvent(pde eventTypes.PostDeletionEvent) {
 
 func QueuePostReactionEvent(pre eventTypes.PostReactionEvent) {
 	ctx := context.Background()
-	preMap := helpers.StructToMap(pre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions",
-		Values: preMap,
+		Values: pre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -112,11 +99,10 @@ func QueuePostReactionEvent(pre eventTypes.PostReactionEvent) {
 
 func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
 	ctx := context.Background()
-	rpreMap := helpers.StructToMap(rpre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions_removed",
-		Values: rpreMap,
+		Values: rpre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -125,11 +111,10 @@ func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
 
 func QueuePostCommentEvent(pce eventTypes.PostCommentEvent) {
 	ctx := context.Background()
-	pceMap := helpers.StructToMap(pce)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments",
-		Values: pceMap,
+		Values: pce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -138,11 +123,10 @@ func QueuePostCommentEvent(pce eventTypes.PostCommentEvent) {
 
 func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
 	ctx := context.Background()
-	rpceMap := helpers.StructToMap(rpce)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments_removed",
-		Values: rpceMap,
+		Values: rpce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -151,11 +135,10 @@ func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
 
 func QueueCommentReactionEvent(cre eventTypes.CommentReactionEvent) {
 	ctx := context.Background()
-	creMap := helpers.StructToMap(cre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions",
-		Values: creMap,
+		Values: cre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -164,11 +147,10 @@ func QueueCommentReactionEvent(cre eventTypes.CommentReactionEvent) {
 
 func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEvent) {
 	ctx := context.Background()
-	rcreMap := helpers.StructToMap(rcre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions_removed",
-		Values: rcreMap,
+		Values: rcre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -177,11 +159,10 @@ func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEven
 
 func QueueCommentCommentEvent(cce eventTypes.CommentCommentEvent) {
 	ctx := context.Background()
-	cceMap := helpers.StructToMap(cce)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments",
-		Values: cceMap,
+		Values: cce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -190,11 +171,10 @@ func QueueCommentCommentEvent(cce eventTypes.CommentCommentEvent) {
 
 func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent) {
 	ctx := context.Background()
-	rcceMap := helpers.StructToMap(rcce)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments_removed",
-		Values: rcceMap,
+		Values: rcce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -203,11 +183,10 @@ func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent)
 
 func QueueRepostEvent(re eventTypes.RepostEvent) {
 	ctx := context.Background()
-	reMap := helpers.StructToMap(re)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "reposts",
-		Values: reMap,
+		Values: re,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -216,11 +195,10 @@ func QueueRepostEvent(re eventTypes.RepostEvent) {
 
 func QueuePostSaveEvent(pse eventTypes.PostSaveEvent) {
 	ctx := context.Background()
-	pseMap := helpers.StructToMap(pse)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_saves",
-		Values: pseMap,
+		Values: pse,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -229,11 +207,10 @@ func QueuePostSaveEvent(pse eventTypes.PostSaveEvent) {
 
 func QueuePostUnsaveEvent(pue eventTypes.PostUnsaveEvent) {
 	ctx := context.Background()
-	pueMap := helpers.StructToMap(pue)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_unsaves",
-		Values: pueMap,
+		Values: pue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -242,11 +219,10 @@ func QueuePostUnsaveEvent(pue eventTypes.PostUnsaveEvent) {
 
 func QueueNewMessageEvent(nme eventTypes.NewMessageEvent) {
 	ctx := context.Background()
-	nmeMap := helpers.StructToMap(nme)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_messages",
-		Values: nmeMap,
+		Values: nme,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -255,11 +231,10 @@ func QueueNewMessageEvent(nme eventTypes.NewMessageEvent) {
 
 func QueueNewMsgReactionEvent(nmre eventTypes.NewMsgReactionEvent) {
 	ctx := context.Background()
-	nmreMap := helpers.StructToMap(nmre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_reactions",
-		Values: nmreMap,
+		Values: nmre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -268,11 +243,10 @@ func QueueNewMsgReactionEvent(nmre eventTypes.NewMsgReactionEvent) {
 
 func QueueMsgAckEvent(mae eventTypes.MsgAckEvent) {
 	ctx := context.Background()
-	maeMap := helpers.StructToMap(mae)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_acks",
-		Values: maeMap,
+		Values: mae,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -281,11 +255,10 @@ func QueueMsgAckEvent(mae eventTypes.MsgAckEvent) {
 
 func QueueMsgDeletionEvent(mde eventTypes.MsgDeletionEvent) {
 	ctx := context.Background()
-	mdeMap := helpers.StructToMap(mde)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_deletions",
-		Values: mdeMap,
+		Values: mde,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
@@ -294,11 +267,10 @@ func QueueMsgDeletionEvent(mde eventTypes.MsgDeletionEvent) {
 
 func QueueMsgReactionRemovedEvent(mrre eventTypes.MsgReactionRemovedEvent) {
 	ctx := context.Background()
-	mrreMap := helpers.StructToMap(mrre)
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "msg_reactions_removed",
-		Values: mrreMap,
+		Values: mrre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)

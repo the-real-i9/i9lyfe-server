@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/fasthttp/websocket"
 	"github.com/maxatome/go-testdeep/td"
@@ -12,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestUserPersonalOperationsStory(t *testing.T) {
+func TestUserPersonalOperationsStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
@@ -284,9 +285,11 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":            td.Ignore(),
-				"type":          "user_follow",
-				"follower_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "user_follow",
+				"details": td.SuperMapOf(map[string]any{
+					"follower_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
@@ -318,9 +321,11 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":            td.Ignore(),
-				"type":          "user_follow",
-				"follower_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "user_follow",
+				"details": td.SuperMapOf(map[string]any{
+					"follower_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
@@ -352,15 +357,18 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":            td.Ignore(),
-				"type":          "user_follow",
-				"follower_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "user_follow",
+				"details": td.SuperMapOf(map[string]any{
+					"follower_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user2 checks her followers | confirms new followers")
+		<-(time.NewTimer(100 * time.Millisecond)).C
 
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
 		require.NoError(t, err)
@@ -419,17 +427,20 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":            td.Ignore(),
-				"type":          "user_follow",
-				"follower_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "user_follow",
+				"details": td.SuperMapOf(map[string]any{
+					"follower_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user3 checks her following | confirms new following")
+		<-(time.NewTimer(100 * time.Millisecond)).C
 
-		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/followings", nil)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
@@ -484,6 +495,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 	{
 		t.Log("Action: user2 rechecks her followers | confirms user3's gone")
+		<-(time.NewTimer(100 * time.Millisecond)).C
 
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
 		require.NoError(t, err)
@@ -515,8 +527,9 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 	{
 		t.Log("Action: user3 rechecks her following | confirms user2's gone")
+		<-(time.NewTimer(100 * time.Millisecond)).C
 
-		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/following", nil)
+		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/followings", nil)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
@@ -546,6 +559,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 views his profile | confirms all changes")
+		<-(time.NewTimer(100 * time.Millisecond)).C
 
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user1.Username, nil)
 		require.NoError(t, err)
@@ -566,12 +580,12 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		require.NoError(t, err)
 
 		td.Cmp(td.Require(t), profile, td.SuperMapOf(map[string]any{
-			"username":        user1.Username,
-			"name":            user1.Name,
-			"bio":             user1.Bio,
-			"posts_count":     td.Lax(0),
-			"followers_count": td.Lax(1),
-			"following_count": td.Lax(1),
+			"username":         user1.Username,
+			"name":             user1.Name,
+			"bio":              user1.Bio,
+			"posts_count":      td.Lax(0),
+			"followers_count":  td.Lax(1),
+			"followings_count": td.Lax(1),
 		}, nil))
 	}
 
@@ -595,6 +609,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				"media_data_list": [][]byte{photo1, photo2},
 				"type":            "photo",
 				"description":     fmt.Sprintf("This is a post by @%s mentioning @%s", user1.Username, user2.Username),
+				"at":              time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 
@@ -627,11 +642,15 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			td.Cmp(td.Require(t), ServerEventMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
-					"id":              td.Ignore(),
-					"type":            "mention_in_post",
-					"mentioning_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+					"id":   td.Ignore(),
+					"type": "mention_in_post",
+					"details": td.SuperMapOf(map[string]any{
+						"mentioning_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+					}, nil),
 				}, nil),
 			}, nil))
+
+			/* --- CONTENT RECOMMENDATION SYSTEM not yet implemented ---
 
 			// user2 receives this post in her home feed | due to her follow network
 			user2_ServerEventMsg_newPost := <-user2.ServerEventMsg
@@ -645,7 +664,9 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 			td.Cmp(td.Require(t), user3_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user1PostId,
-			}, nil))
+				}, nil))
+
+			*/
 		}
 
 		{
@@ -661,6 +682,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				"media_data_list": [][]byte{photo1, photo2},
 				"type":            "photo",
 				"description":     fmt.Sprintf("This is a post from @%s mentioning @%s", user3.Username, user2.Username),
+				"at":              time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 
@@ -693,11 +715,15 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			td.Cmp(td.Require(t), ServerEventMsg_mentionNotif, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
-					"id":              td.Ignore(),
-					"type":            "mention_in_post",
-					"mentioning_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+					"id":   td.Ignore(),
+					"type": "mention_in_post",
+					"details": td.SuperMapOf(map[string]any{
+						"mentioning_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+					}, nil),
 				}, nil),
 			}, nil))
+
+			/* --- CONTENT RECOMMENDATION SYSTEM not yet implemented ---
 
 			// user2 receives this post in her home feed | due to her follow network
 			user2_ServerEventMsg_newPost := <-user2.ServerEventMsg
@@ -712,6 +738,8 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			td.Cmp(td.Require(t), user1_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
 				"id": user3PostId,
 			}, nil))
+
+			*/
 		}
 
 		{
@@ -719,6 +747,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 			reqBody, err := makeReqBody(map[string]any{
 				"reaction": "🤔",
+				"at":       time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 
@@ -747,9 +776,11 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
-					"id":           td.Ignore(),
-					"type":         "reaction_to_post",
-					"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+					"id":   td.Ignore(),
+					"type": "reaction_to_post",
+					"details": td.SuperMapOf(map[string]any{
+						"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+					}, nil),
 				}, nil),
 			}, nil))
 		}
@@ -759,6 +790,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 			reqBody, err := makeReqBody(map[string]any{
 				"reaction": "🤔",
+				"at":       time.Now().UnixMilli(),
 			})
 			require.NoError(t, err)
 
@@ -787,9 +819,11 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 				"event": "new notification",
 				"data": td.SuperMapOf(map[string]any{
-					"id":           td.Ignore(),
-					"type":         "reaction_to_post",
-					"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+					"id":   td.Ignore(),
+					"type": "reaction_to_post",
+					"details": td.SuperMapOf(map[string]any{
+						"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+					}, nil),
 				}, nil),
 			}, nil))
 		}

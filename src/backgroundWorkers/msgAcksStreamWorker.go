@@ -44,18 +44,20 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.MsgAckEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.MsgAckEvent
+
+				msg.CHEId = stmsg.Values["CHEId"].(string)
+				msg.Ack = stmsg.Values["ack"].(string)
+				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.MsgAckEvent
-			helpers.ToStruct(stmsgValues, &msgs)
-
-			// set message delivery status
 
 			ackMessages := [][4]any{}
 

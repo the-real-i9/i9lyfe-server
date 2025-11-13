@@ -43,16 +43,21 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.MsgReactionRemovedEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.MsgReactionRemovedEvent
+
+				msg.FromUser = stmsg.Values["fromUser"].(string)
+				msg.ToUser = stmsg.Values["toUser"].(string)
+				msg.ToMsgId = stmsg.Values["toMsgId"].(string)
+				msg.CHEId = stmsg.Values["CHEId"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.MsgReactionRemovedEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			msgReactionEntriesRemoved := []string{}
 

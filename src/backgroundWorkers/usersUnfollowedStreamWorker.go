@@ -43,16 +43,19 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.UserUnfollowEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.UserUnfollowEvent
+
+				msg.FollowerUser = stmsg.Values["followerUser"].(string)
+				msg.FollowingUser = stmsg.Values["followingUser"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.UserUnfollowEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			userFollowingsRemoved := make(map[string][][2]string)
 			userFollowersRemoved := make(map[string][][2]string)

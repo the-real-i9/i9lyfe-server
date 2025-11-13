@@ -40,16 +40,22 @@ func postCommentsRemovedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.PostCommentRemovedEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.PostCommentRemovedEvent
+
+				msg.CommenterUser = stmsg.Values["commenterUser"].(string)
+				msg.PostId = stmsg.Values["postId"].(string)
+				msg.CommentId = stmsg.Values["commentId"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
 
-			var msgs []eventTypes.PostCommentRemovedEvent
-			helpers.ToStruct(stmsgValues, &msgs)
+			_ = len(msgs)
 
 			/* DO WHAT'S NEEDED */
 

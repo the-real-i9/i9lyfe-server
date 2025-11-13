@@ -43,16 +43,23 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.NewMsgReactionEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.NewMsgReactionEvent
+
+				msg.FromUser = stmsg.Values["fromUser"].(string)
+				msg.ToUser = stmsg.Values["toUser"].(string)
+				msg.CHEId = stmsg.Values["CHEId"].(string)
+				msg.RxnData = stmsg.Values["rxnData"].(string)
+				msg.ToMsgId = stmsg.Values["toMsgId"].(string)
+				msg.Emoji = stmsg.Values["emoji"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.NewMsgReactionEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			newMsgReactionEntries := []string{}
 

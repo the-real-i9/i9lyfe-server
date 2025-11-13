@@ -93,7 +93,7 @@ func RemoveUserFollowers(ctx context.Context, followingUser string, followerUser
 }
 
 func RemoveUserFollowings(ctx context.Context, followerUser string, followingUsers []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("user:%s:following", followerUser), followingUsers...).Err(); err != nil {
+	if err := rdb().ZRem(ctx, fmt.Sprintf("user:%s:followings", followerUser), followingUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

@@ -46,16 +46,22 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.CommentReactionEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.CommentReactionEvent
+
+				msg.ReactorUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["reactorUser"].(string))
+				msg.CommentId = stmsg.Values["commentId"].(string)
+				msg.CommentOwner = stmsg.Values["commentOwner"].(string)
+				msg.Emoji = stmsg.Values["emoji"].(string)
+				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.CommentReactionEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			msgsLen := len(msgs)
 
@@ -66,7 +72,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			userNotifications := make(map[string][][2]string, msgsLen)
 
-			sendNotifEventMsgFuncs := make([]func(), msgsLen)
+			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
 			for i, msg := range msgs {

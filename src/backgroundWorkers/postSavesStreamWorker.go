@@ -44,16 +44,19 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.PostSaveEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.PostSaveEvent
+
+				msg.SaverUser = stmsg.Values["saverUser"].(string)
+				msg.PostId = stmsg.Values["postId"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.PostSaveEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			postSaves := make(map[string][][2]any)
 

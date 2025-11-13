@@ -44,16 +44,19 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var stmsgValues []map[string]any
+			var msgs []eventTypes.PostUnsaveEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
-				stmsgValues = append(stmsgValues, stmsg.Values)
+
+				var msg eventTypes.PostUnsaveEvent
+
+				msg.SaverUser = stmsg.Values["saverUser"].(string)
+				msg.PostId = stmsg.Values["postId"].(string)
+
+				msgs = append(msgs, msg)
 
 			}
-
-			var msgs []eventTypes.PostUnsaveEvent
-			helpers.ToStruct(stmsgValues, &msgs)
 
 			postUnsaves := make(map[string][][2]string)
 
