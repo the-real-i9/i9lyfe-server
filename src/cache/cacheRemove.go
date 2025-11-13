@@ -16,6 +16,16 @@ func RemovePostReactions(ctx context.Context, postId string, reactorUsers []stri
 	return nil
 }
 
+func RemovePostReactors(ctx context.Context, postId string, reactorUsers []any) error {
+	if err := rdb().ZRem(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), reactorUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func RemovePostSaves(ctx context.Context, postId string, users []any) error {
 	if err := rdb().SRem(ctx, fmt.Sprintf("saved_post:%s:saves", postId), users...).Err(); err != nil {
 		helpers.LogError(err)
@@ -28,6 +38,16 @@ func RemovePostSaves(ctx context.Context, postId string, users []any) error {
 
 func RemoveCommentReactions(ctx context.Context, commentId string, reactorUsers []string) error {
 	if err := rdb().HDel(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), reactorUsers...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func RemoveCommentReactors(ctx context.Context, commentId string, reactorUsers []any) error {
+	if err := rdb().ZRem(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), reactorUsers...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

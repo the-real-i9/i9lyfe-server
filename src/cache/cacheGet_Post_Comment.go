@@ -69,7 +69,7 @@ func GetCommentReactionsCount(ctx context.Context, commentId string) (int64, err
 }
 
 func GetCommentCommentsCount(ctx context.Context, parentCommentId string) (int64, error) {
-	count, err := rdb().ZCard(ctx, fmt.Sprintf("comment:%s:comments", parentCommentId)).Result()
+	count, err := rdb().ZCard(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId)).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return 0, err

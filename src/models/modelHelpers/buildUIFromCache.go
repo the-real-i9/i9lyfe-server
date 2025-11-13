@@ -2,11 +2,12 @@ package modelHelpers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 )
 
-func buildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
+func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
 	nilVal := UITypes.Post{}
 
 	postUI, err = cache.GetPost[UITypes.Post](ctx, postId)
@@ -76,6 +77,32 @@ func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername s
 	}
 
 	return userSnippetUI, nil
+}
+
+func buildReactorSnippetUIFromCache(ctx context.Context, username, postOrComment, entityId string) (reactorSnippetUI UITypes.ReactorSnippet, err error) {
+	nilVal := UITypes.ReactorSnippet{}
+
+	reactorSnippetUI, err = cache.GetUser[UITypes.ReactorSnippet](ctx, username)
+	if err != nil {
+		return nilVal, err
+	}
+
+	switch postOrComment {
+	case "post":
+		reactorSnippetUI.Emoji, err = cache.GetUserPostReaction(ctx, entityId, username)
+		if err != nil {
+			return nilVal, err
+		}
+	case "comment":
+		reactorSnippetUI.Emoji, err = cache.GetUserCommentReaction(ctx, entityId, username)
+		if err != nil {
+			return nilVal, err
+		}
+	default:
+		return nilVal, fmt.Errorf(`postOrComment wants value "post" or "comment"`)
+	}
+
+	return reactorSnippetUI, nil
 }
 
 func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername string) (userProfileUI UITypes.UserProfile, err error) {

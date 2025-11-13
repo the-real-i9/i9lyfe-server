@@ -98,7 +98,7 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), int64(c.QueryInt("offset")))
+	respData, app_err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
 	if app_err != nil {
 		return app_err
 	}
@@ -106,7 +106,7 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
+/* func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -123,7 +123,7 @@ func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(respData)
-}
+} */
 
 func RemoveReactionToPost(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(context.Background())

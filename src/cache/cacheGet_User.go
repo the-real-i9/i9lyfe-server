@@ -18,8 +18,18 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 	return helpers.FromJson[T](userJson), nil
 }
 
-func GetUserPostReaction(ctx context.Context, username, postId string) (string, error) {
+func GetUserPostReaction(ctx context.Context, postId, username string) (string, error) {
 	reaction, err := rdb().HGet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), username).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return "", err
+	}
+
+	return reaction, nil
+}
+
+func GetUserCommentReaction(ctx context.Context, commentId, username string) (string, error) {
+	reaction, err := rdb().HGet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), username).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return "", err

@@ -208,8 +208,48 @@ func StorePostReactions(ctx context.Context, postId string, userWithEmojiPairs [
 	return nil
 }
 
+func StorePostReactors(ctx context.Context, postId string, reactorUser_stmsgId_Pairs [][2]string) error {
+	members := []redis.Z{}
+	for _, pair := range reactorUser_stmsgId_Pairs {
+		rUser := pair[0]
+
+		members = append(members, redis.Z{
+			Score:  stmsgIdToScore(pair[1]),
+			Member: rUser,
+		})
+	}
+
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), members...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func StoreCommentReactions(ctx context.Context, commentId string, userWithEmojiPairs []string) error {
 	if err := rdb().HSet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), userWithEmojiPairs).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreCommentReactors(ctx context.Context, commentId string, reactorUser_stmsgId_Pairs [][2]string) error {
+	members := []redis.Z{}
+	for _, pair := range reactorUser_stmsgId_Pairs {
+		rUser := pair[0]
+
+		members = append(members, redis.Z{
+			Score:  stmsgIdToScore(pair[1]),
+			Member: rUser,
+		})
+	}
+
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
@@ -269,7 +309,7 @@ func StoreCommentComments(ctx context.Context, parentCommentId string, commentId
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("comment:%s:comments", parentCommentId), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

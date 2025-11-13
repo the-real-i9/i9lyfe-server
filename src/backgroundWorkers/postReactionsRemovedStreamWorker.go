@@ -60,12 +60,18 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			postReactionsRemoved := make(map[string][][2]string)
 
+			postReactorsRemoved := make(map[string][][2]string)
+
 			userReactionRemovedPosts := make(map[string][][2]string)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
 
 				postReactionsRemoved[msg.PostId] = append(postReactionsRemoved[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				// these two above and below follow a similar implemtation,
+				// i.e. we can use postReactionsRemoved to remove post reactors too
+				// but we're just separating concerns here
+				postReactorsRemoved[msg.PostId] = append(postReactorsRemoved[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
 
 				userReactionRemovedPosts[msg.ReactorUser] = append(userReactionRemovedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
 			}
@@ -119,6 +125,24 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 				wg.Go(func() {
 					if err := cache.RemoveUserReactedPosts(ctx, user, postIds); err != nil {
+						for _, id := range stmsgIds {
+							failedStreamMsgIds[id] = true
+						}
+					}
+				})
+			}
+
+			for postId, rUser_stmsgId_Pairs := range postReactorsRemoved {
+				rUsers := []any{}
+				stmsgIds := []string{}
+
+				for _, rUser_stmsgId_Pair := range rUser_stmsgId_Pairs {
+					rUsers = append(rUsers, rUser_stmsgId_Pair[0])
+					stmsgIds = append(stmsgIds, rUser_stmsgId_Pair[1])
+				}
+
+				wg.Go(func() {
+					if err := cache.RemovePostReactors(ctx, postId, rUsers); err != nil {
 						for _, id := range stmsgIds {
 							failedStreamMsgIds[id] = true
 						}

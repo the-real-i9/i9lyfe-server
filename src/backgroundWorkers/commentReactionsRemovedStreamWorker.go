@@ -59,11 +59,16 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			commentReactionsRemoved := make(map[string][][2]string)
 
+			commentReactorsRemoved := make(map[string][][2]string)
+
 			// batch data for batch processing
 			for i, msg := range msgs {
 
 				commentReactionsRemoved[msg.CommentId] = append(commentReactionsRemoved[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
-
+				// these two above and below follow a similar implemtation,
+				// i.e. we can use commentReactionsRemoved to remove comment reactors too
+				// but we're just separating concerns here
+				commentReactorsRemoved[msg.CommentId] = append(commentReactorsRemoved[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
 			}
 
 			// batch processing
@@ -102,6 +107,24 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 						"latest_reactions_count": latestCount,
 					})
 				}()
+			}
+
+			for commentId, rUser_stmsgId_Pairs := range commentReactorsRemoved {
+				rUsers := []any{}
+				stmsgIds := []string{}
+
+				for _, rUser_stmsgId_Pair := range rUser_stmsgId_Pairs {
+					rUsers = append(rUsers, rUser_stmsgId_Pair[0])
+					stmsgIds = append(stmsgIds, rUser_stmsgId_Pair[1])
+				}
+
+				wg.Go(func() {
+					if err := cache.RemoveCommentReactors(ctx, commentId, rUsers); err != nil {
+						for _, id := range stmsgIds {
+							failedStreamMsgIds[id] = true
+						}
+					}
+				})
 			}
 
 			wg.Wait()

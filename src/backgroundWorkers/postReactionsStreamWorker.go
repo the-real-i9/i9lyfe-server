@@ -67,6 +67,10 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			postReactions := make(map[string][][2]any)
 
+			// having post reactors separate, allows us to
+			// paginate through the list of reactions on a post
+			postReactors := make(map[string][][2]string)
+
 			userReactedPosts := make(map[string][][2]string)
 
 			notifications := []string{}
@@ -79,6 +83,8 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 				postReactions[msg.PostId] = append(postReactions[msg.PostId], [2]any{[]string{msg.ReactorUser.Username, msg.Emoji}, stmsgIds[i]})
+
+				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]string{msg.ReactorUser.Username, stmsgIds[i]})
 
 				userReactedPosts[msg.ReactorUser.Username] = append(userReactedPosts[msg.ReactorUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
@@ -162,6 +168,18 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 					if err := cache.StoreUserReactedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
 						for _, d := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[d[1]] = true
+						}
+					}
+				})
+			}
+
+			for postId, rUser_stmsgId_Pairs := range postReactors {
+				wg.Go(func() {
+					postId, rUser_stmsgId_Pairs := postId, rUser_stmsgId_Pairs
+
+					if err := cache.StorePostReactors(ctx, postId, rUser_stmsgId_Pairs); err != nil {
+						for _, d := range rUser_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
 					}

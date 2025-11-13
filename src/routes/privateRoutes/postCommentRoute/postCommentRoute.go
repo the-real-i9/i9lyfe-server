@@ -16,7 +16,7 @@ func Route(router fiber.Router) {
 
 	router.Post("/posts/:postId/react", PCC.ReactToPost)
 	router.Get("/posts/:postId/reactors", PCC.GetReactorsToPost)
-	router.Get("/posts/:postId/reactors/:reaction", PCC.GetReactorsWithReactionToPost)
+	// router.Get("/posts/:postId/reactors/:reaction", PCC.GetReactorsWithReactionToPost)
 	router.Delete("/posts/:postId/undo_reaction", PCC.RemoveReactionToPost)
 
 	/* ====== POST'S COMMENT ====== */

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
@@ -59,11 +60,10 @@ func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaDat
 	return newPost, nil
 }
 
-func GetPost(ctx context.Context, clientUsername, postId string) (any, error) {
-	// we'll build post from the cache
+func GetPost(ctx context.Context, clientUsername, postId string) (UITypes.Post, error) {
 	thePost, err := post.Get(ctx, clientUsername, postId)
 	if err != nil {
-		return nil, err
+		return UITypes.Post{}, err
 	}
 
 	return thePost, nil
@@ -112,8 +112,8 @@ func ReactToPost(ctx context.Context, clientUser appTypes.ClientUser, postId, em
 	return done, nil
 }
 
-func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, offset int64) (any, error) {
-	reactors, err := post.GetReactors(ctx, clientUsername, postId, limit, helpers.OffsetTime(offset))
+func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.ReactorSnippet, error) {
+	reactors, err := post.GetReactors(ctx, clientUsername, postId, limit, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit
 	return reactors, nil
 }
 
-func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, reaction string, limit int, offset int64) (any, error) {
+/* func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, reaction string, limit int, offset int64) (any, error) {
 	reactors, err := post.GetReactorsWithReaction(ctx, clientUsername, postId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
 	}
 
 	return reactors, nil
-}
+} */
 
 func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (any, error) {
 	done, err := post.RemoveReaction(ctx, clientUsername, postId)

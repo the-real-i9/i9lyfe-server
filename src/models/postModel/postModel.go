@@ -2,18 +2,26 @@ package postModel
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appGlobals"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
+	"i9lyfe/src/models/modelHelpers"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/redis/go-redis/v9"
 )
 
 func dbPool() *pgxpool.Pool {
 	return appGlobals.DBPool
+}
+
+func redisDB() *redis.Client {
+	return appGlobals.RedisClient
 }
 
 type newPostT struct {
@@ -90,50 +98,14 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 	return nil
 }
 
-func Get(ctx context.Context, clientUsername, postId string) (map[string]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (post:Post{ id: $post_id })<-[:CREATES_POST]-(ownerUser:User), (clientUser:User{ username: $client_username })
-
-		OPTIONAL MATCH (clientUser)-[crxn:REACTS_TO_POST]->(post)
-		OPTIONAL MATCH (clientUser)-[csaves:SAVES_POST]->(post)
-		OPTIONAL MATCH (clientUser)-[creposts:REPOSTS_POST]->(post)
-		
-		WITH post, 
-			toString(post.created_at) AS created_at, 
-			ownerUser { .username, .profile_pic_url } AS owner_user,
-			CASE crxn 
-				WHEN IS NULL THEN "" 
-				ELSE crxn.reaction 
-			END AS client_reaction, 
-			CASE csaves 
-				WHEN IS NULL THEN false 
-				ELSE true 
-			END AS client_saved, 
-			CASE creposts 
-				WHEN IS NULL THEN false 
-				ELSE true 
-			END AS client_reposted
-		RETURN post { .*, owner_user, created_at, client_reaction, client_saved, client_reposted } AS found_post
-    `,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-		},
-	)
+func Get(ctx context.Context, clientUsername, postId string) (post UITypes.Post, err error) {
+	post, err = modelHelpers.BuildPostUIFromCache(ctx, postId, clientUsername)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return UITypes.Post{}, err
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	foundPost, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_post")
-
-	return foundPost, nil
+	return post, nil
 }
 
 func Delete(ctx context.Context, clientUsername, postId string) (mentionedUsers []string, err error) {
@@ -185,82 +157,29 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	return *postOwnerUser, nil
 }
 
-func GetReactors(ctx context.Context, clientUsername, postId string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (:Post{ id: $post_id })<-[rxn:REACTS_TO_POST]-(reactor:User)
-		WHERE rxn.at < $offset
-		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor,
-			rxn,
-			CASE fur
-				WHEN IS NULL THEN false
-				ELSE true
-			END AS client_follows
-		ORDER BY rxn.at DESC
-		LIMIT $limit
-		RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+func GetReactors(ctx context.Context, clientUsername, postId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
+	reactorMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), &redis.ZRangeBy{
+		Max:   helpers.MaxCursor(cursor),
+		Min:   "-inf",
+		Count: int64(limit),
+	}).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors")
-
-	return reactors, nil
-}
-
-func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
-	res, err := pgDB.Query(
-		ctx,
-		`
-		MATCH (post:Post{ id: $post_id })<-[rxn:REACTS_TO_POST { reaction: toString($reaction) }]-(reactor:User)
-		WHERE rxn.at < $offset
-		OPTIONAL MATCH (reactor)<-[fur:FOLLOWS_USER]-(:User{ username: $client_username })
-		WITH reactor,
-			rxn,
-			CASE fur
-				WHEN IS NULL THEN false
-				ELSE true
-			END AS client_follows
-		ORDER BY rxn.at DESC
-		LIMIT $limit
-		RETURN collect(reactor { .username, .profile_pic_url, reaction: rxn.reaction }) AS reactors_wrxn
-		`,
-		map[string]any{
-			"post_id":         postId,
-			"client_username": clientUsername,
-			"reaction":        reaction,
-			"limit":           limit,
-			"offset":          offset,
-		},
-	)
+	reactors, err = modelHelpers.ReactorMembersForUIReactorSnippets(ctx, reactorMembers, "post", postId)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	if len(res.Records) == 0 {
-		return nil, nil
-	}
-
-	reactors, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "reactors_wrxn")
-
 	return reactors, nil
 }
+
+/* func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
+
+} */
 
 func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := pgDB.QueryRowField[bool](

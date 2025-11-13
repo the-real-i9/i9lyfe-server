@@ -67,6 +67,10 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			commentReactions := make(map[string][][2]any)
 
+			// having comment reactors separate, allows us to
+			// paginate through the list of reactions on a comment
+			commentReactors := make(map[string][][2]string)
+
 			notifications := []string{}
 			unreadNotifications := []any{}
 
@@ -77,6 +81,8 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], [2]any{[]string{msg.ReactorUser.Username, msg.Emoji}, stmsgIds[i]})
+
+				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]string{msg.ReactorUser.Username, stmsgIds[i]})
 
 				if msg.CommentOwner == msg.ReactorUser.Username {
 					continue
@@ -151,6 +157,18 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 					})
 				}
 			}()
+
+			for commentId, rUser_stmsgId_Pairs := range commentReactors {
+				wg.Go(func() {
+					commentId, rUser_stmsgId_Pairs := commentId, rUser_stmsgId_Pairs
+
+					if err := cache.StoreCommentReactors(ctx, commentId, rUser_stmsgId_Pairs); err != nil {
+						for _, d := range rUser_stmsgId_Pairs {
+							failedStreamMsgIds[d[1]] = true
+						}
+					}
+				})
+			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
 				wg.Go(func() {

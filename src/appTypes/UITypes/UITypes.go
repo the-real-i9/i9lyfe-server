@@ -39,6 +39,14 @@ type UserSnippet struct {
 	Cursor        float64 `json:"cursor"`
 }
 
+type ReactorSnippet struct {
+	Username      string  `json:"username"`
+	Name          string  `json:"name"`
+	ProfilePicUrl string  `json:"profile_pic_url"`
+	Emoji         string  `json:"emoji"`
+	Cursor        float64 `json:"cursor"`
+}
+
 type UserProfile struct {
 	Username        string `json:"username"`
 	Name            string `json:"name"`
