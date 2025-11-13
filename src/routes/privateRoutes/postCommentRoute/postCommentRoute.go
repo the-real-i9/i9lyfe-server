@@ -53,5 +53,5 @@ func Route(router fiber.Router) {
 	/* ====== POST SAVE ====== */
 
 	router.Post("/posts/:postId/save", PCC.SavePost)
-	router.Delete("/posts/:postId/undo_save", PCC.UnsavePost)
+	router.Delete("/posts/:postId/unsave", PCC.UnsavePost)
 }

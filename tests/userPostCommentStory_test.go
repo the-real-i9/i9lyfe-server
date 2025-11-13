@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/fasthttp/websocket"
 	"github.com/maxatome/go-testdeep/td"
@@ -46,13 +47,16 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Setup: create new account for users")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
-			user := user
 
 			{
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(t, err)
 
-				res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
+				req, err := http.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+				require.NoError(t, err)
+				req.Header.Add("Content-Type", "application/json")
+
+				res, err := http.DefaultClient.Do(req)
 				require.NoError(t, err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -205,6 +209,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 			"media_data_list": [][]byte{photo1},
 			"type":            "photo",
 			"description":     "This is No.1 #trending",
+			"at":              time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -238,6 +243,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "🤔",
+			"at":       time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -266,9 +272,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":           td.Ignore(),
-				"type":         "reaction_to_post",
-				"reactor_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "reaction_to_post",
+				"details": td.SuperMapOf(map[string]any{
+					"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
@@ -278,6 +286,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "😀",
+			"at":       time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -306,15 +315,18 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":           td.Ignore(),
-				"type":         "reaction_to_post",
-				"reactor_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "reaction_to_post",
+				"details": td.SuperMapOf(map[string]any{
+					"reactor_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user1 checks reactors to her post1")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -347,6 +359,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 filters reactors to her post1 by a certain reaction")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
 		require.NoError(t, err)
@@ -401,6 +414,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 rechecks reactors to her post1 | user3's reaction gone")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -438,6 +452,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"comment_text": fmt.Sprintf("This is a comment from %s", user2.Username),
+			"at":           time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -471,11 +486,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"type":           "comment_on_post",
-				"commenter_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
-			},
-				nil),
+				"id":   td.Ignore(),
+				"type": "comment_on_post",
+				"details": td.SuperMapOf(map[string]any{
+					"commenter_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				}, nil),
+			}, nil),
 		}, nil))
 	}
 
@@ -486,6 +502,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"comment_text": fmt.Sprintf("This is a comment from %s", user3.Username),
+			"at":           time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -519,16 +536,18 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"type":           "comment_on_post",
-				"commenter_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
-			},
-				nil),
+				"id":   td.Ignore(),
+				"type": "comment_on_post",
+				"details": td.SuperMapOf(map[string]any{
+					"commenter_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
+			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user1 checks comments on her post1")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -587,6 +606,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 rechecks comments on her post1 | user3's comment is gone")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -623,6 +643,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 views user2's comment on her post1")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id, nil)
 		require.NoError(t, err)
@@ -653,6 +674,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+			"at":           time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -686,11 +708,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"type":           "comment_on_comment",
-				"commenter_user": td.SuperSliceOf([]any{"username", user1.Username}, nil),
-			},
-				nil),
+				"id":   td.Ignore(),
+				"type": "comment_on_comment",
+				"details": td.SuperMapOf(map[string]any{
+					"commenter_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+				}, nil),
+			}, nil),
 		}, nil))
 	}
 
@@ -701,6 +724,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+			"at":           time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -734,16 +758,18 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":             td.Ignore(),
-				"type":           "comment_on_comment",
-				"commenter_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
-			},
-				nil),
+				"id":   td.Ignore(),
+				"type": "comment_on_comment",
+				"details": td.SuperMapOf(map[string]any{
+					"commenter_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
+			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user2 checks replies to her comment1 on user1's post1")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -802,6 +828,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -841,6 +868,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "😆",
+			"at":       time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -869,11 +897,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":           td.Ignore(),
-				"type":         "reaction_to_comment",
-				"reactor_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
-			},
-				nil),
+				"id":   td.Ignore(),
+				"type": "reaction_to_comment",
+				"details": td.SuperMapOf(map[string]any{
+					"reactor_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				}, nil),
+			}, nil),
 		}, nil))
 	}
 
@@ -882,6 +911,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		reqBody, err := makeReqBody(map[string]any{
 			"reaction": "😂",
+			"at":       time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -910,15 +940,18 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":           td.Ignore(),
-				"type":         "reaction_to_comment",
-				"reactor_user": td.SuperSliceOf([]any{"username", user3.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "reaction_to_comment",
+				"details": td.SuperMapOf(map[string]any{
+					"reactor_user": td.SuperMapOf(map[string]any{"username": user3.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user1 checks reactors to her reply to user2's comment1 on her post1")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -951,6 +984,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 filters reactors to her reply to user2's comment1 on her post1 by a certain reaction")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
 		require.NoError(t, err)
@@ -1005,6 +1039,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 rechecks reactors to her reply to user2's comment1 on her post1 | user3's reaction gone")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -1047,6 +1082,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 			"media_data_list": [][]byte{photo1},
 			"type":            "photo",
 			"description":     fmt.Sprintf("This is a post mentioning @%s", user2.Username),
+			"at":              time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -1080,15 +1116,18 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":              td.Ignore(),
-				"type":            "mention_in_post",
-				"mentioning_user": td.SuperSliceOf([]any{"username", user1.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "mention_in_post",
+				"details": td.SuperMapOf(map[string]any{
+					"mentioning_user": td.SuperMapOf(map[string]any{"username": user1.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
 
 	{
 		t.Log("Action: user2 views user1's post2 following the mention notification received")
+		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post2Id, nil)
 		require.NoError(t, err)
@@ -1124,6 +1163,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 			"media_data_list": [][]byte{photo1},
 			"type":            "photo",
 			"description":     "I'm beautiful",
+			"at":              time.Now().UnixMilli(),
 		})
 		require.NoError(t, err)
 
@@ -1179,10 +1219,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		td.Cmp(td.Require(t), ServerEventMsg, td.Map(map[string]any{
 			"event": "new notification",
 			"data": td.SuperMapOf(map[string]any{
-				"id":            td.Ignore(),
-				"type":          "repost",
-				"details":       td.Slice([]any{"post_id", user3Post1Id}, nil),
-				"reposter_user": td.SuperSliceOf([]any{"username", user2.Username}, nil),
+				"id":   td.Ignore(),
+				"type": "repost",
+				"details": td.SuperMapOf(map[string]any{
+					"reposter_user": td.SuperMapOf(map[string]any{"username": user2.Username}, nil),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
@@ -1213,7 +1254,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 unsaves user3's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user3Post1Id+"/undo_save", nil)
+		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user3Post1Id+"/unsave", nil)
 		require.NoError(t, err)
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/json")
