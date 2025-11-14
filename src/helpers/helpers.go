@@ -7,7 +7,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -69,22 +68,6 @@ func StructToMap(val any) (dest map[string]any) {
 	}
 
 	return mp
-}
-
-// Includes a business-specific functionality for a default offset time
-//
-// When the user provides no explicit offset msec value or specifies zero,
-// this implies that she wants results from the most-recent content
-// (note that results are returned in descending order).
-// However, converting a zero msec into time.Time yields a past time,
-// and since we'll normally fetch contents whose time created is less than
-// the offset specified, we therefore need to coalesce the past time into future time.
-func OffsetTime(msec int64) time.Time {
-	if msec == 0 {
-		return time.Now().Add(time.Minute).UTC()
-	}
-
-	return time.UnixMilli(msec).UTC()
 }
 
 func WSErrReply(err error, toEvent string) map[string]any {
@@ -165,26 +148,4 @@ func MaxCursor(cursor float64) string {
 	}
 
 	return fmt.Sprintf("(%f", cursor)
-}
-
-func MapToPairs(mp map[string]any) (res []any) {
-	for k, v := range mp {
-		res = append(res, k, v)
-	}
-
-	return res
-}
-
-func PairsToMap(pairs []any) map[string]any {
-	if len(pairs)%2 != 0 {
-		panic("expected pairs")
-	}
-
-	mp := make(map[string]any, len(pairs)/2)
-
-	for i := 0; i < len(pairs); i += 2 {
-		mp[pairs[i].(string)] = pairs[i+1]
-	}
-
-	return mp
 }

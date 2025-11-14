@@ -34,8 +34,9 @@ func (b rtActionBody) Validate() error {
 }
 
 type getChatHistoryAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	Offset          int64  `json:"offset"`
+	PartnerUsername string  `json:"partnerUsername"`
+	Limit           int     `json:"limit"`
+	Cursor          float64 `json:"cursor"`
 }
 
 func (d getChatHistoryAcd) Validate() error {

@@ -1,21 +1,36 @@
 package tests
 
 import (
-	"i9lyfe/src/helpers"
+	"sync"
 	"testing"
 )
 
-func XTestPlayground(t *testing.T) {
-	type udt struct {
-		A int    `json:"a"`
-		B string `json:"b"`
+func TestPlayground(t *testing.T) {
+	type samp struct {
+		A int
+		B string
 	}
 
-	mp := []map[string]any{{"a": 1, "b": "c"}}
+	mp := samp{A: 1, B: "c"}
 
-	var lett []udt
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
 
-	helpers.ToStruct(mp, &lett)
+	go func(mymp samp) {
+		defer wg.Done()
 
-	t.Logf("%+v", lett)
+		mymp.A = 2
+		t.Log(mp, mymp)
+	}(mp)
+
+	go func(mymp samp) {
+		defer wg.Done()
+
+		mymp.B = "d"
+		t.Log(mp, mymp)
+	}(mp)
+
+	wg.Wait()
+
+	t.Log(mp)
 }

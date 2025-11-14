@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	chatMessage "i9lyfe/src/models/chatModel/chatMessageModel"
 	"i9lyfe/src/services/eventStreamService"
@@ -41,31 +42,25 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 		}
 	}
 
-	msgDataMap := helpers.StructToMap(newMessage)
-
 	if newMessage.Id != "" {
-		go func(msgData map[string]any) {
-			msgData["is_own"] = false
+		go func(msgData chatMessage.NewMessageT) {
 
 			realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 				Event: "chat: new message",
 				Data:  msgData,
 			})
-		}(msgDataMap)
+		}(newMessage)
 
-		go func(msgData map[string]any) {
-			delete(msgData, "sender")
-			msgData["sender_username"] = clientUsername
+		go func(msgData chatMessage.NewMessageT) {
+			msgData.Sender = clientUsername
 
-			// store CHE data to cache, direct
-			// push CHE id to each user's chat history
 			eventStreamService.QueueNewMessageEvent(eventTypes.NewMessageEvent{
 				FromUser: clientUsername,
 				ToUser:   partnerUsername,
 				CHEId:    newMessage.Id,
 				MsgData:  helpers.ToJson(msgData),
 			})
-		}(msgDataMap)
+		}(newMessage)
 	}
 
 	return map[string]any{"new_msg_id": newMessage.Id}, nil
@@ -136,16 +131,17 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 			Event: "chat: message reaction",
 			Data: map[string]any{
 				"partner_username": clientUsername,
-				"reactor":          rxnToMessage.Reactor,
 				"to_msg_id":        msgId,
-				"emoji":            emoji,
-				"at":               at,
+				"reaction": UITypes.MsgReaction{
+					Emoji:   emoji,
+					Reactor: rxnToMessage.Reactor,
+					At:      at,
+				},
 			},
 		})
 
-		go func(rxnData map[string]any) {
-			delete(rxnData, "reactor")
-			rxnData["reactor_username"] = clientUsername
+		go func(rxnData chatMessage.RxnToMessageT) {
+			rxnData.Reactor = clientUsername
 
 			// push CHE id to each user's chat history
 			// store Rxn data to ToMsg reactions
@@ -157,7 +153,7 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 				ToMsgId:  rxnToMessage.ToMsgId,
 				Emoji:    rxnToMessage.Emoji,
 			})
-		}(helpers.StructToMap(rxnToMessage))
+		}(rxnToMessage)
 	}
 
 	return done, nil

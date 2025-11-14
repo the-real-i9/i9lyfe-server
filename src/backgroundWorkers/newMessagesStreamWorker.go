@@ -62,15 +62,11 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			chatMessages := make(map[[2]string][][2]string)
 
-			unreadMessages := []string{}
-
 			// batch data for batch processing
 			for i, msg := range msgs {
 				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
 
 				chatMessages[[2]string{msg.FromUser, msg.ToUser}] = append(chatMessages[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
-
-				unreadMessages = append(unreadMessages, msg.CHEId, "sent")
 			}
 
 			wg := new(sync.WaitGroup)
@@ -79,10 +75,6 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			// batch processing
 			if err := cache.StoreChatHistoryEntries(ctx, newMessageEntries); err != nil {
-				return
-			}
-
-			if err := cache.StoreUnreadMessages(ctx, unreadMessages); err != nil {
 				return
 			}
 

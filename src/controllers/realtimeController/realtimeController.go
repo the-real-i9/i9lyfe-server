@@ -68,12 +68,12 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			for _, u := range data.Usernames {
+			for _, tu := range data.Usernames {
 				ctx, cancel := context.WithCancel(ctx)
 
-				realtimeService.SubscribeToUserPresence(ctx, clientUser.Username, u)
+				realtimeService.SubscribeToUserPresence(ctx, clientUser.Username, tu, cancel)
 
-				cancelUserPresenceSub[u] = cancel
+				cancelUserPresenceSub[tu] = cancel
 			}
 		case "unsubscribe from user presence change":
 			var data unsubFromUserPresenceAcd
@@ -85,12 +85,12 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			for _, u := range data.Usernames {
-				if cancel, ok := cancelUserPresenceSub[u]; ok {
+			for _, tu := range data.Usernames {
+				if cancel, ok := cancelUserPresenceSub[tu]; ok {
 					cancel()
 				}
 
-				delete(cancelUserPresenceSub, u)
+				delete(cancelUserPresenceSub, tu)
 			}
 		case "chat: send message":
 			var data sendChatMsgAcd
@@ -119,7 +119,11 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := chatService.GetChatHistory(ctx, clientUser.Username, data.PartnerUsername, data.Offset)
+			if data.Limit == 0 {
+				data.Limit = 50
+			}
+
+			res, err := chatService.GetChatHistory(ctx, clientUser.Username, data.PartnerUsername, data.Limit, data.Cursor)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
 				continue

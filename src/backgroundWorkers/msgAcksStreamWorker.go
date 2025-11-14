@@ -61,33 +61,15 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 
 			ackMessages := [][4]any{}
 
-			deliveredMessages := []string{}
-			readMessages := []string{}
-
 			// batch data for batch processing
 			for i, msg := range msgs {
 				ackMessages = append(ackMessages, [4]any{msg.CHEId, msg.Ack, msg.At, stmsgIds[i]})
-
-				if msg.Ack == "delivered" {
-					deliveredMessages = append(deliveredMessages, msg.CHEId, "delivered")
-				} else {
-					readMessages = append(readMessages, msg.CHEId)
-				}
-
 			}
 
 			// batch processing
 			wg := new(sync.WaitGroup)
 
 			failedStreamMsgIds := make(map[string]bool)
-
-			if err := cache.StoreUnreadMessages(ctx, deliveredMessages); err != nil {
-				return
-			}
-
-			if err := cache.RemoveUnreadMessages(ctx, readMessages); err != nil {
-				return
-			}
 
 			for _, CHEId_ack_ackAt_stmsgId := range ackMessages {
 

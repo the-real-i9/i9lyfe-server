@@ -79,3 +79,38 @@ type NotifSnippet struct {
 	Unread  bool           `json:"unread"`
 	Cursor  float64        `json:"cursor"`
 }
+
+type msgReactor interface {
+	MsgReactor | any
+}
+
+type MsgReactor struct {
+	Username      string `json:"username"`
+	ProfilePicUrl string `json:"profile_pic_url"`
+}
+
+type MsgReaction struct {
+	Emoji   string     `json:"emoji"`
+	Reactor msgReactor `json:"reactor"`
+	At      int64      `json:"at"`
+}
+
+type ChatHistoryEntry struct {
+	// appears always
+	CHEType string `json:"che_type"`
+	IsOwn   bool   `json:"is_own"`
+
+	// appears for message che_type
+	Id             string         `json:"id,omitempty"`
+	Content        map[string]any `json:"content,omitempty"`
+	DeliveryStatus string         `json:"delivery_status,omitempty"`
+	CreatedAt      int64          `json:"created_at,omitempty"`
+	Sender         any            `json:"sender,omitempty"`
+	Reactions      []MsgReaction  `json:"reactions,omitempty"`
+
+	// appears if che_type:message is a reply
+	ReplyTargetMsg map[string]any `json:"reply_target_msg,omitempty"`
+
+	// appears for reaction che_type
+	Emoji string `json:"emoji,omitempty"`
+}

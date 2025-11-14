@@ -28,7 +28,7 @@ func PublishCommentMetric(ctx context.Context, data any) {
 	publishContentMetric(ctx, data, "comment")
 }
 
-func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, _ context.CancelFunc) {
+func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, ctxCancel context.CancelFunc) {
 	pubsub := rdb().Subscribe(ctx, "live_content_metrics")
 
 	defer func() {
@@ -37,7 +37,7 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, _
 		}
 	}()
 
-	go func() {
+	go func(ctxCancel context.CancelFunc) {
 		ch := pubsub.Channel()
 
 		for msg := range ch {
@@ -46,10 +46,11 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, _
 
 				if err := pipe.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
+					ctxCancel()
 				}
 			}
 		}
-	}()
+	}(ctxCancel)
 }
 
 func PublishUserPresenceChange(ctx context.Context, targetUsername string, data map[string]any) {
@@ -61,7 +62,7 @@ func PublishUserPresenceChange(ctx context.Context, targetUsername string, data 
 	}
 }
 
-func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetUsername string) {
+func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetUsername string, ctxCancel context.CancelFunc) {
 	pubsub := rdb().Subscribe(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername))
 
 	defer func() {
@@ -70,7 +71,7 @@ func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetU
 		}
 	}()
 
-	go func() {
+	go func(ctxCancel context.CancelFunc) {
 		ch := pubsub.Channel()
 
 		for msg := range ch {
@@ -79,8 +80,9 @@ func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetU
 
 				if err := pipe.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
+					ctxCancel()
 				}
 			}
 		}
-	}()
+	}(ctxCancel)
 }
