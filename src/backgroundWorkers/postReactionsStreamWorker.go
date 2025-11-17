@@ -142,8 +142,8 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 					}
 
 					if err := cache.StorePostReactions(ctx, postId, slices.Concat(userWithEmojiPairs...)); err != nil {
-						for _, d := range userWithEmoji_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
+						for _, pair := range userWithEmoji_stmsgId_Pairs {
+							failedStreamMsgIds[pair[1].(string)] = true
 						}
 					}
 				})
@@ -170,8 +170,8 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
 					if err := cache.StoreUserReactedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
+						for _, pair := range postId_stmsgId_Pairs {
+							failedStreamMsgIds[pair[1]] = true
 						}
 					}
 				})

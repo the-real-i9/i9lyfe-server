@@ -368,6 +368,45 @@ func StoreUnreadNotifications(ctx context.Context, unreadNotifs []any) error {
 	return nil
 }
 
+func StoreUserChats(ctx context.Context, ownerUser string, partnerUserWithChatInfoPairs []string) error {
+	if err := rdb().HSet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUserWithChatInfoPairs).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreUserChatUnreadMsgs(ctx context.Context, ownerUser, partnerUser string, unreadMsgs []any) error {
+	if err := rdb().SAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), unreadMsgs...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func StoreUserChatsSorted(ctx context.Context, ownerUser string, partnerUser_stmsgId_Pairs map[string]string) error {
+	members := []redis.Z{}
+	for partnerUser, stmsgId := range partnerUser_stmsgId_Pairs {
+
+		members = append(members, redis.Z{
+			Score:  stmsgIdToScore(stmsgId),
+			Member: partnerUser,
+		})
+	}
+
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:chats_sorted", ownerUser), members...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
 	if err := rdb().HSet(ctx, "chat_history_entries", newCHEs).Err(); err != nil {
 		helpers.LogError(err)
@@ -378,7 +417,7 @@ func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
 	return nil
 }
 
-func StoreUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, CHEId_stmsgId_Pairs [][2]string) error {
+func StoreUserChatHistory(ctx context.Context, ownerUser, partnerUser string, CHEId_stmsgId_Pairs [][2]string) error {
 	members := []redis.Z{}
 	for _, pair := range CHEId_stmsgId_Pairs {
 		CHEId := pair[0]
@@ -389,23 +428,13 @@ func StoreUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, C
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", ownerUser, partnerUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
-}
-
-func StoreUnreadMessages(ctx context.Context, unreadMessages []string) error {
-	if err := rdb().HSet(ctx, "unread_messages", unreadMessages).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", partnerUser, ownerUser), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

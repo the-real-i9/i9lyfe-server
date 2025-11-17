@@ -289,3 +289,50 @@ func ReactorMembersForUIReactorSnippets(ctx context.Context, reactorMembers []re
 
 	return reactorSnippetsAcc, nil
 }
+
+func ChatPartnerMembersForUIChatSnippets(ctx context.Context, partnerMembers []redis.Z, clientUsername string) ([]UITypes.ChatSnippet, error) {
+
+	pmsLen := len(partnerMembers)
+
+	chatSnippetsAcc := make([]UITypes.ChatSnippet, pmsLen)
+
+	var threadNums int = runtime.NumCPU()
+
+	if pmsLen < threadNums {
+		// it's errorneous to spawn more threads than jobs.
+		// the least we can have is a number of threads
+		// equal to the number of jobs to process
+		threadNums = pmsLen
+	}
+
+	eg, sharedCtx := errgroup.WithContext(ctx)
+
+	for i := range threadNums {
+		eg.Go(func() error {
+			j := i
+			start, end := (pmsLen*j)/threadNums, pmsLen*(j+1)/threadNums
+
+			for pIndx := start; pIndx < end; pIndx++ {
+				partnerUser := partnerMembers[pIndx].Member.(string)
+				cursor := partnerMembers[pIndx].Score
+
+				chatSnippet, err := buildChatSnippetUIFromCache(sharedCtx, clientUsername, partnerUser)
+				if err != nil {
+					return err
+				}
+
+				chatSnippet.Cursor = cursor
+
+				chatSnippetsAcc[pIndx] = chatSnippet
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return chatSnippetsAcc, nil
+}

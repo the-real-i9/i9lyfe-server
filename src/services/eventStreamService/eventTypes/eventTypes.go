@@ -116,10 +116,12 @@ type PostUnsaveEvent struct {
 }
 
 type NewMessageEvent struct {
-	FromUser string `redis:"fromUser" json:"fromUser"`
-	ToUser   string `redis:"toUser" json:"toUser"`
-	CHEId    string `redis:"CHEId" json:"CHEId"`
-	MsgData  string `redis:"msgData" json:"msgData"`
+	FirstFromUser bool   `redis:"ffu" json:"ffu"`
+	FirstToUser   bool   `redis:"ftu" json:"ftu"`
+	FromUser      string `redis:"fromUser" json:"fromUser"`
+	ToUser        string `redis:"toUser" json:"toUser"`
+	CHEId         string `redis:"CHEId" json:"CHEId"`
+	MsgData       string `redis:"msgData" json:"msgData"`
 }
 
 type NewMsgReactionEvent struct {
@@ -132,9 +134,11 @@ type NewMsgReactionEvent struct {
 }
 
 type MsgAckEvent struct {
-	CHEId string `redis:"CHEId" json:"CHEId"`
-	Ack   string `redis:"ack" json:"ack"`
-	At    int64  `redis:"at" json:"at"`
+	FromUser string `redis:"fromUser" json:"fromUser"`
+	ToUser   string `redis:"toUser" json:"toUser"`
+	CHEId    string `redis:"CHEId" json:"CHEId"`
+	Ack      string `redis:"ack" json:"ack"`
+	At       int64  `redis:"at" json:"at"`
 }
 
 type MsgDeletionEvent struct {

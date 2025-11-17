@@ -227,3 +227,24 @@ func buildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSni
 
 	return notifSnippetUI, nil
 }
+
+func buildChatSnippetUIFromCache(ctx context.Context, clientUsername, partnerUser string) (chatSnippetUI UITypes.ChatSnippet, err error) {
+	nilVal := UITypes.ChatSnippet{}
+
+	chatSnippetUI, err = cache.GetChat[UITypes.ChatSnippet](ctx, clientUsername, partnerUser)
+	if err != nil {
+		return nilVal, err
+	}
+
+	chatSnippetUI.PartnerUser, err = cache.GetUser[UITypes.ChatPartnerUser](ctx, chatSnippetUI.PartnerUser.(string))
+	if err != nil {
+		return nilVal, err
+	}
+
+	chatSnippetUI.UnreadMC, err = cache.GetChatUnreadMsgsCount(ctx, clientUsername, partnerUser)
+	if err != nil {
+		return nilVal, err
+	}
+
+	return chatSnippetUI, nil
+}

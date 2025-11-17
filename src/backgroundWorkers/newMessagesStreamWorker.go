@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -60,13 +61,27 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			newMessageEntries := []string{}
 
-			chatMessages := make(map[[2]string][][2]string)
+			newUserChats := make(map[string]map[string]string)
+
+			updatedFromUserChats := make(map[string]map[string]string)
+
+			chatMessages := make(map[string][][2]string)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
 				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
 
-				chatMessages[[2]string{msg.FromUser, msg.ToUser}] = append(chatMessages[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
+				if msg.FirstFromUser {
+					newUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+				} else {
+					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+				}
+
+				if msg.FirstToUser {
+					newUserChats[msg.ToUser][msg.FromUser] = stmsgIds[i]
+				}
+
+				chatMessages[msg.FromUser+"|"+msg.ToUser] = append(chatMessages[msg.FromUser+"|"+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
 			}
 
 			wg := new(sync.WaitGroup)
@@ -78,11 +93,57 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
+			for ownerUser, partnerUser_stmsgId_Pairs := range newUserChats {
+				wg.Go(func() {
+					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+
+					partnerUserWithChatInfoPairs := []string{}
+
+					for pu := range partnerUser_stmsgId_Pairs {
+						partnerUserWithChatInfoPairs = append(partnerUserWithChatInfoPairs, pu, helpers.ToJson(map[string]any{"partner_user": pu}))
+					}
+
+					if err := cache.StoreUserChats(ctx, ownerUser, partnerUserWithChatInfoPairs); err != nil {
+						for _, stmsgId := range partnerUser_stmsgId_Pairs {
+							failedStreamMsgIds[stmsgId] = true
+						}
+					}
+				})
+			}
+
+			for ownerUser, partnerUser_stmsgId_Pairs := range newUserChats {
+				wg.Go(func() {
+					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+
+					if err := cache.StoreUserChatsSorted(ctx, ownerUser, partnerUser_stmsgId_Pairs); err != nil {
+						for _, stmsgId := range partnerUser_stmsgId_Pairs {
+							failedStreamMsgIds[stmsgId] = true
+						}
+					}
+				})
+			}
+
+			for ownerUser, partnerUser_stmsgId_Pairs := range updatedFromUserChats {
+				wg.Go(func() {
+					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+
+					if err := cache.StoreUserChatsSorted(ctx, ownerUser, partnerUser_stmsgId_Pairs); err != nil {
+						for _, stmsgId := range partnerUser_stmsgId_Pairs {
+							failedStreamMsgIds[stmsgId] = true
+						}
+					}
+				})
+			}
+
 			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMessages {
 				wg.Go(func() {
 					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
 
-					if err := cache.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
+					var ownerUser, partnerUser string
+
+					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
+
+					if err := cache.StoreUserChatHistory(ctx, ownerUser, partnerUser, CHEId_stmsgId_Pairs); err != nil {
 						for _, d := range CHEId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}

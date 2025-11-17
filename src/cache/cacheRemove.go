@@ -151,3 +151,13 @@ func RemoveUnreadNotifications(ctx context.Context, readNotifications ...any) er
 
 	return nil
 }
+
+func RemoveUserChatUnreadMsgs(ctx context.Context, ownerUser, partnerUser string, readMsgs []any) error {
+	if err := rdb().SRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), readMsgs...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}

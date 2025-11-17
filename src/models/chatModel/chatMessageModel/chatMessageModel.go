@@ -10,19 +10,21 @@ import (
 
 type NewMessageT struct {
 	Id                   string         `json:"id" db:"id_"`
-	ChatHistoryEntryType string         `json:"chat_history_entry_type" db:"che_type"`
+	ChatHistoryEntryType string         `json:"che_type" db:"che_type"`
 	Content              map[string]any `json:"content" db:"content_"`
 	DeliveryStatus       string         `json:"delivery_status" db:"delivery_status"`
 	CreatedAt            int64          `json:"created_at" db:"created_at"`
 	Sender               any            `json:"sender" db:"sender"`
 	ReplyTargetMsg       map[string]any `json:"reply_target_msg,omitempty" db:"reply_target_msg"`
+	FirstFromUser        bool           `json:"-" db:"ffu"`
+	FirstToUser          bool           `json:"-" db:"ftu"`
 }
 
 func Send(ctx context.Context, clientUsername, partnerUsername, msgContent string, at int64) (NewMessageT, error) {
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM send_message($1, $2, $3, $4);
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, ffu, ftu FROM send_message($1, $2, $3, $4);
 		`, clientUsername, partnerUsername, msgContent, at,
 	)
 	if err != nil {
@@ -67,7 +69,7 @@ func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, ms
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg FROM reply_to_msg($1, $2, $3, $4, $5);
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, ffu, ftu FROM reply_to_msg($1, $2, $3, $4, $5);
 		`, clientUsername, partnerUsername, msgContent, at, targetMsgId,
 	)
 	if err != nil {
@@ -80,7 +82,7 @@ func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, ms
 
 type RxnToMessageT struct {
 	Id                   string `json:"id" db:"che_id"`
-	ChatHistoryEntryType string `json:"chat_history_entry_type" db:"che_type"`
+	ChatHistoryEntryType string `json:"che_type" db:"che_type"`
 	Emoji                string `json:"emoji" db:"emoji"`
 	At                   int64  `json:"at" db:"at_"`
 	Reactor              any    `json:"reactor" db:"reactor"`

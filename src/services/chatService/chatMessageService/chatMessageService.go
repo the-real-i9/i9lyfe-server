@@ -55,10 +55,12 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 			msgData.Sender = clientUsername
 
 			eventStreamService.QueueNewMessageEvent(eventTypes.NewMessageEvent{
-				FromUser: clientUsername,
-				ToUser:   partnerUsername,
-				CHEId:    newMessage.Id,
-				MsgData:  helpers.ToJson(msgData),
+				FirstFromUser: msgData.FirstFromUser,
+				FirstToUser:   msgData.FirstToUser,
+				FromUser:      clientUsername,
+				ToUser:        partnerUsername,
+				CHEId:         newMessage.Id,
+				MsgData:       helpers.ToJson(msgData),
 			})
 		}(newMessage)
 	}
@@ -83,9 +85,11 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId
 		})
 
 		go eventStreamService.QueueMsgAckEvent(eventTypes.MsgAckEvent{
-			CHEId: msgId,
-			Ack:   "delivered",
-			At:    at,
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			CHEId:    msgId,
+			Ack:      "delivered",
+			At:       at,
 		})
 	}
 
@@ -109,9 +113,11 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId stri
 		})
 
 		go eventStreamService.QueueMsgAckEvent(eventTypes.MsgAckEvent{
-			CHEId: msgId,
-			Ack:   "read",
-			At:    at,
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			CHEId:    msgId,
+			Ack:      "read",
+			At:       at,
 		})
 	}
 
@@ -203,11 +209,14 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 				"msg_id":           msgId,
 			},
 		})
+	}
 
+	if done {
 		go eventStreamService.QueueMsgDeletionEvent(eventTypes.MsgDeletionEvent{
 			CHEId: msgId,
 			For:   deleteFor,
 		})
+
 	}
 
 	return done, nil

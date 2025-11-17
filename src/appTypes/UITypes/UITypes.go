@@ -80,6 +80,17 @@ type NotifSnippet struct {
 	Cursor  float64        `json:"cursor"`
 }
 
+type ChatPartnerUser struct {
+	Username      string `json:"username"`
+	ProfilePicUrl string `json:"profile_pic_url"`
+}
+
+type ChatSnippet struct {
+	PartnerUser any     `json:"partner_user"`
+	UnreadMC    int64   `json:"unread_messages_count"`
+	Cursor      float64 `json:"cursor"`
+}
+
 type msgReactor interface {
 	MsgReactor | any
 }

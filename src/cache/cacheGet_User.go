@@ -137,3 +137,23 @@ func NotificationIsUnread(ctx context.Context, notifId string) (bool, error) {
 
 	return check, nil
 }
+
+func GetChat[T any](ctx context.Context, ownerUser, partnerUser string) (chat T, err error) {
+	chatJson, err := rdb().HGet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUser).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return chat, err
+	}
+
+	return helpers.FromJson[T](chatJson), nil
+}
+
+func GetChatUnreadMsgsCount(ctx context.Context, ownerUser, partnerUser string) (int64, error) {
+	count, err := rdb().SCard(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser)).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return 0, err
+	}
+
+	return count, nil
+}

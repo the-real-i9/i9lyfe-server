@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -63,7 +64,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 
 			newMsgReactionEntries := []string{}
 
-			chatMsgReactions := make(map[[2]string][][2]string)
+			chatMsgReactions := make(map[string][][2]string)
 
 			msgReactions := make(map[string][][2]any)
 
@@ -71,7 +72,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newMsgReactionEntries = append(newMsgReactionEntries, msg.CHEId, msg.RxnData)
 
-				chatMsgReactions[[2]string{msg.FromUser, msg.ToUser}] = append(chatMsgReactions[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
+				chatMsgReactions[msg.FromUser+"|"+msg.ToUser] = append(chatMsgReactions[msg.FromUser+"|"+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
 
 				msgReactions[msg.ToMsgId] = append(msgReactions[msg.ToMsgId], [2]any{[]string{msg.FromUser, msg.Emoji}, stmsgIds[i]})
 			}
@@ -89,7 +90,11 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 				wg.Go(func() {
 					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
 
-					if err := cache.StoreUserChatHistory(ctx, ownerUserPartnerUser, CHEId_stmsgId_Pairs); err != nil {
+					var ownerUser, partnerUser string
+
+					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
+
+					if err := cache.StoreUserChatHistory(ctx, ownerUser, partnerUser, CHEId_stmsgId_Pairs); err != nil {
 						for _, d := range CHEId_stmsgId_Pairs {
 							failedStreamMsgIds[d[1]] = true
 						}
