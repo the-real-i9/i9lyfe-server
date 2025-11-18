@@ -71,7 +71,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newMsgReactionEntries = append(newMsgReactionEntries, msg.CHEId, msg.RxnData)
 
-				chatMsgReactions[msg.FromUser+"|"+msg.ToUser] = append(chatMsgReactions[msg.FromUser+"|"+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
+				chatMsgReactions[msg.FromUser+" "+msg.ToUser] = append(chatMsgReactions[msg.FromUser+" "+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
 
 				msgReactions[msg.ToMsgId] = append(msgReactions[msg.ToMsgId], msg.FromUser, msg.Emoji)
 			}
@@ -89,7 +89,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 
 					var ownerUser, partnerUser string
 
-					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
+					fmt.Sscanf(ownerUserPartnerUser, "%s %s", &ownerUser, &partnerUser)
 
 					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_stmsgId_Pairs)
 				})

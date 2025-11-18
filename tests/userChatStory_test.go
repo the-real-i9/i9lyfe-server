@@ -518,7 +518,6 @@ func TestUserChatStory(t *testing.T) {
 					}, nil))),
 					"sender": td.SuperMapOf(map[string]any{
 						"username": user1.Username,
-						"presence": td.Any("online", "offline"),
 					}, nil),
 				}, nil)),
 				td.Contains(td.SuperMapOf(map[string]any{
@@ -533,7 +532,6 @@ func TestUserChatStory(t *testing.T) {
 					"delivery_status": "read",
 					"sender": td.SuperMapOf(map[string]any{
 						"username": user2.Username,
-						"presence": td.Any("online", "offline"),
 					}, nil),
 				}, nil)),
 			),

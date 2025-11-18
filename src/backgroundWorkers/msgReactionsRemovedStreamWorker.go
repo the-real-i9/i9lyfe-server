@@ -2,6 +2,7 @@ package backgroundWorkers
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -60,7 +61,7 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 
 			msgReactionEntriesRemoved := []string{}
 
-			chatMsgReactionsRemoved := make(map[[2]string][]any)
+			chatMsgReactionsRemoved := make(map[string][]any)
 
 			msgReactionsRemoved := make(map[string][]string)
 
@@ -68,7 +69,7 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 			for _, msg := range msgs {
 				msgReactionEntriesRemoved = append(msgReactionEntriesRemoved, msg.CHEId)
 
-				chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}] = append(chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}], msg.CHEId)
+				chatMsgReactionsRemoved[msg.FromUser+" "+msg.ToUser] = append(chatMsgReactionsRemoved[msg.FromUser+" "+msg.ToUser], msg.CHEId)
 
 				msgReactionsRemoved[msg.ToMsgId] = append(msgReactionsRemoved[msg.ToMsgId], msg.FromUser)
 			}
@@ -84,7 +85,11 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					ownerUserPartnerUser, CHEIds := ownerUserPartnerUser, CHEIds
 
-					return cache.RemoveUserChatHistory(sharedCtx, ownerUserPartnerUser, CHEIds)
+					var ownerUser, partnerUser string
+
+					fmt.Sscanf(ownerUserPartnerUser, "%s %s", &ownerUser, &partnerUser)
+
+					return cache.RemoveUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEIds)
 				})
 			}
 

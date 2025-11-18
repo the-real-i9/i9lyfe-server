@@ -86,14 +86,14 @@ func RemoveChatHistoryEntries(ctx context.Context, CHEIds []string) error {
 	return nil
 }
 
-func RemoveUserChatHistory(ctx context.Context, ownerUserPartnerUser [2]string, CHEIds []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[0], ownerUserPartnerUser[1]), CHEIds...).Err(); err != nil {
+func RemoveUserChatHistory(ctx context.Context, ownerUser, partnerUser string, CHEIds []any) error {
+	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUser, partnerUser), CHEIds...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err
 	}
 
-	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", ownerUserPartnerUser[1], ownerUserPartnerUser[0]), CHEIds...).Err(); err != nil {
+	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s", partnerUser, ownerUser), CHEIds...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

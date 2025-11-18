@@ -99,7 +99,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 					userChats[msg.ToUser][msg.FromUser] = stmsgIds[i]
 				}
 
-				chatMessages[msg.FromUser+"|"+msg.ToUser] = append(chatMessages[msg.FromUser+"|"+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
+				chatMessages[msg.FromUser+" "+msg.ToUser] = append(chatMessages[msg.FromUser+" "+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
 			}
 
 			// batch processing
@@ -139,9 +139,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 					var ownerUser, partnerUser string
 
-					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
-
-					log.Println(ownerUser, partnerUser)
+					fmt.Sscanf(ownerUserPartnerUser, "%s %s", &ownerUser, &partnerUser)
 
 					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_stmsgId_Pairs)
 				})
