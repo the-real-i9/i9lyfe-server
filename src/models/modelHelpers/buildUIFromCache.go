@@ -248,3 +248,45 @@ func buildChatSnippetUIFromCache(ctx context.Context, clientUsername, partnerUse
 
 	return chatSnippetUI, nil
 }
+
+func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatHistoryEntry, err error) {
+	nilVal := UITypes.ChatHistoryEntry{}
+
+	CHEUI, err = cache.GetChatHistoryEntry[UITypes.ChatHistoryEntry](ctx, CHEId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	if CHEUI.CHEType == "message" {
+		CHEUI.Sender, err = cache.GetUser[UITypes.MsgSender](ctx, CHEUI.Sender.(string))
+		if err != nil {
+			return nilVal, err
+		}
+
+		userEmojiMap, err := cache.GetMsgReactions(ctx, CHEId)
+		if err != nil {
+			return nilVal, err
+		}
+
+		msgReactions := []UITypes.MsgReaction{}
+		reactionsCount := make(map[string]int, 2)
+
+		for user, emoji := range userEmojiMap {
+			var msgr UITypes.MsgReaction
+
+			msgr.Emoji = emoji
+			msgr.Reactor, err = cache.GetUser[UITypes.MsgReactor](ctx, user)
+			if err != nil {
+				return nilVal, err
+			}
+
+			msgReactions = append(msgReactions, msgr)
+			reactionsCount[emoji]++
+		}
+
+		CHEUI.Reactions = msgReactions
+		CHEUI.ReactionsCount = reactionsCount
+	}
+
+	return CHEUI, nil
+}

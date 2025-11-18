@@ -61,14 +61,7 @@ func PostMembersForUIPosts(ctx context.Context, postMembers []redis.Z, clientUse
 
 	postsAcc := make([]UITypes.Post, pmsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if pmsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = pmsLen
-	}
+	threadNums := min(pmsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -108,14 +101,7 @@ func CommentMembersForUIComments(ctx context.Context, commentMembers []redis.Z, 
 
 	commentsAcc := make([]UITypes.Comment, cmsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if cmsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = cmsLen
-	}
+	threadNums := min(cmsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -155,14 +141,7 @@ func UserMembersForUIUserSnippets(ctx context.Context, userMembers []redis.Z, cl
 
 	userSnippetsAcc := make([]UITypes.UserSnippet, umsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if umsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = umsLen
-	}
+	threadNums := min(umsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -202,14 +181,7 @@ func NotifMembersForUINotifSnippets(ctx context.Context, notifMembers []redis.Z)
 
 	notifSnippetsAcc := make([]UITypes.NotifSnippet, nmsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if nmsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = nmsLen
-	}
+	threadNums := min(nmsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -249,14 +221,7 @@ func ReactorMembersForUIReactorSnippets(ctx context.Context, reactorMembers []re
 
 	reactorSnippetsAcc := make([]UITypes.ReactorSnippet, rmsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if rmsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = rmsLen
-	}
+	threadNums := min(rmsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -296,14 +261,7 @@ func ChatPartnerMembersForUIChatSnippets(ctx context.Context, partnerMembers []r
 
 	chatSnippetsAcc := make([]UITypes.ChatSnippet, pmsLen)
 
-	var threadNums int = runtime.NumCPU()
-
-	if pmsLen < threadNums {
-		// it's errorneous to spawn more threads than jobs.
-		// the least we can have is a number of threads
-		// equal to the number of jobs to process
-		threadNums = pmsLen
-	}
+	threadNums := min(pmsLen, runtime.NumCPU())
 
 	eg, sharedCtx := errgroup.WithContext(ctx)
 
@@ -335,4 +293,43 @@ func ChatPartnerMembersForUIChatSnippets(ctx context.Context, partnerMembers []r
 	}
 
 	return chatSnippetsAcc, nil
+}
+
+func CHEMembersForUICHEs(ctx context.Context, CHEMembers []redis.Z) ([]UITypes.ChatHistoryEntry, error) {
+	chemsLen := len(CHEMembers)
+
+	CHEsAcc := make([]UITypes.ChatHistoryEntry, chemsLen)
+
+	threadNums := min(chemsLen, runtime.NumCPU())
+
+	eg, sharedCtx := errgroup.WithContext(ctx)
+
+	for i := range threadNums {
+		eg.Go(func() error {
+			j := i
+			start, end := (chemsLen*j)/threadNums, chemsLen*(j+1)/threadNums
+
+			for pIndx := start; pIndx < end; pIndx++ {
+				CHEId := CHEMembers[pIndx].Member.(string)
+				cursor := CHEMembers[pIndx].Score
+
+				CHE, err := buildCHEUIFromCache(sharedCtx, CHEId)
+				if err != nil {
+					return err
+				}
+
+				CHE.Cursor = cursor
+
+				CHEsAcc[pIndx] = CHE
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return CHEsAcc, nil
 }

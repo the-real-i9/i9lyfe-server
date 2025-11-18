@@ -81,10 +81,9 @@ func Reply(ctx context.Context, clientUsername, partnerUsername, targetMsgId, ms
 }
 
 type RxnToMessageT struct {
-	Id                   string `json:"id" db:"che_id"`
+	CHEId                string `json:"-" db:"che_id"`
 	ChatHistoryEntryType string `json:"che_type" db:"che_type"`
 	Emoji                string `json:"emoji" db:"emoji"`
-	At                   int64  `json:"at" db:"at_"`
 	Reactor              any    `json:"reactor" db:"reactor"`
 	ToMsgId              string `json:"-" db:"to_msg_id"`
 }
@@ -93,7 +92,7 @@ func ReactTo(ctx context.Context, clientUsername, partnerUsername, msgId, emoji 
 	rxnToMessage, err := pgDB.QueryRowType[RxnToMessageT](
 		ctx,
 		/* sql */ `
-		SELECT che_id, che_type, emoji, at_, reactor, to_msg_id FROM react_to_msg($1, $2, $3, $4, $5)
+		SELECT che_id, che_type, emoji, reactor, to_msg_id FROM react_to_msg($1, $2, $3, $4, $5)
 		`, clientUsername, partnerUsername, msgId, emoji, at,
 	)
 	if err != nil {

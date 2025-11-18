@@ -91,7 +91,7 @@ type ChatSnippet struct {
 	Cursor      float64 `json:"cursor"`
 }
 
-type msgReactor interface {
+type msgReactorKind interface {
 	MsgReactor | any
 }
 
@@ -100,10 +100,14 @@ type MsgReactor struct {
 	ProfilePicUrl string `json:"profile_pic_url"`
 }
 
+type MsgSender struct {
+	Username      string `json:"username"`
+	ProfilePicUrl string `json:"profile_pic_url"`
+}
+
 type MsgReaction struct {
-	Emoji   string     `json:"emoji"`
-	Reactor msgReactor `json:"reactor"`
-	At      int64      `json:"at"`
+	Emoji   string         `json:"emoji"`
+	Reactor msgReactorKind `json:"reactor"`
 }
 
 type ChatHistoryEntry struct {
@@ -116,12 +120,19 @@ type ChatHistoryEntry struct {
 	Content        map[string]any `json:"content,omitempty"`
 	DeliveryStatus string         `json:"delivery_status,omitempty"`
 	CreatedAt      int64          `json:"created_at,omitempty"`
+	DeliveredAt    int64          `json:"delivered_at,omitempty"`
+	ReadAt         int64          `json:"read_at,omitempty"`
 	Sender         any            `json:"sender,omitempty"`
+	ReactionsCount map[string]int `json:"reactions_count,omitempty"`
 	Reactions      []MsgReaction  `json:"reactions,omitempty"`
 
 	// appears if che_type:message is a reply
 	ReplyTargetMsg map[string]any `json:"reply_target_msg,omitempty"`
 
 	// appears for reaction che_type
-	Emoji string `json:"emoji,omitempty"`
+	Reactor any    `json:"reactor,omitempty"`
+	Emoji   string `json:"emoji,omitempty"`
+
+	// cursor for pagination
+	Cursor float64 `json:"cursor"`
 }

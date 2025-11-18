@@ -201,6 +201,7 @@ func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, cu
 
 	mentPosts, err := modelHelpers.PostMembersForUIPosts(ctx, mentPostsMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -220,6 +221,7 @@ func GetReactedPosts(ctx context.Context, clientUsername string, limit int, curs
 
 	reactedPosts, err := modelHelpers.PostMembersForUIPosts(ctx, reactedPostsMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -239,6 +241,7 @@ func GetSavedPosts(ctx context.Context, clientUsername string, limit int, cursor
 
 	savedPosts, err := modelHelpers.PostMembersForUIPosts(ctx, savedPostsMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -258,6 +261,7 @@ func GetNotifications(ctx context.Context, clientUsername string, year int, mont
 
 	notifs, err := modelHelpers.NotifMembersForUINotifSnippets(ctx, notifsMembers)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -285,6 +289,7 @@ func ReadNotification(ctx context.Context, clientUsername, year, month, notifId 
 func GetProfile(ctx context.Context, clientUsername, targetUsername string) (UITypes.UserProfile, error) {
 	userProfile, err := modelHelpers.BuildUserProfileUIFromCache(ctx, targetUsername, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return UITypes.UserProfile{}, err
 	}
 
@@ -304,6 +309,7 @@ func GetFollowers(ctx context.Context, clientUsername, targetUsername string, li
 
 	followers, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followerMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -323,6 +329,7 @@ func GetFollowings(ctx context.Context, clientUsername, targetUsername string, l
 
 	followings, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followingMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -342,6 +349,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 
 	userPosts, err := modelHelpers.PostMembersForUIPosts(ctx, userPostsMembers, clientUsername)
 	if err != nil {
+		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 

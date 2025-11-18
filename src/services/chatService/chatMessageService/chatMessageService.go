@@ -59,7 +59,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 				FirstToUser:   msgData.FirstToUser,
 				FromUser:      clientUsername,
 				ToUser:        partnerUsername,
-				CHEId:         newMessage.Id,
+				CHEId:         msgData.Id,
 				MsgData:       helpers.ToJson(msgData),
 			})
 		}(newMessage)
@@ -130,7 +130,7 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 		return nil, err
 	}
 
-	done := rxnToMessage.Id != ""
+	done := rxnToMessage.CHEId != ""
 
 	if done {
 		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
@@ -141,7 +141,6 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 				"reaction": UITypes.MsgReaction{
 					Emoji:   emoji,
 					Reactor: rxnToMessage.Reactor,
-					At:      at,
 				},
 			},
 		})
@@ -154,10 +153,10 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 			eventStreamService.QueueNewMsgReactionEvent(eventTypes.NewMsgReactionEvent{
 				FromUser: clientUsername,
 				ToUser:   partnerUsername,
-				CHEId:    rxnToMessage.Id,
+				CHEId:    rxnData.CHEId,
 				RxnData:  helpers.ToJson(rxnData),
-				ToMsgId:  rxnToMessage.ToMsgId,
-				Emoji:    rxnToMessage.Emoji,
+				ToMsgId:  rxnData.ToMsgId,
+				Emoji:    rxnData.Emoji,
 			})
 		}(rxnToMessage)
 	}
