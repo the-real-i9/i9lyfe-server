@@ -7,10 +7,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func postSavesStreamBgWorker(rdb *redis.Client) {
@@ -58,50 +57,40 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			postSaves := make(map[string][][2]any)
+			postSaves := make(map[string][]any)
 
 			userSavedPosts := make(map[string][][2]string)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				postSaves[msg.PostId] = append(postSaves[msg.PostId], [2]any{msg.SaverUser, stmsgIds[i]})
+				postSaves[msg.PostId] = append(postSaves[msg.PostId], msg.SaverUser)
 
 				userSavedPosts[msg.SaverUser] = append(userSavedPosts[msg.SaverUser], [2]string{msg.PostId, stmsgIds[i]})
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			failedStreamMsgIds := make(map[string]bool)
+			for postId, saverUsers := range postSaves {
+				eg.Go(func() error {
+					postId, saverUsers := postId, saverUsers
 
-			for postId, user_stmsgId_Pairs := range postSaves {
-				wg.Go(func() {
-					postId, user_stmsgId_Pairs := postId, user_stmsgId_Pairs
-
-					saverUsers := []any{}
-
-					for _, user_stmsgId_Pair := range user_stmsgId_Pairs {
-						saverUsers = append(saverUsers, user_stmsgId_Pair[0].(string))
-					}
-
-					if err := cache.StorePostSaves(ctx, postId, saverUsers); err != nil {
-						for _, d := range user_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
-						}
-					}
+					return cache.StorePostSaves(sharedCtx, postId, saverUsers)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			go func() {
 				for postId := range postSaves {
-					totalRxnsCount, err := cache.GetPostSavesCount(ctx, postId)
+					totalRxnsCount, err := cache.GetPostSavesCount(sharedCtx, postId)
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
+					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
 						"post_id":            postId,
 						"latest_saves_count": totalRxnsCount,
 					})
@@ -109,23 +98,16 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			for user, postId_stmsgId_Pairs := range userSavedPosts {
-
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cache.StoreUserSavedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreUserSavedPosts(sharedCtx, user, postId_stmsgId_Pairs)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

@@ -10,10 +10,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func repostsStreamBgWorker(rdb *redis.Client) {
@@ -67,7 +66,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 			reposts := []string{}
 
-			postReposts := make(map[string][][2]any)
+			postReposts := make(map[string][]any)
 
 			userRepostedPosts := make(map[string][][2]string)
 
@@ -86,7 +85,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				reposts = append(reposts, msg.RepostId, msg.RepostData)
 
-				postReposts[msg.PostId] = append(postReposts[msg.PostId], [2]any{msg.RepostId, stmsgIds[i]})
+				postReposts[msg.PostId] = append(postReposts[msg.PostId], msg.RepostId)
 
 				userRepostedPosts[msg.ReposterUser.Username] = append(userRepostedPosts[msg.ReposterUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
@@ -123,10 +122,6 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
-
 			// batch processing
 			if err := cache.StoreNewPosts(ctx, reposts); err != nil {
 				return
@@ -142,34 +137,28 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				}
 			}
 
-			for postId, repostId_stmsgId_Pairs := range postReposts {
-				wg.Go(func() {
-					postId, repostId_stmsgId_Pairs := postId, repostId_stmsgId_Pairs
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-					repostIds := []any{}
+			for postId, repostIds := range postReposts {
+				eg.Go(func() error {
+					postId, repostIds := postId, repostIds
 
-					for _, user_stmsgId_Pair := range repostId_stmsgId_Pairs {
-						repostIds = append(repostIds, user_stmsgId_Pair[0].(string))
-					}
-
-					if err := cache.StorePostReposts(ctx, postId, repostIds); err != nil {
-						for _, d := range repostId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
-						}
-					}
+					return cache.StorePostReposts(sharedCtx, postId, repostIds)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			go func() {
 				for postId := range postReposts {
-					totalRepostsCount, err := cache.GetPostRepostsCount(ctx, postId)
+					totalRepostsCount, err := cache.GetPostRepostsCount(sharedCtx, postId)
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
+					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
 						"post_id":              postId,
 						"latest_reposts_count": totalRepostsCount,
 					})
@@ -177,36 +166,26 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			for user, postId_stmsgId_Pairs := range userPosts {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-					if err := cache.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+
+					return cache.StoreUserPosts(sharedCtx, user, postId_stmsgId_Pairs)
 				})
 			}
 
 			for user, postId_stmsgId_Pairs := range userRepostedPosts {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-					if err := cache.StoreUserRepostedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, d := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+
+					return cache.StoreUserRepostedPosts(sharedCtx, user, postId_stmsgId_Pairs)
 				})
 			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
-						for _, d := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
 				})
 			}
 
@@ -222,11 +201,9 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

@@ -9,10 +9,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func commentReactionsStreamBgWorker(rdb *redis.Client) {
@@ -65,7 +64,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			msgsLen := len(msgs)
 
-			commentReactions := make(map[string][][2]any)
+			commentReactions := make(map[string][]string)
 
 			// having comment reactors separate, allows us to
 			// paginate through the list of reactions on a comment
@@ -80,7 +79,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], [2]any{[]string{msg.ReactorUser.Username, msg.Emoji}, stmsgIds[i]})
+				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], msg.ReactorUser.Username, msg.Emoji)
 
 				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]string{msg.ReactorUser.Username, stmsgIds[i]})
 
@@ -112,10 +111,6 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
-
 			if len(notifications) > 0 {
 				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
 					return
@@ -126,34 +121,28 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				}
 			}
 
-			for commentId, userWithEmoji_stmsgId_Pairs := range commentReactions {
-				wg.Go(func() {
-					commentId, userWithEmoji_stmsgId_Pairs := commentId, userWithEmoji_stmsgId_Pairs
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-					userWithEmojiPairs := [][]string{}
+			for commentId, userWithEmojiPairs := range commentReactions {
+				eg.Go(func() error {
+					commentId, userWithEmojiPairs := commentId, userWithEmojiPairs
 
-					for _, userWithEmoji_stmsgId_Pair := range userWithEmoji_stmsgId_Pairs {
-						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
-					}
-
-					if err := cache.StoreCommentReactions(ctx, commentId, slices.Concat(userWithEmojiPairs...)); err != nil {
-						for _, d := range userWithEmoji_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
-						}
-					}
+					return cache.StoreCommentReactions(sharedCtx, commentId, userWithEmojiPairs)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			go func() {
 				for commentId := range commentReactions {
-					totalRxnsCount, err := cache.GetCommentReactionsCount(ctx, commentId)
+					totalRxnsCount, err := cache.GetCommentReactionsCount(sharedCtx, commentId)
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishCommentMetric(ctx, map[string]any{
+					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
 						"comment_id":             commentId,
 						"latest_reactions_count": totalRxnsCount,
 					})
@@ -161,27 +150,18 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			for commentId, rUser_stmsgId_Pairs := range commentReactors {
-				wg.Go(func() {
+				eg.Go(func() error {
 					commentId, rUser_stmsgId_Pairs := commentId, rUser_stmsgId_Pairs
 
-					if err := cache.StoreCommentReactors(ctx, commentId, rUser_stmsgId_Pairs); err != nil {
-						for _, d := range rUser_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreCommentReactors(sharedCtx, commentId, rUser_stmsgId_Pairs)
 				})
 			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					err = cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs)
-					if err != nil {
-						for _, d := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
 				})
 			}
 
@@ -191,11 +171,9 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

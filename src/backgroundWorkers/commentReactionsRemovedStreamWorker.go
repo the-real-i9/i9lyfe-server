@@ -7,10 +7,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
@@ -57,81 +56,61 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			commentReactionsRemoved := make(map[string][][2]string)
+			commentReactionsRemoved := make(map[string][]string)
 
-			commentReactorsRemoved := make(map[string][][2]string)
+			commentReactorsRemoved := make(map[string][]any)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 
-				commentReactionsRemoved[msg.CommentId] = append(commentReactionsRemoved[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				commentReactionsRemoved[msg.CommentId] = append(commentReactionsRemoved[msg.CommentId], msg.ReactorUser)
 				// these two above and below follow a similar implemtation,
 				// i.e. we can use commentReactionsRemoved to remove comment reactors too
 				// but we're just separating concerns here
-				commentReactorsRemoved[msg.CommentId] = append(commentReactorsRemoved[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				commentReactorsRemoved[msg.CommentId] = append(commentReactorsRemoved[msg.CommentId], msg.ReactorUser)
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
-			failedStreamMsgIds := make(map[string]bool)
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for commentId, user_stmsgId_Pairs := range commentReactionsRemoved {
-				users := []string{}
-				stmsgIds := []string{}
+			for commentId, users := range commentReactionsRemoved {
 
-				for _, user_stmsgId_Pair := range user_stmsgId_Pairs {
-					users = append(users, user_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, user_stmsgId_Pair[1])
-				}
+				eg.Go(func() error {
+					commentId, users := commentId, users
 
-				wg.Go(func() {
-					if err := cache.RemoveCommentReactions(ctx, commentId, users); err != nil {
-						for _, id := range stmsgIds {
-							failedStreamMsgIds[id] = true
-						}
-					}
+					return cache.RemoveCommentReactions(sharedCtx, commentId, users)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			for commentId := range commentReactionsRemoved {
 				go func() {
-					latestCount, err := cache.GetCommentReactionsCount(ctx, commentId)
+					latestCount, err := cache.GetCommentReactionsCount(sharedCtx, commentId)
 					if err != nil {
 						return
 					}
 
-					realtimeService.PublishCommentMetric(ctx, map[string]any{
+					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
 						"comment_id":             commentId,
 						"latest_reactions_count": latestCount,
 					})
 				}()
 			}
 
-			for commentId, rUser_stmsgId_Pairs := range commentReactorsRemoved {
-				rUsers := []any{}
-				stmsgIds := []string{}
+			for commentId, rUsers := range commentReactorsRemoved {
+				eg.Go(func() error {
+					commentId, rUsers := commentId, rUsers
 
-				for _, rUser_stmsgId_Pair := range rUser_stmsgId_Pairs {
-					rUsers = append(rUsers, rUser_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, rUser_stmsgId_Pair[1])
-				}
-
-				wg.Go(func() {
-					if err := cache.RemoveCommentReactors(ctx, commentId, rUsers); err != nil {
-						for _, id := range stmsgIds {
-							failedStreamMsgIds[id] = true
-						}
-					}
+					return cache.RemoveCommentReactors(sharedCtx, commentId, rUsers)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

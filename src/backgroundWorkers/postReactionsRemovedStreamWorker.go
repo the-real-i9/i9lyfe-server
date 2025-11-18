@@ -7,10 +7,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
@@ -58,103 +57,72 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			postReactionsRemoved := make(map[string][][2]string)
+			postReactionsRemoved := make(map[string][]string)
 
-			postReactorsRemoved := make(map[string][][2]string)
+			postReactorsRemoved := make(map[string][]any)
 
-			userReactionRemovedPosts := make(map[string][][2]string)
+			userReactionRemovedPosts := make(map[string][]any)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 
-				postReactionsRemoved[msg.PostId] = append(postReactionsRemoved[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				postReactionsRemoved[msg.PostId] = append(postReactionsRemoved[msg.PostId], msg.ReactorUser)
 				// these two above and below follow a similar implemtation,
 				// i.e. we can use postReactionsRemoved to remove post reactors too
 				// but we're just separating concerns here
-				postReactorsRemoved[msg.PostId] = append(postReactorsRemoved[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				postReactorsRemoved[msg.PostId] = append(postReactorsRemoved[msg.PostId], msg.ReactorUser)
 
-				userReactionRemovedPosts[msg.ReactorUser] = append(userReactionRemovedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
+				userReactionRemovedPosts[msg.ReactorUser] = append(userReactionRemovedPosts[msg.ReactorUser], msg.PostId)
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
-			failedStreamMsgIds := make(map[string]bool)
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for postId, user_stmsgId_Pairs := range postReactionsRemoved {
-				users := []string{}
-				stmsgIds := []string{}
+			for postId, users := range postReactionsRemoved {
+				eg.Go(func() error {
+					postId, users := postId, users
 
-				for _, user_stmsgId_Pair := range user_stmsgId_Pairs {
-					users = append(users, user_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, user_stmsgId_Pair[1])
-				}
-
-				wg.Go(func() {
-					if err := cache.RemovePostReactions(ctx, postId, users); err != nil {
-						for _, id := range stmsgIds {
-							failedStreamMsgIds[id] = true
-						}
-					}
+					return cache.RemovePostReactions(sharedCtx, postId, users)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			for postId := range postReactionsRemoved {
 				go func() {
-					latestCount, err := cache.GetPostReactionsCount(ctx, postId)
+					latestCount, err := cache.GetPostReactionsCount(sharedCtx, postId)
 					if err != nil {
 						return
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
+					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
 						"post_id":                postId,
 						"latest_reactions_count": latestCount,
 					})
 				}()
 			}
 
-			for user, postId_stmsgId_Pairs := range userReactionRemovedPosts {
-				postIds := []any{}
-				stmsgIds := []string{}
+			for user, postIds := range userReactionRemovedPosts {
+				eg.Go(func() error {
+					user, postIds := user, postIds
 
-				for _, postId_stmsgId_Pair := range postId_stmsgId_Pairs {
-					postIds = append(postIds, postId_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, postId_stmsgId_Pair[1])
-				}
-
-				wg.Go(func() {
-					if err := cache.RemoveUserReactedPosts(ctx, user, postIds); err != nil {
-						for _, id := range stmsgIds {
-							failedStreamMsgIds[id] = true
-						}
-					}
+					return cache.RemoveUserReactedPosts(sharedCtx, user, postIds)
 				})
 			}
 
-			for postId, rUser_stmsgId_Pairs := range postReactorsRemoved {
-				rUsers := []any{}
-				stmsgIds := []string{}
+			for postId, rUsers := range postReactorsRemoved {
+				eg.Go(func() error {
+					postId, rUsers := postId, rUsers
 
-				for _, rUser_stmsgId_Pair := range rUser_stmsgId_Pairs {
-					rUsers = append(rUsers, rUser_stmsgId_Pair[0])
-					stmsgIds = append(stmsgIds, rUser_stmsgId_Pair[1])
-				}
-
-				wg.Go(func() {
-					if err := cache.RemovePostReactors(ctx, postId, rUsers); err != nil {
-						for _, id := range stmsgIds {
-							failedStreamMsgIds[id] = true
-						}
-					}
+					return cache.RemovePostReactors(sharedCtx, postId, rUsers)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

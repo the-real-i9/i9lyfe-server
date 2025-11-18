@@ -7,10 +7,9 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func msgReactionsStreamBgWorker(rdb *redis.Client) {
@@ -66,7 +65,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 
 			chatMsgReactions := make(map[string][][2]string)
 
-			msgReactions := make(map[string][][2]any)
+			msgReactions := make(map[string][]string)
 
 			// batch data for batch processing
 			for i, msg := range msgs {
@@ -74,57 +73,39 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 
 				chatMsgReactions[msg.FromUser+"|"+msg.ToUser] = append(chatMsgReactions[msg.FromUser+"|"+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
 
-				msgReactions[msg.ToMsgId] = append(msgReactions[msg.ToMsgId], [2]any{[]string{msg.FromUser, msg.Emoji}, stmsgIds[i]})
+				msgReactions[msg.ToMsgId] = append(msgReactions[msg.ToMsgId], msg.FromUser, msg.Emoji)
 			}
-
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
 			if err := cache.StoreChatHistoryEntries(ctx, newMsgReactionEntries); err != nil {
 				return
 			}
 
+			eg, sharedCtx := errgroup.WithContext(ctx)
+
 			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMsgReactions {
-				wg.Go(func() {
+				eg.Go(func() error {
 					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
 
 					var ownerUser, partnerUser string
 
 					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
 
-					if err := cache.StoreUserChatHistory(ctx, ownerUser, partnerUser, CHEId_stmsgId_Pairs); err != nil {
-						for _, d := range CHEId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_stmsgId_Pairs)
 				})
 			}
 
-			for msgId, userWithEmoji_stmsgId_Pairs := range msgReactions {
-				wg.Go(func() {
-					msgId, userWithEmoji_stmsgId_Pairs := msgId, userWithEmoji_stmsgId_Pairs
+			for msgId, userWithEmojiPairs := range msgReactions {
+				eg.Go(func() error {
+					msgId, userWithEmojiPairs := msgId, userWithEmojiPairs
 
-					userWithEmojiPairs := [][]string{}
-
-					for _, userWithEmoji_stmsgId_Pair := range userWithEmoji_stmsgId_Pairs {
-						userWithEmojiPairs = append(userWithEmojiPairs, userWithEmoji_stmsgId_Pair[0].([]string))
-					}
-
-					if err := cache.StoreMsgReactions(ctx, msgId, slices.Concat(userWithEmojiPairs...)); err != nil {
-						for _, d := range userWithEmoji_stmsgId_Pairs {
-							failedStreamMsgIds[d[1].(string)] = true
-						}
-					}
+					return cache.StoreMsgReactions(sharedCtx, msgId, userWithEmojiPairs)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

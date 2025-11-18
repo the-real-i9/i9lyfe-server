@@ -10,10 +10,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func commentCommentsStreamBgWorker(rdb *redis.Client) {
@@ -69,7 +68,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 			commentComments := make(map[string][][2]string)
 
-			newCommentDBExtrasFuncs := [][2]any{}
+			newCommentDBExtrasFuncs := []func() error{}
 
 			notifications := []string{}
 			unreadNotifications := []any{}
@@ -84,9 +83,9 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]string{msg.CommentId, stmsgIds[i]})
 
-				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, [2]any{func() error {
+				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
 					return commentModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
-				}, stmsgIds[i]})
+				})
 
 				if msg.ParentCommentOwner != msg.CommenterUser.Username {
 
@@ -142,10 +141,6 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
-
 			if err := cache.StoreNewComments(ctx, newComments); err != nil {
 				return
 			}
@@ -160,28 +155,28 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				}
 			}
 
+			eg, sharedCtx := errgroup.WithContext(ctx)
+
 			for parentCommentId, commentId_stmsgId_Pairs := range commentComments {
-				wg.Go(func() {
+				eg.Go(func() error {
 					parentCommentId, commentId_stmsgId_Pairs := parentCommentId, commentId_stmsgId_Pairs
 
-					if err := cache.StoreCommentComments(ctx, parentCommentId, commentId_stmsgId_Pairs); err != nil {
-						for _, d := range commentId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreCommentComments(sharedCtx, parentCommentId, commentId_stmsgId_Pairs)
 				})
 			}
 
-			wg.Wait()
+			if eg.Wait() != nil {
+				return
+			}
 
 			go func() {
 				for parentCommentId := range commentComments {
-					totalCommentsCount, err := cache.GetCommentCommentsCount(ctx, parentCommentId)
+					totalCommentsCount, err := cache.GetCommentCommentsCount(sharedCtx, parentCommentId)
 					if err != nil {
 						continue
 					}
 
-					realtimeService.PublishCommentMetric(ctx, map[string]any{
+					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
 						"comment_id":            parentCommentId,
 						"latest_comments_count": totalCommentsCount,
 					})
@@ -189,24 +184,18 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
-						for _, d := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[d[1]] = true
-						}
-					}
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
 				})
 			}
 
-			for _, fn_stmsgId_Pair := range newCommentDBExtrasFuncs {
-				wg.Go(func() {
-					fn, stmsgId := fn_stmsgId_Pair[0].(func() error), fn_stmsgId_Pair[1].(string)
+			for _, fn := range newCommentDBExtrasFuncs {
+				eg.Go(func() error {
+					fn := fn
 
-					if err := fn(); err != nil {
-						failedStreamMsgIds[stmsgId] = true
-					}
+					return fn()
 				})
 			}
 
@@ -216,9 +205,9 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

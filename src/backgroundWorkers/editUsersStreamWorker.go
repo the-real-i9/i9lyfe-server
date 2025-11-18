@@ -7,10 +7,9 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func editUsersStreamBgWorker(rdb *redis.Client) {
@@ -58,35 +57,28 @@ func editUsersStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			editUsers := make(map[string][2]any, len(msgs))
+			editUsers := make(map[string]map[string]any, len(msgs))
 
 			// batch data for batch processing
-			for i, msg := range msgs {
-				editUsers[msg.Username] = [2]any{map[string]any(msg.UpdateKVMap), stmsgIds[i]}
+			for _, msg := range msgs {
+				editUsers[msg.Username] = map[string]any(msg.UpdateKVMap)
 			}
 
 			// batch processing
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			wg := new(sync.WaitGroup)
+			for user, updateKVMap := range editUsers {
 
-			failedStreamMsgIds := make(map[string]bool)
+				eg.Go(func() error {
+					user, updateKVMap := user, updateKVMap
 
-			for user, updateKVMap_stmsgId_Pair := range editUsers {
-
-				wg.Go(func() {
-					user, updateKVMap_stmsgId_Pair := user, updateKVMap_stmsgId_Pair
-
-					if err := cache.UpdateUser(ctx, user, updateKVMap_stmsgId_Pair[0].(map[string]any)); err != nil {
-						failedStreamMsgIds[updateKVMap_stmsgId_Pair[1].(string)] = true
-					}
+					return cache.UpdateUser(sharedCtx, user, updateKVMap)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

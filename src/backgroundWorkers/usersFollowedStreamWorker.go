@@ -9,10 +9,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func usersFollowedStreamBgWorker(rdb *redis.Client) {
@@ -100,10 +99,6 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
-
 			// batch processing
 			if len(notifications) > 0 {
 				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
@@ -115,39 +110,29 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				}
 			}
 
+			eg, sharedCtx := errgroup.WithContext(ctx)
+
 			for followerUser, followingUser_stmsgId_Pairs := range userFollowings {
-				wg.Go(func() {
+				eg.Go(func() error {
 					followerUser, followingUser_stmsgId_Pairs := followerUser, followingUser_stmsgId_Pairs
 
-					if err := cache.StoreUserFollowings(ctx, followerUser, followingUser_stmsgId_Pairs); err != nil {
-						for _, pair := range followingUser_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.StoreUserFollowings(sharedCtx, followerUser, followingUser_stmsgId_Pairs)
 				})
 			}
 
 			for followingUser, followerUser_stmsgId_Pairs := range userFollowers {
-				wg.Go(func() {
+				eg.Go(func() error {
 					followingUser, followerUser_stmsgId_Pairs := followingUser, followerUser_stmsgId_Pairs
 
-					if err := cache.StoreUserFollowers(ctx, followingUser, followerUser_stmsgId_Pairs); err != nil {
-						for _, pair := range followerUser_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.StoreUserFollowers(sharedCtx, followingUser, followerUser_stmsgId_Pairs)
 				})
 			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
-						for _, pair := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
 				})
 			}
 
@@ -157,11 +142,9 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

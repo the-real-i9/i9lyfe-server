@@ -11,10 +11,9 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func newPostsStreamBgWorker(rdb *redis.Client) {
@@ -77,7 +76,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			userNotifications := make(map[string][][2]string)
 
-			newPostDBExtrasFuncs := [][2]any{}
+			newPostDBExtrasFuncs := []func() error{}
 
 			fanOutPostFuncs := []func(){}
 
@@ -89,9 +88,9 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 				userPosts[msg.OwnerUser.Username] = append(userPosts[msg.OwnerUser.Username], [2]string{msg.PostId, stmsgIds[i]})
 
-				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, [2]any{func() error {
+				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, func() error {
 					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
-				}, stmsgIds[i]})
+				})
 
 				for _, mu := range msg.Mentions {
 					userMentionedPosts[mu] = append(userMentionedPosts[mu], [2]string{msg.PostId, stmsgIds[i]})
@@ -127,10 +126,6 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
-
 			// batch processing
 			if err := cache.StoreNewPosts(ctx, newPosts); err != nil {
 				return
@@ -146,48 +141,37 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				}
 			}
 
+			eg, sharedCtx := errgroup.WithContext(ctx)
+
 			for user, postId_stmsgId_Pairs := range userPosts {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
-					if err := cache.StoreUserPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, pair := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+
+					return cache.StoreUserPosts(sharedCtx, user, postId_stmsgId_Pairs)
 				})
 			}
 
 			for user, postId_stmsgId_Pairs := range userMentionedPosts {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
 
-					if err := cache.StoreUserMentionedPosts(ctx, user, postId_stmsgId_Pairs); err != nil {
-						for _, pair := range postId_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.StoreUserMentionedPosts(sharedCtx, user, postId_stmsgId_Pairs)
 				})
 			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
-				wg.Go(func() {
+				eg.Go(func() error {
 					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
 
-					if err := cache.StoreUserNotifications(ctx, user, notifId_stmsgId_Pairs); err != nil {
-						for _, pair := range notifId_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
 				})
 			}
 
-			for _, fn_stmsgId_Pair := range newPostDBExtrasFuncs {
-				wg.Go(func() {
-					fn, stmsgId := fn_stmsgId_Pair[0].(func() error), fn_stmsgId_Pair[1].(string)
+			for _, fn := range newPostDBExtrasFuncs {
+				eg.Go(func() error {
+					fn := fn
 
-					if err := fn(); err != nil {
-						failedStreamMsgIds[stmsgId] = true
-					}
+					return fn()
 				})
 			}
 
@@ -203,11 +187,9 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

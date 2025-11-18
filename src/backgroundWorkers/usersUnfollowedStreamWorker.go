@@ -6,10 +6,9 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
@@ -57,65 +56,40 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			userFollowingsRemoved := make(map[string][][2]string)
-			userFollowersRemoved := make(map[string][][2]string)
+			userFollowingsRemoved := make(map[string][]any)
+			userFollowersRemoved := make(map[string][]any)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 
-				userFollowingsRemoved[msg.FollowerUser] = append(userFollowingsRemoved[msg.FollowerUser], [2]string{msg.FollowingUser, stmsgIds[i]})
+				userFollowingsRemoved[msg.FollowerUser] = append(userFollowingsRemoved[msg.FollowerUser], msg.FollowingUser)
 
-				userFollowersRemoved[msg.FollowingUser] = append(userFollowersRemoved[msg.FollowingUser], [2]string{msg.FollowerUser, stmsgIds[i]})
+				userFollowersRemoved[msg.FollowingUser] = append(userFollowersRemoved[msg.FollowingUser], msg.FollowerUser)
 
 			}
-
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for followerUser, followingUser_stmsgId_Pairs := range userFollowingsRemoved {
-				wg.Go(func() {
-					followerUser, followingUser_stmsgId_Pairs := followerUser, followingUser_stmsgId_Pairs
+			for followerUser, followingUsers := range userFollowingsRemoved {
+				eg.Go(func() error {
+					followerUser, followingUsers := followerUser, followingUsers
 
-					followingUsers := []any{}
-
-					for _, pair := range followingUser_stmsgId_Pairs {
-						followingUsers = append(followingUsers, pair[0])
-					}
-
-					if err := cache.RemoveUserFollowings(ctx, followerUser, followingUsers); err != nil {
-						for _, pair := range followingUser_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.RemoveUserFollowings(sharedCtx, followerUser, followingUsers)
 				})
 			}
 
-			for followingUser, followerUser_stmsgId_Pairs := range userFollowersRemoved {
-				wg.Go(func() {
-					followingUser, followerUser_stmsgId_Pairs := followingUser, followerUser_stmsgId_Pairs
+			for followingUser, followerUsers := range userFollowersRemoved {
+				eg.Go(func() error {
+					followingUser, followerUsers := followingUser, followerUsers
 
-					followerUsers := []any{}
-
-					for _, pair := range followerUser_stmsgId_Pairs {
-						followerUsers = append(followerUsers, pair[0])
-					}
-
-					if err := cache.RemoveUserFollowers(ctx, followingUser, followerUsers); err != nil {
-						for _, pair := range followerUser_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.RemoveUserFollowers(sharedCtx, followingUser, followerUsers)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

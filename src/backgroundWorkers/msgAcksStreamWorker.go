@@ -7,16 +7,15 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func msgAcksStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "new_messages"
-		groupName    = "new_message_listeners"
+		streamName   = "msg_acks"
+		groupName    = "msg_ack_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -61,7 +60,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 
 			}
 
-			ackMessages := [][4]any{}
+			ackMessages := [][3]any{}
 
 			userChatUnreadMsgs := make(map[string]map[string][]any)
 			userChatReadMsgs := make(map[string]map[string][]any)
@@ -71,7 +70,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 
-				ackMessages = append(ackMessages, [4]any{msg.CHEId, msg.Ack, msg.At, stmsgIds[i]})
+				ackMessages = append(ackMessages, [3]any{msg.CHEId, msg.Ack, msg.At})
 
 				if msg.Ack == "delivered" {
 					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
@@ -85,65 +84,59 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
 			for _, CHEId_ack_ackAt_stmsgId := range ackMessages {
 
-				wg.Go(func() {
-					CHEId, ack, ackAt, stmsgId := CHEId_ack_ackAt_stmsgId[0], CHEId_ack_ackAt_stmsgId[1], CHEId_ack_ackAt_stmsgId[2], CHEId_ack_ackAt_stmsgId[3]
+				eg.Go(func() error {
+					CHEId, ack, ackAt := CHEId_ack_ackAt_stmsgId[0], CHEId_ack_ackAt_stmsgId[1], CHEId_ack_ackAt_stmsgId[2]
 
-					if err := cache.UpdateMessage(ctx, CHEId.(string), map[string]any{
+					return cache.UpdateMessage(sharedCtx, CHEId.(string), map[string]any{
 						"delivery_status":         ack,
 						fmt.Sprintf("%s_at", ack): ackAt.(int64),
-					}); err != nil {
-						failedStreamMsgIds[stmsgId.(string)] = true
-					}
+					})
 				})
 			}
 
 			for ownerUser, partnerUser_stmsgId_Pairs := range updatedFromUserChats {
-				wg.Go(func() {
+				eg.Go(func() error {
 					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
 
-					if err := cache.StoreUserChatsSorted(ctx, ownerUser, partnerUser_stmsgId_Pairs); err != nil {
-						for _, stmsgId := range partnerUser_stmsgId_Pairs {
-							failedStreamMsgIds[stmsgId] = true
-						}
-					}
+					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_stmsgId_Pairs)
 				})
 			}
 
 			for ownerUser, partnerUser_unreadMsgs_Map := range userChatUnreadMsgs {
-				wg.Go(func() {
+				eg.Go(func() error {
 					ownerUser, partnerUser_unreadMsgs_Map := ownerUser, partnerUser_unreadMsgs_Map
 
 					for partnerUser, unreadMsgs := range partnerUser_unreadMsgs_Map {
-						if err := cache.StoreUserChatUnreadMsgs(ctx, ownerUser, partnerUser, unreadMsgs); err != nil {
-							// signal error
+						if err := cache.StoreUserChatUnreadMsgs(sharedCtx, ownerUser, partnerUser, unreadMsgs); err != nil {
+							return err
 						}
 					}
+
+					return nil
 				})
 			}
 
 			for ownerUser, partnerUser_readMsgs_Map := range userChatReadMsgs {
-				wg.Go(func() {
+				eg.Go(func() error {
 					ownerUser, partnerUser_readMsgs_Map := ownerUser, partnerUser_readMsgs_Map
 
 					for partnerUser, readMsgs := range partnerUser_readMsgs_Map {
-						if err := cache.RemoveUserChatUnreadMsgs(ctx, ownerUser, partnerUser, readMsgs); err != nil {
-							// signal error
+						if err := cache.RemoveUserChatUnreadMsgs(sharedCtx, ownerUser, partnerUser, readMsgs); err != nil {
+							return err
 						}
 					}
+
+					return nil
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

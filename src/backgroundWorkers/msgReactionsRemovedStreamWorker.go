@@ -6,10 +6,9 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
-	"slices"
-	"sync"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/errgroup"
 )
 
 func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
@@ -61,69 +60,45 @@ func msgReactionsRemovedStreamBgWorker(rdb *redis.Client) {
 
 			msgReactionEntriesRemoved := []string{}
 
-			chatMsgReactionsRemoved := make(map[[2]string][][2]string)
+			chatMsgReactionsRemoved := make(map[[2]string][]any)
 
-			msgReactionsRemoved := make(map[string][][2]string)
+			msgReactionsRemoved := make(map[string][]string)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				msgReactionEntriesRemoved = append(msgReactionEntriesRemoved, msg.CHEId)
 
-				chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}] = append(chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}], [2]string{msg.CHEId, stmsgIds[i]})
+				chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}] = append(chatMsgReactionsRemoved[[2]string{msg.FromUser, msg.ToUser}], msg.CHEId)
 
-				msgReactionsRemoved[msg.ToMsgId] = append(msgReactionsRemoved[msg.ToMsgId], [2]string{msg.FromUser, stmsgIds[i]})
+				msgReactionsRemoved[msg.ToMsgId] = append(msgReactionsRemoved[msg.ToMsgId], msg.FromUser)
 			}
-
-			wg := new(sync.WaitGroup)
-
-			failedStreamMsgIds := make(map[string]bool)
 
 			// batch processing
 			if err := cache.RemoveChatHistoryEntries(ctx, msgReactionEntriesRemoved); err != nil {
 				return
 			}
 
-			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMsgReactionsRemoved {
-				wg.Go(func() {
-					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
-					CHEIds := []any{}
+			for ownerUserPartnerUser, CHEIds := range chatMsgReactionsRemoved {
+				eg.Go(func() error {
+					ownerUserPartnerUser, CHEIds := ownerUserPartnerUser, CHEIds
 
-					for _, pair := range CHEId_stmsgId_Pairs {
-						CHEIds = append(CHEIds, pair[0])
-					}
-
-					if err := cache.RemoveUserChatHistory(ctx, ownerUserPartnerUser, CHEIds); err != nil {
-						for _, pair := range CHEId_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.RemoveUserChatHistory(sharedCtx, ownerUserPartnerUser, CHEIds)
 				})
 			}
 
-			for msgId, user_stmsgId_Pairs := range msgReactionsRemoved {
-				wg.Go(func() {
-					msgId, user_stmsgId_Pairs := msgId, user_stmsgId_Pairs
+			for msgId, reactorUsers := range msgReactionsRemoved {
+				eg.Go(func() error {
+					msgId, reactorUsers := msgId, reactorUsers
 
-					reactorUsers := []string{}
-
-					for _, user_stmsgId_Pair := range user_stmsgId_Pairs {
-						reactorUsers = append(reactorUsers, user_stmsgId_Pair[0])
-					}
-
-					if err := cache.RemoveMsgReactions(ctx, msgId, reactorUsers); err != nil {
-						for _, pair := range user_stmsgId_Pairs {
-							failedStreamMsgIds[pair[1]] = true
-						}
-					}
+					return cache.RemoveMsgReactions(sharedCtx, msgId, reactorUsers)
 				})
 			}
 
-			wg.Wait()
-
-			stmsgIds = slices.DeleteFunc(stmsgIds, func(stmsgId string) bool {
-				return failedStreamMsgIds[stmsgId]
-			})
+			if eg.Wait() != nil {
+				return
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {
