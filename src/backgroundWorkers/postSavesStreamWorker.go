@@ -75,27 +75,28 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, saverUsers := postId, saverUsers
 
-					return cache.StorePostSaves(sharedCtx, postId, saverUsers)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for postId := range postSaves {
-					totalRxnsCount, err := cache.GetPostSavesCount(sharedCtx, postId)
-					if err != nil {
-						continue
+					if err := cache.StorePostSaves(sharedCtx, postId, saverUsers); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":            postId,
-						"latest_saves_count": totalRxnsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postSaves {
+							totalSavesCount, err := cache.GetPostSavesCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":            postId,
+								"latest_saves_count": totalSavesCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for user, postId_stmsgId_Pairs := range userSavedPosts {
 				eg.Go(func() error {

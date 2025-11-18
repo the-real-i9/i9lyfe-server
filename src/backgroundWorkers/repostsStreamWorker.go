@@ -143,27 +143,28 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, repostIds := postId, repostIds
 
-					return cache.StorePostReposts(sharedCtx, postId, repostIds)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for postId := range postReposts {
-					totalRepostsCount, err := cache.GetPostRepostsCount(sharedCtx, postId)
-					if err != nil {
-						continue
+					if err := cache.StorePostReposts(sharedCtx, postId, repostIds); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":              postId,
-						"latest_reposts_count": totalRepostsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postReposts {
+							totalRepostsCount, err := cache.GetPostRepostsCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":              postId,
+								"latest_reposts_count": totalRepostsCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for user, postId_stmsgId_Pairs := range userPosts {
 				eg.Go(func() error {

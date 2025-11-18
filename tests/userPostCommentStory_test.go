@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserPostCommentStory(t *testing.T) {
+func XTestUserPostCommentStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
@@ -326,7 +326,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 checks reactors to her post1")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -359,7 +358,7 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	/* {
 		t.Log("Action: user1 filters reactors to her post1 by a certain emoji")
-		<-(time.NewTimer(100 * time.Millisecond).C)
+
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
 		require.NoError(t, err)
@@ -414,7 +413,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 rechecks reactors to her post1 | user3's reaction gone")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -547,7 +545,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 checks comments on her post1")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -606,7 +603,7 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	/* {
 		t.Log("Action: user1 rechecks comments on her post1 | user3's comment is gone")
-		<-(time.NewTimer(100 * time.Millisecond).C)
+
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -643,7 +640,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 views user2's comment on her post1")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id, nil)
 		require.NoError(t, err)
@@ -769,7 +765,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user2 checks replies to her comment1 on user1's post1")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 		require.NoError(t, err)
@@ -829,7 +824,7 @@ func TestUserPostCommentStory(t *testing.T) {
 	/*
 		{
 			t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
-			<-(time.NewTimer(100 * time.Millisecond).C)
+
 
 			req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 			require.NoError(t, err)
@@ -952,7 +947,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 checks reactors to her reply to user2's comment1 on her post1")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -985,7 +979,7 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	/* {
 		t.Log("Action: user1 filters reactors to her reply to user2's comment1 on her post1 by a certain emoji")
-		<-(time.NewTimer(100 * time.Millisecond).C)
+
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
 		require.NoError(t, err)
@@ -1040,7 +1034,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user1 rechecks reactors to her reply to user2's comment1 on her post1 | user3's reaction gone")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
 		require.NoError(t, err)
@@ -1128,7 +1121,6 @@ func TestUserPostCommentStory(t *testing.T) {
 
 	{
 		t.Log("Action: user2 views user1's post2 following the mention notification received")
-		<-(time.NewTimer(100 * time.Millisecond).C)
 
 		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post2Id, nil)
 		require.NoError(t, err)

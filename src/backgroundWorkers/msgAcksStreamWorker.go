@@ -73,12 +73,24 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 				ackMessages = append(ackMessages, [3]any{msg.CHEId, msg.Ack, msg.At})
 
 				if msg.Ack == "delivered" {
+					if updatedFromUserChats[msg.FromUser] == nil {
+						updatedFromUserChats[msg.FromUser] = make(map[string]string)
+					}
+
 					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+
+					if userChatUnreadMsgs[msg.FromUser] == nil {
+						userChatUnreadMsgs[msg.FromUser] = make(map[string][]any)
+					}
 
 					userChatUnreadMsgs[msg.FromUser][msg.ToUser] = append(userChatUnreadMsgs[msg.FromUser][msg.ToUser], msg.CHEId)
 				}
 
 				if msg.Ack == "read" {
+					if userChatReadMsgs[msg.FromUser] == nil {
+						userChatReadMsgs[msg.FromUser] = make(map[string][]any)
+					}
+
 					userChatReadMsgs[msg.FromUser][msg.ToUser] = append(userChatReadMsgs[msg.FromUser][msg.ToUser], msg.CHEId)
 				}
 			}

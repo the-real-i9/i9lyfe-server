@@ -127,27 +127,28 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					commentId, userWithEmojiPairs := commentId, userWithEmojiPairs
 
-					return cache.StoreCommentReactions(sharedCtx, commentId, userWithEmojiPairs)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for commentId := range commentReactions {
-					totalRxnsCount, err := cache.GetCommentReactionsCount(sharedCtx, commentId)
-					if err != nil {
-						continue
+					if err := cache.StoreCommentReactions(sharedCtx, commentId, userWithEmojiPairs); err != nil {
+						return err
 					}
 
-					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
-						"comment_id":             commentId,
-						"latest_reactions_count": totalRxnsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for commentId := range commentReactions {
+							totalRxnsCount, err := cache.GetCommentReactionsCount(ctx, commentId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishCommentMetric(ctx, map[string]any{
+								"comment_id":             commentId,
+								"latest_reactions_count": totalRxnsCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for commentId, rUser_stmsgId_Pairs := range commentReactors {
 				eg.Go(func() error {

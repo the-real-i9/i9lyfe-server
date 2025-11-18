@@ -79,7 +79,7 @@ func (m MsgContent) Validate() error {
 		validation.Field(&m.Data,
 			validation.When(msgType == "text", validation.Nil.Error("invalid property for the specified type")).Else(
 				validation.Required,
-				validation.Length(1024, 10*1024*1024).Error("data size oute of range. min: 1KiB, max: 10MiB"),
+				validation.Length(1024, 10*1024*1024).Error("data size out of range. min: 1KiB, max: 10MiB"),
 			),
 		),
 		validation.Field(&m.Duration, validation.When(msgType != "voice", validation.Nil.Error("invalid property for the specified type")).Else(validation.Required)),

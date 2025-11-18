@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestUserChatStory(t *testing.T) {
+func TestUserChatStory(t *testing.T) {
 	t.Parallel()
 
 	user1 := UserT{
@@ -191,10 +191,13 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user1 sends message to user2")
 
 		err := user1.WSConn.WriteJSON(map[string]any{
-			"event": "chat: send message: text",
+			"action": "chat: send message",
 			"data": map[string]any{
-				"props": map[string]any{
-					"content": "Hi. How're you doing?",
+				"msg": map[string]any{
+					"type": "text",
+					"props": map[string]any{
+						"text_content": "Hi. How're you doing?",
+					},
 				},
 				"toUser": user2.Username,
 				"at":     time.Now().UTC().UnixMilli(),
@@ -206,8 +209,8 @@ func XTestUserChatStory(t *testing.T) {
 		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: send message: text",
+			"event":    "server reply",
+			"toAction": "chat: send message",
 			"data": td.Map(map[string]any{
 				"new_msg_id": td.Ignore(),
 			}, nil),
@@ -224,9 +227,13 @@ func XTestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user2NewMsgReceived, td.Map(map[string]any{
 			"event": "chat: new message",
 			"data": td.SuperMapOf(map[string]any{
-				"id":              user1NewMsgId,
-				"type":            "text",
-				"props":           td.Contains(`"content":"Hi. How're you doing?"`),
+				"id": user1NewMsgId,
+				"content": td.SuperMapOf(map[string]any{
+					"type": "text",
+					"props": td.SuperMapOf(map[string]any{
+						"text_content": "Hi. How're you doing?",
+					}, nil),
+				}, nil),
 				"delivery_status": "sent",
 				"sender": td.SuperMapOf(map[string]any{
 					"username": user1.Username,
@@ -235,7 +242,7 @@ func XTestUserChatStory(t *testing.T) {
 		}, nil))
 
 		err := user2.WSConn.WriteJSON(map[string]any{
-			"event": "chat: ack message delivered",
+			"action": "chat: ack message delivered",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
 				"msgId":           user1NewMsgId,
@@ -247,9 +254,9 @@ func XTestUserChatStory(t *testing.T) {
 		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: ack message delivered",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: ack message delivered",
+			"data":     true,
 		}, nil))
 	}
 
@@ -271,7 +278,7 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user2 then acknowledges 'read'")
 
 		err := user2.WSConn.WriteJSON(map[string]any{
-			"event": "chat: ack message read",
+			"action": "chat: ack message read",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
 				"msgId":           user1NewMsgId,
@@ -283,9 +290,9 @@ func XTestUserChatStory(t *testing.T) {
 		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: ack message read",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: ack message read",
+			"data":     true,
 		}, nil))
 	}
 
@@ -307,11 +314,11 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user2 reacts to user1's message")
 
 		err := user2.WSConn.WriteJSON(map[string]any{
-			"event": "chat: react to message",
+			"action": "chat: react to message",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
 				"msgId":           user1NewMsgId,
-				"reaction":        "🚀",
+				"emoji":           "🚀",
 				"at":              time.Now().UTC().UnixMilli(),
 			},
 		})
@@ -321,9 +328,9 @@ func XTestUserChatStory(t *testing.T) {
 		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: react to message",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: react to message",
+			"data":     true,
 		}, nil))
 	}
 
@@ -336,8 +343,11 @@ func XTestUserChatStory(t *testing.T) {
 			"event": "chat: message reaction",
 			"data": td.SuperMapOf(map[string]any{
 				"partner_username": user2.Username,
-				"msg_id":           user1NewMsgId,
-				"reaction":         "🚀",
+				"to_msg_id":        user1NewMsgId,
+				"reaction": td.Map(map[string]any{
+					"emoji":   "🚀",
+					"reactor": td.Ignore(),
+				}, nil),
 			}, nil),
 		}, nil))
 	}
@@ -351,12 +361,14 @@ func XTestUserChatStory(t *testing.T) {
 		require.NoError(t, err)
 
 		err = user2.WSConn.WriteJSON(map[string]any{
-			"event": "chat: send message: photo",
+			"action": "chat: send message",
 			"data": map[string]any{
-				"props": map[string]any{
-					"data":    photo,
-					"size":    len(photo),
-					"caption": "Check this out! Isn't this beautiful?!",
+				"msg": map[string]any{
+					"type": "photo",
+					"props": map[string]any{
+						"data":    photo,
+						"caption": "Check this out! Isn't this beautiful?!",
+					},
 				},
 				"toUser": user1.Username,
 				"at":     time.Now().UTC().UnixMilli(),
@@ -368,8 +380,8 @@ func XTestUserChatStory(t *testing.T) {
 		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: send message: photo",
+			"event":    "server reply",
+			"toAction": "chat: send message",
 			"data": td.Map(map[string]any{
 				"new_msg_id": td.Ignore(),
 			}, nil),
@@ -386,9 +398,14 @@ func XTestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user1NewMsgReceived, td.Map(map[string]any{
 			"event": "chat: new message",
 			"data": td.SuperMapOf(map[string]any{
-				"id":              user2NewMsgId,
-				"type":            "photo",
-				"props":           td.All(td.Contains(`"caption":"Check this out! Isn't this beautiful?!"`), td.Contains(`"data_url":`)),
+				"id": user2NewMsgId,
+				"content": td.SuperMapOf(map[string]any{
+					"type": "photo",
+					"props": td.SuperMapOf(map[string]any{
+						"caption": "Check this out! Isn't this beautiful?!",
+						"url":     td.Ignore(),
+					}, nil),
+				}, nil),
 				"delivery_status": "sent",
 				"sender": td.SuperMapOf(map[string]any{
 					"username": user2.Username,
@@ -397,7 +414,7 @@ func XTestUserChatStory(t *testing.T) {
 		}, nil))
 
 		err := user1.WSConn.WriteJSON(map[string]any{
-			"event": "chat: ack message delivered",
+			"action": "chat: ack message delivered",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
 				"msgId":           user2NewMsgId,
@@ -409,9 +426,9 @@ func XTestUserChatStory(t *testing.T) {
 		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: ack message delivered",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: ack message delivered",
+			"data":     true,
 		}, nil))
 	}
 
@@ -433,7 +450,7 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user1 then acknowledges 'read'")
 
 		err := user1.WSConn.WriteJSON(map[string]any{
-			"event": "chat: ack message read",
+			"action": "chat: ack message read",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
 				"msgId":           user2NewMsgId,
@@ -445,9 +462,9 @@ func XTestUserChatStory(t *testing.T) {
 		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: ack message read",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: ack message read",
+			"data":     true,
 		}, nil))
 	}
 
@@ -469,7 +486,7 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user1 opens his chat history with user2")
 
 		err := user1.WSConn.WriteJSON(map[string]any{
-			"event": "chat: get history",
+			"action": "chat: get history",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
 			},
@@ -480,17 +497,21 @@ func XTestUserChatStory(t *testing.T) {
 		user1ServerReply := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: get history",
+			"event":    "server reply",
+			"toAction": "chat: get history",
 			"data": td.All(
 				td.Contains(td.SuperMapOf(map[string]any{
-					"id":              user1NewMsgId,
-					"type":            "text",
-					"props":           td.Contains(`"content":"Hi. How're you doing?"`),
+					"id": user1NewMsgId,
+					"content": td.SuperMapOf(map[string]any{
+						"type": "text",
+						"props": td.SuperMapOf(map[string]any{
+							"text_content": "Hi. How're you doing?",
+						}, nil),
+					}, nil),
 					"delivery_status": "read",
 					"reactions": td.All(td.Contains(td.Map(map[string]any{
-						"reaction": "🚀",
-						"user": td.Map(map[string]any{
+						"emoji": "🚀",
+						"reactor": td.Map(map[string]any{
 							"username":        user2.Username,
 							"profile_pic_url": td.Ignore(),
 						}, nil),
@@ -501,9 +522,14 @@ func XTestUserChatStory(t *testing.T) {
 					}, nil),
 				}, nil)),
 				td.Contains(td.SuperMapOf(map[string]any{
-					"id":              user2NewMsgId,
-					"type":            "photo",
-					"props":           td.All(td.Contains(`"caption":"Check this out! Isn't this beautiful?!"`), td.Contains(`"data_url":`)),
+					"id": user2NewMsgId,
+					"content": td.SuperMapOf(map[string]any{
+						"type": "photo",
+						"props": td.SuperMapOf(map[string]any{
+							"caption": "Check this out! Isn't this beautiful?!",
+							"url":     td.Ignore(),
+						}, nil),
+					}, nil),
 					"delivery_status": "read",
 					"sender": td.SuperMapOf(map[string]any{
 						"username": user2.Username,
@@ -518,7 +544,7 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Action: user2 removes reaction to user1's message")
 
 		err := user2.WSConn.WriteJSON(map[string]any{
-			"event": "chat: remove reaction to message",
+			"action": "chat: remove reaction to message",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
 				"msgId":           user1NewMsgId,
@@ -531,9 +557,9 @@ func XTestUserChatStory(t *testing.T) {
 		user2ServerReply := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
-			"event":   "server reply",
-			"toEvent": "chat: remove reaction to message",
-			"data":    true,
+			"event":    "server reply",
+			"toAction": "chat: remove reaction to message",
+			"data":     true,
 		}, nil))
 	}
 

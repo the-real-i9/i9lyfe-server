@@ -109,27 +109,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			}
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
-		case "chat: get history":
-			var data getChatHistoryAcd
 
-			helpers.ToStruct(body.Data, &data)
-
-			if err := data.Validate(); err != nil {
-				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
-				continue
-			}
-
-			if data.Limit == 0 {
-				data.Limit = 50
-			}
-
-			res, err := chatService.GetChatHistory(ctx, clientUser.Username, data.PartnerUsername, data.Limit, data.Cursor)
-			if err != nil {
-				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
-				continue
-			}
-
-			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: ack message delivered":
 			var data ackChatMsgDeliveredAcd
 
@@ -164,6 +144,27 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			}
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
+		case "chat: get history":
+			var data getChatHistoryAcd
+
+			helpers.ToStruct(body.Data, &data)
+
+			if err := data.Validate(); err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
+				continue
+			}
+
+			if data.Limit == 0 {
+				data.Limit = 50
+			}
+
+			res, err := chatService.GetChatHistory(ctx, clientUser.Username, data.PartnerUsername, data.Limit, data.Cursor)
+			if err != nil {
+				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
+				continue
+			}
+
+			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: react to message":
 			var data reactToChatMsgAcd
 
@@ -174,7 +175,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				continue
 			}
 
-			res, err := chatMessageService.ReactToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.Reaction, data.At)
+			res, err := chatMessageService.ReactToMsg(ctx, clientUser.Username, data.PartnerUsername, data.MsgId, data.Emoji, data.At)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
 				continue

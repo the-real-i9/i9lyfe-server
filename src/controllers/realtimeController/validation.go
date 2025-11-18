@@ -4,7 +4,6 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"slices"
-	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -72,7 +71,7 @@ func (vb unsubFromUserPresenceAcd) Validate() error {
 }
 
 type sendChatMsgAcd struct {
-	PartnerUsername  string               `json:"partnerUsername"`
+	PartnerUsername  string               `json:"toUser"`
 	IsReply          bool                 `json:"isReply"`
 	ReplyTargetMsgId string               `json:"replyTargetMsgId"`
 	Msg              *appTypes.MsgContent `json:"msg"`
@@ -84,10 +83,7 @@ func (vb sendChatMsgAcd) Validate() error {
 		validation.Field(&vb.PartnerUsername, validation.Required),
 		validation.Field(&vb.ReplyTargetMsgId, is.UUID),
 		validation.Field(&vb.Msg, validation.Required),
-		validation.Field(&vb.At,
-			validation.Required,
-			validation.Max(time.Now().UTC().UnixMilli()).Error("invalid future time"),
-		),
+		validation.Field(&vb.At, validation.Required),
 	)
 
 	return helpers.ValidationError(err, "realtimeController_validation.go", "sendChatMsgAcd")
@@ -128,7 +124,7 @@ func (d ackChatMsgReadAcd) Validate() error {
 type reactToChatMsgAcd struct {
 	PartnerUsername string `json:"partnerUsername"`
 	MsgId           string `json:"msgId"`
-	Reaction        string `json:"reaction"`
+	Emoji        string `json:"emoji"`
 	At              int64  `json:"at"`
 }
 
@@ -136,7 +132,7 @@ func (d reactToChatMsgAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
 		validation.Field(&d.MsgId, validation.Required),
-		validation.Field(&d.Reaction, validation.Required, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
+		validation.Field(&d.Emoji, validation.Required, validation.Required, validation.RuneLength(1, 1).Error("expected an emoji character"), is.Multibyte.Error("expected an emoji character")),
 		validation.Field(&d.At, validation.Required),
 	)
 

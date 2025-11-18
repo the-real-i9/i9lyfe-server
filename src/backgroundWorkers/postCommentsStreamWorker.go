@@ -166,27 +166,28 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, commentId_stmsgId_Pairs := postId, commentId_stmsgId_Pairs
 
-					return cache.StorePostComments(sharedCtx, postId, commentId_stmsgId_Pairs)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for postId := range postComments {
-					totalCommentsCount, err := cache.GetPostCommentsCount(sharedCtx, postId)
-					if err != nil {
-						continue
+					if err := cache.StorePostComments(sharedCtx, postId, commentId_stmsgId_Pairs); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":               postId,
-						"latest_comments_count": totalCommentsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postComments {
+							totalCommentsCount, err := cache.GetPostCommentsCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":               postId,
+								"latest_comments_count": totalCommentsCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for user, postId_stmsgId_Pairs := range userCommentedPosts {
 				eg.Go(func() error {

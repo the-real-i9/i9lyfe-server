@@ -76,26 +76,27 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, users := postId, users
 
-					return cache.RemovePostSaves(sharedCtx, postId, users)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			for postId := range postUnsaves {
-				go func() {
-					latestCount, err := cache.GetPostSavesCount(sharedCtx, postId)
-					if err != nil {
-						return
+					if err := cache.RemovePostSaves(sharedCtx, postId, users); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":            postId,
-						"latest_saves_count": latestCount,
-					})
-				}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postUnsaves {
+							latestCount, err := cache.GetPostSavesCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":            postId,
+								"latest_saves_count": latestCount,
+							})
+						}
+					}()
+
+					return nil
+				})
 			}
 
 			for user, postIds := range userUnsavedPosts {

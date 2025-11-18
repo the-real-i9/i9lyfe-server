@@ -131,27 +131,28 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, userWithEmojiPairs := postId, userWithEmojiPairs
 
-					return cache.StorePostReactions(sharedCtx, postId, userWithEmojiPairs)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for postId := range postReactions {
-					totalRxnsCount, err := cache.GetPostReactionsCount(sharedCtx, postId)
-					if err != nil {
-						continue
+					if err := cache.StorePostReactions(sharedCtx, postId, userWithEmojiPairs); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":                postId,
-						"latest_reactions_count": totalRxnsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postReactions {
+							totalRxnsCount, err := cache.GetPostReactionsCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":                postId,
+								"latest_reactions_count": totalRxnsCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for user, postId_stmsgId_Pairs := range userReactedPosts {
 				eg.Go(func() error {

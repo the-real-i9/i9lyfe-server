@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestPlayground(t *testing.T) {
+func XTestPlayground(t *testing.T) {
 	x := make(map[string]int)
 
 	x["a"]++

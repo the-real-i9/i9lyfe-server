@@ -113,7 +113,6 @@ type MsgReaction struct {
 type ChatHistoryEntry struct {
 	// appears always
 	CHEType string `json:"che_type"`
-	IsOwn   bool   `json:"is_own"`
 
 	// appears for message che_type
 	Id             string         `json:"id,omitempty"`

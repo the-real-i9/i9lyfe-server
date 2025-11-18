@@ -78,26 +78,27 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					commentId, users := commentId, users
 
-					return cache.RemoveCommentReactions(sharedCtx, commentId, users)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			for commentId := range commentReactionsRemoved {
-				go func() {
-					latestCount, err := cache.GetCommentReactionsCount(sharedCtx, commentId)
-					if err != nil {
-						return
+					if err := cache.RemoveCommentReactions(sharedCtx, commentId, users); err != nil {
+						return err
 					}
 
-					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
-						"comment_id":             commentId,
-						"latest_reactions_count": latestCount,
-					})
-				}()
+					go func() {
+						ctx := context.Background()
+						for commentId := range commentReactionsRemoved {
+							latestCount, err := cache.GetCommentReactionsCount(ctx, commentId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishCommentMetric(ctx, map[string]any{
+								"comment_id":             commentId,
+								"latest_reactions_count": latestCount,
+							})
+						}
+					}()
+
+					return nil
+				})
 			}
 
 			for commentId, rUsers := range commentReactorsRemoved {

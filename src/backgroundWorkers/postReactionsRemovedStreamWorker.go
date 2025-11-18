@@ -82,26 +82,27 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					postId, users := postId, users
 
-					return cache.RemovePostReactions(sharedCtx, postId, users)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			for postId := range postReactionsRemoved {
-				go func() {
-					latestCount, err := cache.GetPostReactionsCount(sharedCtx, postId)
-					if err != nil {
-						return
+					if err := cache.RemovePostReactions(sharedCtx, postId, users); err != nil {
+						return err
 					}
 
-					realtimeService.PublishPostMetric(sharedCtx, map[string]any{
-						"post_id":                postId,
-						"latest_reactions_count": latestCount,
-					})
-				}()
+					go func() {
+						ctx := context.Background()
+						for postId := range postReactionsRemoved {
+							latestCount, err := cache.GetPostReactionsCount(ctx, postId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishPostMetric(ctx, map[string]any{
+								"post_id":                postId,
+								"latest_reactions_count": latestCount,
+							})
+						}
+					}()
+
+					return nil
+				})
 			}
 
 			for user, postIds := range userReactionRemovedPosts {

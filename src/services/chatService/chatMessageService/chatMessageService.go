@@ -44,7 +44,6 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 
 	if newMessage.Id != "" {
 		go func(msgData chatMessage.NewMessageT) {
-
 			realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 				Event: "chat: new message",
 				Data:  msgData,

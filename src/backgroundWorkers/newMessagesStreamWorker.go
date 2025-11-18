@@ -75,13 +75,26 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				if msg.FirstFromUser {
 					newUserChats[msg.FromUser] = append(newUserChats[msg.FromUser], msg.ToUser, helpers.ToJson(map[string]any{"partner_user": msg.ToUser}))
 
+					if userChats[msg.FromUser] == nil {
+						userChats[msg.FromUser] = make(map[string]string)
+					}
+
 					userChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
 				} else {
+
+					if updatedFromUserChats[msg.FromUser] == nil {
+						updatedFromUserChats[msg.FromUser] = make(map[string]string)
+					}
+
 					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
 				}
 
 				if msg.FirstToUser {
 					newUserChats[msg.ToUser] = append(newUserChats[msg.ToUser], msg.FromUser, helpers.ToJson(map[string]any{"partner_user": msg.FromUser}))
+
+					if userChats[msg.ToUser] == nil {
+						userChats[msg.ToUser] = make(map[string]string)
+					}
 
 					userChats[msg.ToUser][msg.FromUser] = stmsgIds[i]
 				}
@@ -127,6 +140,8 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 					var ownerUser, partnerUser string
 
 					fmt.Sscanf(ownerUserPartnerUser, "%s|%s", &ownerUser, &partnerUser)
+
+					log.Println(ownerUser, partnerUser)
 
 					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_stmsgId_Pairs)
 				})

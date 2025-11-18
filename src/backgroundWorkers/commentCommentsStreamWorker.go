@@ -161,27 +161,28 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					parentCommentId, commentId_stmsgId_Pairs := parentCommentId, commentId_stmsgId_Pairs
 
-					return cache.StoreCommentComments(sharedCtx, parentCommentId, commentId_stmsgId_Pairs)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
-
-			go func() {
-				for parentCommentId := range commentComments {
-					totalCommentsCount, err := cache.GetCommentCommentsCount(sharedCtx, parentCommentId)
-					if err != nil {
-						continue
+					if err := cache.StoreCommentComments(sharedCtx, parentCommentId, commentId_stmsgId_Pairs); err != nil {
+						return err
 					}
 
-					realtimeService.PublishCommentMetric(sharedCtx, map[string]any{
-						"comment_id":            parentCommentId,
-						"latest_comments_count": totalCommentsCount,
-					})
-				}
-			}()
+					go func() {
+						ctx := context.Background()
+						for parentCommentId := range commentComments {
+							totalCommentsCount, err := cache.GetCommentCommentsCount(ctx, parentCommentId)
+							if err != nil {
+								continue
+							}
+
+							realtimeService.PublishCommentMetric(ctx, map[string]any{
+								"comment_id":            parentCommentId,
+								"latest_comments_count": totalCommentsCount,
+							})
+						}
+					}()
+
+					return nil
+				})
+			}
 
 			for user, notifId_stmsgId_Pairs := range userNotifications {
 				eg.Go(func() error {
