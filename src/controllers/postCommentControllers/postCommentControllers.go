@@ -1,7 +1,6 @@
 package postCommentControllers
 
 import (
-	"context"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/postCommentService"
 
@@ -9,8 +8,7 @@ import (
 )
 
 func CreateNewPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -36,8 +34,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 }
 
 func GetPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -50,8 +47,7 @@ func GetPost(c *fiber.Ctx) error {
 }
 
 func DeletePost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -64,8 +60,7 @@ func DeletePost(c *fiber.Ctx) error {
 }
 
 func ReactToPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -91,8 +86,7 @@ func ReactToPost(c *fiber.Ctx) error {
 }
 
 func GetReactorsToPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -105,8 +99,7 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 }
 
 /* func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -124,8 +117,7 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 } */
 
 func RemoveReactionToPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -138,8 +130,7 @@ func RemoveReactionToPost(c *fiber.Ctx) error {
 }
 
 func CommentOnPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -165,8 +156,7 @@ func CommentOnPost(c *fiber.Ctx) error {
 }
 
 func GetCommentsOnPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -179,8 +169,7 @@ func GetCommentsOnPost(c *fiber.Ctx) error {
 }
 
 func GetComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -193,8 +182,7 @@ func GetComment(c *fiber.Ctx) error {
 }
 
 func RemoveCommentOnPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -207,8 +195,7 @@ func RemoveCommentOnPost(c *fiber.Ctx) error {
 }
 
 func ReactToComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -234,8 +221,7 @@ func ReactToComment(c *fiber.Ctx) error {
 }
 
 func GetReactorsToComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -248,8 +234,7 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 }
 
 /* func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -267,8 +252,7 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 } */
 
 func RemoveReactionToComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -281,8 +265,7 @@ func RemoveReactionToComment(c *fiber.Ctx) error {
 }
 
 func CommentOnComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -308,8 +291,7 @@ func CommentOnComment(c *fiber.Ctx) error {
 }
 
 func GetCommentsOnComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -322,8 +304,7 @@ func GetCommentsOnComment(c *fiber.Ctx) error {
 }
 
 func RemoveCommentOnComment(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -336,8 +317,7 @@ func RemoveCommentOnComment(c *fiber.Ctx) error {
 }
 
 func RepostPost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -350,8 +330,7 @@ func RepostPost(c *fiber.Ctx) error {
 }
 
 func SavePost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -364,8 +343,7 @@ func SavePost(c *fiber.Ctx) error {
 }
 
 func UnsavePost(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 

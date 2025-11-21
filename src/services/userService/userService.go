@@ -186,28 +186,27 @@ func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, li
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {
-	err := user.ChangePresence(ctx, clientUsername, "online", 0)
-	if err != nil {
-		return
-	}
+	done := user.ChangePresence(ctx, clientUsername, "online", 0)
 
-	realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
-		"user":     clientUsername,
-		"presence": "online",
-	})
+	if done {
+		realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
+			"user":     clientUsername,
+			"presence": "online",
+		})
+	}
 }
 
 func GoOffline(ctx context.Context, clientUsername string) {
 	lastSeen := time.Now().UTC().UnixMilli()
 
-	err := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
-	if err != nil {
-		return
+	done := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
+
+	if done {
+		realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
+			"user":      clientUsername,
+			"presence":  "offline",
+			"last_seen": lastSeen,
+		})
 	}
 
-	realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
-		"user":      clientUsername,
-		"presence":  "offline",
-		"last_seen": lastSeen,
-	})
 }

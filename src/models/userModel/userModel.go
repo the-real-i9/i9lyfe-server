@@ -356,7 +356,7 @@ func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit 
 	return userPosts, nil
 }
 
-func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen int64) error {
+func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen int64) bool {
 	var lastSeenVal any
 	if presence == "online" {
 		lastSeenVal = nil
@@ -364,18 +364,19 @@ func ChangePresence(ctx context.Context, clientUsername, presence string, lastSe
 		lastSeenVal = lastSeen
 	}
 
-	err := pgDB.Exec(
+	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		UPDATE users
 		SET presence = $2, last_seen = $3
 		WHERE username = $1
+		RETURNING true AS done
 		`, clientUsername, presence, lastSeenVal,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return err
+		return false
 	}
 
-	return nil
+	return *done
 }

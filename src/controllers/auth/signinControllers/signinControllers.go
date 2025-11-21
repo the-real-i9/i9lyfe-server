@@ -1,7 +1,6 @@
 package signinControllers
 
 import (
-	"context"
 	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/signinService"
@@ -32,8 +31,7 @@ import (
 //
 //	@Router			/auth/signin [post]
 func Signin(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	var body signInBody
 

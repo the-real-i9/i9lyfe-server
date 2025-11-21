@@ -10,8 +10,7 @@ package appControllers
 )
 
 func FetchPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -27,8 +26,7 @@ func FetchPosts(c *fiber.Ctx) error {
 }
 
 func FetchUsers(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	respData, app_err := appService.FetchUsers(ctx)
 	if app_err != nil {
@@ -39,8 +37,7 @@ func FetchUsers(c *fiber.Ctx) error {
 }
 
 func FetchHashtags(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	respData, app_err := appService.FetchHashtags(ctx)
 	if app_err != nil {
@@ -51,8 +48,7 @@ func FetchHashtags(c *fiber.Ctx) error {
 }
 
 func Search(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 

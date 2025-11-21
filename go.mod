@@ -1,6 +1,6 @@
 module i9lyfe
 
-go 1.25.0
+go 1.25.4
 
 require (
 	cloud.google.com/go/storage v1.57.1
@@ -8,12 +8,11 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.11
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gofiber/contrib/websocket v1.3.4
-	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/maxatome/go-testdeep v1.14.0
-	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/redis/go-redis/v9 v9.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6

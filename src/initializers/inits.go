@@ -4,7 +4,6 @@ import (
 	"context"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/backgroundWorkers"
-	"i9lyfe/src/helpers"
 	"os"
 
 	"cloud.google.com/go/storage"
@@ -103,9 +102,5 @@ func InitApp() error {
 }
 
 func CleanUp() {
-	if err := appGlobals.Neo4jDriver.Close(context.TODO()); err != nil {
-		helpers.LogError(err)
-	}
-
 	appGlobals.DBPool.Close()
 }

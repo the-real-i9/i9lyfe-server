@@ -1,7 +1,6 @@
 package chatControllers
 
 import (
-	"context"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/chatService"
 
@@ -9,8 +8,7 @@ import (
 )
 
 func GetChats(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -23,8 +21,7 @@ func GetChats(c *fiber.Ctx) error {
 }
 
 func DeleteChat(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 

@@ -1,7 +1,6 @@
 package userControllers
 
 import (
-	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/userService"
@@ -72,8 +71,7 @@ func Signout(c *fiber.Ctx) error {
 //
 //	@Router			/app/private/me/edit_profile [put]
 func EditUserProfile(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -116,8 +114,7 @@ func EditUserProfile(c *fiber.Ctx) error {
 //
 //	@Router			/app/private/me/change_profile_picture [put]
 func ChangeUserProfilePicture(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -161,8 +158,7 @@ func ChangeUserProfilePicture(c *fiber.Ctx) error {
 //
 //	@Router			/app/private/users/:username/follow [post]
 func FollowUser(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -191,8 +187,7 @@ func FollowUser(c *fiber.Ctx) error {
 //
 //	@Router			/app/private/users/:username/unfollow [delete]
 func UnfollowUser(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -205,8 +200,7 @@ func UnfollowUser(c *fiber.Ctx) error {
 }
 
 func GetUserMentionedPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -219,8 +213,7 @@ func GetUserMentionedPosts(c *fiber.Ctx) error {
 }
 
 func GetUserReactedPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -233,8 +226,7 @@ func GetUserReactedPosts(c *fiber.Ctx) error {
 }
 
 func GetUserSavedPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -247,8 +239,7 @@ func GetUserSavedPosts(c *fiber.Ctx) error {
 }
 
 func GetUserNotifications(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -261,8 +252,7 @@ func GetUserNotifications(c *fiber.Ctx) error {
 }
 
 func ReadUserNotification(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -275,8 +265,7 @@ func ReadUserNotification(c *fiber.Ctx) error {
 }
 
 func GetUserProfile(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -289,8 +278,7 @@ func GetUserProfile(c *fiber.Ctx) error {
 }
 
 func GetUserFollowers(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -302,8 +290,7 @@ func GetUserFollowers(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 func GetUserFollowings(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -316,8 +303,7 @@ func GetUserFollowings(c *fiber.Ctx) error {
 }
 
 func GetUserPosts(c *fiber.Ctx) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
