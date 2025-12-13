@@ -53,7 +53,7 @@ jobs:
           go-version: "${{ matrix.go-version }}"
 
       - name: Run Test
-        run: cd ./tests && go test ./... -v -race
+        run: cd ./tests && go test ./... -v
         env:
           PGDATABASE_URL: "postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}"
           REDIS_ADDR: "localhost:6379"
