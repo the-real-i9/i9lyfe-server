@@ -6,7 +6,7 @@ A Social Media API Server
 
 ## Intro
 
-i9lyfe is a full-fledged social media backend API built in Go. It supports all of the major social media application features with a scalable, production-grade arcitecture, serving as a foundation for building apps like Instagram, TikTok, or Facebook clones.
+i9lyfe is a full-fledged social media API server built in Go. It supports all of the major social media application features with a scalable, production-grade arcitecture, serving as a foundation for building apps like Instagram, TikTok, or Facebook clones.
 
 ## Technologies and Tools
 
