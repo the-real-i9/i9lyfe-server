@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict bUdN7hP0XoU6V0LXbfL8cuizc0OI9hCPSr0i6SU7WbaiKysfJibZMRPpPpdabee
+\restrict mOGNznRHC75IERujSBVq5pbQkfbpY6bHE6hdQc82NOEKBKcMhyraN9ksa4HYUMV
 
 -- Dumped from database version 18.0 (Debian 18.0-1.pgdg13+3)
--- Dumped by pg_dump version 18.0 (Ubuntu 18.0-1.pgdg24.04+3)
+-- Dumped by pg_dump version 18.1 (Ubuntu 18.1-1.pgdg24.04+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -30,7 +30,9 @@ CREATE TYPE public.message_struct AS (
 	delivery_status text,
 	created_at bigint,
 	sender json,
-	reply_target_msg json
+	reply_target_msg json,
+	ffu boolean,
+	ftu boolean
 );
 
 
@@ -44,7 +46,6 @@ CREATE TYPE public.msg_reaction_struct AS (
 	che_id uuid,
 	che_type text,
 	emoji text,
-	at_ bigint,
 	reactor json,
 	to_msg_id uuid
 );
@@ -166,7 +167,7 @@ SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_ur
 FROM users WHERE username = from_user
 INTO reactor_user;
   
-RETURN (che_id_val, 'reaction', emoji_val, at_val, reactor_user, msg_id);
+RETURN ROW(che_id_val, 'reaction', emoji_val, reactor_user, msg_id)::msg_reaction_struct;
 
 END;
 $$;
@@ -249,7 +250,7 @@ FROM chat_history_entry WHERE id_ = reply_target_msg_id
 INTO reply_target_msg;
 
   
-RETURN (che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, reply_target_msg);
+RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, reply_target_msg, false, false)::message_struct;
 
 END;
 $$;
@@ -267,15 +268,23 @@ CREATE FUNCTION public.send_message(from_user text, to_user text, content_val js
 DECLARE
   che_id_val uuid;
   sender_user json;
+  first_from_user boolean := false;
+  first_to_user boolean := false;
 BEGIN
 
-  INSERT INTO user_chats_user (owner_user, partner_user)
-  VALUES (from_user, to_user)
-  ON CONFLICT ON CONSTRAINT ucu_pkey DO NOTHING;
- 
-  INSERT INTO user_chats_user (owner_user, partner_user)
-  VALUES (to_user, from_user)
-  ON CONFLICT ON CONSTRAINT ucu_pkey DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = from_user AND partner_user = to_user) THEN
+	first_from_user := true;
+	
+    INSERT INTO user_chats_user (owner_user, partner_user)
+    VALUES (from_user, to_user);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = to_user AND partner_user = from_user) THEN
+	first_to_user := true;
+	
+    INSERT INTO user_chats_user (owner_user, partner_user)
+    VALUES (to_user, from_user);
+  END IF;
 
   INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at)
   VALUES ('message', content_val, from_user, 'sent', created_at_val)
@@ -291,7 +300,7 @@ BEGIN
   FROM users WHERE username = from_user
   INTO sender_user;
   
-  RETURN (che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, null);
+  RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, null, first_from_user, first_to_user)::message_struct;
 END;
 $$;
 
@@ -758,6 +767,22 @@ ALTER TABLE ONLY public.posts
 
 
 --
+-- Name: user_chats_user user_chats_user_owner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.user_chats_user
+    ADD CONSTRAINT user_chats_user_owner_user_fkey FOREIGN KEY (owner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_chats_user user_chats_user_partner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.user_chats_user
+    ADD CONSTRAINT user_chats_user_partner_user_fkey FOREIGN KEY (partner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: user_comments_on user_comments_on_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
@@ -849,5 +874,5 @@ ALTER TABLE ONLY public.user_saves_post
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bUdN7hP0XoU6V0LXbfL8cuizc0OI9hCPSr0i6SU7WbaiKysfJibZMRPpPpdabee
+\unrestrict mOGNznRHC75IERujSBVq5pbQkfbpY6bHE6hdQc82NOEKBKcMhyraN9ksa4HYUMV
 

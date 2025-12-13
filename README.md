@@ -139,15 +139,12 @@ The following is a list of features to be supported by this Social Media Backend
 
 ## Feature design and architecture
 
-<detail>
-  <summary>
-    <h4>Post creation</h4>
-  </summary>
+<details>
+<summary>Post creation</summary>
 
-  <ul>
-    <li>flsld</li>
-  </ul>
-</detail>
+  * fslek
+  
+</details>
 
 ## API Documentation
 
