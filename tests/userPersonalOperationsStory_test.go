@@ -523,6 +523,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 	}
 
 	{
+		<-(time.NewTimer(200 * time.Millisecond).C)
+
 		t.Log("Action: user3 rechecks her following | confirms user2's gone")
 
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/followings", nil)
