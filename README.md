@@ -6,18 +6,18 @@ A Social Media API Server
 
 ## Intro
 
-i9lyfe is an API server for a Social Media Application, built in Go. It supports major social media application features that can be used to build a mordern social media application frontend.
+i9lyfe is a full-fledged social media backend API built in Go. It supports all of the major social media application features with a scalable, production-grade arcitecture, serving as a foundation for building apps like Instagram, TikTok, or Facebook clones.
 
 ## Technologies and Tools
 
 <div style="display: flex; align-items: center;">
 <img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/go-original-wordmark.svg" />
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/gofiber.svg" />
+<img style="margin-right: 10px" alt="gofiber" width="40" src="./.attachments/tech-icons/gofiber.svg" />
 <img style="margin-right: 10px" alt="postgresql" width="40" src="./.attachments/tech-icons/postgresql-original.svg" />
 <img style="margin-right: 10px" alt="redis" width="40" src="./.attachments/tech-icons/redis-original.svg" />
 <img style="margin-right: 10px" alt="websocket" width="40" src="./.attachments/tech-icons/websocket.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="40" src="./.attachments/tech-icons/neo4j-original.svg" />
-<img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/jwt.svg" />
+<img style="margin-right: 10px" alt="jwt" width="40" src="./.attachments/tech-icons/jwt.svg" />
 <img style="margin-right: 10px" alt="googlecloud" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
 <img style="margin-right: 10px" alt="docker" width="40" src="./.attachments/tech-icons/docker-plain.svg" />
 </div>
@@ -25,13 +25,13 @@ i9lyfe is an API server for a Social Media Application, built in Go. It supports
 
 ### Technologies
 - **Go** - Programming Language
-- **Fiber** - Backend Framework
+- **Fiber** - REST API Framework
 - **PostgreSQL** - Relational DBMS
 - **SQL** - Structured Query Language for Relational Databases
 - **PL/pgSQL** - Procedural Language for Database Programming
 - **Neo4j** - Graph DBMS
 - **CypherQL** - Query Language for a Graph database
-- **WebSockets** - Full-duplex, Bi-directional communication protocol
+- **WebSocket** - Full-duplex, Bi-directional communication protocol
 - **Redis Key/Value Store** (Cache)
 - **Redis Streams**
 - **Redis Pub/Sub**
@@ -56,7 +56,7 @@ i9lyfe is an API server for a Social Media Application, built in Go. It supports
 
 ## Features
 
-The following is a list of features supported by this Social Media API. *Visit the API documentation to access the full features and their implementation guides.*
+The following are the features supported by this API. *Visit the API documentation for implementation guides.*
 
 ### Content Creation & Sharing
 
@@ -136,6 +136,18 @@ The following is a list of features to be supported by this Social Media Backend
 ### User Follow Recommendation
 
 - App will intelligently recommend users to follow, based on your follow network and content interaction stats.
+
+## Feature design and architecture
+
+<detail>
+  <summary>
+    <h4>Post creation</h4>
+  </summary>
+
+  <ul>
+    <li>flsld</li>
+  </ul>
+</detail>
 
 ## API Documentation
 

@@ -14,7 +14,7 @@ import (
 )
 
 func TestUserPostCommentStory(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
 	user1 := UserT{
 		Email:    "harveyspecter@gmail.com",

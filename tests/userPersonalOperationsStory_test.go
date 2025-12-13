@@ -14,7 +14,7 @@ import (
 )
 
 func TestUserPersonalOperationsStory(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
 	user1 := UserT{
 		Email:    "robertzane@gmail.com",

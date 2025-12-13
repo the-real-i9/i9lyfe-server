@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Password Reset - Request Password Reset
+// Forgot Password - Request Password Reset
 //
 //	@Summary		Password Reset - Step 1
 //	@Description	Submit your email to request a password reset
@@ -57,7 +57,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-// Fort password - Confirm Email
+// Forgot Password - Confirm Email
 //
 //	@Summary		Password Reset - Step 2
 //	@Description	Provide the 6-digit token sent to email
@@ -110,7 +110,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 	return c.JSON(respData)
 }
 
-// Password Reset - Reset Password
+// Forgot Password - Reset Password
 //
 //	@Summary		Password Reset user - Step 3
 //	@Description	Set new password
