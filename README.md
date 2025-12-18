@@ -24,14 +24,16 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 
 
 ### Technologies
-- **Go** - Programming Language
+- <details>
+    <summary><strong>Go</strong> - Programming Language</summary>
+  </details>
 - **Fiber** - REST API Framework
 - **PostgreSQL** - Relational DBMS
 - **SQL** - Structured Query Language for Relational Databases
 - **PL/pgSQL** - Procedural Language for Database Programming
 - **Neo4j** - Graph DBMS
 - **CypherQL** - Query Language for a Graph database
-- **WebSocket** - Full-duplex, Bi-directional communication protocol
+- **WebSocket** - Full-duplex, Bi-directional communications protocol
 - **Redis Key/Value Store** (Cache)
 - **Redis Streams**
 - **Redis Pub/Sub**
@@ -51,7 +53,7 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [Technical Highlights](#technical-highlights)
+- [✨Technical Highlights✨](#✨technical-highlights✨)
 - [API Documentation](#api-documentation)
 - [Upcoming features](#upcoming-features)
 
@@ -108,9 +110,19 @@ The following are the features supported by this API. *Visit the API documentati
 - Individual posts receive real-time interaction updates (upon client subscription).
 - Clients receive user "presence" and "last seen" updates (upon subscription)
 
-## Technical Highlights
+## ✨Technical Highlights✨
 
-- 
+- Stores JWT and session data in encrypted cookie for authentication and stateless session management, respectively.
+- Uses the event-sourcing pattern; client request handlers queue events (e.g. user reactions to post) into Redis streams, from which dedicated background processes execute the necessary background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the main database).
+  - This allows client requests to undergo the smallest, inevitable amount of processing, delivering a fast user experience.
+- Uses Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
+- Client requests for aggregate data (e.g. reactions count on post) are processed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No aggregate functions are executed; providing fast user experience.
+- In a list data containing entity IDs (as requested by the client), where each ID is processed and replaced by its entity data in linear time, the whole task is mathematically divided sufficiently between multiple threads for faster, parallel execution, thereby utilizing the system's resources.
+- All READ requests are served from the cache, precisely, data is composed from relevant cache entries. This offers fast user experience.
+- Cached data are dynamically made fresh by WRITE requests, drastically reducing the chances of having a stale cache at anytime.
+  - While this is true, the system is, however, designed to be eventually consistent; there are some results that might not yet exist in the cache at the time of request because they're yet to be added (mostly due to some prior processing), but they'll eventually exist in the cache.
+
+    > The design philosophy here is that there are some kinds of result that the user expects to see instantly upon request (e.g. clicking on a post in feed), and there are others that the user would normally wait on (e.g. comments on post or notifications). The latter types of result will eventually be delivered to the user. User experience is not hampered. To the user it just feels like the action that causes the result to appear is yet to happen.
 
 ## API Documentation
 
