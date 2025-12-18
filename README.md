@@ -1,6 +1,6 @@
 # i9lyfe (API Server)
 
-[![Test i9lyfe](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml/badge.svg)](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml)
+[![Test i9lyfe](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml/badge.svg?event=push)](https://github.com/the-real-i9/i9lyfe-server/actions/workflows/test.yml)
 
 A Social Media API Server
 
@@ -51,8 +51,9 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [Upcoming features](#upcoming-features)
+- [Technical Highlights](#technical-highlights)
 - [API Documentation](#api-documentation)
+- [Upcoming features](#upcoming-features)
 
 ## Features
 
@@ -107,6 +108,19 @@ The following are the features supported by this API. *Visit the API documentati
 - Individual posts receive real-time interaction updates (upon client subscription).
 - Clients receive user "presence" and "last seen" updates (upon subscription)
 
+## Technical Highlights
+
+- 
+
+## API Documentation
+
+REST request/response Communication: [Click Here](./docs/swagger.json)
+
+WebSocket Real-time Communication: [Click Here](./docs/websocketsapi.md)
+
+---
+---
+
 ## Upcoming features
 
 The following is a list of features to be supported by this Social Media Backend API.
@@ -136,18 +150,3 @@ The following is a list of features to be supported by this Social Media Backend
 ### User Follow Recommendation
 
 - App will intelligently recommend users to follow, based on your follow network and content interaction stats.
-
-## Feature design and architecture
-
-<details>
-<summary>Post creation</summary>
-
-  * fslek
-  
-</details>
-
-## API Documentation
-
-REST request/response Communication: [Click Here](./docs/swagger.json)
-
-WebSocket Real-time Communication: [Click Here](./docs/websocketsapi.md)
