@@ -24,9 +24,7 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 
 
 ### Technologies
-- <details>
-    <summary><strong>Go</strong> - Programming Language</summary>
-  </details>
+- **Go** - Programming Language
 - **Fiber** - REST API Framework
 - **PostgreSQL** - Relational DBMS
 - **SQL** - Structured Query Language for Relational Databases
@@ -53,7 +51,7 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [✨Technical Highlights✨](#✨technical-highlights✨)
+- [✨Technical Highlights✨](#technical-highlights)
 - [API Documentation](#api-documentation)
 - [Upcoming features](#upcoming-features)
 
@@ -71,7 +69,7 @@ The following are the features supported by this API. *Visit the API documentati
 
 - **React** to Posts and Comments
 - **Comment** on Posts and Comments (replies).
-- **Repost:** Re-share posts on your feed.  
+- **Repost:** Re-share posts on your feed.
 - **Access Interactions:** Access comments on posts and replies to comments, and access the list of users who have reacted to a post or comment.
 - **Save** posts for later
 
