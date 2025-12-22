@@ -77,7 +77,7 @@ The following are the features supported by this API. *Visit the API documentati
 
 - Edit your profile.
 - Manage your posts.
-- Access to saved posts.  
+- Access to saved posts.
 - Access to contents you've engaged with through likes and comments.
 - Access to contents you we're mentioned in.
 - Access to other user profiles
@@ -116,9 +116,9 @@ The following are the features supported by this API. *Visit the API documentati
 - Uses Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
 - Client requests for aggregate data (e.g. reactions count on post) are processed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No aggregate functions are executed; providing fast user experience.
 - In a list data containing entity IDs (as requested by the client), where each ID is processed and replaced by its entity data in linear time, the whole task is mathematically divided sufficiently between multiple threads for faster, parallel execution, thereby utilizing the system's resources.
-- All READ requests are served from the cache, precisely, data is composed from relevant cache entries. This offers fast user experience.
-- Cached data are dynamically made fresh by WRITE requests, drastically reducing the chances of having a stale cache at anytime.
-  - While this is true, the system is, however, designed to be eventually consistent; there are some results that might not yet exist in the cache at the time of request because they're yet to be added (mostly due to some prior processing), but they'll eventually exist in the cache.
+- All READ requests are served from the cache, practically, whole data is built from parts in relevant cache entries; this offers fast user experience.
+- Cached data are dynamically made fresh by WRITE requests, zeroing the chances of having a stale cache at anytime.
+  - While this is true, the system is, however, designed to be "eventually consistent"; there are some results that might not yet exist in the cache at the time of request because they're yet to be added (mostly due to some prior processing), but they'll eventually exist in the cache.
 
     > The design philosophy here is that there are some kinds of result that the user expects to see instantly upon request (e.g. clicking on a post in feed), and there are others that the user would normally wait on (e.g. comments on post or notifications). The latter types of result will eventually be delivered to the user. User experience is not hampered. To the user it just feels like the action that causes the result to appear is yet to happen.
 
