@@ -2,21 +2,15 @@ package postCommentService
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/utilServices"
-	"strings"
 	"time"
-
-	"github.com/gabriel-vasile/mimetype"
-	"github.com/gofiber/fiber/v2"
 )
 
 func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaCloudNames []string, postType, description string, at int64) (any, error) {
@@ -128,29 +122,10 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 	return done, nil
 }
 
-func CommentOnPost(ctx context.Context, clientUser appTypes.ClientUser, postId, commentText string, attachmentData []byte, at int64) (any, error) {
-	var (
-		attachmentUrl string
-		err           error
-	)
-
-	if attachmentData != nil {
-		mediaMIME := mimetype.Detect(attachmentData)
-		mediaType, mediaExt := mediaMIME.String(), mediaMIME.Extension()
-
-		if !strings.HasPrefix(mediaType, "image") {
-			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
-		}
-
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_post_attachments/user-%s/att-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), attachmentData)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func CommentOnPost(ctx context.Context, clientUser appTypes.ClientUser, postId, commentText, attachmentCloudName string, at int64) (any, error) {
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := post.CommentOn(ctx, clientUser.Username, postId, commentText, attachmentUrl, at)
+	newComment, err := post.CommentOn(ctx, clientUser.Username, postId, commentText, attachmentCloudName, at)
 	if err != nil {
 		return nil, err
 	}
@@ -266,41 +241,14 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 	return done, nil
 }
 
-func CommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentText string, attachmentData []byte, at int64) (any, error) {
-
-	var (
-		attachmentUrl string
-		err           error
-	)
-
-	if attachmentData != nil {
-		mediaMIME := mimetype.Detect(attachmentData)
-		mediaType := mediaMIME.String()
-		mediaExt := mediaMIME.Extension()
-
-		if !strings.HasPrefix(mediaType, "image") {
-			return nil, fiber.NewError(400, fmt.Sprintf("invalid media type %s, for attachment_data, expected image/*", mediaType))
-		}
-
-		attachmentUrl, err = cloudStorageService.Upload(ctx, fmt.Sprintf("comment_on_comment_attachments/user-%s/att-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), attachmentData)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func CommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentText, attachmentCloudName string, at int64) (any, error) {
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := comment.CommentOn(ctx, clientUser.Username, parentCommentId, commentText, attachmentUrl, at)
+	newComment, err := comment.CommentOn(ctx, clientUser.Username, parentCommentId, commentText, attachmentCloudName, at)
 	if err != nil {
 		return nil, err
 	}
 
-	// create comment, direct
-	// add comment id to parentComment comments
-	// create and add user mention_in_comment notifications (for mentioned users)
-	// and comment_on_comment notifications (for parentCommentOwner user),
-	// notifying both users in realtime
-	// publish comment metric update
 	if newComment.Id != "" {
 		go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
 			CommenterUser:      clientUser,

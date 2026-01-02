@@ -2,16 +2,17 @@ package postCommentRoute
 
 import (
 	PCC "i9lyfe/src/controllers/postCommentControllers"
-	"i9lyfe/src/middlewares/appMiddlewares"
+	AM "i9lyfe/src/middlewares/appMiddlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func Route(router fiber.Router) {
-	router.Post("/post_upload/authorize", PCC.AuthorizeUpload)
+	router.Post("/post_upload/authorize", PCC.AuthorizePostUpload)
+	router.Post("/comment_upload/authorize", PCC.AuthorizeCommentUpload)
 
 	/* ====== POST ====== */
-	router.Post("/new_post", appMiddlewares.PostUploadSession, PCC.CreateNewPost)
+	router.Post("/new_post", AM.PostUploadSession, PCC.CreateNewPost)
 	router.Get("/posts/:postId", PCC.GetPost)
 	router.Delete("/posts/:postId", PCC.DeletePost)
 
@@ -24,7 +25,7 @@ func Route(router fiber.Router) {
 
 	/* ====== POST'S COMMENT ====== */
 
-	router.Post("/posts/:postId/comment", PCC.CommentOnPost)
+	router.Post("/posts/:postId/comment", AM.CommentUploadSession, PCC.CommentOnPost)
 	router.Get("/posts/:postId/comments", PCC.GetCommentsOnPost)
 	router.Get("/comments/:commentId", PCC.GetComment)
 	router.Delete("/posts/:postId/comments/:commentId", PCC.RemoveCommentOnPost)
@@ -38,7 +39,7 @@ func Route(router fiber.Router) {
 
 	/* ====== COMMENT'S COMMENT ===== */
 
-	router.Post("/comments/:commentId/comment", PCC.CommentOnComment)
+	router.Post("/comments/:commentId/comment", AM.CommentUploadSession, PCC.CommentOnComment)
 	router.Get("/comments/:commentId/comments", PCC.GetCommentsOnComment)
 	router.Delete("/comments/:parentCommentId/comments/:childCommentId", PCC.RemoveCommentOnComment)
 

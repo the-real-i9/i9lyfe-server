@@ -10,7 +10,29 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type authorizeUploadBody struct {
+type authorizeCommentUploadBody struct {
+	AttachmentMIME string `json:"attachment_mime"`
+	AttachmentSize int64  `json:"attachment_size"`
+}
+
+func (b authorizeCommentUploadBody) Validate() error {
+
+	err := validation.ValidateStruct(&b,
+		validation.Field(&b.AttachmentMIME, validation.Required,
+			validation.Match(regexp.MustCompile(
+				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
+			)).Error("expected attachment_mime to be a valid MIME type of format image/*"),
+		),
+		validation.Field(&b.AttachmentSize,
+			validation.Min(1*1024).Error("attachment size too small. min: 1KiB"),
+			validation.Max(10*1024).Error("attachment size too large. max: 10KiB"),
+		),
+	)
+
+	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizeCommentUploadBody")
+}
+
+type authorizePostUploadBody struct {
 	PostType string `json:"post_type"`
 	// The first index gets the MIME for the blur frame of all media,
 	// while the second index gets the MIME for the real media
@@ -20,7 +42,7 @@ type authorizeUploadBody struct {
 	MediaSizes [][2]int64 `json:"media_sizes"`
 }
 
-func (b authorizeUploadBody) Validate() error {
+func (b authorizePostUploadBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.PostType,
@@ -80,8 +102,7 @@ func (b authorizeUploadBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizeUploadBody")
-
+	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizePostUploadBody")
 }
 
 type createNewPostBody struct {
@@ -129,17 +150,17 @@ func (b reactToPostBody) Validate() error {
 }
 
 type commentOnPostBody struct {
-	CommentText    string `json:"comment_text"`
-	AttachmentData []byte `json:"attachment_data"`
-	At             int64  `json:"at"`
+	CommentText         string `json:"comment_text"`
+	AttachmentCloudName string `json:"attachment_cloud_name"`
+	At                  int64  `json:"at"`
 }
 
 func (b commentOnPostBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.CommentText,
-			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(0, 300))),
-		validation.Field(&b.AttachmentData,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both must be provided"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
+			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
+		validation.Field(&b.AttachmentCloudName,
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"))),
 		validation.Field(&b.At, validation.Required),
 	)
 
@@ -162,17 +183,17 @@ func (b reactToCommentBody) Validate() error {
 }
 
 type commentOnCommentBody struct {
-	CommentText    string `json:"comment_text"`
-	AttachmentData []byte `json:"attachment_data"`
-	At             int64  `json:"at"`
+	CommentText         string `json:"comment_text"`
+	AttachmentCloudName string `json:"attachment_cloud_name"`
+	At                  int64  `json:"at"`
 }
 
 func (b commentOnCommentBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.CommentText,
-			validation.When(b.AttachmentData == nil, validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(0, 300))),
-		validation.Field(&b.AttachmentData,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_data' or both"), validation.Length(100*1024, 5*(1024*1024)).Error("attachment size is out of range. minimum of 100KiB, maximum of 5MiB"))),
+			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
+		validation.Field(&b.AttachmentCloudName,
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"))),
 		validation.Field(&b.At, validation.Required),
 	)
 

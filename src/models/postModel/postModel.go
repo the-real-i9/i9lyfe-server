@@ -205,25 +205,25 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 }
 
 type newCommentT struct {
-	Id            string `json:"id" db:"comment_id"`
-	OwnerUser     string `json:"owner_user" db:"owner_user"`
-	CommentText   string `json:"comment_text" db:"comment_text"`
-	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
-	At            int64  `json:"at" db:"at_"`
-	PostOwner     string `json:"-" db:"post_owner"`
+	Id                  string `json:"id" db:"comment_id"`
+	OwnerUser           string `json:"owner_user" db:"owner_user"`
+	CommentText         string `json:"comment_text" db:"comment_text"`
+	AttachmentCloudName string `json:"attachment_cloud_name" db:"attachment_cloud_name"`
+	At                  int64  `json:"at" db:"at_"`
+	PostOwner           string `json:"-" db:"post_owner"`
 }
 
-func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentUrl string, at int64) (newCommentT, error) {
+func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
 	newComment, err := pgDB.QueryRowType[newCommentT](
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
-			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_url, at_)
+			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_cloud_name, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_cloud_name, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
-		`, clientUsername, postId, commentText, attachmentUrl, at,
+		SELECT comment_id, owner_user, comment_text, attachment_cloud_name, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
+		`, clientUsername, postId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
 		helpers.LogError(err)

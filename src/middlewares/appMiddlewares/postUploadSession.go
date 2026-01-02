@@ -35,7 +35,7 @@ func PostUploadSession(c *fiber.Ctx) error {
 	}
 
 	if !slices.Equal(pusData.(map[string]any)["mediaCloudNames"].([]string), body.MediaCloudNames) {
-		return c.Status(fiber.StatusBadRequest).SendString("'media_cloud_names' field differs from uploaded media list")
+		return c.Status(fiber.StatusBadRequest).SendString("'media_cloud_names' field differs from uploaded media cloud names")
 	}
 
 	for _, blurRealMcn := range body.MediaCloudNames {

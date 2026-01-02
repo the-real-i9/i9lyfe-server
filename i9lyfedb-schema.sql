@@ -443,7 +443,7 @@ CREATE TABLE public.user_comments_on (
     parent_comment_id uuid,
     post_id uuid,
     comment_text text NOT NULL,
-    attachment_url text NOT NULL,
+    attachment_cloud_name text NOT NULL,
     deleted boolean DEFAULT false,
     deleted_at bigint,
     at_ bigint,
