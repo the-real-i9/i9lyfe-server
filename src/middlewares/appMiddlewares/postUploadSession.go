@@ -38,26 +38,12 @@ func PostUploadSession(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("'media_cloud_names' field differs from uploaded media list")
 	}
 
-	for _, blurActualMcn := range body.MediaCloudNames {
-		for which, mcn := range strings.Split(blurActualMcn, " | ") {
-			metadata, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mcn).Attrs(c.Context())
+	for _, blurRealMcn := range body.MediaCloudNames {
+		for mcn := range strings.SplitSeq(blurRealMcn, " | ") {
+			_, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mcn).Attrs(c.Context())
 			if errors.Is(err, storage.ErrObjectNotExist) {
 				return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("upload error: media (%s) does not exist in cloud", mcn))
 			}
-
-			const (
-				BLUR   int = 0
-				ACTUAL int = 1
-			)
-
-			if which == BLUR && (metadata.Size < 1*1024 || metadata.Size > 10*1024) {
-				return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("upload error: blur media (%s) size is out of range", mcn))
-			}
-
-			if which == ACTUAL && (metadata.Size < 1*1024*1024 || metadata.Size > 8*1024*1024) {
-				return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("upload error: actual media (%s) size is out of range", mcn))
-			}
-
 		}
 	}
 

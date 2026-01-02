@@ -24,7 +24,7 @@ func AuthorizeUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, mediaCloudNames, err := postUploadService.Authorize(ctx, body.MediaMIME, len(body.MediaSizes))
+	respData, mediaCloudNames, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, body.MediaSizes)
 	if err != nil {
 		return err
 	}

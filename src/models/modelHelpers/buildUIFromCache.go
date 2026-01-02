@@ -63,10 +63,10 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 
 	var mediaUrls []string
 
-	for _, blurActualMcn := range postUI.MediaCloudNames {
-		var blurActualMediaUrl string
+	for _, blurRealMcn := range postUI.MediaCloudNames {
+		var blurRealMediaUrl string
 
-		for mcn := range strings.SplitSeq(blurActualMcn, " | ") {
+		for mcn := range strings.SplitSeq(blurRealMcn, " | ") {
 			url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{
 				Scheme:  storage.SigningSchemeV4,
 				Method:  "GET",
@@ -76,14 +76,14 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 				return nilVal, err
 			}
 
-			if blurActualMediaUrl != "" {
-				blurActualMediaUrl += " | "
+			if blurRealMediaUrl != "" {
+				blurRealMediaUrl += " | "
 			}
 
-			blurActualMediaUrl += url
+			blurRealMediaUrl += url
 		}
 
-		mediaUrls = append(mediaUrls, blurActualMediaUrl)
+		mediaUrls = append(mediaUrls, blurRealMediaUrl)
 	}
 
 	postUI.MediaUrls = mediaUrls

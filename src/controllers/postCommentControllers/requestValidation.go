@@ -1,6 +1,7 @@
 package postCommentControllers
 
 import (
+	"errors"
 	"i9lyfe/src/helpers"
 	"regexp"
 	"strings"
@@ -9,30 +10,14 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type postMediaSize struct {
-	BlurSize   int64 `json:"blur_size"`
-	ActualSize int64 `json:"actual_size"`
-}
-
-func (b postMediaSize) Validate() error {
-	return validation.ValidateStruct(&b,
-		validation.Field(&b.ActualSize,
-			validation.Required,
-			validation.Min(1*1024*1024).Error("miminum of 1MeB for actual media size"),
-			validation.Max(8*1024*1024).Error("maximum of 8MeB for actual media size"),
-		),
-		validation.Field(&b.BlurSize,
-			validation.Required,
-			validation.Min(1*1024).Error("miminum of 1KiB for blur media size"),
-			validation.Max(10*1024).Error("maximum of 10KiB for blur media size"),
-		),
-	)
-}
-
 type authorizeUploadBody struct {
-	PostType   string          `json:"post_type"`
-	MediaMIME  string          `json:"media_mime"`
-	MediaSizes []postMediaSize `json:"media_sizes"`
+	PostType string `json:"post_type"`
+	// The first index gets the MIME for the blur frame of all media,
+	// while the second index gets the MIME for the real media
+	MediaMIME [2]string `json:"media_mime"`
+	// The first index gets the size for the blur frame of a media,
+	// while the second index gets the size for the real media
+	MediaSizes [][2]int64 `json:"media_sizes"`
 }
 
 func (b authorizeUploadBody) Validate() error {
@@ -42,7 +27,13 @@ func (b authorizeUploadBody) Validate() error {
 			validation.Required,
 			validation.In("photo:portrait", "photo:square", "photo:landscape", "video:portrait", "video:square", "video:landscape", "reel").Error("invalid post type. expected 'photo:(portrait|square|landscape)', 'video:(portrait|square|landscape)', or 'reel'"),
 		),
-		validation.Field(&b.MediaMIME, validation.Required,
+		validation.Field(&b.MediaMIME, validation.Required, validation.Length(2, 2).Error("expected array of 2 items.")),
+		validation.Field(&b.MediaMIME[0], validation.Required,
+			validation.Match(regexp.MustCompile(
+				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
+			)).Error("expected media_mime for blur media to be a valid MIME type of the format image/*"),
+		),
+		validation.Field(&b.MediaMIME[1], validation.Required,
 			validation.When(strings.HasPrefix(b.PostType, "photo"), validation.Match(regexp.MustCompile(
 				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
 			)).Error("expected mime_type to be a valid MIME type of the format image/*"),
@@ -57,7 +48,35 @@ func (b authorizeUploadBody) Validate() error {
 			).Else(
 				validation.Length(1, 1).Error("must contain exactly 1 media item for type 'ree'"),
 			),
-			validation.Each(validation.Required),
+			validation.Each(
+				validation.Length(2, 2).Error("expected arrays of 2 items each"),
+				validation.By(func(value any) error {
+					val := value.([2]int64)
+
+					const (
+						BLUR_FRAME int = 0
+						REAL_MEDIA int = 1
+					)
+
+					if val[BLUR_FRAME] < 1*1024 || val[BLUR_FRAME] > 10*1024 {
+						return errors.New("blur frame size out of range; min: 1KiB; max: 10KiB")
+					}
+
+					switch prefix, _, _ := strings.Cut(b.PostType, ":"); prefix {
+					case "photo":
+						if val[REAL_MEDIA] < 1*1024 || val[REAL_MEDIA] > 5*1024*1024 {
+							return errors.New("real media size out of range; min: 1KiB; max: 5MeB")
+						}
+					case "video", "reel":
+						if val[REAL_MEDIA] < 1*1024 || val[REAL_MEDIA] > 10*1024*1024 {
+							return errors.New("real media size out of range; min: 1KiB; max: 10MeB")
+						}
+					default:
+					}
+
+					return nil
+				}),
+			),
 		),
 	)
 

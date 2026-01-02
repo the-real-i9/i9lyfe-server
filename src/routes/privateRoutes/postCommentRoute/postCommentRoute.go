@@ -8,7 +8,7 @@ import (
 )
 
 func Route(router fiber.Router) {
-	router.Post("/post_upload/authorize")
+	router.Post("/post_upload/authorize", PCC.AuthorizeUpload)
 
 	/* ====== POST ====== */
 	router.Post("/new_post", appMiddlewares.PostUploadSession, PCC.CreateNewPost)

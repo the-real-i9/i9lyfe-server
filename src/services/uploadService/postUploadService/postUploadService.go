@@ -18,24 +18,28 @@ type AuthDataT struct {
 	MediaCloudName string `json:"mediaCloudName"`
 }
 
-func Authorize(ctx context.Context, mediaMIME string, mediaCount int) ([]AuthDataT, []string, error) {
+func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaSizes [][2]int64) ([]AuthDataT, []string, error) {
 	var res []AuthDataT
 	var mCloudNames []string
 
-	for i := range mediaCount {
-		var blurActualUrl string
-		var blurActualMediaCloudName string
+	for i, blurSize_realSize := range mediaSizes {
+		var blurRealUrl string
+		var blurRealMediaCloudName string
 
-		for _, quality := range []string{"blur", "actual"} {
-			mediaCloudName := fmt.Sprintf("uploads/post/%d%d/%s-media-%d-%s", time.Now().Year(), time.Now().Month(), uuid.NewString(), i+1, quality)
+		for one, size := range blurSize_realSize {
+
+			which := [2]string{"blur", "real"}
+
+			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), uuid.NewString(), i, which[one])
 
 			url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(
 				mediaCloudName,
 				&storage.SignedURLOptions{
 					Scheme:      storage.SigningSchemeV4,
 					Method:      "PUT",
-					ContentType: mediaMIME,
-					Expires:     time.Now().Add(20 * time.Minute),
+					ContentType: mediaMIME[one],
+					Expires:     time.Now().Add(15 * time.Minute),
+					Headers:     []string{fmt.Sprintf("x-goog-content-length-range: %d,%[1]d", size)},
 				},
 			)
 			if err != nil {
@@ -43,17 +47,17 @@ func Authorize(ctx context.Context, mediaMIME string, mediaCount int) ([]AuthDat
 				return nil, nil, fiber.ErrInternalServerError
 			}
 
-			if blurActualUrl != "" {
-				blurActualUrl += " | "
-				blurActualMediaCloudName += " | "
+			if blurRealUrl != "" {
+				blurRealUrl += " | "
+				blurRealMediaCloudName += " | "
 			}
 
-			blurActualUrl += url
-			blurActualMediaCloudName += mediaCloudName
+			blurRealUrl += url
+			blurRealMediaCloudName += mediaCloudName
 		}
 
-		res = append(res, AuthDataT{UploadUrl: blurActualUrl, MediaCloudName: blurActualMediaCloudName})
-		mCloudNames = append(mCloudNames, blurActualMediaCloudName)
+		res = append(res, AuthDataT{UploadUrl: blurRealUrl, MediaCloudName: blurRealMediaCloudName})
+		mCloudNames = append(mCloudNames, blurRealMediaCloudName)
 	}
 
 	return res, mCloudNames, nil
