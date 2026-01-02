@@ -1,7 +1,6 @@
 package signupControllers
 
 import (
-	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/signupService"
 	"time"
@@ -46,13 +45,11 @@ func RequestNewAccount(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	sd, err := json.Marshal(sessionData)
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"signup": sessionData,
 	}
 
-	c.Cookie(helpers.Cookie("signup", string(sd), "/api/auth/signup/verify_email", int(time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/auth/signup/verify_email", int(time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
@@ -99,13 +96,11 @@ func VerifyEmail(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	nsd, err := json.Marshal(newSessionData)
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"signup": newSessionData,
 	}
 
-	c.Cookie(helpers.Cookie("signup", string(nsd), "/api/auth/signup/register_user", int(time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/auth/signup/register_user", int(time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
@@ -158,13 +153,11 @@ func RegisterUser(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	usd, err := json.Marshal(map[string]any{"authJwt": authJwt})
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"user": map[string]any{"authJwt": authJwt},
 	}
 
-	c.Cookie(helpers.Cookie("user", string(usd), "/api/app", int(10*24*time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.Status(fiber.StatusCreated).JSON(respData)
 }

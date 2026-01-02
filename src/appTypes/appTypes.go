@@ -92,3 +92,8 @@ func (m MsgContent) Validate() error {
 		validation.Field(&m.Extension, validation.Nil.Error("setting this property is forbidden")),
 	)
 }
+
+type MediaMIMESize struct {
+	MIMEType string `json:"mime_type"`
+	Size     int64  `json:"size"`
+}

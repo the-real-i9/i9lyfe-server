@@ -2,13 +2,16 @@ package postCommentRoute
 
 import (
 	PCC "i9lyfe/src/controllers/postCommentControllers"
+	"i9lyfe/src/middlewares/appMiddlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func Route(router fiber.Router) {
+	router.Post("/post_upload/authorize")
+
 	/* ====== POST ====== */
-	router.Post("/new_post", PCC.CreateNewPost)
+	router.Post("/new_post", appMiddlewares.PostUploadSession, PCC.CreateNewPost)
 	router.Get("/posts/:postId", PCC.GetPost)
 	router.Delete("/posts/:postId", PCC.DeletePost)
 
@@ -22,13 +25,6 @@ func Route(router fiber.Router) {
 	/* ====== POST'S COMMENT ====== */
 
 	router.Post("/posts/:postId/comment", PCC.CommentOnPost)
-	// remember to add this WARNINING in the APIdoc:
-	// "for paginating comments, the 'offset' query should specify the date of the least recent item,
-	// note that, the least recent item isn't always the first (ASC) or last (DESC) comment in the list retrieved.
-	// the order of the comment list returned isn't evaluated based on date_created only
-	// therefore, you shouldn't assume that the last or first item is the least recent item,
-	// rather, you should programmatically find the least recent item in the list,
-	// doing otherwise would cause items in previous pages to be returned and some items even missing
 	router.Get("/posts/:postId/comments", PCC.GetCommentsOnPost)
 	router.Get("/comments/:commentId", PCC.GetComment)
 	router.Delete("/posts/:postId/comments/:commentId", PCC.RemoveCommentOnPost)

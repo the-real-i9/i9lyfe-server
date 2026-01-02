@@ -409,7 +409,7 @@ CREATE TABLE public.posts (
     id_ uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_user text NOT NULL,
     type_ text NOT NULL,
-    media_urls text[] NOT NULL,
+    media_cloud_names text[] NOT NULL,
     description text DEFAULT ''::text NOT NULL,
     deleted boolean DEFAULT false,
     reposted_by_user text,

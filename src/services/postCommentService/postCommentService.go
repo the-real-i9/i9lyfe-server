@@ -19,29 +19,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaDataList [][]byte, postType, description string, at int64) (any, error) {
-	mediaUrls := make([]string, len(mediaDataList))
-
-	for i, mediaData := range mediaDataList {
-		mediaMIME := mimetype.Detect(mediaData)
-		mediaType, mediaExt := mediaMIME.String(), mediaMIME.Extension()
-
-		if ((postType == "reel" || postType == "video") && !strings.HasPrefix(mediaType, "video")) || (postType == "photo" && !strings.HasPrefix(mediaType, "image")) {
-			return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid media type %s, for the post type %s", mediaType, postType))
-		}
-
-		murl, err := cloudStorageService.Upload(ctx, fmt.Sprintf("post_medias/user-%s/media-%d%s", clientUser.Username, time.Now().UnixNano(), mediaExt), mediaData)
-		if err != nil {
-			return nil, err
-		}
-
-		mediaUrls[i] = murl
-	}
-
+func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaCloudNames []string, postType, description string, at int64) (any, error) {
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	newPost, err := post.New(ctx, clientUser.Username, mediaUrls, postType, description, at)
+	newPost, err := post.New(ctx, clientUser.Username, mediaCloudNames, postType, description, at)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,6 @@
 package signinControllers
 
 import (
-	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/signinService"
 	"time"
@@ -49,13 +48,11 @@ func Signin(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	usd, err := json.Marshal(map[string]any{"authJwt": authJwt})
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"user": map[string]any{"authJwt": authJwt},
 	}
 
-	c.Cookie(helpers.Cookie("user", string(usd), "/api/app", int(10*24*time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }

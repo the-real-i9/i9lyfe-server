@@ -1,27 +1,19 @@
 package authMiddlewares
 
 import (
-	"encoding/json"
 	"i9lyfe/src/helpers"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func SignupSession(c *fiber.Ctx) error {
-	ssStr := c.Cookies("signup")
+	ssData := helpers.FromJson[map[string]any](c.Cookies("session"))["signup"]
 
-	if ssStr == "" {
-		return c.Status(fiber.StatusUnauthorized).SendString("out-of-turn endpoint access: complete the previous step of the signup process")
+	if ssData == nil {
+		return c.Status(fiber.StatusUnauthorized).SendString("no ongoing signup session or this session endpoint was accessed out of order")
 	}
 
-	var signupSessionData map[string]any
-
-	if err := json.Unmarshal([]byte(ssStr), &signupSessionData); err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
-	}
-
-	c.Locals("signup_sess_data", signupSessionData)
+	c.Locals("signup_sess_data", ssData)
 
 	return c.Next()
 }

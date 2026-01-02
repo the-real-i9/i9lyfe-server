@@ -1,7 +1,6 @@
 package passwordResetControllers
 
 import (
-	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/passwordResetService"
 	"time"
@@ -46,13 +45,11 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	sd, err := json.Marshal(sessionData)
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"passwordReset": sessionData,
 	}
 
-	c.Cookie(helpers.Cookie("passwordReset", string(sd), "/api/auth/forgot_password/confirm_email", int(time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/auth/forgot_password/confirm_email", int(time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
@@ -99,13 +96,11 @@ func ConfirmEmail(c *fiber.Ctx) error {
 		return app_err
 	}
 
-	nsd, err := json.Marshal(newSessionData)
-	if err != nil {
-		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+	reqSession := map[string]any{
+		"passwordReset": newSessionData,
 	}
 
-	c.Cookie(helpers.Cookie("passwordReset", string(nsd), "/api/auth/forgot_password/reset_password", int(time.Hour/time.Second)))
+	c.Cookie(helpers.Session(reqSession, "/api/auth/forgot_password/reset_password", int(time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }

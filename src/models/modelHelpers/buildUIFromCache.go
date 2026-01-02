@@ -3,8 +3,14 @@ package modelHelpers
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
+	"os"
+	"strings"
+	"time"
+
+	"cloud.google.com/go/storage"
 )
 
 func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
@@ -54,6 +60,34 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 	if err != nil {
 		return nilVal, err
 	}
+
+	var mediaUrls []string
+
+	for _, blurActualMcn := range postUI.MediaCloudNames {
+		var blurActualMediaUrl string
+
+		for mcn := range strings.SplitSeq(blurActualMcn, " | ") {
+			url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{
+				Scheme:  storage.SigningSchemeV4,
+				Method:  "GET",
+				Expires: time.Now().Add((6 * 24) * time.Hour),
+			})
+			if err != nil {
+				return nilVal, err
+			}
+
+			if blurActualMediaUrl != "" {
+				blurActualMediaUrl += " | "
+			}
+
+			blurActualMediaUrl += url
+		}
+
+		mediaUrls = append(mediaUrls, blurActualMediaUrl)
+	}
+
+	postUI.MediaUrls = mediaUrls
+	postUI.MediaCloudNames = nil
 
 	return postUI, nil
 }

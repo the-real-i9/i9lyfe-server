@@ -101,15 +101,15 @@ func WSReply(data any, toAction string) map[string]any {
 	return reply
 }
 
-func Cookie(name, value, path string, maxAge int) *fiber.Cookie {
+func Session(kvPairs map[string]any, path string, maxAge int) *fiber.Cookie {
 	c := &fiber.Cookie{
 		HTTPOnly: true,
 		Secure:   false,
 		Domain:   os.Getenv("SERVER_HOST"),
 	}
 
-	c.Name = name
-	c.Value = value
+	c.Name = "session"
+	c.Value = ToJson(kvPairs)
 	c.Path = path
 	c.MaxAge = maxAge
 
@@ -125,6 +125,10 @@ func ToJson(data any) string {
 }
 
 func FromJson[T any](jsonStr string) (res T) {
+	if jsonStr == "" {
+		return res
+	}
+
 	err := json.Unmarshal([]byte(jsonStr), &res)
 	if err != nil {
 		LogError(err)

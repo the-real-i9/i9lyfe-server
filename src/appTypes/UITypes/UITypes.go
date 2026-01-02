@@ -13,20 +13,21 @@ type ContentOwnerUser struct {
 }
 
 type Post struct {
-	Id             string   `json:"id"`
-	Type           string   `json:"type"`
-	OwnerUser      any      `json:"owner_user"`
-	MediaUrls      []string `json:"media_urls"`
-	Description    string   `json:"description"`
-	CreatedAt      int64    `json:"created_at"`
-	ReactionsCount int64    `json:"reactions_count"`
-	CommentsCount  int64    `json:"comments_count"`
-	RepostsCount   int64    `json:"reposts_count"`
-	SavesCount     int64    `json:"saves_count"`
-	MeReaction     string   `json:"me_reaction"`
-	MeSaved        bool     `json:"me_saved"`
-	MeReposted     bool     `json:"me_reposted"`
-	Cursor         float64  `json:"cursor"`
+	Id              string   `json:"id"`
+	Type            string   `json:"type"`
+	OwnerUser       any      `json:"owner_user"`
+	MediaCloudNames []string `json:"media_cloud_names,omitempty"`
+	MediaUrls       []string `json:"media_urls"`
+	Description     string   `json:"description"`
+	CreatedAt       int64    `json:"created_at"`
+	ReactionsCount  int64    `json:"reactions_count"`
+	CommentsCount   int64    `json:"comments_count"`
+	RepostsCount    int64    `json:"reposts_count"`
+	SavesCount      int64    `json:"saves_count"`
+	MeReaction      string   `json:"me_reaction"`
+	MeSaved         bool     `json:"me_saved"`
+	MeReposted      bool     `json:"me_reposted"`
+	Cursor          float64  `json:"cursor"`
 }
 
 type Comment struct {

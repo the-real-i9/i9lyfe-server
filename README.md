@@ -114,7 +114,7 @@ The following are the features supported by this API. *Visit the API documentati
 - Uses the event-sourcing pattern; client request handlers queue events (e.g. user reactions to post) into Redis streams, from which dedicated background processes execute the necessary background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the main database).
   - This allows client requests to undergo the smallest, inevitable amount of processing, delivering a fast user experience.
 - Uses Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
-- Client requests for aggregate data (e.g. reactions count on post) are processed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No aggregate functions are executed; providing fast user experience.
+- Client requests for aggregate data (e.g. reactions count on post) are computed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No linear-time aggregate function is executed; reducing latency and enhancing scalability.
 - In a list data containing entity IDs (as requested by the client), where each ID is processed and replaced by its entity data in linear time, the whole task is mathematically divided sufficiently between multiple threads for faster, parallel execution, thereby utilizing the system's resources.
 - All READ requests are served from the cache, practically, whole data is built from parts in relevant cache entries; this offers fast user experience.
 - Cached data are dynamically made fresh by WRITE requests, zeroing the chances of having a stale cache at anytime.
@@ -124,7 +124,7 @@ The following are the features supported by this API. *Visit the API documentati
 
 ## API Documentation
 
-REST request/response Communication: [Click Here](./docs/swagger.json)
+HTTP request/response Communication: [Click Here](./docs/swagger.json)
 
 WebSocket Real-time Communication: [Click Here](./docs/websocketsapi.md)
 

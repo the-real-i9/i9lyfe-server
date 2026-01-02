@@ -18,22 +18,22 @@ func redisDB() *redis.Client {
 }
 
 type newPostT struct {
-	Id          string   `json:"id" db:"id_"`
-	Type        string   `json:"type" db:"type_"`
-	MediaUrls   []string `json:"media_urls" db:"media_urls"`
-	Description string   `json:"description"`
-	CreatedAt   int64    `json:"created_at" db:"created_at"`
-	OwnerUser   any      `json:"owner_user" db:"owner_user"`
+	Id              string   `json:"id" db:"id_"`
+	Type            string   `json:"type" db:"type_"`
+	MediaCloudNames []string `json:"media_cloud_names" db:"media_cloud_names"`
+	Description     string   `json:"description"`
+	CreatedAt       int64    `json:"created_at" db:"created_at"`
+	OwnerUser       any      `json:"owner_user" db:"owner_user"`
 }
 
-func New(ctx context.Context, clientUsername string, mediaUrls []string, postType, description string, at int64) (post newPostT, err error) {
+func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post newPostT, err error) {
 	newPost, err := pgDB.QueryRowType[newPostT](
 		ctx,
 		/* sql */ `
-		INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
+		INSERT INTO posts (owner_user, type_, media_cloud_names, description, created_at)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id_, owner_user, type_, media_urls, description, created_at
-		`, clientUsername, postType, mediaUrls, description, at,
+		RETURNING id_, owner_user, type_, media_cloud_names, description, created_at
+		`, clientUsername, postType, mediaCloudNames, description, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
@@ -304,23 +304,23 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type repostT struct {
-	Id             string   `json:"id" db:"id_"`
-	Type           string   `json:"type" db:"type_"`
-	MediaUrls      []string `json:"media_urls" db:"media_urls"`
-	Description    string   `json:"description"`
-	CreatedAt      int64    `json:"created_at" db:"created_at"`
-	OwnerUser      string   `json:"owner_user" db:"owner_user"`
-	ReposterByUser string   `json:"reposted_by_user" db:"reposted_by_user"`
+	Id              string   `json:"id" db:"id_"`
+	Type            string   `json:"type" db:"type_"`
+	MediaCloudNames []string `json:"media_cloud_names" db:"media_cloud_names"`
+	Description     string   `json:"description"`
+	CreatedAt       int64    `json:"created_at" db:"created_at"`
+	OwnerUser       string   `json:"owner_user" db:"owner_user"`
+	ReposterByUser  string   `json:"reposted_by_user" db:"reposted_by_user"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {
 	repost, err := pgDB.QueryRowType[repostT](
 		ctx,
 		/* sql */ `
-		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
-		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
+		INSERT INTO posts (owner_user, type_, media_cloud_names, description, created_at, reposted_by_user)
+		SELECT owner_user, type_, media_cloud_names, description, $3, $1 FROM posts
 		WHERE id_ = $2
-		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user
+		RETURNING id_, owner_user, type_, media_cloud_names, description, created_at, reposted_by_user
 		`, clientUsername, postId, at,
 	)
 	if err != nil {

@@ -2,10 +2,44 @@ package postCommentControllers
 
 import (
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/postCommentService"
+	"i9lyfe/src/services/uploadService/postUploadService"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+func AuthorizeUpload(c *fiber.Ctx) error {
+	ctx := c.Context()
+
+	var body authorizeUploadBody
+
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
+	}
+
+	if err = body.Validate(); err != nil {
+		return err
+	}
+
+	respData, mediaCloudNames, err := postUploadService.Authorize(ctx, body.MediaMIME, len(body.MediaSizes))
+	if err != nil {
+		return err
+	}
+
+	currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
+
+	currReqSession["post_upload"] = map[string]any{
+		"postType":        body.PostType,
+		"mediaCloudNames": mediaCloudNames,
+	}
+
+	c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
+
+	return c.JSON(respData)
+}
 
 func CreateNewPost(c *fiber.Ctx) error {
 	ctx := c.Context()
@@ -25,10 +59,16 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser, body.MediaDataList, body.Type, body.Description, body.At)
+	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser, body.MediaCloudNames, body.Type, body.Description, body.At)
 	if app_err != nil {
 		return app_err
 	}
+
+	currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
+
+	delete(currReqSession, "post_upload")
+
+	c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.Status(201).JSON(respData)
 }
