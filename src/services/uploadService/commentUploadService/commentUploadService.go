@@ -18,7 +18,7 @@ type AuthDataT struct {
 	AttachmentCloudName string `json:"attachmentCloudName"`
 }
 
-func Authorize(ctx context.Context, attachmentMIME string, attachmentSize int64) (AuthDataT, string, error) {
+func Authorize(ctx context.Context, attachmentMIME string, attachmentSize int64) (AuthDataT, error) {
 	var res AuthDataT
 
 	attachmentCloudName := fmt.Sprintf("uploads/comment/%d%d/%s", time.Now().Year(), time.Now().Month(), uuid.NewString())
@@ -35,11 +35,11 @@ func Authorize(ctx context.Context, attachmentMIME string, attachmentSize int64)
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return AuthDataT{}, "", fiber.ErrInternalServerError
+		return AuthDataT{}, fiber.ErrInternalServerError
 	}
 
 	res.UploadUrl = url
 	res.AttachmentCloudName = attachmentCloudName
 
-	return res, attachmentCloudName, nil
+	return res, nil
 }

@@ -5,11 +5,12 @@ go 1.25.4
 require (
 	cloud.google.com/go/storage v1.58.0
 	github.com/fasthttp/websocket v1.5.12
-	github.com/gabriel-vasile/mimetype v1.4.11
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/goccy/go-json v0.10.5
 	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/maxatome/go-testdeep v1.14.0
@@ -18,7 +19,6 @@ require (
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.45.0
 	golang.org/x/sync v0.18.0
-	google.golang.org/api v0.256.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
@@ -55,7 +55,6 @@ require (
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -89,6 +88,7 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
+	google.golang.org/api v0.256.0 // indirect
 	google.golang.org/genproto v0.0.0-20251103181224-f26f9409b101 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect

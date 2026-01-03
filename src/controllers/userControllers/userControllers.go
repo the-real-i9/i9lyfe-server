@@ -9,6 +9,28 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func AuthorizePPicUpload(c *fiber.Ctx) error {
+	ctx := c.Context()
+
+	var body authorizePPicUploadBody
+
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
+	}
+
+	if err = body.Validate(); err != nil {
+		return err
+	}
+
+	respData, err := userService.AuthorizePPicUpload(ctx, body.PicMIME, body.PicSize)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(respData)
+}
+
 // Get session user
 //
 //	@Summary		Get session user
@@ -127,11 +149,11 @@ func ChangeUserProfilePicture(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err = body.Validate(); err != nil {
+	if err = body.Validate(ctx); err != nil {
 		return err
 	}
 
-	respData, app_err := userService.ChangeUserProfilePicture(ctx, clientUser.Username, body.PictureData)
+	respData, app_err := userService.ChangeUserProfilePicture(ctx, clientUser.Username, body.ProfilePicCloudName)
 	if app_err != nil {
 		return app_err
 	}

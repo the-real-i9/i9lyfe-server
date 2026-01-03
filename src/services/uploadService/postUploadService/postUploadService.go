@@ -18,47 +18,53 @@ type AuthDataT struct {
 	MediaCloudName string `json:"mediaCloudName"`
 }
 
-func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaSizes [][2]int64) ([]AuthDataT, []string, error) {
+func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaSizes [][2]int64) ([]AuthDataT, error) {
 	var res []AuthDataT
-	var mCloudNames []string
 
-	for i, blurSize_realSize := range mediaSizes {
-		var blurRealUrl string
-		var blurRealMediaCloudName string
+	for i, blurPlchSize_actualSize := range mediaSizes {
+		var blurPlchActualUrl string
+		var blurPlchActualMediaCloudName string
 
-		for one, size := range blurSize_realSize {
+		for blurPlch0_actual1, size := range blurPlchSize_actualSize {
 
-			which := [2]string{"blur", "real"}
+			which := [2]string{"blur_placeholder", "actual"}
 
-			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), uuid.NewString(), i, which[one])
+			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), uuid.NewString(), i, which[blurPlch0_actual1])
 
 			url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(
 				mediaCloudName,
 				&storage.SignedURLOptions{
 					Scheme:      storage.SigningSchemeV4,
 					Method:      "PUT",
-					ContentType: mediaMIME[one],
+					ContentType: mediaMIME[blurPlch0_actual1],
 					Expires:     time.Now().Add(15 * time.Minute),
 					Headers:     []string{fmt.Sprintf("x-goog-content-length-range: %d,%[1]d", size)},
 				},
 			)
 			if err != nil {
 				helpers.LogError(err)
-				return nil, nil, fiber.ErrInternalServerError
+				return nil, fiber.ErrInternalServerError
 			}
 
-			if blurRealUrl != "" {
-				blurRealUrl += " | "
-				blurRealMediaCloudName += " | "
+			if blurPlch0_actual1 == 0 {
+				blurPlchActualUrl += "blur_placeholder:"
+				blurPlchActualMediaCloudName += "blur_placeholder:"
+			} else {
+				blurPlchActualUrl += "actual:"
+				blurPlchActualMediaCloudName += "actual:"
 			}
 
-			blurRealUrl += url
-			blurRealMediaCloudName += mediaCloudName
+			blurPlchActualUrl += url
+			blurPlchActualMediaCloudName += mediaCloudName
+
+			if blurPlch0_actual1 == 0 {
+				blurPlchActualUrl += " "
+				blurPlchActualMediaCloudName += " "
+			}
 		}
 
-		res = append(res, AuthDataT{UploadUrl: blurRealUrl, MediaCloudName: blurRealMediaCloudName})
-		mCloudNames = append(mCloudNames, blurRealMediaCloudName)
+		res = append(res, AuthDataT{UploadUrl: blurPlchActualUrl, MediaCloudName: blurPlchActualMediaCloudName})
 	}
 
-	return res, mCloudNames, nil
+	return res, nil
 }

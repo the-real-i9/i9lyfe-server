@@ -97,12 +97,12 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			helpers.ToStruct(body.Data, &data)
 
-			if err := data.Validate(); err != nil {
+			if err := data.Validate(ctx); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
 				continue
 			}
 
-			res, err := chatMessageService.SendMessage(ctx, clientUser.Username, data.PartnerUsername, data.ReplyTargetMsgId, data.IsReply, data.Msg, data.At)
+			res, err := chatMessageService.SendMessage(ctx, clientUser.Username, data.PartnerUsername, data.ReplyTargetMsgId, data.IsReply, helpers.ToJson(data.Msg), data.At)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
 				continue

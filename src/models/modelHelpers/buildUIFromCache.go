@@ -120,6 +120,17 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 		return nilVal, err
 	}
 
+	commentUI.AttachmentUrl, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(commentUI.AttachmentCloudName, &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add((6 * 24) * time.Hour),
+	})
+	if err != nil {
+		return nilVal, err
+	}
+
+	commentUI.AttachmentCloudName = ""
+
 	return commentUI, nil
 }
 
@@ -320,6 +331,8 @@ func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatH
 
 		CHEUI.Reactions = msgReactions
 		CHEUI.ReactionsCount = reactionsCount
+
+		// TODO: change media_cloud_name for
 	}
 
 	return CHEUI, nil

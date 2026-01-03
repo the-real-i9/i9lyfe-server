@@ -3,7 +3,6 @@ package tests
 
 import (
 	"bytes"
-	"encoding/json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/initializers"
 	"i9lyfe/src/routes/authRoute"
@@ -14,6 +13,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/fasthttp/websocket"
 	"github.com/gofiber/fiber/v2"

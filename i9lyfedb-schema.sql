@@ -163,7 +163,7 @@ VALUES (from_user, to_user, che_id_val, 'sent');
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
 
-SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url)
+SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name)
 FROM users WHERE username = from_user
 INTO reactor_user;
   
@@ -241,7 +241,7 @@ VALUES (from_user, to_user, che_id_val, 'sent');
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
 
-SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url, 'presence', presence)
+SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name, 'presence', presence)
 FROM users WHERE username = from_user
 INTO sender_user;
 
@@ -296,7 +296,7 @@ BEGIN
   INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
   VALUES (to_user, from_user, che_id_val, 'received');
 
-  SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url, 'presence', presence)
+  SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name, 'presence', presence)
   FROM users WHERE username = from_user
   INTO sender_user;
   
@@ -516,7 +516,7 @@ CREATE TABLE public.users (
     password_ text NOT NULL,
     name_ text NOT NULL,
     bio text DEFAULT 'Thanks for using i9lyfe'::text,
-    profile_pic_url text DEFAULT '{notset}'::text,
+    profile_pic_cloud_name text DEFAULT '{notset}'::text,
     presence text DEFAULT 'online'::text NOT NULL,
     birthday bigint,
     last_seen bigint,

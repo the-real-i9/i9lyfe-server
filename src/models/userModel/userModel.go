@@ -34,12 +34,12 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 }
 
 type NewUserT struct {
-	Email         string `json:"email"`
-	Username      string `json:"username"`
-	Name          string `json:"name" db:"name_"`
-	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Bio           string `json:"bio"`
-	Presence      string `json:"presence"`
+	Email               string `json:"email"`
+	Username            string `json:"username"`
+	Name                string `json:"name" db:"name_"`
+	ProfilePicCloudName string `json:"profile_pic_cloud_name" db:"profile_pic_cloud_name"`
+	Bio                 string `json:"bio"`
+	Presence            string `json:"presence"`
 }
 
 func New(ctx context.Context, email, username, password, name, bio string, birthday int64) (NewUserT, error) {
@@ -47,7 +47,7 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 		/* sql */ `
 		INSERT INTO users (username, email, password_, name_, bio, birthday)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING email, username, name_, profile_pic_url, bio, presence
+		RETURNING email, username, name_, profile_pic_cloud_name, bio, presence
 		`, username, email, password, name, bio, birthday,
 	)
 	if err != nil {
@@ -59,19 +59,19 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 }
 
 type ToAuthUserT struct {
-	Email         string `json:"email"`
-	Username      string `json:"username"`
-	Name          string `json:"name" db:"name_"`
-	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Presence      string `json:"presence"`
-	Password      string `json:"-" db:"password_"`
+	Email               string `json:"email"`
+	Username            string `json:"username"`
+	Name                string `json:"name" db:"name_"`
+	ProfilePicCloudName string `json:"profile_pic_cloud_name" db:"profile_pic_cloud_name"`
+	Presence            string `json:"presence"`
+	Password            string `json:"-" db:"password_"`
 }
 
 func AuthFind(ctx context.Context, uniqueIdent string) (*ToAuthUserT, error) {
 	user, err := pgDB.QueryRowType[ToAuthUserT](
 		ctx,
 		/* sql */ `
-		SELECT email, username, name_, profile_pic_url, presence, password_ 
+		SELECT email, username, name_, profile_pic_cloud_name, presence, password_ 
 		FROM users 
 		WHERE username = $1 OR email = $1
 		`, uniqueIdent,
@@ -141,7 +141,7 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 		ctx,
 		/* sql */ `
 		UPDATE users
-		SET profile_pic_url = $2
+		SET profile_pic_cloud_name = $2
 		WHERE username = $1
 		RETURNING true AS done
 		`, clientUsername, pictureUrl,

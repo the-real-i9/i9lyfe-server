@@ -114,9 +114,8 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 	})
 
 	authJwt, err := securityServices.JwtSign(appTypes.ClientUser{
-		Username:      newUser.Username,
-		Name:          newUser.Name,
-		ProfilePicUrl: newUser.ProfilePicUrl,
+		Username: newUser.Username,
+		Name:     newUser.Name,
 	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(10*24*time.Hour)) // 10 days
 
 	if err != nil {

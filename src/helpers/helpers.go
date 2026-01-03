@@ -1,12 +1,13 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"reflect"
 	"runtime"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 )

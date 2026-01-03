@@ -12,9 +12,7 @@ import (
 	"time"
 )
 
-func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTargetMsgId string, isReply bool, msgContent *appTypes.MsgContent, at int64) (map[string]any, error) {
-	msgContentJson := helpers.ToJson(*msgContent)
-
+func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTargetMsgId string, isReply bool, msgContentJson string, at int64) (map[string]any, error) {
 	var (
 		newMessage chatMessage.NewMessageT
 		err        error

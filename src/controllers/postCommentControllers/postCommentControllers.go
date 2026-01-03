@@ -2,11 +2,9 @@ package postCommentControllers
 
 import (
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/postCommentService"
 	"i9lyfe/src/services/uploadService/commentUploadService"
 	"i9lyfe/src/services/uploadService/postUploadService"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,19 +23,10 @@ func AuthorizePostUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, mediaCloudNames, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, body.MediaSizes)
+	respData, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, body.MediaSizes)
 	if err != nil {
 		return err
 	}
-
-	currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
-
-	currReqSession["post_upload"] = map[string]any{
-		"postType":        body.PostType,
-		"mediaCloudNames": mediaCloudNames,
-	}
-
-	c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
@@ -56,18 +45,10 @@ func AuthorizeCommentUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, attachmentCloudName, err := commentUploadService.Authorize(ctx, body.AttachmentMIME, body.AttachmentSize)
+	respData, err := commentUploadService.Authorize(ctx, body.AttachmentMIME, body.AttachmentSize)
 	if err != nil {
 		return err
 	}
-
-	currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
-
-	currReqSession["comment_upload"] = map[string]any{
-		"attachmentCloudName": attachmentCloudName,
-	}
-
-	c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.JSON(respData)
 }
@@ -86,7 +67,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err = body.Validate(); err != nil {
+	if err = body.Validate(ctx); err != nil {
 		return err
 	}
 
@@ -94,12 +75,6 @@ func CreateNewPost(c *fiber.Ctx) error {
 	if app_err != nil {
 		return app_err
 	}
-
-	currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
-
-	delete(currReqSession, "post_upload")
-
-	c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 
 	return c.Status(201).JSON(respData)
 }
@@ -214,21 +189,13 @@ func CommentOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err = body.Validate(); err != nil {
+	if err = body.Validate(ctx); err != nil {
 		return err
 	}
 
 	respData, app_err := postCommentService.CommentOnPost(ctx, clientUser, c.Params("postId"), body.CommentText, body.AttachmentCloudName, body.At)
 	if app_err != nil {
 		return app_err
-	}
-
-	if body.AttachmentCloudName != "" {
-		currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
-
-		delete(currReqSession, "comment_upload")
-
-		c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 	}
 
 	return c.Status(201).JSON(respData)
@@ -357,21 +324,13 @@ func CommentOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err = body.Validate(); err != nil {
+	if err = body.Validate(ctx); err != nil {
 		return err
 	}
 
 	respData, app_err := postCommentService.CommentOnComment(ctx, clientUser, c.Params("commentId"), body.CommentText, body.AttachmentCloudName, body.At)
 	if app_err != nil {
 		return app_err
-	}
-
-	if body.AttachmentCloudName != "" {
-		currReqSession := helpers.FromJson[map[string]any](c.Cookies("session"))
-
-		delete(currReqSession, "comment_upload")
-
-		c.Cookie(helpers.Session(currReqSession, "/api/app", int(10*24*time.Hour/time.Second)))
 	}
 
 	return c.Status(201).JSON(respData)

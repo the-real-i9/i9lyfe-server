@@ -1,12 +1,18 @@
 package postCommentControllers
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"os"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/gofiber/fiber/v2"
 )
 
 type authorizeCommentUploadBody struct {
@@ -37,17 +43,12 @@ func (b authorizeCommentUploadBody) Validate() error {
 }
 
 type authorizePostUploadBody struct {
-	PostType string `json:"post_type"`
-	// The first index gets the MIME for the blur frame of all media,
-	// while the second index gets the MIME for the real media
-	MediaMIME [2]string `json:"media_mime"`
-	// The first index gets the size for the blur frame of a media,
-	// while the second index gets the size for the real media
-	MediaSizes [][2]int64 `json:"media_sizes"`
+	PostType   string     `json:"post_type"`
+	MediaMIME  [2]string  `json:"media_mime"`  // {blur_placeholder, actual}
+	MediaSizes [][2]int64 `json:"media_sizes"` // {{blur_placeholder, actual}, ...}
 }
 
 func (b authorizePostUploadBody) Validate() error {
-
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.PostType,
 			validation.Required,
@@ -55,7 +56,7 @@ func (b authorizePostUploadBody) Validate() error {
 		),
 		validation.Field(&b.MediaMIME, validation.Required, validation.Length(2, 2).Error("expected array of 2 items.")),
 		validation.Field(&b.MediaMIME[0], validation.Required,
-			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported blur media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
+			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported blur placeholder media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
 		),
 		validation.Field(&b.MediaMIME[1], validation.Required,
 			validation.When(strings.HasPrefix(b.PostType, "photo"),
@@ -72,27 +73,32 @@ func (b authorizePostUploadBody) Validate() error {
 				validation.Length(1, 1).Error("must contain exactly 1 media item for type 'ree'"),
 			),
 			validation.Each(
-				validation.Length(2, 2).Error("expected arrays of 2 items each"),
+				validation.Length(2, 2).Error("expected a media_size array of 2 items"),
 				validation.By(func(value any) error {
-					val := value.([2]int64)
+					media_size := value.([2]int64)
 
 					const (
-						BLUR_FRAME int = 0
-						REAL_MEDIA int = 1
+						_                    = iota
+						BLUR_PLACEHOLDER int = iota - 1
+						ACTUAL_MEDIA
 					)
 
-					if val[BLUR_FRAME] < 1*1024 || val[BLUR_FRAME] > 10*1024 {
-						return errors.New("blur frame size out of range; min: 1KiB; max: 10KiB")
+					if media_size[BLUR_PLACEHOLDER] < 1*1024 || media_size[BLUR_PLACEHOLDER] > 10*1024 {
+						return errors.New("blur placeholder size out of range; min: 1KiB; max: 10KiB")
 					}
 
 					switch prefix, _, _ := strings.Cut(b.PostType, ":"); prefix {
 					case "photo":
-						if val[REAL_MEDIA] < 1*1024 || val[REAL_MEDIA] > 5*1024*1024 {
-							return errors.New("real media size out of range; min: 1KiB; max: 5MeB")
+						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 5*1024*1024 {
+							return errors.New("photo media size out of range; min: 1KiB; max: 5MeB")
 						}
-					case "video", "reel":
-						if val[REAL_MEDIA] < 1*1024 || val[REAL_MEDIA] > 10*1024*1024 {
-							return errors.New("real media size out of range; min: 1KiB; max: 10MeB")
+					case "video":
+						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 15*1024*1024 {
+							return errors.New("video or reel media size out of range; min: 1KiB; max: 10MeB")
+						}
+					case "reel":
+						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 10*1024*1024 {
+							return errors.New("reel media size out of range; min: 1KiB; max: 10MeB")
 						}
 					default:
 					}
@@ -113,7 +119,7 @@ type createNewPostBody struct {
 	At              int64    `json:"at"`
 }
 
-func (b createNewPostBody) Validate() error {
+func (b createNewPostBody) Validate(ctx context.Context) error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Type,
@@ -127,12 +133,41 @@ func (b createNewPostBody) Validate() error {
 			).Else(
 				validation.Length(1, 1).Error("media list out of range for type 'reel'. must contain exactly 1 media item"),
 			),
+			validation.Each(
+				validation.By(func(value any) error {
+					val := value.(string)
+
+					if !(strings.HasPrefix(val, "blur_placeholder:uploads/post/") && strings.Contains(val, " actual:uploads/post/")) {
+						return errors.New("invalid media cloud name")
+					}
+
+					return nil
+				}),
+			),
 		),
 		validation.Field(&b.Description, validation.Length(0, 300)),
 		validation.Field(&b.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "createNewPostBody")
+	if err != nil {
+		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "createNewPostBody")
+	}
+
+	for _, blurPlchActualMcn := range b.MediaCloudNames {
+		var blurPlchMcn string
+		var actualMcn string
+
+		fmt.Sscanf(blurPlchActualMcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
+
+		for _, mcn := range []string{blurPlchMcn, actualMcn} {
+			_, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mcn).Attrs(ctx)
+			if errors.Is(err, storage.ErrObjectNotExist) {
+				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: media (%s) does not exist in cloud", mcn))
+			}
+		}
+	}
+
+	return nil
 }
 
 type reactToPostBody struct {
@@ -156,7 +191,7 @@ type commentOnPostBody struct {
 	At                  int64  `json:"at"`
 }
 
-func (b commentOnPostBody) Validate() error {
+func (b commentOnPostBody) Validate(ctx context.Context) error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
@@ -165,7 +200,18 @@ func (b commentOnPostBody) Validate() error {
 		validation.Field(&b.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnPostBody")
+	if err != nil {
+		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnPostBody")
+	}
+
+	if b.AttachmentCloudName != "" {
+		_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(b.AttachmentCloudName).Attrs(ctx)
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: attachment (%s) does not exist in cloud", b.AttachmentCloudName))
+		}
+	}
+
+	return nil
 }
 
 type reactToCommentBody struct {
@@ -189,7 +235,7 @@ type commentOnCommentBody struct {
 	At                  int64  `json:"at"`
 }
 
-func (b commentOnCommentBody) Validate() error {
+func (b commentOnCommentBody) Validate(ctx context.Context) error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
@@ -198,5 +244,16 @@ func (b commentOnCommentBody) Validate() error {
 		validation.Field(&b.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnCommentBody")
+	if err != nil {
+		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnCommentBody")
+	}
+
+	if b.AttachmentCloudName != "" {
+		_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(b.AttachmentCloudName).Attrs(ctx)
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: attachment (%s) does not exist in cloud", b.AttachmentCloudName))
+		}
+	}
+
+	return nil
 }
