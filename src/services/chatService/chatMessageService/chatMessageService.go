@@ -2,7 +2,6 @@ package chatMessageService
 
 import (
 	"context"
-	"encoding/json"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
@@ -11,32 +10,23 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"time"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTargetMsgId string, isReply bool, msgContent *appTypes.MsgContent, at int64) (map[string]any, error) {
+	msgContentJson := helpers.ToJson(*msgContent)
 
-	err := uploadMessageMedia(ctx, clientUsername, msgContent)
-	if err != nil {
-		return nil, err
-	}
-
-	msgContentJson, err := json.Marshal(*msgContent)
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	var newMessage chatMessage.NewMessageT
+	var (
+		newMessage chatMessage.NewMessageT
+		err        error
+	)
 
 	if !isReply {
-		newMessage, err = chatMessage.Send(ctx, clientUsername, partnerUsername, string(msgContentJson), at)
+		newMessage, err = chatMessage.Send(ctx, clientUsername, partnerUsername, msgContentJson, at)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		newMessage, err = chatMessage.Reply(ctx, clientUsername, partnerUsername, replyTargetMsgId, string(msgContentJson), at)
+		newMessage, err = chatMessage.Reply(ctx, clientUsername, partnerUsername, replyTargetMsgId, msgContentJson, at)
 		if err != nil {
 			return nil, err
 		}

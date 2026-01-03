@@ -7,7 +7,9 @@ import (
 )
 
 func Route(router fiber.Router) {
-	router.Get("/chats", CC.GetChats)
+	router.Post("/chat_upload/authorize", CC.AuthorizeUpload)
+	router.Post("/chat_upload/authorize/visual", CC.AuthorizeVisualUpload)
 
+	router.Get("/chats", CC.GetChats)
 	router.Delete("/chats/:partner_username", CC.DeleteChat)
 }

@@ -3,7 +3,6 @@ package postCommentControllers
 import (
 	"errors"
 	"i9lyfe/src/helpers"
-	"regexp"
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -19,13 +18,18 @@ func (b authorizeCommentUploadBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.AttachmentMIME, validation.Required,
-			validation.Match(regexp.MustCompile(
-				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
-			)).Error("expected attachment_mime to be a valid MIME type of format image/*"),
+			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported attachment_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
 		),
 		validation.Field(&b.AttachmentSize,
-			validation.Min(1*1024).Error("attachment size too small. min: 1KiB"),
-			validation.Max(10*1024).Error("attachment size too large. max: 10KiB"),
+			validation.By(func(value any) error {
+				val := value.(int64)
+
+				if val < 1024 || val > 10*1024 {
+					return errors.New("attachment_size out of range; min: 1KiB; max: 10KiB")
+				}
+
+				return nil
+			}),
 		),
 	)
 
@@ -51,17 +55,14 @@ func (b authorizePostUploadBody) Validate() error {
 		),
 		validation.Field(&b.MediaMIME, validation.Required, validation.Length(2, 2).Error("expected array of 2 items.")),
 		validation.Field(&b.MediaMIME[0], validation.Required,
-			validation.Match(regexp.MustCompile(
-				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
-			)).Error("expected media_mime for blur media to be a valid MIME type of the format image/*"),
+			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported blur media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
 		),
 		validation.Field(&b.MediaMIME[1], validation.Required,
-			validation.When(strings.HasPrefix(b.PostType, "photo"), validation.Match(regexp.MustCompile(
-				`^image/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
-			)).Error("expected mime_type to be a valid MIME type of the format image/*"),
-			).Else(validation.Match(regexp.MustCompile(
-				`^video/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}(?:\s*;\s*[a-zA-Z0-9!#$&^_.+-]+=[^;]+)*$`,
-			)).Error("expected mime_type to be a valid MIME type of the format video/*")),
+			validation.When(strings.HasPrefix(b.PostType, "photo"),
+				validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported photo media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
+			).Else(
+				validation.In("video/mp4", "video/webm").Error(`unsupported video/reel media_mime; use one of ["video/mp4", "video/webm"]`),
+			),
 		),
 		validation.Field(&b.MediaSizes,
 			validation.Required,
