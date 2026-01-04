@@ -290,7 +290,7 @@ func GetProfile(ctx context.Context, clientUsername, targetUsername string) (UIT
 	userProfile, err := modelHelpers.BuildUserProfileUIFromCache(ctx, targetUsername, clientUsername)
 	if err != nil {
 		helpers.LogError(err)
-		return UITypes.UserProfile{}, err
+		return UITypes.UserProfile{}, fiber.ErrInternalServerError
 	}
 
 	return userProfile, nil

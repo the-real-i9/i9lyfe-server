@@ -59,9 +59,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 		case "unsubscribe from live content metrics":
 			cancelLcmSub()
 		case "subscribe to user presence change":
-			var data subToUserPresenceAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[subToUserPresenceAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -76,9 +75,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				cancelUserPresenceSub[tu] = cancel
 			}
 		case "unsubscribe from user presence change":
-			var data unsubFromUserPresenceAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[unsubFromUserPresenceAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -93,9 +91,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 				delete(cancelUserPresenceSub, tu)
 			}
 		case "chat: send message":
-			var data sendChatMsgAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[sendChatMsgAcd](body.Data)
 
 			if err := data.Validate(ctx); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -111,9 +108,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 
 		case "chat: ack message delivered":
-			var data ackChatMsgDeliveredAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[ackChatMsgDeliveredAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -128,9 +124,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: ack message read":
-			var data ackChatMsgReadAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[ackChatMsgReadAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -145,9 +140,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: get history":
-			var data getChatHistoryAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[getChatHistoryAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -166,9 +160,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: react to message":
-			var data reactToChatMsgAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[reactToChatMsgAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -183,9 +176,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: remove reaction to message":
-			var data removeReactionToChatMsgAcd
-
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[removeReactionToChatMsgAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
@@ -200,9 +191,8 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: delete message":
-			var data deleteChatMsgAcd
 
-			helpers.ToStruct(body.Data, &data)
+			data := helpers.MapToStruct[deleteChatMsgAcd](body.Data)
 
 			if err := data.Validate(); err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))

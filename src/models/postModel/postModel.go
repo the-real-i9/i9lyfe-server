@@ -108,7 +108,7 @@ func Get(ctx context.Context, clientUsername, postId string) (post UITypes.Post,
 	post, err = modelHelpers.BuildPostUIFromCache(ctx, postId, clientUsername)
 	if err != nil {
 		helpers.LogError(err)
-		return UITypes.Post{}, err
+		return UITypes.Post{}, fiber.ErrInternalServerError
 	}
 
 	return post, nil

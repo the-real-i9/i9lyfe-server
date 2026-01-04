@@ -3,14 +3,8 @@ package modelHelpers
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
-	"os"
-	"strings"
-	"time"
-
-	"cloud.google.com/go/storage"
 )
 
 func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
@@ -61,34 +55,6 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 		return nilVal, err
 	}
 
-	var mediaUrls []string
-
-	for _, blurRealMcn := range postUI.MediaCloudNames {
-		var blurRealMediaUrl string
-
-		for mcn := range strings.SplitSeq(blurRealMcn, " | ") {
-			url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{
-				Scheme:  storage.SigningSchemeV4,
-				Method:  "GET",
-				Expires: time.Now().Add((6 * 24) * time.Hour),
-			})
-			if err != nil {
-				return nilVal, err
-			}
-
-			if blurRealMediaUrl != "" {
-				blurRealMediaUrl += " | "
-			}
-
-			blurRealMediaUrl += url
-		}
-
-		mediaUrls = append(mediaUrls, blurRealMediaUrl)
-	}
-
-	postUI.MediaUrls = mediaUrls
-	postUI.MediaCloudNames = nil
-
 	return postUI, nil
 }
 
@@ -119,17 +85,6 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 	if err != nil {
 		return nilVal, err
 	}
-
-	commentUI.AttachmentUrl, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(commentUI.AttachmentCloudName, &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add((6 * 24) * time.Hour),
-	})
-	if err != nil {
-		return nilVal, err
-	}
-
-	commentUI.AttachmentCloudName = ""
 
 	return commentUI, nil
 }

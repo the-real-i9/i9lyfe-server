@@ -1,5 +1,11 @@
 package UITypes
 
+type ClientUser struct {
+	Username      string `json:"username"`
+	Name          string `json:"name"`
+	ProfilePicUrl string `json:"profile_pic_url"`
+}
+
 type NotifUser struct {
 	Username      string `json:"username"`
 	Name          string `json:"name"`

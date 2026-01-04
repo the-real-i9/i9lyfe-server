@@ -17,8 +17,8 @@ import (
 )
 
 type rtActionBody struct {
-	Action string `json:"action"`
-	Data   any    `json:"data"`
+	Action string         `json:"action"`
+	Data   map[string]any `json:"data"`
 }
 
 func (b rtActionBody) Validate() error {

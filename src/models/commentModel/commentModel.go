@@ -21,7 +21,7 @@ func Get(ctx context.Context, clientUsername, commentId string) (comment UITypes
 	comment, err = modelHelpers.BuildCommentUIFromCache(ctx, commentId, clientUsername)
 	if err != nil {
 		helpers.LogError(err)
-		return UITypes.Comment{}, err
+		return UITypes.Comment{}, fiber.ErrInternalServerError
 	}
 
 	return comment, nil

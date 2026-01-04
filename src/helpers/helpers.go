@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"runtime"
 
 	"github.com/goccy/go-json"
@@ -29,46 +28,30 @@ func LogError(err error) {
 	log.Printf("[ERROR] %s:%d %s(): %v\n", file, line, fn, err)
 }
 
-func ToStruct(val any, dest any) {
-	valType := reflect.TypeOf(val)
-
-	if valType.Kind() != reflect.Map && !(valType.Kind() == reflect.Slice && valType.Elem().Kind() == reflect.Map) {
-		panic("expected 'val' to be a map or slice of maps")
-	}
-
-	destType := reflect.TypeOf(dest).Elem()
-
-	if destType.Kind() != reflect.Struct && !(destType.Kind() == reflect.Slice && destType.Elem().Kind() == reflect.Struct) {
-		panic("expected 'dest' to be a pointer to struct or slice of structs")
-	}
-
+func MapToStruct[T any](val map[string]any) (dest T) {
 	bt, err := json.Marshal(val)
 	if err != nil {
 		LogError(err)
 	}
 
-	if err := json.Unmarshal(bt, dest); err != nil {
+	if err := json.Unmarshal(bt, &dest); err != nil {
 		LogError(err)
 	}
+
+	return
 }
 
 func StructToMap(val any) (dest map[string]any) {
-	if reflect.TypeOf(val).Kind() != reflect.Struct {
-		panic("expected 'val' to be a struct")
-	}
-
-	var mp map[string]any
-
 	bt, err := json.Marshal(val)
 	if err != nil {
 		LogError(err)
 	}
 
-	if err := json.Unmarshal(bt, &mp); err != nil {
+	if err := json.Unmarshal(bt, &dest); err != nil {
 		LogError(err)
 	}
 
-	return mp
+	return
 }
 
 func WSErrReply(err error, toAction string) map[string]any {
@@ -122,6 +105,7 @@ func ToJson(data any) string {
 	if err != nil {
 		LogError(err)
 	}
+
 	return string(d)
 }
 

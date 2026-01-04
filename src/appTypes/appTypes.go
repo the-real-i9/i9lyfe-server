@@ -6,7 +6,6 @@ import (
 
 type ClientUser struct {
 	Username string `json:"username"`
-	Name     string `json:"name"`
 }
 
 func (c ClientUser) MarshalBinary() ([]byte, error) {

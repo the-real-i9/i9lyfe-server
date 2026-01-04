@@ -3,6 +3,8 @@ package userControllers
 import (
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/services/userService"
 	"time"
 
@@ -48,7 +50,12 @@ func AuthorizePPicUpload(c *fiber.Ctx) error {
 func GetSessionUser(c *fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	return c.JSON(clientUser)
+	user, err := cache.GetUser[UITypes.ClientUser](c.Context(), clientUser.Username)
+	if err != nil {
+		return fiber.ErrInternalServerError
+	}
+
+	return c.JSON(user)
 }
 
 // Signout session user
