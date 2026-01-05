@@ -93,7 +93,7 @@ type MsgProps struct {
 
 type MsgContent struct {
 	Type     string `json:"type"`
-	MsgProps `json:"props"`
+	*MsgProps `json:"props"`
 }
 
 func (m MsgContent) Validate() error {
@@ -128,7 +128,7 @@ type sendChatMsgAcd struct {
 	PartnerUsername  string     `json:"toUser"`
 	IsReply          bool       `json:"isReply"`
 	ReplyTargetMsgId string     `json:"replyTargetMsgId"`
-	Msg              MsgContent `json:"msg"`
+	Msg              *MsgContent `json:"msg"`
 	At               int64      `json:"at"`
 }
 

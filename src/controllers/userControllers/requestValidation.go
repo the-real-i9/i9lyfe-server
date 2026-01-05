@@ -71,7 +71,7 @@ func (b authorizePPicUploadBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizePPicUploadBody")
+	return helpers.ValidationError(err, "userControllers_requestValidation.go", "authorizePPicUploadBody")
 }
 
 type changeProfilePictureBody struct {
