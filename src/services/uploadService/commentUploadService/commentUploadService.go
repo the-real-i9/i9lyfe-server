@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"net/http"
 	"os"
 	"time"
 
@@ -18,7 +19,7 @@ type AuthDataT struct {
 	AttachmentCloudName string `json:"attachmentCloudName"`
 }
 
-func Authorize(ctx context.Context, attachmentMIME string, attachmentSize int64) (AuthDataT, error) {
+func Authorize(ctx context.Context, attachmentMIME string) (AuthDataT, error) {
 	var res AuthDataT
 
 	attachmentCloudName := fmt.Sprintf("uploads/comment/%d%d/%s", time.Now().Year(), time.Now().Month(), uuid.NewString())
@@ -27,10 +28,10 @@ func Authorize(ctx context.Context, attachmentMIME string, attachmentSize int64)
 		attachmentCloudName,
 		&storage.SignedURLOptions{
 			Scheme:      storage.SigningSchemeV4,
-			Method:      "PUT",
+			Method:      http.MethodPost,
 			ContentType: attachmentMIME,
 			Expires:     time.Now().Add(15 * time.Minute),
-			Headers:     []string{fmt.Sprintf("x-goog-content-length-range: %d,%[1]d", attachmentSize)},
+			Headers:     []string{"x-goog-resumable:start"},
 		},
 	)
 	if err != nil {

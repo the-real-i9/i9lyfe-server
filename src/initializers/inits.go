@@ -80,7 +80,7 @@ func InitApp() error {
 	}
 
 	if os.Getenv("GO_ENV") == "test" {
-		if err := godotenv.Load(".test.env"); err != nil {
+		if err := godotenv.Load(".env.test"); err != nil {
 			return err
 		}
 	}

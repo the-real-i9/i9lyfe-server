@@ -1,6 +1,7 @@
 package userControllers
 
 import (
+	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
@@ -10,28 +11,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 )
-
-func AuthorizePPicUpload(c *fiber.Ctx) error {
-	ctx := c.Context()
-
-	var body authorizePPicUploadBody
-
-	err := c.BodyParser(&body)
-	if err != nil {
-		return err
-	}
-
-	if err = body.Validate(); err != nil {
-		return err
-	}
-
-	respData, err := userService.AuthorizePPicUpload(ctx, body.PicMIME, body.PicSize)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(respData)
-}
 
 // Get session user
 //
@@ -120,6 +99,28 @@ func EditUserProfile(c *fiber.Ctx) error {
 	respData, app_err := userService.EditUserProfile(ctx, clientUser.Username, body)
 	if app_err != nil {
 		return app_err
+	}
+
+	return c.JSON(respData)
+}
+
+func AuthorizePPicUpload(c *fiber.Ctx) error {
+	ctx := c.Context()
+
+	var body authorizePPicUploadBody
+
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
+	}
+
+	if err = body.Validate(); err != nil {
+		return err
+	}
+
+	respData, err := userService.AuthorizePPicUpload(ctx, body.PicMIME)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -307,11 +308,13 @@ func GetUserProfile(c *fiber.Ctx) error {
 }
 
 func GetUserFollowers(c *fiber.Ctx) error {
-	ctx := c.Context()
+	// ctx := c.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursot"))
+	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
 	if app_err != nil {
 		return app_err
 	}

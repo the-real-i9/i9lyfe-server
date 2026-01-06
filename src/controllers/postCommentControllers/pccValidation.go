@@ -4,43 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"os"
+	"i9lyfe/src/helpers/gcsHelpers"
+	"regexp"
+	"slices"
 	"strings"
 
-	"cloud.google.com/go/storage"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/gofiber/fiber/v2"
 )
-
-type authorizeCommentUploadBody struct {
-	AttachmentMIME string `json:"attachment_mime"`
-	AttachmentSize int64  `json:"attachment_size"`
-}
-
-func (b authorizeCommentUploadBody) Validate() error {
-
-	err := validation.ValidateStruct(&b,
-		validation.Field(&b.AttachmentMIME, validation.Required,
-			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported attachment_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
-		),
-		validation.Field(&b.AttachmentSize,
-			validation.By(func(value any) error {
-				val := value.(int64)
-
-				if val < 1024 || val > 10*1024 {
-					return errors.New("attachment_size out of range; min: 1KiB; max: 10KiB")
-				}
-
-				return nil
-			}),
-		),
-	)
-
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizeCommentUploadBody")
-}
 
 type authorizePostUploadBody struct {
 	PostType   string     `json:"post_type"`
@@ -54,16 +26,33 @@ func (b authorizePostUploadBody) Validate() error {
 			validation.Required,
 			validation.In("photo:portrait", "photo:square", "photo:landscape", "video:portrait", "video:square", "video:landscape", "reel").Error("invalid post type. expected 'photo:(portrait|square|landscape)', 'video:(portrait|square|landscape)', or 'reel'"),
 		),
-		validation.Field(&b.MediaMIME, validation.Required, validation.Length(2, 2).Error("expected array of 2 items.")),
-		validation.Field(&b.MediaMIME[0], validation.Required,
-			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported blur placeholder media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
-		),
-		validation.Field(&b.MediaMIME[1], validation.Required,
-			validation.When(strings.HasPrefix(b.PostType, "photo"),
-				validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported photo media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
-			).Else(
-				validation.In("video/mp4", "video/webm").Error(`unsupported video/reel media_mime; use one of ["video/mp4", "video/webm"]`),
-			),
+
+		validation.Field(&b.MediaMIME, validation.Required, validation.Length(2, 2).Error("expected array of 2 items."),
+			validation.By(func(value any) error {
+				val := value.([2]string)
+
+				const (
+					_             = iota
+					BLUR_MIME int = iota - 1
+					ACTUAL_MIME
+				)
+
+				if !slices.Contains([]string{"image/jpeg", "image/png", "image/webp", "image/avif"}, val[BLUR_MIME]) {
+					return errors.New(`unsupported blur placeholder media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`)
+				}
+
+				if strings.HasPrefix(b.PostType, "photo") {
+					if !slices.Contains([]string{"image/jpeg", "image/png", "image/webp", "image/avif"}, val[ACTUAL_MIME]) {
+						return errors.New(`unsupported photo media_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`)
+					}
+				} else {
+					if !slices.Contains([]string{"video/mp4", "video/webm"}, val[ACTUAL_MIME]) {
+						return errors.New(`unsupported video/reel media_mime; use one of ["video/mp4", "video/webm"]`)
+					}
+				}
+
+				return nil
+			}),
 		),
 		validation.Field(&b.MediaSizes,
 			validation.Required,
@@ -83,8 +72,8 @@ func (b authorizePostUploadBody) Validate() error {
 						ACTUAL_MEDIA
 					)
 
-					if media_size[BLUR_PLACEHOLDER] < 1*1024 || media_size[BLUR_PLACEHOLDER] > 10*1024 {
-						return errors.New("blur placeholder size out of range; min: 1KiB; max: 10KiB")
+					if media_size[BLUR_PLACEHOLDER] < 1*1024 || media_size[BLUR_PLACEHOLDER] > 300*1024 {
+						return errors.New("blur placeholder size out of range; min: 1KiB; max: 300KiB")
 					}
 
 					switch prefix, _, _ := strings.Cut(b.PostType, ":"); prefix {
@@ -94,13 +83,12 @@ func (b authorizePostUploadBody) Validate() error {
 						}
 					case "video":
 						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 15*1024*1024 {
-							return errors.New("video or reel media size out of range; min: 1KiB; max: 10MeB")
-						}
-					case "reel":
-						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 10*1024*1024 {
-							return errors.New("reel media size out of range; min: 1KiB; max: 10MeB")
+							return errors.New("video or reel media size out of range; min: 1KiB; max: 15MeB")
 						}
 					default:
+						if media_size[ACTUAL_MEDIA] < 1*1024 || media_size[ACTUAL_MEDIA] > 15*1024*1024 {
+							return errors.New("reel media size out of range; min: 1KiB; max: 15MeB")
+						}
 					}
 
 					return nil
@@ -109,7 +97,7 @@ func (b authorizePostUploadBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "authorizePostUploadBody")
+	return helpers.ValidationError(err, "pccValidation.go", "authorizePostUploadBody")
 }
 
 type createNewPostBody struct {
@@ -134,15 +122,9 @@ func (b createNewPostBody) Validate(ctx context.Context) error {
 				validation.Length(1, 1).Error("media list out of range for type 'reel'. must contain exactly 1 media item"),
 			),
 			validation.Each(
-				validation.By(func(value any) error {
-					val := value.(string)
-
-					if !(strings.HasPrefix(val, "blur_placeholder:uploads/post/") && strings.Contains(val, " actual:uploads/post/")) {
-						return errors.New("invalid media cloud name")
-					}
-
-					return nil
-				}),
+				validation.Match(regexp.MustCompile(
+					`^blur_placeholder:uploads/post/[\w-:/]+\w actual:uploads/post/[\w-:/]+\w$`,
+				)).Error("invalid media cloud name"),
 			),
 		),
 		validation.Field(&b.Description, validation.Length(0, 300)),
@@ -150,21 +132,42 @@ func (b createNewPostBody) Validate(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "createNewPostBody")
+		return helpers.ValidationError(err, "pccValidation.go", "createNewPostBody")
 	}
 
 	for _, blurPlchActualMcn := range b.MediaCloudNames {
-		var blurPlchMcn string
-		var actualMcn string
+		go func(postType, blurPlchActualMcn string) {
+			ctx := context.Background()
 
-		fmt.Sscanf(blurPlchActualMcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
+			var blurPlchMcn string
+			var actualMcn string
 
-		for _, mcn := range []string{blurPlchMcn, actualMcn} {
-			_, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mcn).Attrs(ctx)
-			if errors.Is(err, storage.ErrObjectNotExist) {
-				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: media (%s) does not exist in cloud", mcn))
+			fmt.Sscanf(blurPlchActualMcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
+
+			if mInfo := gcsHelpers.GetMediaInfo(ctx, blurPlchMcn); mInfo != nil {
+				if mInfo.Size < 1*1024 || mInfo.Size > 300*1024 {
+					gcsHelpers.DeleteCloudMedia(ctx, blurPlchMcn)
+				}
 			}
-		}
+
+			if mInfo := gcsHelpers.GetMediaInfo(ctx, actualMcn); mInfo != nil {
+				switch prefix, _, _ := strings.Cut(postType, ":"); prefix {
+				case "photo":
+					if mInfo.Size < 1*1024 || mInfo.Size > 5*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+					}
+				case "video":
+					if mInfo.Size < 1*1024 || mInfo.Size > 15*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+					}
+				default:
+					if mInfo.Size < 1*1024 || mInfo.Size > 15*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+					}
+				}
+			}
+
+		}(b.Type, blurPlchActualMcn)
 	}
 
 	return nil
@@ -182,7 +185,34 @@ func (b reactToPostBody) Validate() error {
 		validation.Field(&b.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "createNewPostBody")
+	return helpers.ValidationError(err, "pccValidation.go", "createNewPostBody")
+}
+
+type authorizeCommentUploadBody struct {
+	AttachmentMIME string `json:"attachment_mime"`
+	AttachmentSize int64  `json:"attachment_size"`
+}
+
+func (b authorizeCommentUploadBody) Validate() error {
+
+	err := validation.ValidateStruct(&b,
+		validation.Field(&b.AttachmentMIME, validation.Required,
+			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported attachment_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
+		),
+		validation.Field(&b.AttachmentSize,
+			validation.By(func(value any) error {
+				val := value.(int64)
+
+				if val < 1*1024 || val > 500*1024 {
+					return errors.New("attachment_size out of range; min: 1KiB; max: 500KiB")
+				}
+
+				return nil
+			}),
+		),
+	)
+
+	return helpers.ValidationError(err, "pccValidation.go", "authorizeCommentUploadBody")
 }
 
 type commentOnPostBody struct {
@@ -196,19 +226,27 @@ func (b commentOnPostBody) Validate(ctx context.Context) error {
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
 		validation.Field(&b.AttachmentCloudName,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"))),
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"),
+				validation.Match(regexp.MustCompile(`^uploads/comment/[\w-/]+\w$`)).Error("invalid attachment cloud name"),
+			)),
 		validation.Field(&b.At, validation.Required),
 	)
 
 	if err != nil {
-		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnPostBody")
+		return helpers.ValidationError(err, "pccValidation.go", "commentOnPostBody")
 	}
 
 	if b.AttachmentCloudName != "" {
-		_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(b.AttachmentCloudName).Attrs(ctx)
-		if errors.Is(err, storage.ErrObjectNotExist) {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: attachment (%s) does not exist in cloud", b.AttachmentCloudName))
-		}
+		go func(attCn string) {
+			ctx := context.Background()
+
+			if mInfo := gcsHelpers.GetMediaInfo(ctx, attCn); mInfo != nil {
+				if mInfo.Size < 1*1024 || mInfo.Size > 500*1024 {
+					gcsHelpers.DeleteCloudMedia(ctx, attCn)
+				}
+			}
+
+		}(b.AttachmentCloudName)
 	}
 
 	return nil
@@ -226,7 +264,7 @@ func (b reactToCommentBody) Validate() error {
 		validation.Field(&b.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "reactToCommentBody")
+	return helpers.ValidationError(err, "pccValidation.go", "reactToCommentBody")
 }
 
 type commentOnCommentBody struct {
@@ -240,19 +278,27 @@ func (b commentOnCommentBody) Validate(ctx context.Context) error {
 		validation.Field(&b.CommentText,
 			validation.When(b.AttachmentCloudName == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"), validation.Length(0, 300).Error("comment_text length our of range. min:0. max:300"))),
 		validation.Field(&b.AttachmentCloudName,
-			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"))),
+			validation.When(b.CommentText == "", validation.Required.Error("one of 'comment_text', 'attachment_cloud_name' or both must be provided"),
+				validation.Match(regexp.MustCompile(`^uploads/comment/[\w-/]+\w$`)).Error("invalid attachment cloud name"),
+			)),
 		validation.Field(&b.At, validation.Required),
 	)
 
 	if err != nil {
-		return helpers.ValidationError(err, "postCommentControllers_requestValidation.go", "commentOnCommentBody")
+		return helpers.ValidationError(err, "pccValidation.go", "commentOnCommentBody")
 	}
 
 	if b.AttachmentCloudName != "" {
-		_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(b.AttachmentCloudName).Attrs(ctx)
-		if errors.Is(err, storage.ErrObjectNotExist) {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: attachment (%s) does not exist in cloud", b.AttachmentCloudName))
-		}
+		go func(attCn string) {
+			ctx := context.Background()
+
+			if mInfo := gcsHelpers.GetMediaInfo(ctx, attCn); mInfo != nil {
+				if mInfo.Size < 1*1024 || mInfo.Size > 500*1024 {
+					gcsHelpers.DeleteCloudMedia(ctx, attCn)
+				}
+			}
+
+		}(b.AttachmentCloudName)
 	}
 
 	return nil

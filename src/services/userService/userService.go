@@ -12,6 +12,7 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"maps"
+	"net/http"
 	"os"
 	"time"
 
@@ -20,15 +21,33 @@ import (
 	"github.com/google/uuid"
 )
 
+func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {
+	updateKVMap := helpers.StructToMap(updateKVStruct)
+
+	done, err := user.EditProfile(ctx, clientUsername, maps.Clone(updateKVMap))
+	if err != nil {
+		return false, err
+	}
+
+	if done {
+		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
+			Username:    clientUsername,
+			UpdateKVMap: updateKVMap,
+		})
+	}
+
+	return done, nil
+}
+
 type AuthPPicDataT struct {
 	UploadUrl     string `json:"uploadUrl"`
 	PPicCloudName string `json:"profilePicCloudName"`
 }
 
-func AuthorizePPicUpload(ctx context.Context, picMIME string, picSize [3]int64) (AuthPPicDataT, error) {
+func AuthorizePPicUpload(ctx context.Context, picMIME string) (AuthPPicDataT, error) {
 	var res AuthPPicDataT
 
-	for small0_medium1_large2, size := range picSize {
+	for small0_medium1_large2 := range 3 {
 
 		which := [3]string{"small", "medium", "large"}
 
@@ -38,10 +57,10 @@ func AuthorizePPicUpload(ctx context.Context, picMIME string, picSize [3]int64) 
 			pPicCloudName,
 			&storage.SignedURLOptions{
 				Scheme:      storage.SigningSchemeV4,
-				Method:      "PUT",
+				Method:      http.MethodPost,
 				ContentType: picMIME,
 				Expires:     time.Now().Add(15 * time.Minute),
-				Headers:     []string{fmt.Sprintf("x-goog-content-length-range: %d,%[1]d", size)},
+				Headers:     []string{"x-goog-resumable:start"},
 			},
 		)
 		if err != nil {
@@ -71,24 +90,6 @@ func AuthorizePPicUpload(ctx context.Context, picMIME string, picSize [3]int64) 
 	}
 
 	return res, nil
-}
-
-func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {
-	updateKVMap := helpers.StructToMap(updateKVStruct)
-
-	done, err := user.EditProfile(ctx, clientUsername, maps.Clone(updateKVMap))
-	if err != nil {
-		return false, err
-	}
-
-	if done {
-		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
-			Username:    clientUsername,
-			UpdateKVMap: updateKVMap,
-		})
-	}
-
-	return done, nil
 }
 
 func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicCloudName string) (any, error) {

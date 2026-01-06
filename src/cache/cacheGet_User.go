@@ -3,27 +3,10 @@ package cache
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"os"
-	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/redis/go-redis/v9"
 )
-
-func getMediaurl(mcn string) (string, error) {
-	url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add((6 * 24) * time.Hour),
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return url, nil
-}
 
 func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 	userJson, err := rdb().HGet(ctx, "users", username).Result()
@@ -36,36 +19,41 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 
 	ppicCloudName := userMap["profile_pic_cloud_name"].(string)
 
-	var (
-		smallPPicn  string
-		mediumPPicn string
-		largePPicn  string
-	)
+	if ppicCloudName != "{notset}" {
 
-	_, err = fmt.Sscanf(ppicCloudName, "small:%s medium:%s large:%s", &smallPPicn, &mediumPPicn, &largePPicn)
-	if err != nil {
-		return user, err
+		var (
+			smallPPicn  string
+			mediumPPicn string
+			largePPicn  string
+		)
+
+		_, err = fmt.Sscanf(ppicCloudName, "small:%s medium:%s large:%s", &smallPPicn, &mediumPPicn, &largePPicn)
+		if err != nil {
+			helpers.LogError(err)
+			return user, err
+		}
+
+		smallPicUrl, err := getMediaurl(smallPPicn)
+		if err != nil {
+			return user, err
+		}
+
+		mediumPicUrl, err := getMediaurl(mediumPPicn)
+		if err != nil {
+			return user, err
+		}
+
+		largePicUrl, err := getMediaurl(largePPicn)
+		if err != nil {
+			return user, err
+		}
+
+		userMap["profile_pic_url"] = fmt.Sprintf("small:%s medium:%s large:%s", smallPicUrl, mediumPicUrl, largePicUrl)
+	} else {
+		userMap["profile_pic_url"] = "{notset}"
 	}
-
-	smallPicUrl, err := getMediaurl(smallPPicn)
-	if err != nil {
-		return user, err
-	}
-
-	mediumPicUrl, err := getMediaurl(mediumPPicn)
-	if err != nil {
-		return user, err
-	}
-
-	largePicUrl, err := getMediaurl(largePPicn)
-	if err != nil {
-		return user, err
-	}
-
-	userMap["profile_pic_url"] = fmt.Sprintf("small:%s medium:%s large:%s", smallPicUrl, mediumPicUrl, largePicUrl)
 
 	delete(userMap, "profile_pic_cloud_name")
-
 	return helpers.MapToStruct[T](userMap), nil
 }
 

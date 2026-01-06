@@ -415,7 +415,7 @@ CREATE TABLE public.posts (
     reposted_by_user text,
     created_at bigint,
     deleted_at bigint,
-    CONSTRAINT posts_type__check CHECK ((type_ = ANY (ARRAY['photo'::text, 'video'::text, 'reel'::text])))
+    CONSTRAINT posts_type__check CHECK ((type_ = ANY (ARRAY['photo:portrait'::text, 'photo:square'::text, 'photo:landscape'::text, 'video:portrait'::text, 'video:square'::text, 'video:landscape'::text, 'reel'::text])))
 );
 
 

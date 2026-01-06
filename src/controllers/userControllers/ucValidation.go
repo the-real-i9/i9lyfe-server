@@ -4,14 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"os"
-	"strings"
+	"i9lyfe/src/helpers/gcsHelpers"
+	"regexp"
 
-	"cloud.google.com/go/storage"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/gofiber/fiber/v2"
 )
 
 type editProfileBody struct {
@@ -27,7 +24,7 @@ func (b editProfileBody) Validate() error {
 		validation.Field(&b.Bio, validation.Required.When(b.Birthday == 0 && b.Name == "").Error("no field provided. at least one field must be provided"), validation.Length(0, 150).Error("too many characters (max is 150)")),
 	)
 
-	return helpers.ValidationError(err, "userControllers_requestValidation.go", "editProfileBody")
+	return helpers.ValidationError(err, "ucValidation.go", "editProfileBody")
 }
 
 type authorizePPicUploadBody struct {
@@ -54,16 +51,16 @@ func (b authorizePPicUploadBody) Validate() error {
 					LARGE
 				)
 
-				if pic_size[SMALL] < 100*1024 || pic_size[SMALL] > 500*1024 {
-					return errors.New("small pic_size out of range; min: 100KiB; max: 500KiB")
+				if pic_size[SMALL] < 1*1024 || pic_size[SMALL] > 500*1024 {
+					return errors.New("small pic_size out of range; min: 1KiB; max: 500KiB")
 				}
 
-				if pic_size[MEDIUM] < 500*1024 || pic_size[MEDIUM] > 2*1024*1024 {
-					return errors.New("medium pic_size out of range; min: 500KiB; max: 2MeB")
+				if pic_size[MEDIUM] < 1*1024 || pic_size[MEDIUM] > 1*1024*1024 {
+					return errors.New("medium pic_size out of range; min: 1KiB; max: 1MeB")
 				}
 
-				if pic_size[LARGE] < 2*1024*1024 || pic_size[LARGE] > 5*1024*1024 {
-					return errors.New("medium pic_size out of range; min: 2MeB; max: 5MeB")
+				if pic_size[LARGE] < 1*1024 || pic_size[LARGE] > 2*1024*1024 {
+					return errors.New("medium pic_size out of range; min: 1KiB; max: 2MeB")
 				}
 
 				return nil
@@ -71,7 +68,7 @@ func (b authorizePPicUploadBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "userControllers_requestValidation.go", "authorizePPicUploadBody")
+	return helpers.ValidationError(err, "ucValidation.go", "authorizePPicUploadBody")
 }
 
 type changeProfilePictureBody struct {
@@ -80,25 +77,44 @@ type changeProfilePictureBody struct {
 
 func (b changeProfilePictureBody) Validate(ctx context.Context) error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.ProfilePicCloudName, validation.Required, validation.By(func(value any) error {
-			val := value.(string)
-
-			if !(strings.HasPrefix(val, "small:uploads/user/profile_pics/") && strings.Contains(val, " medium:uploads/user/profile_pics/") && strings.Contains(val, " large:uploads/user/profile_pics/")) {
-				return errors.New("invalid profile pic cloud name")
-			}
-
-			return nil
-		})),
+		validation.Field(&b.ProfilePicCloudName, validation.Required, validation.Match(regexp.MustCompile(
+			`^small:uploads/user/profile_pics/[\w-/]+\w medium:uploads/user/profile_pics/[\w-/]+\w large:uploads/user/profile_pics/[\w-/]+\w$`,
+		)).Error("invalid profile pic cloud name")),
 	)
 
 	if err != nil {
-		return helpers.ValidationError(err, "userControllers_requestValidation.go", "changeProfilePictureBody")
+		return helpers.ValidationError(err, "ucValidation.go", "changeProfilePictureBody")
 	}
 
-	_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(b.ProfilePicCloudName).Attrs(ctx)
-	if errors.Is(err, storage.ErrObjectNotExist) {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: attachment (%s) does not exist in cloud", b.ProfilePicCloudName))
-	}
+	go func(ppicCn string) {
+		ctx := context.Background()
+
+		var (
+			smallPPicCn  string
+			mediumPPicCn string
+			largePPicCn  string
+		)
+
+		fmt.Sscanf(ppicCn, "small:%s medium:%s large:%s", &smallPPicCn, &mediumPPicCn, &largePPicCn)
+
+		if mInfo := gcsHelpers.GetMediaInfo(ctx, smallPPicCn); mInfo != nil {
+			if mInfo.Size < 1*1024 || mInfo.Size > 500*1024 {
+				gcsHelpers.DeleteCloudMedia(ctx, smallPPicCn)
+			}
+		}
+
+		if mInfo := gcsHelpers.GetMediaInfo(ctx, mediumPPicCn); mInfo != nil {
+			if mInfo.Size < 1*1024 || mInfo.Size > 1*1024*1024 {
+				gcsHelpers.DeleteCloudMedia(ctx, mediumPPicCn)
+			}
+		}
+
+		if mInfo := gcsHelpers.GetMediaInfo(ctx, largePPicCn); mInfo != nil {
+			if mInfo.Size < 1*1024 || mInfo.Size > 2*1024*1024 {
+				gcsHelpers.DeleteCloudMedia(ctx, largePPicCn)
+			}
+		}
+	}(b.ProfilePicCloudName)
 
 	return nil
 }

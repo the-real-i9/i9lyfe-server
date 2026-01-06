@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"log"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +10,7 @@ import (
 func ValidationError(err error, filename, structname string) error {
 	if err != nil {
 		if e, ok := err.(validation.InternalError); ok {
-			log.Printf("%s: %s: %v", filename, structname, e.InternalError())
+			LogError(fmt.Errorf("%s: %s: %v", filename, structname, e.InternalError()))
 			return fiber.ErrInternalServerError
 		}
 

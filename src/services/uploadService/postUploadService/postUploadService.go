@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"net/http"
 	"os"
 	"time"
 
@@ -18,14 +19,14 @@ type AuthDataT struct {
 	MediaCloudName string `json:"mediaCloudName"`
 }
 
-func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaSizes [][2]int64) ([]AuthDataT, error) {
+func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthDataT, error) {
 	var res []AuthDataT
 
-	for i, blurPlchSize_actualSize := range mediaSizes {
+	for i := range mediaCount {
 		var blurPlchActualUrl string
 		var blurPlchActualMediaCloudName string
 
-		for blurPlch0_actual1, size := range blurPlchSize_actualSize {
+		for blurPlch0_actual1, mime := range mediaMIME {
 
 			which := [2]string{"blur_placeholder", "actual"}
 
@@ -35,10 +36,10 @@ func Authorize(ctx context.Context, postType string, mediaMIME [2]string, mediaS
 				mediaCloudName,
 				&storage.SignedURLOptions{
 					Scheme:      storage.SigningSchemeV4,
-					Method:      "PUT",
-					ContentType: mediaMIME[blurPlch0_actual1],
+					Method:      http.MethodPost,
+					ContentType: mime,
 					Expires:     time.Now().Add(15 * time.Minute),
-					Headers:     []string{fmt.Sprintf("x-goog-content-length-range: %d,%[1]d", size)},
+					Headers:     []string{"x-goog-resumable:start"},
 				},
 			)
 			if err != nil {

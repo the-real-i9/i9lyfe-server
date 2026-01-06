@@ -17,11 +17,13 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 
 	postMap := helpers.FromJson[map[string]any](postJson)
 
-	mediaCloudNames := postMap["media_cloud_names"].([]string)
+	mediaCloudNames := postMap["media_cloud_names"].([]any)
 
 	var replacement []string
 
 	for _, mcn := range mediaCloudNames {
+		mcn := mcn.(string)
+
 		var (
 			blurPlchMcn string
 			actualMcn   string
@@ -29,6 +31,7 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 
 		_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
 		if err != nil {
+			helpers.LogError(err)
 			return post, err
 		}
 

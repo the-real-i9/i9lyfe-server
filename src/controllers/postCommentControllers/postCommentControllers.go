@@ -23,7 +23,7 @@ func AuthorizePostUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, body.MediaSizes)
+	respData, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, len(body.MediaSizes))
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func AuthorizeCommentUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := commentUploadService.Authorize(ctx, body.AttachmentMIME, body.AttachmentSize)
+	respData, err := commentUploadService.Authorize(ctx, body.AttachmentMIME)
 	if err != nil {
 		return err
 	}

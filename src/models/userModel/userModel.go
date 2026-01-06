@@ -309,7 +309,6 @@ func GetFollowers(ctx context.Context, clientUsername, targetUsername string, li
 
 	followers, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followerMembers, clientUsername)
 	if err != nil {
-		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
@@ -329,7 +328,6 @@ func GetFollowings(ctx context.Context, clientUsername, targetUsername string, l
 
 	followings, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followingMembers, clientUsername)
 	if err != nil {
-		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 

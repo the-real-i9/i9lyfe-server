@@ -2,18 +2,14 @@ package realtimeController
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"os"
+	"i9lyfe/src/helpers/gcsHelpers"
+	"regexp"
 	"slices"
-	"strings"
 
-	"cloud.google.com/go/storage"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/gofiber/fiber/v2"
 )
 
 type rtActionBody struct {
@@ -36,7 +32,7 @@ func (b rtActionBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "rtActionBody")
+	return helpers.ValidationError(err, "rcValidation.go", "rtActionBody")
 }
 
 type getChatHistoryAcd struct {
@@ -50,7 +46,7 @@ func (d getChatHistoryAcd) Validate() error {
 		validation.Field(&d.PartnerUsername, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "getChatHistoryAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "getChatHistoryAcd")
 }
 
 type subToUserPresenceAcd struct {
@@ -62,7 +58,7 @@ func (vb subToUserPresenceAcd) Validate() error {
 		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "subToUserPresenceAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "subToUserPresenceAcd")
 }
 
 type unsubFromUserPresenceAcd struct {
@@ -74,7 +70,7 @@ func (vb unsubFromUserPresenceAcd) Validate() error {
 		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "unsubFromUserPresenceAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "unsubFromUserPresenceAcd")
 }
 
 type MsgProps struct {
@@ -92,7 +88,7 @@ type MsgProps struct {
 }
 
 type MsgContent struct {
-	Type     string `json:"type"`
+	Type      string `json:"type"`
 	*MsgProps `json:"props"`
 }
 
@@ -105,15 +101,9 @@ func (m MsgContent) Validate() error {
 		validation.Field(&m.MediaCloudName,
 			validation.When(m.Type == "text", validation.Nil.Error("invalid property for the specified type")).Else(
 				validation.Required,
-				validation.By(func(value any) error {
-					val := value.(string)
-
-					if !(strings.HasPrefix(val, "blur_placeholder:uploads/chat/") && strings.Contains(val, " actual:uploads/chat/")) {
-						return errors.New("invalid media cloud name")
-					}
-
-					return nil
-				}),
+				validation.Match(regexp.MustCompile(
+					`^blur_placeholder:uploads/chat/[\w-/]+\w actual:uploads/chat/[\w-/]+\w$`,
+				)).Error("invalid media cloud name"),
 			),
 		),
 		validation.Field(&m.MsgProps, validation.Required),
@@ -125,11 +115,11 @@ func (m MsgContent) Validate() error {
 }
 
 type sendChatMsgAcd struct {
-	PartnerUsername  string     `json:"toUser"`
-	IsReply          bool       `json:"isReply"`
-	ReplyTargetMsgId string     `json:"replyTargetMsgId"`
+	PartnerUsername  string      `json:"toUser"`
+	IsReply          bool        `json:"isReply"`
+	ReplyTargetMsgId string      `json:"replyTargetMsgId"`
 	Msg              *MsgContent `json:"msg"`
-	At               int64      `json:"at"`
+	At               int64       `json:"at"`
 }
 
 func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
@@ -141,14 +131,57 @@ func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return helpers.ValidationError(err, "realtimeController_validation.go", "sendChatMsgAcd")
+		return helpers.ValidationError(err, "rcValidation.go", "sendChatMsgAcd")
 	}
 
+	/* validate and (if needed) clean bad uploaded media */
 	if mediaCloudName := *vb.Msg.MediaCloudName; mediaCloudName != "" {
-		_, err = appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mediaCloudName).Attrs(ctx)
-		if errors.Is(err, storage.ErrObjectNotExist) {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("upload error: media (%s) does not exist in cloud", mediaCloudName))
-		}
+		go func(msgType, mediaCloudName string) {
+
+			ctx := context.Background()
+
+			switch msgType {
+			case "photo", "video":
+				var (
+					mcnBlur   string
+					mcnActual string
+				)
+
+				fmt.Sscanf(mediaCloudName, "blur_placeholder:%s actual:%s", &mcnBlur, &mcnActual)
+
+				if mInfo := gcsHelpers.GetMediaInfo(ctx, mcnBlur); mInfo != nil {
+					if mInfo.Size < 1*1024 || mInfo.Size > 10*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mcnBlur)
+					}
+				}
+
+				if mInfo := gcsHelpers.GetMediaInfo(ctx, mcnActual); mInfo != nil {
+					if msgType == "photo" && mInfo.Size < 1*1024 || mInfo.Size > 10*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mcnActual)
+					} else if mInfo.Size < 1*1024 || mInfo.Size > 40*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mcnActual)
+					}
+				}
+			case "voice":
+				if mInfo := gcsHelpers.GetMediaInfo(ctx, mediaCloudName); mInfo != nil {
+					if mInfo.Size < 500 || mInfo.Size > 10*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mediaCloudName)
+					}
+				}
+			case "audio":
+				if mInfo := gcsHelpers.GetMediaInfo(ctx, mediaCloudName); mInfo != nil {
+					if mInfo.Size < 500 || mInfo.Size > 20*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mediaCloudName)
+					}
+				}
+			default:
+				if mInfo := gcsHelpers.GetMediaInfo(ctx, mediaCloudName); mInfo != nil {
+					if mInfo.Size < 500 || mInfo.Size > 50*1024*1024 {
+						gcsHelpers.DeleteCloudMedia(ctx, mediaCloudName)
+					}
+				}
+			}
+		}(vb.Msg.Type, mediaCloudName)
 	}
 
 	return nil
@@ -167,7 +200,7 @@ func (d ackChatMsgDeliveredAcd) Validate() error {
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "ackChatMsgDeliveredAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "ackChatMsgDeliveredAcd")
 }
 
 type ackChatMsgReadAcd struct {
@@ -183,7 +216,7 @@ func (d ackChatMsgReadAcd) Validate() error {
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "ackChatMsgReadAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "ackChatMsgReadAcd")
 }
 
 type reactToChatMsgAcd struct {
@@ -201,7 +234,7 @@ func (d reactToChatMsgAcd) Validate() error {
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "reactToChatMsgAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "reactToChatMsgAcd")
 }
 
 type removeReactionToChatMsgAcd struct {
@@ -217,7 +250,7 @@ func (d removeReactionToChatMsgAcd) Validate() error {
 		validation.Field(&d.At, validation.Required),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "removeReactionToChatMsgAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "removeReactionToChatMsgAcd")
 }
 
 type deleteChatMsgAcd struct {
@@ -233,5 +266,5 @@ func (d deleteChatMsgAcd) Validate() error {
 		validation.Field(&d.DeleteFor, validation.Required, validation.In("me", "everyone").Error("expected value: 'me' or 'everyone'. but found "+d.DeleteFor)),
 	)
 
-	return helpers.ValidationError(err, "realtimeController_validation.go", "deleteChatMsgAcd")
+	return helpers.ValidationError(err, "rcValidation.go", "deleteChatMsgAcd")
 }
