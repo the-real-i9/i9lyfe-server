@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"net/http"
@@ -303,7 +302,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 				require.NoError(err)
 
 				for _, smlPPicCn := range varPPicCloudName {
-					appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(smlPPicCn).Delete(context.Background())
+					err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(smlPPicCn).Delete(t.Context())
+					require.NoError(err)
 				}
 			}(profilePicCloudName)
 
@@ -751,7 +751,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 					require.NoError(err)
 
 					for _, baMcn := range varMediaCloudName {
-						appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(context.Background())
+						err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+						require.NoError(err)
 					}
 				}(mediaCloudNames[uui])
 			}
