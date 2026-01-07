@@ -150,7 +150,7 @@ func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
 				fmt.Sscanf(mediaCloudName, "blur_placeholder:%s actual:%s", &mcnBlur, &mcnActual)
 
 				if mInfo := gcsHelpers.GetMediaInfo(ctx, mcnBlur); mInfo != nil {
-					if mInfo.Size < 1*1024 || mInfo.Size > 10*1024 {
+					if mInfo.Size < 1*1024 || mInfo.Size > 100*1024 {
 						gcsHelpers.DeleteCloudMedia(ctx, mcnBlur)
 					}
 				}
