@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestUserPersonalOperationsStory(t *testing.T) {
+func TestUserPersonalOperationsStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)
 
