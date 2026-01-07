@@ -567,6 +567,7 @@ func TestUserChatStory(t *testing.T) {
 	}
 
 	{
+		<-(time.NewTimer(200 * time.Millisecond).C)
 		t.Log("Action: user1 opens his chat history with user2")
 
 		err := user1.WSConn.WriteJSON(map[string]any{
