@@ -129,8 +129,8 @@ func (b authorizeVisualUploadBody) Validate() error {
 					ACTUAL_MEDIA
 				)
 
-				if media_size[BLUR_PLACEHOLDER] < 1*1024 || media_size[BLUR_PLACEHOLDER] > 10*1024 {
-					return errors.New("blur placeholder media_size out of range; min: 1KiB; max: 10KiB")
+				if media_size[BLUR_PLACEHOLDER] < 1*1024 || media_size[BLUR_PLACEHOLDER] > 100*1024 {
+					return errors.New("blur placeholder media_size out of range; min: 1KiB; max: 100KiB")
 				}
 
 				switch b.MsgType {

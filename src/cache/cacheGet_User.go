@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/gcsHelpers"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -33,17 +34,17 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 			return user, err
 		}
 
-		smallPicUrl, err := getMediaurl(smallPPicn)
+		smallPicUrl, err := gcsHelpers.GetMediaurl(smallPPicn)
 		if err != nil {
 			return user, err
 		}
 
-		mediumPicUrl, err := getMediaurl(mediumPPicn)
+		mediumPicUrl, err := gcsHelpers.GetMediaurl(mediumPPicn)
 		if err != nil {
 			return user, err
 		}
 
-		largePicUrl, err := getMediaurl(largePPicn)
+		largePicUrl, err := gcsHelpers.GetMediaurl(largePPicn)
 		if err != nil {
 			return user, err
 		}

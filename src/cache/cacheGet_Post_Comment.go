@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/gcsHelpers"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -35,12 +36,12 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 			return post, err
 		}
 
-		blurPlchUrl, err := getMediaurl(blurPlchMcn)
+		blurPlchUrl, err := gcsHelpers.GetMediaurl(blurPlchMcn)
 		if err != nil {
 			return post, err
 		}
 
-		actualUrl, err := getMediaurl(actualMcn)
+		actualUrl, err := gcsHelpers.GetMediaurl(actualMcn)
 		if err != nil {
 			return post, err
 		}
@@ -69,7 +70,7 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 	var attachmentUrl string
 
 	if attachmentCloudName != "" {
-		attachmentUrl, err = getMediaurl(attachmentCloudName)
+		attachmentUrl, err = gcsHelpers.GetMediaurl(attachmentCloudName)
 		if err != nil {
 			return comment, err
 		}

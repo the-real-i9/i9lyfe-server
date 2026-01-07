@@ -6,9 +6,24 @@ import (
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
 )
+
+func GetMediaurl(mcn string) (string, error) {
+	url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add((6 * 24) * time.Hour),
+	})
+	if err != nil {
+		helpers.LogError(err)
+		return "", err
+	}
+
+	return url, nil
+}
 
 func GetMediaInfo(ctx context.Context, mcn string) *storage.ObjectAttrs {
 	mInfo, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(mcn).Attrs(ctx)

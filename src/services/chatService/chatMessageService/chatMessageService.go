@@ -2,13 +2,16 @@ package chatMessageService
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/gcsHelpers"
 	chatMessage "i9lyfe/src/models/chatModel/chatMessageModel"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
+	"slices"
 	"time"
 )
 
@@ -32,6 +35,50 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 
 	if newMessage.Id != "" {
 		go func(msgData chatMessage.NewMessageT) {
+			content := msgData.Content
+			contentProps := content["props"].(map[string]any)
+
+			if content["type"].(string) != "text" {
+				mediaCloudName := contentProps["media_cloud_name"].(string)
+
+				if slices.Contains([]string{"photo", "video"}, content["type"].(string)) {
+					var (
+						blurPlchMcn string
+						actualMcn   string
+					)
+
+					_, err = fmt.Sscanf(mediaCloudName, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
+					if err != nil {
+						helpers.LogError(err)
+						return
+					}
+
+					blurPlchUrl, err := gcsHelpers.GetMediaurl(blurPlchMcn)
+					if err != nil {
+						helpers.LogError(err)
+						return
+					}
+
+					actualUrl, err := gcsHelpers.GetMediaurl(actualMcn)
+					if err != nil {
+						helpers.LogError(err)
+						return
+					}
+
+					contentProps["media_url"] = fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl)
+				} else {
+					mediaUrl, err := gcsHelpers.GetMediaurl(mediaCloudName)
+					if err != nil {
+						helpers.LogError(err)
+						return
+					}
+
+					contentProps["media_url"] = mediaUrl
+				}
+
+				delete(contentProps, "media_cloud_name")
+			}
+
 			realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 				Event: "chat: new message",
 				Data:  msgData,

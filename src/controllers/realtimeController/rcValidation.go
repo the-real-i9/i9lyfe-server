@@ -88,8 +88,8 @@ type MsgProps struct {
 }
 
 type MsgContent struct {
-	Type      string `json:"type"`
-	*MsgProps `json:"props"`
+	Type     string `json:"type"`
+	MsgProps `json:"props"`
 }
 
 func (m MsgContent) Validate() error {
@@ -115,11 +115,11 @@ func (m MsgContent) Validate() error {
 }
 
 type sendChatMsgAcd struct {
-	PartnerUsername  string      `json:"toUser"`
-	IsReply          bool        `json:"isReply"`
-	ReplyTargetMsgId string      `json:"replyTargetMsgId"`
-	Msg              *MsgContent `json:"msg"`
-	At               int64       `json:"at"`
+	PartnerUsername  string     `json:"toUser"`
+	IsReply          bool       `json:"isReply"`
+	ReplyTargetMsgId string     `json:"replyTargetMsgId"`
+	Msg              MsgContent `json:"msg"`
+	At               int64      `json:"at"`
 }
 
 func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
@@ -135,7 +135,7 @@ func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
 	}
 
 	/* validate and (if needed) clean bad uploaded media */
-	if mediaCloudName := *vb.Msg.MediaCloudName; mediaCloudName != "" {
+	if mediaCloudName := vb.Msg.MediaCloudName; mediaCloudName != nil {
 		go func(msgType, mediaCloudName string) {
 
 			ctx := context.Background()
@@ -181,7 +181,7 @@ func (vb sendChatMsgAcd) Validate(ctx context.Context) error {
 					}
 				}
 			}
-		}(vb.Msg.Type, mediaCloudName)
+		}(vb.Msg.Type, *mediaCloudName)
 	}
 
 	return nil

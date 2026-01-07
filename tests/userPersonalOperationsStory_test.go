@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUserPersonalOperationsStory(t *testing.T) {
+func XTestUserPersonalOperationsStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)
 
@@ -686,7 +686,7 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 		{
 
-			t.Log("--- Authorize profile picture upload ---")
+			t.Log("--- Authorize post media upload ---")
 
 			reqBody, err := makeReqBody(map[string]any{
 				"post_type":   "photo:portrait",

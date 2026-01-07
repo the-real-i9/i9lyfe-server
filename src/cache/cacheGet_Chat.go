@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/gcsHelpers"
 	"slices"
 
 	"github.com/redis/go-redis/v9"
@@ -58,26 +59,19 @@ func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err e
 					return CHE, err
 				}
 
-				blurPlchUrl, err := getMediaurl(blurPlchMcn)
+				blurPlchUrl, err := gcsHelpers.GetMediaurl(blurPlchMcn)
 				if err != nil {
 					return CHE, err
 				}
 
-				actualUrl, err := getMediaurl(actualMcn)
+				actualUrl, err := gcsHelpers.GetMediaurl(actualMcn)
 				if err != nil {
 					return CHE, err
 				}
 
 				contentProps["media_url"] = fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl)
 			} else {
-				var mcn string
-
-				_, err = fmt.Sscanf(mediaCloudName, "%s", &mcn)
-				if err != nil {
-					return CHE, err
-				}
-
-				mediaUrl, err := getMediaurl(mcn)
+				mediaUrl, err := gcsHelpers.GetMediaurl(mediaCloudName)
 				if err != nil {
 					return CHE, err
 				}

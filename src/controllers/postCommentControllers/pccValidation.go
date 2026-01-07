@@ -197,7 +197,7 @@ func (b authorizeCommentUploadBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.AttachmentMIME, validation.Required,
-			validation.In("image/jpeg", "image/png", "image/webp", "image/avif").Error(`unsupported attachment_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif"]`),
+			validation.In("image/jpeg", "image/png", "image/webp", "image/avif", "image/gif").Error(`unsupported attachment_mime; use one of ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"]`),
 		),
 		validation.Field(&b.AttachmentSize,
 			validation.By(func(value any) error {
