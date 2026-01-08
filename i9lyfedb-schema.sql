@@ -29,7 +29,7 @@ CREATE TYPE public.message_struct AS (
 	content_ json,
 	delivery_status text,
 	created_at bigint,
-	sender json,
+	sender text,
 	reply_target_msg json,
 	ffu boolean,
 	ftu boolean

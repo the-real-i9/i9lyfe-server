@@ -104,7 +104,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						cocNotif["unread"] = true
-						cocNotif["details"].(map[string]any)["commenter_user"] = msg.CommenterUser
+						cocNotif["details"].(map[string]any)["commenter_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
 
 						realtimeService.SendEventMsg(msg.ParentCommentOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
