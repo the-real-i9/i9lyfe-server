@@ -192,7 +192,7 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.FollowUser(ctx, clientUser, c.Params("username"), time.Now().UnixMilli())
+	respData, app_err := userService.FollowUser(ctx, clientUser.Username, c.Params("username"), time.Now().UnixMilli())
 	if app_err != nil {
 		return app_err
 	}

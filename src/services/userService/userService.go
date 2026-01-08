@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
@@ -108,19 +107,19 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicClo
 	return done, nil
 }
 
-func FollowUser(ctx context.Context, clientUser appTypes.ClientUser, targetUsername string, at int64) (any, error) {
-	if clientUser.Username == targetUsername {
+func FollowUser(ctx context.Context, clientUsername, targetUsername string, at int64) (any, error) {
+	if clientUsername == targetUsername {
 		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	done, err := user.Follow(ctx, clientUser.Username, targetUsername, at)
+	done, err := user.Follow(ctx, clientUsername, targetUsername, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if done {
 		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
-			FollowerUser:  clientUser,
+			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
 			At:            at,
 		})
@@ -230,6 +229,12 @@ func GoOnline(ctx context.Context, clientUsername string) {
 	done := user.ChangePresence(ctx, clientUsername, "online", 0)
 
 	if done {
+		go eventStreamService.QueueUserPresenceChangeEvent(eventTypes.UserPresenceChangeEvent{
+			Username: clientUsername,
+			Presence: "online",
+			LastSeen: 0,
+		})
+
 		realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
 			"user":     clientUsername,
 			"presence": "online",
@@ -243,6 +248,12 @@ func GoOffline(ctx context.Context, clientUsername string) {
 	done := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
 
 	if done {
+		go eventStreamService.QueueUserPresenceChangeEvent(eventTypes.UserPresenceChangeEvent{
+			Username: clientUsername,
+			Presence: "offline",
+			LastSeen: lastSeen,
+		})
+
 		realtimeService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
 			"user":      clientUsername,
 			"presence":  "offline",

@@ -60,7 +60,7 @@ func (b authorizePPicUploadBody) Validate() error {
 				}
 
 				if pic_size[LARGE] < 1*1024 || pic_size[LARGE] > 2*1024*1024 {
-					return errors.New("medium pic_size out of range; min: 1KiB; max: 2MeB")
+					return errors.New("large pic_size out of range; min: 1KiB; max: 2MeB")
 				}
 
 				return nil

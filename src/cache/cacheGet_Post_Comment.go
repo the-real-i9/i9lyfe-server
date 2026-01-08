@@ -18,40 +18,9 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 
 	postMap := helpers.FromJson[map[string]any](postJson)
 
-	mediaCloudNames := postMap["media_cloud_names"].([]any)
-
-	var replacement []string
-
-	for _, mcn := range mediaCloudNames {
-		mcn := mcn.(string)
-
-		var (
-			blurPlchMcn string
-			actualMcn   string
-		)
-
-		_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
-		if err != nil {
-			helpers.LogError(err)
-			return post, err
-		}
-
-		blurPlchUrl, err := gcsHelpers.GetMediaurl(blurPlchMcn)
-		if err != nil {
-			return post, err
-		}
-
-		actualUrl, err := gcsHelpers.GetMediaurl(actualMcn)
-		if err != nil {
-			return post, err
-		}
-
-		replacement = append(replacement, fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl))
+	if err := gcsHelpers.PostMediaCloudNamesToUrl(postMap); err != nil {
+		return post, err
 	}
-
-	postMap["media_urls"] = replacement
-
-	delete(postMap, "media_cloud_names")
 
 	return helpers.MapToStruct[T](postMap), nil
 }
@@ -65,20 +34,9 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 
 	commentMap := helpers.FromJson[map[string]any](commentJson)
 
-	attachmentCloudName := commentMap["attachment_cloud_name"].(string)
-
-	var attachmentUrl string
-
-	if attachmentCloudName != "" {
-		attachmentUrl, err = gcsHelpers.GetMediaurl(attachmentCloudName)
-		if err != nil {
-			return comment, err
-		}
+	if err := gcsHelpers.CommentAttachCloudNameToUrl(commentMap); err != nil {
+		return comment, err
 	}
-
-	commentMap["attachment_url"] = attachmentUrl
-
-	delete(commentMap, "attachment_cloud_name")
 
 	return helpers.MapToStruct[T](commentMap), nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -52,7 +53,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.CommentReactionEvent
 
-				msg.ReactorUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["reactorUser"].(string))
+				msg.ReactorUser = stmsg.Values["reactorUser"].(string)
 				msg.CommentId = stmsg.Values["commentId"].(string)
 				msg.CommentOwner = stmsg.Values["commentOwner"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
@@ -79,18 +80,18 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], msg.ReactorUser.Username, msg.Emoji)
+				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], msg.ReactorUser, msg.Emoji)
 
-				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]string{msg.ReactorUser.Username, stmsgIds[i]})
+				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
 
-				if msg.CommentOwner == msg.ReactorUser.Username {
+				if msg.CommentOwner == msg.ReactorUser {
 					continue
 				}
 
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_comment_%s", msg.ReactorUser.Username, msg.CommentId)
+				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_comment_%s", msg.ReactorUser, msg.CommentId)
 				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_comment", msg.At, map[string]any{
 					"to_comment_id": msg.CommentId,
-					"reactor_user":  msg.ReactorUser.Username,
+					"reactor_user":  msg.ReactorUser,
 					"emoji":         msg.Emoji,
 				})
 
@@ -101,7 +102,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notif["unread"] = true
-					notif["details"].(map[string]any)["reactor_user"] = msg.ReactorUser
+					notif["details"].(map[string]any)["reactor_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.ReactorUser)
 
 					realtimeService.SendEventMsg(msg.CommentOwner, appTypes.ServerEventMsg{
 						Event: "new notification",

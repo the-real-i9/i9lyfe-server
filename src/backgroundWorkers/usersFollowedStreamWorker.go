@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -52,7 +53,7 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.UserFollowEvent
 
-				msg.FollowerUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["followerUser"].(string))
+				msg.FollowerUser = stmsg.Values["followerUser"].(string)
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
 
@@ -73,13 +74,13 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for i, msg := range msgs {
 
-				userFollowings[msg.FollowerUser.Username] = append(userFollowings[msg.FollowerUser.Username], [2]string{msg.FollowingUser, stmsgIds[i]})
+				userFollowings[msg.FollowerUser] = append(userFollowings[msg.FollowerUser], [2]string{msg.FollowingUser, stmsgIds[i]})
 
-				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]string{msg.FollowerUser.Username, stmsgIds[i]})
+				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]string{msg.FollowerUser, stmsgIds[i]})
 
-				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser.Username, msg.FollowingUser)
+				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser, msg.FollowingUser)
 				notif := helpers.BuildNotification(notifUniqueId, "user_follow", msg.At, map[string]any{
-					"follower_user": msg.FollowerUser.Username,
+					"follower_user": msg.FollowerUser,
 				})
 
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
@@ -89,7 +90,7 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notif["unread"] = true
-					notif["details"].(map[string]any)["follower_user"] = msg.FollowerUser
+					notif["details"].(map[string]any)["follower_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.FollowerUser)
 
 					realtimeService.SendEventMsg(msg.FollowingUser, appTypes.ServerEventMsg{
 						Event: "new notification",

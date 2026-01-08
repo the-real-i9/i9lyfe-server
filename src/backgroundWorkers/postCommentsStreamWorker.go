@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
@@ -53,7 +54,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostCommentEvent
 
-				msg.CommenterUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["commenterUser"].(string))
+				msg.CommenterUser = stmsg.Values["commenterUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.CommentId = stmsg.Values["commentId"].(string)
@@ -86,18 +87,18 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 				postComments[msg.PostId] = append(postComments[msg.PostId], [2]string{msg.CommentId, stmsgIds[i]})
 
-				userCommentedPosts[msg.CommenterUser.Username] = append(userCommentedPosts[msg.CommenterUser.Username], [2]string{msg.PostId, stmsgIds[i]})
+				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]string{msg.PostId, stmsgIds[i]})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
 					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
 				})
 
-				if msg.PostOwner != msg.CommenterUser.Username {
+				if msg.PostOwner != msg.CommenterUser {
 
-					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser.Username, msg.CommentId, msg.PostId)
+					copNotifUniqueId := fmt.Sprintf("user_%s_comment_%s_on_post_%s", msg.CommenterUser, msg.CommentId, msg.PostId)
 					copNotif := helpers.BuildNotification(copNotifUniqueId, "comment_on_post", msg.At, map[string]any{
 						"on_post_id":     msg.PostId,
-						"commenter_user": msg.CommenterUser.Username,
+						"commenter_user": msg.CommenterUser,
 						"comment_id":     msg.CommentId,
 					})
 
@@ -108,7 +109,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						copNotif["unread"] = true
-						copNotif["details"].(map[string]any)["commenter_user"] = msg.CommenterUser
+						copNotif["details"].(map[string]any)["commenter_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
 
 						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
@@ -118,14 +119,14 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				}
 
 				for _, mu := range msg.Mentions {
-					if mu == msg.CommenterUser.Username {
+					if mu == msg.CommenterUser {
 						continue
 					}
 
 					micNotifUniqueId := fmt.Sprintf("user_%s_mentioned_in_comment_%s", mu, msg.CommentId)
 					micNotif := helpers.BuildNotification(micNotifUniqueId, "mention_in_comment", msg.At, map[string]any{
 						"in_comment_id":   msg.CommentId,
-						"mentioning_user": msg.CommenterUser.Username,
+						"mentioning_user": msg.CommenterUser,
 					})
 
 					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
@@ -135,7 +136,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						micNotif["unread"] = true
-						micNotif["details"].(map[string]any)["mentioning_user"] = msg.CommenterUser
+						micNotif["details"].(map[string]any)["mentioning_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",

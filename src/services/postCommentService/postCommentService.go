@@ -2,7 +2,6 @@ package postCommentService
 
 import (
 	"context"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
@@ -13,18 +12,18 @@ import (
 	"time"
 )
 
-func CreateNewPost(ctx context.Context, clientUser appTypes.ClientUser, mediaCloudNames []string, postType, description string, at int64) (any, error) {
+func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (any, error) {
 	hashtags := utilServices.ExtractHashtags(description)
 	mentions := utilServices.ExtractMentions(description)
 
-	newPost, err := post.New(ctx, clientUser.Username, mediaCloudNames, postType, description, at)
+	newPost, err := post.New(ctx, clientUsername, mediaCloudNames, postType, description, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if newPost.Id != "" {
 		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
-			OwnerUser: clientUser,
+			OwnerUser: clientUsername,
 			PostId:    newPost.Id,
 			PostData:  helpers.ToJson(newPost),
 			Hashtags:  hashtags,
@@ -67,8 +66,8 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (any, error)
 	return done, nil
 }
 
-func ReactToPost(ctx context.Context, clientUser appTypes.ClientUser, postId, emoji string, at int64) (any, error) {
-	postOwner, err := post.ReactTo(ctx, clientUser.Username, postId, emoji, at)
+func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (any, error) {
+	postOwner, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func ReactToPost(ctx context.Context, clientUser appTypes.ClientUser, postId, em
 
 	if done {
 		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
-			ReactorUser: clientUser,
+			ReactorUser: clientUsername,
 			PostOwner:   postOwner,
 			PostId:      postId,
 			Emoji:       emoji,
@@ -122,17 +121,17 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 	return done, nil
 }
 
-func CommentOnPost(ctx context.Context, clientUser appTypes.ClientUser, postId, commentText, attachmentCloudName string, at int64) (any, error) {
+func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (any, error) {
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := post.CommentOn(ctx, clientUser.Username, postId, commentText, attachmentCloudName, at)
+	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentCloudName, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if newComment.Id != "" {
 		go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
-			CommenterUser: clientUser,
+			CommenterUser: clientUsername,
 			PostId:        postId,
 			PostOwner:     newComment.PostOwner,
 			CommentId:     newComment.Id,
@@ -184,8 +183,8 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 	return done, nil
 }
 
-func ReactToComment(ctx context.Context, clientUser appTypes.ClientUser, commentId, emoji string, at int64) (any, error) {
-	commentOwner, err := comment.ReactTo(ctx, clientUser.Username, commentId, emoji, at)
+func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (any, error) {
+	commentOwner, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +194,7 @@ func ReactToComment(ctx context.Context, clientUser appTypes.ClientUser, comment
 	if done {
 		// look to post reaction bg worker for todos
 		go eventStreamService.QueueCommentReactionEvent(eventTypes.CommentReactionEvent{
-			ReactorUser:  clientUser,
+			ReactorUser:  clientUsername,
 			CommentId:    commentId,
 			CommentOwner: commentOwner,
 			Emoji:        emoji,
@@ -241,17 +240,17 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 	return done, nil
 }
 
-func CommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentText, attachmentCloudName string, at int64) (any, error) {
+func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (any, error) {
 	mentions := utilServices.ExtractMentions(commentText)
 
-	newComment, err := comment.CommentOn(ctx, clientUser.Username, parentCommentId, commentText, attachmentCloudName, at)
+	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentCloudName, at)
 	if err != nil {
 		return nil, err
 	}
 
 	if newComment.Id != "" {
 		go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
-			CommenterUser:      clientUser,
+			CommenterUser:      clientUsername,
 			ParentCommentId:    parentCommentId,
 			ParentCommentOwner: newComment.ParentCommentOwner,
 			CommentId:          newComment.Id,
@@ -273,8 +272,8 @@ func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string,
 	return comments, nil
 }
 
-func RemoveCommentOnComment(ctx context.Context, clientUser appTypes.ClientUser, parentCommentId, commentId string) (any, error) {
-	done, err := comment.RemoveComment(ctx, clientUser.Username, parentCommentId, commentId)
+func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (any, error) {
+	done, err := comment.RemoveComment(ctx, clientUsername, parentCommentId, commentId)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +284,7 @@ func RemoveCommentOnComment(ctx context.Context, clientUser appTypes.ClientUser,
 		// mark comment and all related data (likes, comments, etc.) as deleted
 		// publish latest comment metric
 		go eventStreamService.QueueCommentCommentRemovedEvent(eventTypes.CommentCommentRemovedEvent{
-			CommenterUser:   clientUser,
+			CommenterUser:   clientUsername,
 			ParentCommentId: parentCommentId,
 			CommentId:       commentId,
 		})
@@ -294,10 +293,10 @@ func RemoveCommentOnComment(ctx context.Context, clientUser appTypes.ClientUser,
 	return done, nil
 }
 
-func RepostPost(ctx context.Context, clientUser appTypes.ClientUser, postId string) (any, error) {
+func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
 	at := time.Now().UnixMilli()
 
-	repost, err := post.Repost(ctx, clientUser.Username, postId, at)
+	repost, err := post.Repost(ctx, clientUsername, postId, at)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +308,7 @@ func RepostPost(ctx context.Context, clientUser appTypes.ClientUser, postId stri
 	// fan out repost
 	if repost.Id != "" {
 		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
-			ReposterUser: clientUser,
+			ReposterUser: clientUsername,
 			PostId:       postId,
 			PostOwner:    repost.OwnerUser,
 			RepostId:     repost.Id,

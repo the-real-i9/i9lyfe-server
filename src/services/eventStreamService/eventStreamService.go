@@ -37,6 +37,18 @@ func QueueEditUserEvent(eue eventTypes.EditUserEvent) {
 	}
 }
 
+func QueueUserPresenceChangeEvent(upce eventTypes.UserPresenceChangeEvent) {
+	ctx := context.Background()
+
+	err := rdb().XAdd(ctx, &redis.XAddArgs{
+		Stream: "user_presence_changes",
+		Values: upce,
+	}).Err()
+	if err != nil {
+		helpers.LogError(err)
+	}
+}
+
 func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
 	ctx := context.Background()
 

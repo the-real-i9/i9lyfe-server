@@ -71,7 +71,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser, body.MediaCloudNames, body.Type, body.Description, body.At)
+	respData, app_err := postCommentService.CreateNewPost(ctx, clientUser.Username, body.MediaCloudNames, body.Type, body.Description, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -123,7 +123,7 @@ func ReactToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToPost(ctx, clientUser, c.Params("postId"), body.Emoji, body.At)
+	respData, app_err := postCommentService.ReactToPost(ctx, clientUser.Username, c.Params("postId"), body.Emoji, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -193,7 +193,7 @@ func CommentOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CommentOnPost(ctx, clientUser, c.Params("postId"), body.CommentText, body.AttachmentCloudName, body.At)
+	respData, app_err := postCommentService.CommentOnPost(ctx, clientUser.Username, c.Params("postId"), body.CommentText, body.AttachmentCloudName, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -258,7 +258,7 @@ func ReactToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.ReactToComment(ctx, clientUser, c.Params("commentId"), body.Emoji, body.At)
+	respData, app_err := postCommentService.ReactToComment(ctx, clientUser.Username, c.Params("commentId"), body.Emoji, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -328,7 +328,7 @@ func CommentOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := postCommentService.CommentOnComment(ctx, clientUser, c.Params("commentId"), body.CommentText, body.AttachmentCloudName, body.At)
+	respData, app_err := postCommentService.CommentOnComment(ctx, clientUser.Username, c.Params("commentId"), body.CommentText, body.AttachmentCloudName, body.At)
 	if app_err != nil {
 		return app_err
 	}
@@ -354,7 +354,7 @@ func RemoveCommentOnComment(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.RemoveCommentOnComment(ctx, clientUser, c.Params("parentCommentId"), c.Params("childCommentId"))
+	respData, app_err := postCommentService.RemoveCommentOnComment(ctx, clientUser.Username, c.Params("parentCommentId"), c.Params("childCommentId"))
 	if app_err != nil {
 		return app_err
 	}
@@ -367,7 +367,7 @@ func RepostPost(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := postCommentService.RepostPost(ctx, clientUser, c.Params("postId"))
+	respData, app_err := postCommentService.RepostPost(ctx, clientUser.Username, c.Params("postId"))
 	if app_err != nil {
 		return app_err
 	}

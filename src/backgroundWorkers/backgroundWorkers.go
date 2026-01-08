@@ -15,6 +15,7 @@ import (
 func Start(rdc *redis.Client) error {
 	newUsersStreamBgWorker(rdc)
 	editUsersStreamBgWorker(rdc)
+	userPresenceChangesStreamBgWorker(rdc)
 
 	usersFollowedStreamBgWorker(rdc)
 	usersUnfollowedStreamBgWorker(rdc)

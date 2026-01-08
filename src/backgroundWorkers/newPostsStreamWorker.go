@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
@@ -54,7 +55,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.NewPostEvent
 
-				msg.OwnerUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["ownerUser"].(string))
+				msg.OwnerUser = stmsg.Values["ownerUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.PostData = stmsg.Values["postData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
@@ -86,7 +87,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newPosts = append(newPosts, msg.PostId, msg.PostData)
 
-				userPosts[msg.OwnerUser.Username] = append(userPosts[msg.OwnerUser.Username], [2]string{msg.PostId, stmsgIds[i]})
+				userPosts[msg.OwnerUser] = append(userPosts[msg.OwnerUser], [2]string{msg.PostId, stmsgIds[i]})
 
 				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, func() error {
 					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
@@ -95,14 +96,14 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				for _, mu := range msg.Mentions {
 					userMentionedPosts[mu] = append(userMentionedPosts[mu], [2]string{msg.PostId, stmsgIds[i]})
 
-					if mu == msg.OwnerUser.Username {
+					if mu == msg.OwnerUser {
 						continue
 					}
 
 					notifUniqueId := fmt.Sprintf("user_%s_mentioned_in_post_%s", mu, msg.PostId)
 					notif := helpers.BuildNotification(notifUniqueId, "mention_in_post", msg.At, map[string]any{
 						"in_post_id":      msg.PostId,
-						"mentioning_user": msg.OwnerUser.Username,
+						"mentioning_user": msg.OwnerUser,
 					})
 
 					notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
@@ -112,7 +113,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notif["unread"] = true
-						notif["details"].(map[string]any)["mentioning_user"] = msg.OwnerUser
+						notif["details"].(map[string]any)["mentioning_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.OwnerUser)
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",

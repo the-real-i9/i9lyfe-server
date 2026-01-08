@@ -6,6 +6,16 @@ import (
 	"i9lyfe/src/helpers"
 )
 
+func RemoveOfflineUsers(ctx context.Context, users []any) error {
+	if err := rdb().ZRem(ctx, "offline_users", users...).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func RemovePostReactions(ctx context.Context, postId string, reactorUsers []string) error {
 	if err := rdb().HDel(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), reactorUsers...).Err(); err != nil {
 		helpers.LogError(err)

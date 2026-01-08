@@ -217,7 +217,6 @@ CREATE FUNCTION public.reply_to_msg(from_user text, to_user text, content_val js
 DECLARE
   msg_in_chat bool;
   che_id_val uuid;
-  sender_user json;
   reply_target_msg json;
 BEGIN
 
@@ -241,16 +240,12 @@ VALUES (from_user, to_user, che_id_val, 'sent');
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
 
-SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name, 'presence', presence)
-FROM users WHERE username = from_user
-INTO sender_user;
-
 SELECT json_build_object('id', id_, 'content', content_, 'sender_username', sender_username)
 FROM chat_history_entry WHERE id_ = reply_target_msg_id
 INTO reply_target_msg;
 
   
-RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, reply_target_msg, false, false)::message_struct;
+RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, reply_target_msg, false, false)::message_struct;
 
 END;
 $$;
@@ -267,7 +262,6 @@ CREATE FUNCTION public.send_message(from_user text, to_user text, content_val js
     AS $$
 DECLARE
   che_id_val uuid;
-  sender_user json;
   first_from_user boolean := false;
   first_to_user boolean := false;
 BEGIN
@@ -295,12 +289,8 @@ BEGIN
   
   INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
   VALUES (to_user, from_user, che_id_val, 'received');
-
-  SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name, 'presence', presence)
-  FROM users WHERE username = from_user
-  INTO sender_user;
   
-  RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, sender_user, null, first_from_user, first_to_user)::message_struct;
+  RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, null, first_from_user, first_to_user)::message_struct;
 END;
 $$;
 

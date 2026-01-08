@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/contentRecommendationService"
@@ -53,7 +54,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.RepostEvent
 
-				msg.ReposterUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["reposterUser"].(string))
+				msg.ReposterUser = stmsg.Values["reposterUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.RepostId = stmsg.Values["repostId"].(string)
@@ -87,22 +88,22 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 				postReposts[msg.PostId] = append(postReposts[msg.PostId], msg.RepostId)
 
-				userRepostedPosts[msg.ReposterUser.Username] = append(userRepostedPosts[msg.ReposterUser.Username], [2]string{msg.PostId, stmsgIds[i]})
+				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]string{msg.PostId, stmsgIds[i]})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
 					contentRecommendationService.FanOutPost(msg.RepostId)
 				})
 
-				if msg.ReposterUser.Username == msg.PostOwner {
+				if msg.ReposterUser == msg.PostOwner {
 					continue
 				}
 
-				userPosts[msg.ReposterUser.Username] = append(userPosts[msg.ReposterUser.Username], [2]string{msg.RepostId, stmsgIds[i]})
+				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]string{msg.RepostId, stmsgIds[i]})
 
-				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser.Username, msg.PostId)
+				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser, msg.PostId)
 				notif := helpers.BuildNotification(notifUniqueId, "repost", msg.At, map[string]any{
 					"reposted_post_id": msg.PostId,
-					"reposter_user":    msg.ReposterUser.Username,
+					"reposter_user":    msg.ReposterUser,
 					"repost_id":        msg.RepostId,
 				})
 
@@ -113,7 +114,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notif["unread"] = true
-					notif["details"].(map[string]any)["reposter_user"] = msg.ReposterUser
+					notif["details"].(map[string]any)["reposter_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.ReposterUser)
 
 					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 						Event: "new notification",

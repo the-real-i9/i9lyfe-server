@@ -18,43 +18,10 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 
 	userMap := helpers.FromJson[map[string]any](userJson)
 
-	ppicCloudName := userMap["profile_pic_cloud_name"].(string)
-
-	if ppicCloudName != "{notset}" {
-
-		var (
-			smallPPicn  string
-			mediumPPicn string
-			largePPicn  string
-		)
-
-		_, err = fmt.Sscanf(ppicCloudName, "small:%s medium:%s large:%s", &smallPPicn, &mediumPPicn, &largePPicn)
-		if err != nil {
-			helpers.LogError(err)
-			return user, err
-		}
-
-		smallPicUrl, err := gcsHelpers.GetMediaurl(smallPPicn)
-		if err != nil {
-			return user, err
-		}
-
-		mediumPicUrl, err := gcsHelpers.GetMediaurl(mediumPPicn)
-		if err != nil {
-			return user, err
-		}
-
-		largePicUrl, err := gcsHelpers.GetMediaurl(largePPicn)
-		if err != nil {
-			return user, err
-		}
-
-		userMap["profile_pic_url"] = fmt.Sprintf("small:%s medium:%s large:%s", smallPicUrl, mediumPicUrl, largePicUrl)
-	} else {
-		userMap["profile_pic_url"] = "{notset}"
+	if err := gcsHelpers.ProfilePicCloudNameToUrl(userMap); err != nil {
+		return user, nil
 	}
 
-	delete(userMap, "profile_pic_cloud_name")
 	return helpers.MapToStruct[T](userMap), nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -52,7 +53,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostReactionEvent
 
-				msg.ReactorUser = helpers.FromJson[appTypes.ClientUser](stmsg.Values["reactorUser"].(string))
+				msg.ReactorUser = stmsg.Values["reactorUser"].(string)
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
@@ -81,20 +82,20 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// batch data for batch processing
 			for i, msg := range msgs {
-				postReactions[msg.PostId] = append(postReactions[msg.PostId], msg.ReactorUser.Username, msg.Emoji)
+				postReactions[msg.PostId] = append(postReactions[msg.PostId], msg.ReactorUser, msg.Emoji)
 
-				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]string{msg.ReactorUser.Username, stmsgIds[i]})
+				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
 
-				userReactedPosts[msg.ReactorUser.Username] = append(userReactedPosts[msg.ReactorUser.Username], [2]string{msg.PostId, stmsgIds[i]})
+				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
 
-				if msg.PostOwner == msg.ReactorUser.Username {
+				if msg.PostOwner == msg.ReactorUser {
 					continue
 				}
 
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser.Username, msg.PostId)
+				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
 				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
 					"to_post_id":   msg.PostId,
-					"reactor_user": msg.ReactorUser.Username,
+					"reactor_user": msg.ReactorUser,
 					"emoji":        msg.Emoji,
 				})
 
@@ -105,7 +106,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notif["unread"] = true
-					notif["details"].(map[string]any)["reactor_user"] = msg.ReactorUser
+					notif["details"].(map[string]any)["reactor_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.ReactorUser)
 
 					realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 						Event: "new notification",

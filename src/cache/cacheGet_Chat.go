@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/gcsHelpers"
-	"slices"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -43,43 +42,9 @@ func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err e
 
 	if cheType == "message" {
 		content := CHEMap["content"].(map[string]any)
-		contentProps := content["props"].(map[string]any)
 
-		if content["type"].(string) != "text" {
-			mediaCloudName := contentProps["media_cloud_name"].(string)
-
-			if slices.Contains([]string{"photo", "video"}, content["type"].(string)) {
-				var (
-					blurPlchMcn string
-					actualMcn   string
-				)
-
-				_, err = fmt.Sscanf(mediaCloudName, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
-				if err != nil {
-					return CHE, err
-				}
-
-				blurPlchUrl, err := gcsHelpers.GetMediaurl(blurPlchMcn)
-				if err != nil {
-					return CHE, err
-				}
-
-				actualUrl, err := gcsHelpers.GetMediaurl(actualMcn)
-				if err != nil {
-					return CHE, err
-				}
-
-				contentProps["media_url"] = fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl)
-			} else {
-				mediaUrl, err := gcsHelpers.GetMediaurl(mediaCloudName)
-				if err != nil {
-					return CHE, err
-				}
-
-				contentProps["media_url"] = mediaUrl
-			}
-
-			delete(contentProps, "media_cloud_name")
+		if err := gcsHelpers.MessageMediaCloudNameToUrl(content); err != nil {
+			return CHE, nil
 		}
 	}
 
