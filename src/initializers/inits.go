@@ -4,6 +4,7 @@ import (
 	"context"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/backgroundWorkers"
+	"i9lyfe/src/helpers"
 	"os"
 
 	"cloud.google.com/go/storage"
@@ -102,4 +103,8 @@ func InitApp() error {
 
 func CleanUp() {
 	appGlobals.DBPool.Close()
+
+	if err := appGlobals.RedisClient.Close(); err != nil {
+		helpers.LogError(err)
+	}
 }
