@@ -107,7 +107,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 
 			w_err = c.WriteJSON(helpers.WSReply(res, body.Action))
 		case "chat: ack message read":
-			res, err := chatControllers.AckMsgDelivered(ctx, clientUser.Username, body.Data)
+			res, err := chatControllers.AckMsgRead(ctx, clientUser.Username, body.Data)
 			if err != nil {
 				w_err = c.WriteJSON(helpers.WSErrReply(err, body.Action))
 				continue
