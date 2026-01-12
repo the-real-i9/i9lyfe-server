@@ -1,5 +1,11 @@
 on:
   push:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "main.go"
+      - "go.mod"
+      - "i9lyfedb-schema.sql"
     branches:
       - main
 name: "Test i9lyfe"
