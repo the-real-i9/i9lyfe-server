@@ -58,20 +58,18 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 	return *newUser, nil
 }
 
-type ToAuthUserT struct {
-	Email               string `json:"email"`
+type SignedInUserT struct {
 	Username            string `json:"username"`
 	Name                string `json:"name" db:"name_"`
 	ProfilePicCloudName string `json:"profile_pic_cloud_name" db:"profile_pic_cloud_name"`
-	Presence            string `json:"presence"`
 	Password            string `json:"-" db:"password_"`
 }
 
-func AuthFind(ctx context.Context, uniqueIdent string) (*ToAuthUserT, error) {
-	user, err := pgDB.QueryRowType[ToAuthUserT](
+func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error) {
+	user, err := pgDB.QueryRowType[SignedInUserT](
 		ctx,
 		/* sql */ `
-		SELECT email, username, name_, profile_pic_cloud_name, presence, password_ 
+		SELECT username, name_, profile_pic_cloud_name, password_ 
 		FROM users 
 		WHERE username = $1 OR email = $1
 		`, uniqueIdent,

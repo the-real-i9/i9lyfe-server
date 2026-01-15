@@ -1,17 +1,83 @@
-@startuml name
-participant Participant as Foo
-actor       Actor       as Foo1
-boundary    Boundary    as Foo2
-control     Control     as Foo3
-entity      Entity      as Foo4
-database    Database    as Foo5
-collections Collections as Foo6
-queue       Queue       as Foo7
-Foo -> Foo1 : To actor 
-Foo -> Foo2 : To boundary
-Foo -> Foo3 : To control
-Foo -> Foo4 : To entity
-Foo -> Foo5 : To database
-Foo -> Foo6 : To collections
-Foo -> Foo7: To queue
+@startuml i9lyfe_api_arch
+!include <C4/C4_Component>
+
+' !includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title i9lyfe API Server
+
+Container(api, "i9lyfe API Server", "Go")
+
+System_Ext(emailSystem, "Email System", "Google SMTP")
+
+ContainerDb(database, "Database", "PostgreSQL")
+ContainerDb(inmemorydb, "In-memory Database", "Redis Key-Value Store")
+ContainerQueue(eventQueue, "Event Queue/Stream", "Redis Streams")
+ContainerDb(pubsubMS, "Pub/Sub Messaging System", "Redis Pub/Sub")
+
+Component(cache, "Cache", "go-redis", "Cache management routines: store, get, update, and delete")
+Rel(cache, inmemorydb, "Reads/Writes")
+
+Component(securityServices, "Security Services", "Go, golang-jwt, bcrypt", "Consists security-related logic for: JWT signing/verification, Digit token generation with expiration etc.")
+Component(mailService, "Mail Service", "Go, gomail.v2, crypto/tls", "Consists routine for sending email")
+Component(eventStreamService, "Event Stream Service", "Go, go-redis (XAdd)", "Consists routines for queueing application events")
+Rel(mailService, emailSystem, "Uses")
+Rel(eventStreamService, eventQueue, "Add event")
+
+Component(realtimeService, "Realtime Service", "Go, sync, go-redis (Publish, Subscribe, [LPOP, RPUSH]), websocket", "Consists routines for managing active user sockets, subscribing users to pub/sub messaging channels, publishing messages to channels, sending server event messages; queueing (RPUSH) undelivered messages in Redis when user socket is offline; dequeueing (LPOP) undelivered messages from Redis when user socket comes online")
+Rel(realtimeService, pubsubMS, "Calls (Publish/Subscribe)")
+Rel(realtimeService, inmemorydb, "Reads/Writes (LPOP, RPUSH)")
+
+Component(userService, "User Service", "Go", "Consists user management routines, user-owned resource fetching routines, user presence change routines")
+Component(userModel, "User Model", "SQL, pgx, go-redis", "User management DB and cache query routines; User-owned resource DB and cache query routines")
+Rel(userService, userModel, "Calls")
+Rel(userModel, database, "Reads/Writes")
+Rel(userModel, cache, "Calls")
+Rel(userService, realtimeService, "Calls")
+Rel(userService, eventStreamService, "Calls")
+
+Component(signupController, "Signup Controller", "gofiber", "Handles signup request steps, signup session management via cookie, stores user auth token in response cookie")
+Component(signupService, "Signup Service", "Go", "Performs username or email existence checks; Performs email verification; Stores new user; Generates user auth token")
+Rel(signupController, signupService, "Calls")
+Rel(signupService, securityServices, "Calls")
+Rel(signupService, mailService, "Calls")
+Rel(signupService, eventStreamService, "Calls")
+Rel(signupService, userService, "Calls")
+
+Component(signinController, "Signin Controller", "gofiber", "Handles signin request, stores user auth token in response cookie")
+Component(signinService, "Signin Service", "Go", "Performs username or email existence; Generates user auth token")
+Rel(signinController, signinService, "Calls")
+Rel(signinService, securityServices, "Calls")
+Rel(signinService, userService, "Calls")
+
+Component(passwordResetController, "Password Reset Controller", "gofiber", "Handles password reset request steps, password reset session management via cookie")
+Component(passwordResetService, "Password Reset Service", "Go", "Confirms password reset request; Changes user password")
+Rel(passwordResetController, passwordResetService, "Calls")
+Rel(passwordResetService, securityServices, "Calls")
+Rel(passwordResetService, mailService, "Calls")
+Rel(passwordResetService, userService, "Calls")
+
+Component(postCommentController, "Post & Comment Controller", "gofiber", "Handles all post and comment management and interaction requests")
+Component(postCommentService, "Post & Comment Service", "Go", "Post and comment management and interaction business logic routines")
+Component(postModel, "Post Model", "SQL, pgx, go-redis", "Post management and interaction DB and cache query routines")
+Component(commentModel, "Comment Model", "SQL, pgx, go-redis", "Comment management and interaction DB and cache query routines")
+Rel(postCommentController, postCommentService, "Calls")
+Rel(postCommentService, postModel, "Calls")
+Rel(postCommentService, commentModel, "Calls")
+Rel(postCommentService, eventStreamService, "Calls")
+Rel(postModel, cache, "Calls")
+Rel(postModel, database, "Reads/Writes")
+Rel(commentModel, cache, "Calls")
+Rel(commentModel, database, "Reads/Writes")
+
+
+Component(realtimeController, "Realtime Controller", "gofiber, websocket", "Handles Websocket HTTP Upgrade; Acquires and manages user connection stream (socket); Waits on and reads messages from user connection stream (socket)")
+Rel(realtimeController, userService, "Calls")
+Rel(realtimeController, realtimeService, "Calls")
+
+Component(backgroundWorkers, "Background Workers", "Go, go-redis", "Consist routines that read target streams (dequeue events) and run background tasks")
+Rel(backgroundWorkers, eventQueue, "Read/Dequeue")
+Rel(backgroundWorkers, database, "Read/Write")
+Rel(backgroundWorkers, cache, "Call")
+Rel(backgroundWorkers, realtimeService, "Call")
+
 @enduml

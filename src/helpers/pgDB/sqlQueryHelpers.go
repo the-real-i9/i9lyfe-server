@@ -115,7 +115,7 @@ func BatchQuery[T any](ctx context.Context, sqls []string, params [][]any) ([]*T
 		})
 	}
 
-	s_err := dbPool().SendBatch(dbOpCtx, batch).Close()
+	err := dbPool().SendBatch(dbOpCtx, batch).Close()
 
-	return res, s_err
+	return res, err
 }

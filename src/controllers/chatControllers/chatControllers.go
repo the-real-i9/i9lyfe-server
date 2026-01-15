@@ -60,9 +60,9 @@ func GetChats(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := chatService.GetChats(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := chatService.GetChats(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -73,9 +73,9 @@ func DeleteChat(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := chatService.DeleteChat(ctx, clientUser.Username, c.Params("partner_username"))
-	if app_err != nil {
-		return app_err
+	respData, err := chatService.DeleteChat(ctx, clientUser.Username, c.Params("partner_username"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)

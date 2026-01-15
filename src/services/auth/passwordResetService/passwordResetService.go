@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	user "i9lyfe/src/models/userModel"
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
+	"i9lyfe/src/services/userService"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,7 +19,7 @@ type passReset1RespT struct {
 func RequestPasswordReset(ctx context.Context, email string) (passReset1RespT, map[string]any, error) {
 	var resp passReset1RespT
 
-	userExists, err := user.Exists(ctx, email)
+	userExists, err := userService.UserExists(ctx, email)
 	if err != nil {
 		return resp, nil, err
 	}
@@ -85,9 +85,9 @@ func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword 
 		return resp, err
 	}
 
-	m_err := user.ChangePassword(ctx, email, hashedPassword)
-	if m_err != nil {
-		return resp, m_err
+	err = userService.ChangeUserPassword(ctx, email, hashedPassword)
+	if err != nil {
+		return resp, err
 	}
 
 	go mailService.SendMail(email, "Password Reset Success", fmt.Sprintf("<p>%s, your password has been changed successfully!</p>", email))

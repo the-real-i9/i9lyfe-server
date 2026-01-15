@@ -17,9 +17,9 @@ func FetchPosts(c *fiber.Ctx) error {
 	typesFilter := strings.Split(c.Query("types"), ",")
 	hashtagFilter := strings.Split(c.Query("hashtags"), ",")
 
-	respData, app_err := appService.FetchPosts(ctx, clientUser.Username, typesFilter, hashtagFilter)
-	if app_err != nil {
-		return app_err
+	respData, err := appService.FetchPosts(ctx, clientUser.Username, typesFilter, hashtagFilter)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -28,9 +28,9 @@ func FetchPosts(c *fiber.Ctx) error {
 func FetchUsers(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	respData, app_err := appService.FetchUsers(ctx)
-	if app_err != nil {
-		return app_err
+	respData, err := appService.FetchUsers(ctx)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -39,9 +39,9 @@ func FetchUsers(c *fiber.Ctx) error {
 func FetchHashtags(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	respData, app_err := appService.FetchHashtags(ctx)
-	if app_err != nil {
-		return app_err
+	respData, err := appService.FetchHashtags(ctx)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -55,9 +55,9 @@ func Search(c *fiber.Ctx) error {
 	term := c.Query("term")
 	filter := c.Query("filter")
 
-	respData, app_err := appService.Search(ctx, clientUser.Username, term, filter, c.QueryInt("limit", 50), int64(c.QueryInt("offset")))
-	if app_err != nil {
-		return app_err
+	respData, err := appService.Search(ctx, clientUser.Username, term, filter, c.QueryInt("limit", 50), int64(c.QueryInt("offset")))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)

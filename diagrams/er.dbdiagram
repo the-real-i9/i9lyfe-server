@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "detailLevel": "All",
+  "tablePositions": [
+    {
+      "name": "users",
+      "schemaName": "public",
+      "x": 71.52315444622718,
+      "y": 21.88352419455245
+    },
+    {
+      "name": "posts",
+      "schemaName": "public",
+      "x": 428.1800214213709,
+      "y": 59.468872857862905
+    }
+  ],
+  "tableGroupCollapseStates": [],
+  "stickyNoteLayouts": [],
+  "referencePaths": [
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "users",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "user_id"
+      ],
+      "secondTableName": "posts",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    }
+  ]
+}

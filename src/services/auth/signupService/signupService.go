@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
-	user "i9lyfe/src/models/userModel"
-	"i9lyfe/src/services/eventStreamService"
-	"i9lyfe/src/services/eventStreamService/eventTypes"
+	"i9lyfe/src/helpers/gcsHelpers"
+
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
+	"i9lyfe/src/services/userService"
 	"os"
 	"time"
 
@@ -23,7 +24,7 @@ type signup1RespT struct {
 func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[string]any, error) {
 	var resp signup1RespT
 
-	userExists, err := user.Exists(ctx, email)
+	userExists, err := userService.UserExists(ctx, email)
 	if err != nil {
 		return resp, nil, err
 	}
@@ -78,8 +79,8 @@ func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode 
 }
 
 type signup3RespT struct {
-	Msg  string        `json:"msg"`
-	User user.NewUserT `json:"user"`
+	Msg  string             `json:"msg"`
+	User UITypes.ClientUser `json:"user"`
 }
 
 func RegisterUser(ctx context.Context, sessionData map[string]any, username, password, name, bio string, birthday int64) (signup3RespT, string, error) {
@@ -87,7 +88,7 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 
 	email := sessionData["email"].(string)
 
-	userExists, err := user.Exists(ctx, username)
+	userExists, err := userService.UserExists(ctx, username)
 	if err != nil {
 		return resp, "", err
 	}
@@ -101,15 +102,10 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 		return resp, "", err
 	}
 
-	newUser, err := user.New(ctx, email, username, hashedPassword, name, bio, birthday)
+	newUser, err := userService.NewUser(ctx, email, username, hashedPassword, name, bio, birthday)
 	if err != nil {
 		return resp, "", err
 	}
-
-	go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
-		Username: newUser.Username,
-		UserData: helpers.ToJson(newUser),
-	})
 
 	authJwt, err := securityServices.JwtSign(appTypes.ClientUser{
 		Username: newUser.Username,
@@ -119,8 +115,11 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 		return resp, "", err
 	}
 
+	userMap := helpers.StructToMap(newUser)
+	gcsHelpers.ProfilePicCloudNameToUrl(userMap)
+
 	resp.Msg = "Signup success!"
-	resp.User = newUser
+	resp.User = helpers.MapToStruct[UITypes.ClientUser](userMap)
 
 	return resp, authJwt, nil
 }

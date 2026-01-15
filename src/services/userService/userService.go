@@ -20,6 +20,34 @@ import (
 	"github.com/google/uuid"
 )
 
+func UserExists(ctx context.Context, uniqueIdent string) (bool, error) {
+	return user.Exists(ctx, uniqueIdent)
+}
+
+func NewUser(ctx context.Context, email, username, password, name, bio string, birthday int64) (user.NewUserT, error) {
+	newUser, err := user.New(ctx, email, username, password, name, bio, birthday)
+	if err != nil {
+		return user.NewUserT{}, err
+	}
+
+	if newUser.Email != "" {
+		go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
+			Username: newUser.Username,
+			UserData: helpers.ToJson(newUser),
+		})
+	}
+
+	return newUser, nil
+}
+
+func SigninUserFind(ctx context.Context, uniqueIdent string) (*user.SignedInUserT, error) {
+	return user.SigninFind(ctx, uniqueIdent)
+}
+
+func ChangeUserPassword(ctx context.Context, email, newPassword string) error {
+	return user.ChangePassword(ctx, email, newPassword)
+}
+
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {
 	updateKVMap := helpers.StructToMap(updateKVStruct)
 

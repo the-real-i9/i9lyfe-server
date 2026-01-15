@@ -96,9 +96,9 @@ func EditUserProfile(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := userService.EditUserProfile(ctx, clientUser.Username, body)
-	if app_err != nil {
-		return app_err
+	respData, err := userService.EditUserProfile(ctx, clientUser.Username, body)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -161,9 +161,9 @@ func ChangeUserProfilePicture(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, app_err := userService.ChangeUserProfilePicture(ctx, clientUser.Username, body.ProfilePicCloudName)
-	if app_err != nil {
-		return app_err
+	respData, err := userService.ChangeUserProfilePicture(ctx, clientUser.Username, body.ProfilePicCloudName)
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -192,9 +192,9 @@ func FollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.FollowUser(ctx, clientUser.Username, c.Params("username"), time.Now().UnixMilli())
-	if app_err != nil {
-		return app_err
+	respData, err := userService.FollowUser(ctx, clientUser.Username, c.Params("username"), time.Now().UnixMilli())
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -221,9 +221,9 @@ func UnfollowUser(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.UnfollowUser(ctx, clientUser.Username, c.Params("username"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.UnfollowUser(ctx, clientUser.Username, c.Params("username"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -234,9 +234,9 @@ func GetUserMentionedPosts(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserMentionedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserMentionedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -247,9 +247,9 @@ func GetUserReactedPosts(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserReactedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserReactedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -260,9 +260,9 @@ func GetUserSavedPosts(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserSavedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserSavedPosts(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -273,9 +273,9 @@ func GetUserNotifications(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserNotifications(ctx, clientUser.Username, c.QueryInt("year", time.Now().Year()), c.Query("month", time.Now().Month().String()), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserNotifications(ctx, clientUser.Username, c.QueryInt("year", time.Now().Year()), c.Query("month", time.Now().Month().String()), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -286,9 +286,9 @@ func ReadUserNotification(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.ReadUserNotification(ctx, clientUser.Username, c.Params("year", fmt.Sprint(time.Now().Year())), c.Params("month", time.Now().Month().String()), c.Params("notification_id"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.ReadUserNotification(ctx, clientUser.Username, c.Params("year", fmt.Sprint(time.Now().Year())), c.Params("month", time.Now().Month().String()), c.Params("notification_id"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -299,9 +299,9 @@ func GetUserProfile(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserProfile(ctx, clientUser.Username, c.Params("username"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserProfile(ctx, clientUser.Username, c.Params("username"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -314,9 +314,9 @@ func GetUserFollowers(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserFollowers(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -326,9 +326,9 @@ func GetUserFollowings(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserFollowings(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserFollowings(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)
@@ -339,9 +339,9 @@ func GetUserPosts(c *fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, app_err := userService.GetUserPosts(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
-	if app_err != nil {
-		return app_err
+	respData, err := userService.GetUserPosts(ctx, clientUser.Username, c.Params("username"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	if err != nil {
+		return err
 	}
 
 	return c.JSON(respData)

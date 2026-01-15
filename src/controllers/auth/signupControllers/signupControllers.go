@@ -31,18 +31,18 @@ func RequestNewAccount(c *fiber.Ctx) error {
 
 	var body requestNewAccountBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		return val_err
+	if err := body.Validate(); err != nil {
+		return err
 	}
 
-	respData, sessionData, app_err := signupService.RequestNewAccount(ctx, body.Email)
-	if app_err != nil {
-		return app_err
+	respData, sessionData, err := signupService.RequestNewAccount(ctx, body.Email)
+	if err != nil {
+		return err
 	}
 
 	reqSession := map[string]any{
@@ -82,18 +82,18 @@ func VerifyEmail(c *fiber.Ctx) error {
 
 	var body verifyEmailBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		return val_err
+	if err := body.Validate(); err != nil {
+		return err
 	}
 
-	respData, newSessionData, app_err := signupService.VerifyEmail(ctx, sessionData, body.Code)
-	if app_err != nil {
-		return app_err
+	respData, newSessionData, err := signupService.VerifyEmail(ctx, sessionData, body.Code)
+	if err != nil {
+		return err
 	}
 
 	reqSession := map[string]any{
@@ -138,19 +138,19 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	var body registerUserBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		helpers.LogError(val_err)
-		return val_err
+	if err := body.Validate(); err != nil {
+		helpers.LogError(err)
+		return err
 	}
 
-	respData, authJwt, app_err := signupService.RegisterUser(ctx, sessionData, body.Username, body.Password, body.Name, body.Bio, body.Birthday)
-	if app_err != nil {
-		return app_err
+	respData, authJwt, err := signupService.RegisterUser(ctx, sessionData, body.Username, body.Password, body.Name, body.Bio, body.Birthday)
+	if err != nil {
+		return err
 	}
 
 	reqSession := map[string]any{

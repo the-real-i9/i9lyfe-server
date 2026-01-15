@@ -4,7 +4,6 @@ go 1.25.4
 
 require (
 	cloud.google.com/go/storage v1.58.0
-	github.com/blushft/go-diagrams v0.0.0-20250322201119-d91ac4ca5de4
 	github.com/fasthttp/websocket v1.5.12
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/goccy/go-json v0.10.5
@@ -39,7 +38,6 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/awalterschulze/gographviz v0.0.0-20200901124122-0eecad45bd71 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect

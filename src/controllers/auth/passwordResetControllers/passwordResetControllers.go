@@ -31,18 +31,18 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 
 	var body requestPasswordResetBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		return val_err
+	if err := body.Validate(); err != nil {
+		return err
 	}
 
-	respData, sessionData, app_err := passwordResetService.RequestPasswordReset(ctx, body.Email)
-	if app_err != nil {
-		return app_err
+	respData, sessionData, err := passwordResetService.RequestPasswordReset(ctx, body.Email)
+	if err != nil {
+		return err
 	}
 
 	reqSession := map[string]any{
@@ -82,18 +82,18 @@ func ConfirmEmail(c *fiber.Ctx) error {
 
 	var body confirmEmailBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		return val_err
+	if err := body.Validate(); err != nil {
+		return err
 	}
 
-	respData, newSessionData, app_err := passwordResetService.ConfirmEmail(ctx, sessionData, body.Token)
-	if app_err != nil {
-		return app_err
+	respData, newSessionData, err := passwordResetService.ConfirmEmail(ctx, sessionData, body.Token)
+	if err != nil {
+		return err
 	}
 
 	reqSession := map[string]any{
@@ -134,19 +134,19 @@ func ResetPassword(c *fiber.Ctx) error {
 
 	var body resetPasswordBody
 
-	body_err := c.BodyParser(&body)
-	if body_err != nil {
-		return body_err
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
 	}
 
-	if val_err := body.Validate(); val_err != nil {
-		helpers.LogError(val_err)
-		return val_err
+	if err := body.Validate(); err != nil {
+		helpers.LogError(err)
+		return err
 	}
 
-	respData, app_err := passwordResetService.ResetPassword(ctx, sessionData, body.NewPassword)
-	if app_err != nil {
-		return app_err
+	respData, err := passwordResetService.ResetPassword(ctx, sessionData, body.NewPassword)
+	if err != nil {
+		return err
 	}
 
 	c.ClearCookie()
