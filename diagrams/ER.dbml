@@ -1,0 +1,173 @@
+Table users {
+  username text [pk, NOT NULL]
+  email text [unique, NOT NULL]
+  password_ text [NOT NULL]
+  name_ text [NOT NULL]
+  bio text [DEFAULT: 'Thanks for using i9lyfe']
+  profile_pic_cloud_name text [DEFAULT: '{notset}']
+  presence text [DEFAULT: 'online', NOT NULL]
+  birthday bigint
+  last_seen bigint
+
+  checks {
+    `presence IN ['online', 'offline']` [name: 'users_presence_check']
+  }
+}
+
+Table user_follows_user {
+  follower_username text [NOT NULL, ref: > users.username]
+  following_username text [NOT NULL, ref: > users.username]
+  at_ bigint
+
+  indexes {
+    (follower_username, following_username) [unique, name: 'no_dup_follow']
+  }
+}
+
+Table posts {
+  id_ uuid [pk, DEFAULT: 'gen_random_uuid()', NOT NULL]
+  owner_user text [NOT NULL, ref: > users.username]
+  type_ text [NOT NULL]
+  media_cloud_names text[] [NOT NULL]
+  description text [DEFAULT: '""', NOT NULL]
+  deleted boolean [DEFAULT: false]
+  reposted_by_user text [ref: > users.username]
+  created_at bigint
+  deleted_at bigint
+
+  checks {
+    `type_ IN ['photo:portrait', 'photo:square', 'photo:landscape', 'video:portrait', 'video:square', 'video:landscape', 'reel']` [name: 'posts_type__check']
+  }
+}
+
+Table hashtags {
+  htname text [pk, NOT NULL]
+}
+
+Table post_mentions_user {
+  post_id uuid [NOT NULL, ref: > posts.id_]
+  username text [NOT NULL, ref: > users.username]
+
+  indexes {
+    (post_id, username) [unique, name: 'no_dup_post_ment']
+  }
+}
+
+Table post_includes_hashtag {
+  post_id uuid [NOT NULL, ref: > posts.id_]
+  htname text [NOT NULL, ref: > hashtags.htname]
+
+  indexes {
+    (post_id, htname) [unique, name: 'no_dup_htname']
+  }
+}
+
+Table user_reacts_to_post {
+  username text [NOT NULL, ref: > users.username]
+  post_id uuid [NOT NULL, ref: > posts.id_]
+  emoji text [NOT NULL]
+  at_ bigint
+
+  indexes {
+    (username, post_id) [unique, name: 'no_dup_post_rxn']
+  }
+}
+
+Table user_saves_post {
+  username text [NOT NULL, ref: > users.username]
+  post_id uuid [NOT NULL, ref: > posts.id_]
+
+  indexes {
+    (username, post_id) [unique, name: 'no_dup_saves']
+  }
+}
+
+Table user_comments_on {
+  comment_id uuid [pk, DEFAULT: 'gen_random_uuid()', NOT NULL]
+  username text [NOT NULL, ref: > users.username]
+  parent_comment_id uuid [ref: > user_comments_on.comment_id]
+  post_id uuid [ref: > posts.id_]
+  comment_text text [NOT NULL]
+  attachment_cloud_name text [NOT NULL]
+  deleted boolean [DEFAULT: false]
+  deleted_at bigint
+  at_ bigint
+
+  checks {
+    `post_id XOR parent_comment_id` [name: 'on_post_xor_on_comment']
+  }
+}
+
+Table comment_mentions_user {
+  comment_id uuid [NOT NULL, ref: > user_comments_on.comment_id]
+  username text [NOT NULL, ref: > users.username]
+
+  indexes {
+    (comment_id, username) [unique, name: 'no_dup_comment_ment']
+  }
+}
+
+Table user_reacts_to_comment {
+  username text [NOT NULL, ref: > users.username]
+  comment_id uuid [NOT NULL, ref: > user_comments_on.comment_id]
+  emoji text [NOT NULL]
+  at_ bigint
+
+
+  indexes {
+    (username, comment_id) [unique, name: 'no_dup_comment_rxn']
+  }
+}
+
+Table user_chats_user {
+  owner_user text [NOT NULL, ref: > users.username]
+  partner_user text [NOT NULL, ref: > users.username]
+
+  indexes {
+    (owner_user, partner_user) [pk]
+  }
+}
+
+Table chat_history_entry {
+  id_ uuid [pk, NOT NULL, DEFAULT: 'gen_random_uuid()']
+  type_ text [NOT NULL]
+  content_ jsonb
+  sender_username text [ref: > users.username]
+  delivery_status text
+  reply_to uuid [ref: > chat_history_entry.id_]
+  reactor_username text [ref: > users.username]
+  emoji text
+  reaction_to uuid [ref: > chat_history_entry.id_]
+  delivered_at bigint
+  read_at bigint
+  edited_at bigint
+  created_at bigint
+  reaction_at bigint
+
+  checks {
+    `delivery_status IN ['sent', 'delivered', 'read'])` [name: 'chat_history_entry_delivery_status_check']
+    `type_ IN ['message', 'reaction'])` [name: 'chat_history_entry_type__check']
+  }
+
+  indexes {
+    (reactor_username, reaction_to) [unique, name: 'no_dup_msg_rxn']
+  }
+}
+
+Table chat_history_in_chat {
+  owner_user text [NOT NULL, ref: > users.username]
+  partner_user text [NOT NULL,ref: > users.username]
+  che_id uuid [NOT NULL, ref: > chat_history_entry.id_]
+  receipt text [NOT NULL]
+  deleted boolean
+  deleted_at bigint
+
+  checks {
+    `receipt IN ['sent', 'received'])` [name: 'chat_history_entry_delivery_status_check']
+  }
+}
+
+Ref hist_in_chat: chat_history_in_chat.(owner_user, partner_user) > user_chats_user.(owner_user, partner_user)
+
+
+

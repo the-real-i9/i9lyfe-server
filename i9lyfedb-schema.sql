@@ -531,6 +531,12 @@ ALTER TABLE ONLY public.chat_history_entry
 ALTER TABLE ONLY public.hashtags
     ADD CONSTRAINT hashtags_pkey PRIMARY KEY (htname);
 
+--
+-- Name: user_follows_user no_dup_follow; Type: CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.user_follows_user
+    ADD CONSTRAINT no_dup_follow UNIQUE (follower_username, following_username);
 
 --
 -- Name: comment_mentions_user no_dup_comment_ment; Type: CONSTRAINT; Schema: public; Owner: i9
