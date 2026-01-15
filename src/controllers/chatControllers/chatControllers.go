@@ -5,8 +5,6 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/chatService"
-	"i9lyfe/src/services/chatService/chatMessageService"
-	"i9lyfe/src/services/uploadService/chatUploadService"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,7 +23,7 @@ func AuthorizeUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := chatUploadService.Authorize(ctx, body.MsgType, body.MediaMIME)
+	respData, err := chatService.AuthorizeUpload(ctx, body.MsgType, body.MediaMIME)
 	if err != nil {
 		return err
 	}
@@ -47,7 +45,7 @@ func AuthorizeVisualUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := chatUploadService.AuthorizeVisual(ctx, body.MsgType, body.MediaMIME)
+	respData, err := chatService.AuthorizeVisualUpload(ctx, body.MsgType, body.MediaMIME)
 	if err != nil {
 		return err
 	}
@@ -88,7 +86,7 @@ func SendMessage(ctx context.Context, clientUsername string, actionData map[stri
 		return nil, err
 	}
 
-	return chatMessageService.SendMessage(ctx, clientUsername, data.PartnerUsername, data.ReplyTargetMsgId, data.IsReply, helpers.ToJson(data.Msg), data.At)
+	return chatService.SendMessage(ctx, clientUsername, data.PartnerUsername, data.ReplyTargetMsgId, data.IsReply, helpers.ToJson(data.Msg), data.At)
 }
 
 func AckMsgDelivered(ctx context.Context, clientUsername string, actionData map[string]any) (any, error) {
@@ -98,7 +96,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername string, actionData map[
 		return nil, err
 	}
 
-	return chatMessageService.AckMsgDelivered(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.At)
+	return chatService.AckMsgDelivered(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.At)
 }
 
 func AckMsgRead(ctx context.Context, clientUsername string, actionData map[string]any) (any, error) {
@@ -108,7 +106,7 @@ func AckMsgRead(ctx context.Context, clientUsername string, actionData map[strin
 		return nil, err
 	}
 
-	return chatMessageService.AckMsgRead(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.At)
+	return chatService.AckMsgRead(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.At)
 }
 
 func GetChatHistory(ctx context.Context, clientUsername string, actionData map[string]any) (any, error) {
@@ -132,7 +130,7 @@ func ReactToMsg(ctx context.Context, clientUsername string, actionData map[strin
 		return nil, err
 	}
 
-	return chatMessageService.ReactToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.Emoji, data.At)
+	return chatService.ReactToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.Emoji, data.At)
 }
 
 func RemoveReactionToMsg(ctx context.Context, clientUsername string, actionData map[string]any) (any, error) {
@@ -142,7 +140,7 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername string, actionData 
 		return nil, err
 	}
 
-	return chatMessageService.RemoveReactionToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId)
+	return chatService.RemoveReactionToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId)
 }
 
 func DeleteMsg(ctx context.Context, clientUsername string, actionData map[string]any) (any, error) {
@@ -152,5 +150,5 @@ func DeleteMsg(ctx context.Context, clientUsername string, actionData map[string
 		return nil, err
 	}
 
-	return chatMessageService.DeleteMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.DeleteFor)
+	return chatService.DeleteMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.DeleteFor)
 }

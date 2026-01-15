@@ -3,8 +3,6 @@ package postCommentControllers
 import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/services/postCommentService"
-	"i9lyfe/src/services/uploadService/commentUploadService"
-	"i9lyfe/src/services/uploadService/postUploadService"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,7 +21,7 @@ func AuthorizePostUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := postUploadService.Authorize(ctx, body.PostType, body.MediaMIME, len(body.MediaSizes))
+	respData, err := postCommentService.AuthorizePostMediaUpload(ctx, body.PostType, body.MediaMIME, len(body.MediaSizes))
 	if err != nil {
 		return err
 	}
@@ -45,7 +43,7 @@ func AuthorizeCommentUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := commentUploadService.Authorize(ctx, body.AttachmentMIME)
+	respData, err := postCommentService.AuthorizeCommAttUpload(ctx, body.AttachmentMIME)
 	if err != nil {
 		return err
 	}

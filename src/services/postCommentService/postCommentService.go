@@ -2,19 +2,52 @@ package postCommentService
 
 import (
 	"context"
+	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
-	"i9lyfe/src/services/utilServices"
+	"regexp"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
+func extractHashtags(description string) []string {
+	re := regexp.MustCompile("#[[:alnum:]][[:alnum:]_]+[[:alnum:]]+")
+
+	matches := re.FindAllString(description, -1)
+
+	res := make([]string, len(matches))
+
+	for i, m := range matches {
+		res[i] = m[1:]
+	}
+
+	return res
+}
+
+func extractMentions(description string) []string {
+	re := regexp.MustCompile("@[[:alnum:]][[:alnum:]_-]+[[:alnum:]]+")
+
+	matches := re.FindAllString(description, -1)
+
+	res := make([]string, len(matches))
+
+	for i, m := range matches {
+		res[i] = m[1:]
+	}
+
+	return res
+}
+
 func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (any, error) {
-	hashtags := utilServices.ExtractHashtags(description)
-	mentions := utilServices.ExtractMentions(description)
+	hashtags := extractHashtags(description)
+	mentions := extractMentions(description)
 
 	newPost, err := post.New(ctx, clientUsername, mediaCloudNames, postType, description, at)
 	if err != nil {
@@ -122,7 +155,7 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 }
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (any, error) {
-	mentions := utilServices.ExtractMentions(commentText)
+	mentions := extractMentions(commentText)
 
 	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentCloudName, at)
 	if err != nil {
@@ -241,7 +274,7 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 }
 
 func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (any, error) {
-	mentions := utilServices.ExtractMentions(commentText)
+	mentions := extractMentions(commentText)
 
 	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentCloudName, at)
 	if err != nil {
@@ -356,4 +389,73 @@ func UnsavePost(ctx context.Context, clientUsername, postId string) (any, error)
 	}
 
 	return done, nil
+}
+
+/* ------------- */
+
+type AuthCommAttDataT struct {
+	UploadUrl           string `json:"uploadUrl"`
+	AttachmentCloudName string `json:"attachmentCloudName"`
+}
+
+func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCommAttDataT, error) {
+	var res AuthCommAttDataT
+
+	attachmentCloudName := fmt.Sprintf("uploads/comment/%d%d/%s", time.Now().Year(), time.Now().Month(), uuid.NewString())
+
+	url, err := cloudStorageService.GetUploadUrl(attachmentCloudName, attachmentMIME)
+	if err != nil {
+		return AuthCommAttDataT{}, fiber.ErrInternalServerError
+	}
+
+	res.UploadUrl = url
+	res.AttachmentCloudName = attachmentCloudName
+
+	return res, nil
+}
+
+type AuthPostMediaDataT struct {
+	UploadUrl      string `json:"uploadUrl"`
+	MediaCloudName string `json:"mediaCloudName"`
+}
+
+func AuthorizePostMediaUpload(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthPostMediaDataT, error) {
+	var res []AuthPostMediaDataT
+
+	for i := range mediaCount {
+		var blurPlchActualUrl string
+		var blurPlchActualMediaCloudName string
+
+		for blurPlch0_actual1, mime := range mediaMIME {
+
+			which := [2]string{"blur_placeholder", "actual"}
+
+			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), uuid.NewString(), i, which[blurPlch0_actual1])
+
+			url, err := cloudStorageService.GetUploadUrl(mediaCloudName, mime)
+			if err != nil {
+				return nil, fiber.ErrInternalServerError
+			}
+
+			if blurPlch0_actual1 == 0 {
+				blurPlchActualUrl += "blur_placeholder:"
+				blurPlchActualMediaCloudName += "blur_placeholder:"
+			} else {
+				blurPlchActualUrl += "actual:"
+				blurPlchActualMediaCloudName += "actual:"
+			}
+
+			blurPlchActualUrl += url
+			blurPlchActualMediaCloudName += mediaCloudName
+
+			if blurPlch0_actual1 == 0 {
+				blurPlchActualUrl += " "
+				blurPlchActualMediaCloudName += " "
+			}
+		}
+
+		res = append(res, AuthPostMediaDataT{UploadUrl: blurPlchActualUrl, MediaCloudName: blurPlchActualMediaCloudName})
+	}
+
+	return res, nil
 }

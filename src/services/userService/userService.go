@@ -3,19 +3,16 @@ package userService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	user "i9lyfe/src/models/userModel"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"maps"
-	"net/http"
-	"os"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -80,18 +77,8 @@ func AuthorizePPicUpload(ctx context.Context, picMIME string) (AuthPPicDataT, er
 
 		pPicCloudName := fmt.Sprintf("uploads/user/profile_pics/%d%d/%s-%s", time.Now().Year(), time.Now().Month(), uuid.NewString(), which[small0_medium1_large2])
 
-		url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(
-			pPicCloudName,
-			&storage.SignedURLOptions{
-				Scheme:      storage.SigningSchemeV4,
-				Method:      http.MethodPost,
-				ContentType: picMIME,
-				Expires:     time.Now().Add(15 * time.Minute),
-				Headers:     []string{"x-goog-resumable:start"},
-			},
-		)
+		url, err := cloudStorageService.GetUploadUrl(pPicCloudName, picMIME)
 		if err != nil {
-			helpers.LogError(err)
 			return AuthPPicDataT{}, fiber.ErrInternalServerError
 		}
 
@@ -173,84 +160,45 @@ func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (a
 }
 
 func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
-	posts, err := user.GetMentionedPosts(ctx, clientUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
+	return user.GetMentionedPosts(ctx, clientUsername, limit, cursor)
 
-	return posts, nil
 }
 
 func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
-	posts, err := user.GetReactedPosts(ctx, clientUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	return posts, nil
+	return user.GetReactedPosts(ctx, clientUsername, limit, cursor)
 }
 
 func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
-	posts, err := user.GetSavedPosts(ctx, clientUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
+	return user.GetSavedPosts(ctx, clientUsername, limit, cursor)
 
-	return posts, nil
 }
 
 func GetUserNotifications(ctx context.Context, clientUsername string, year int, month string, limit int, cursor float64) (any, error) {
-	notifs, err := user.GetNotifications(ctx, clientUsername, year, month, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
+	return user.GetNotifications(ctx, clientUsername, year, month, limit, cursor)
 
-	return notifs, nil
 }
 
 func ReadUserNotification(ctx context.Context, clientUsername, year, month, notifId string) (bool, error) {
-	done, err := user.ReadNotification(ctx, clientUsername, year, month, notifId)
-	if err != nil {
-		return false, err
-	}
+	return user.ReadNotification(ctx, clientUsername, year, month, notifId)
 
-	return done, nil
 }
 
 func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	profile, err := user.GetProfile(ctx, clientUsername, targetUsername)
-	if err != nil {
-		return nil, err
-	}
+	return user.GetProfile(ctx, clientUsername, targetUsername)
 
-	return profile, nil
 }
 
 func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
-	followers, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
+	return user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
 
-	return followers, nil
 }
 
 func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
-	followings, err := user.GetFollowings(ctx, clientUsername, targetUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	return followings, nil
+	return user.GetFollowings(ctx, clientUsername, targetUsername, limit, cursor)
 }
 
 func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
-	posts, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	return posts, nil
+	return user.GetPosts(ctx, clientUsername, targetUsername, limit, cursor)
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {

@@ -1,15 +1,35 @@
-package gcsHelpers
+package cloudStorageService
 
 import (
 	"context"
 	"errors"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"net/http"
 	"os"
 	"time"
 
 	"cloud.google.com/go/storage"
 )
+
+func GetUploadUrl(cloudName, contentType string) (string, error) {
+	url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(
+		cloudName,
+		&storage.SignedURLOptions{
+			Scheme:      storage.SigningSchemeV4,
+			Method:      http.MethodPost,
+			ContentType: contentType,
+			Expires:     time.Now().Add(15 * time.Minute),
+			Headers:     []string{"x-goog-resumable:start"},
+		},
+	)
+	if err != nil {
+		helpers.LogError(err)
+		return "", err
+	}
+
+	return url, nil
+}
 
 func GetMediaurl(mcn string) (string, error) {
 	url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(mcn, &storage.SignedURLOptions{

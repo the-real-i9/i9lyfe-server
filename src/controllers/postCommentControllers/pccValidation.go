@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/helpers/gcsHelpers"
+	"i9lyfe/src/services/cloudStorageService"
 	"regexp"
 	"slices"
 	"strings"
@@ -144,25 +144,25 @@ func (b createNewPostBody) Validate(ctx context.Context) error {
 
 			fmt.Sscanf(blurPlchActualMcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
 
-			if mInfo := gcsHelpers.GetMediaInfo(ctx, blurPlchMcn); mInfo != nil {
+			if mInfo := cloudStorageService.GetMediaInfo(ctx, blurPlchMcn); mInfo != nil {
 				if mInfo.Size < 1*1024 || mInfo.Size > 300*1024 {
-					gcsHelpers.DeleteCloudMedia(ctx, blurPlchMcn)
+					cloudStorageService.DeleteCloudMedia(ctx, blurPlchMcn)
 				}
 			}
 
-			if mInfo := gcsHelpers.GetMediaInfo(ctx, actualMcn); mInfo != nil {
+			if mInfo := cloudStorageService.GetMediaInfo(ctx, actualMcn); mInfo != nil {
 				switch prefix, _, _ := strings.Cut(postType, ":"); prefix {
 				case "photo":
 					if mInfo.Size < 1*1024 || mInfo.Size > 5*1024*1024 {
-						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+						cloudStorageService.DeleteCloudMedia(ctx, actualMcn)
 					}
 				case "video":
 					if mInfo.Size < 1*1024 || mInfo.Size > 15*1024*1024 {
-						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+						cloudStorageService.DeleteCloudMedia(ctx, actualMcn)
 					}
 				default:
 					if mInfo.Size < 1*1024 || mInfo.Size > 15*1024*1024 {
-						gcsHelpers.DeleteCloudMedia(ctx, actualMcn)
+						cloudStorageService.DeleteCloudMedia(ctx, actualMcn)
 					}
 				}
 			}
@@ -240,9 +240,9 @@ func (b commentOnPostBody) Validate(ctx context.Context) error {
 		go func(attCn string) {
 			ctx := context.Background()
 
-			if mInfo := gcsHelpers.GetMediaInfo(ctx, attCn); mInfo != nil {
+			if mInfo := cloudStorageService.GetMediaInfo(ctx, attCn); mInfo != nil {
 				if mInfo.Size < 1*1024 || mInfo.Size > 500*1024 {
-					gcsHelpers.DeleteCloudMedia(ctx, attCn)
+					cloudStorageService.DeleteCloudMedia(ctx, attCn)
 				}
 			}
 
@@ -292,9 +292,9 @@ func (b commentOnCommentBody) Validate(ctx context.Context) error {
 		go func(attCn string) {
 			ctx := context.Background()
 
-			if mInfo := gcsHelpers.GetMediaInfo(ctx, attCn); mInfo != nil {
+			if mInfo := cloudStorageService.GetMediaInfo(ctx, attCn); mInfo != nil {
 				if mInfo.Size < 1*1024 || mInfo.Size > 500*1024 {
-					gcsHelpers.DeleteCloudMedia(ctx, attCn)
+					cloudStorageService.DeleteCloudMedia(ctx, attCn)
 				}
 			}
 

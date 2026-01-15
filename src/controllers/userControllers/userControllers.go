@@ -1,11 +1,10 @@
 package userControllers
 
 import (
-	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
-	"i9lyfe/src/cache"
+	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/userService"
 	"time"
 
@@ -21,7 +20,7 @@ import (
 //
 //	@Param			Cookie	header		[]string			true	"User session request cookie"
 //
-//	@Success		200		{object}	appTypes.ClientUser	"User info"
+//	@Success		200		{object}	UITypes.ClientUser	"User info"
 //
 //	@Failure		500		{object}	appErrors.HTTPError
 //
@@ -29,12 +28,15 @@ import (
 func GetSessionUser(c *fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	user, err := cache.GetUser[UITypes.ClientUser](c.Context(), clientUser.Username)
+	user, err := userService.SigninUserFind(c.Context(), clientUser.Username)
 	if err != nil {
-		return fiber.ErrInternalServerError
+		return err
 	}
 
-	return c.JSON(user)
+	userMap := helpers.StructToMap(user)
+	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
+
+	return c.JSON(userMap)
 }
 
 // Signout session user
@@ -308,9 +310,7 @@ func GetUserProfile(c *fiber.Ctx) error {
 }
 
 func GetUserFollowers(c *fiber.Ctx) error {
-	// ctx := c.Context()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 

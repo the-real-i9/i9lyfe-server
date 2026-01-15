@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/helpers/gcsHelpers"
+	"i9lyfe/src/services/cloudStorageService"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -18,7 +18,7 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 
 	postMap := helpers.FromJson[map[string]any](postJson)
 
-	if err := gcsHelpers.PostMediaCloudNamesToUrl(postMap); err != nil {
+	if err := cloudStorageService.PostMediaCloudNamesToUrl(postMap); err != nil {
 		return post, err
 	}
 
@@ -34,7 +34,7 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 
 	commentMap := helpers.FromJson[map[string]any](commentJson)
 
-	if err := gcsHelpers.CommentAttachCloudNameToUrl(commentMap); err != nil {
+	if err := cloudStorageService.CommentAttachCloudNameToUrl(commentMap); err != nil {
 		return comment, err
 	}
 

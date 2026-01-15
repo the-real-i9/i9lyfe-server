@@ -3,9 +3,8 @@ package signinService
 import (
 	"context"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/helpers/gcsHelpers"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/securityServices"
 	"i9lyfe/src/services/userService"
 	"os"
@@ -15,8 +14,8 @@ import (
 )
 
 type signinRespT struct {
-	Msg  string             `json:"msg"`
-	User UITypes.ClientUser `json:"user"`
+	Msg  string `json:"msg"`
+	User any    `json:"user"`
 }
 
 func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {
@@ -51,10 +50,10 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinR
 	}
 
 	userMap := helpers.StructToMap(theUser)
-	gcsHelpers.ProfilePicCloudNameToUrl(userMap)
+	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
 
 	resp.Msg = "Signin success!"
-	resp.User = helpers.MapToStruct[UITypes.ClientUser](userMap)
+	resp.User = userMap
 
 	return resp, authJwt, nil
 }

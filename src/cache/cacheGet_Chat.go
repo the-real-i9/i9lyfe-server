@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/helpers/gcsHelpers"
+	"i9lyfe/src/services/cloudStorageService"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -43,7 +43,7 @@ func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err e
 	if cheType == "message" {
 		content := CHEMap["content"].(map[string]any)
 
-		if err := gcsHelpers.MessageMediaCloudNameToUrl(content); err != nil {
+		if err := cloudStorageService.MessageMediaCloudNameToUrl(content); err != nil {
 			return CHE, nil
 		}
 	}
