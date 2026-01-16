@@ -12,9 +12,9 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func GetUploadUrl(cloudName, contentType string) (string, error) {
+func GetUploadUrl(mediaCloudName, contentType string) (string, error) {
 	url, err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).SignedURL(
-		cloudName,
+		mediaCloudName,
 		&storage.SignedURLOptions{
 			Scheme:      storage.SigningSchemeV4,
 			Method:      http.MethodPost,

@@ -9,6 +9,8 @@ on:
     branches:
       - main
 name: "Test i9lyfe"
+permissions:
+  contents: read
 jobs:
   Tests:
     runs-on: ubuntu-latest

@@ -8,7 +8,7 @@ title i9lyfe API Server
 Container(api, "i9lyfe API Server", "Go")
 
 System_Ext(emailSystem, "Email System", "Google SMTP")
-System_Ext(cloudStorageSystem, "Cloud Storage System", "Google Cloud Storage")
+System(cloudStorageSystem, "Cloud Storage System", "Google Cloud Storage")
 
 ContainerDb(database, "Database", "PostgreSQL")
 ContainerDb(inmemorydb, "In-memory Database", "Redis Key-Value Store")
