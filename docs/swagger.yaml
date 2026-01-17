@@ -1,19 +1,19 @@
 basePath: /api
 definitions:
-  appErrors.HTTPError:
-    properties:
-      code:
-        type: integer
-      message:
-        type: string
-    type: object
-  appTypes.ClientUser:
+  UITypes.ClientUser:
     properties:
       name:
         type: string
       profile_pic_url:
         type: string
       username:
+        type: string
+    type: object
+  appErrors.HTTPError:
+    properties:
+      code:
+        type: integer
+      message:
         type: string
     type: object
   passwordResetService.passReset1RespT:
@@ -36,7 +36,7 @@ definitions:
       msg:
         type: string
       user:
-        $ref: '#/definitions/userModel.ToAuthUserT'
+        $ref: '#/definitions/UITypes.ClientUser'
     type: object
   signupService.signup1RespT:
     properties:
@@ -53,35 +53,7 @@ definitions:
       msg:
         type: string
       user:
-        $ref: '#/definitions/userModel.NewUserT'
-    type: object
-  userModel.NewUserT:
-    properties:
-      bio:
-        type: string
-      email:
-        type: string
-      name:
-        type: string
-      presence:
-        type: string
-      profile_pic_url:
-        type: string
-      username:
-        type: string
-    type: object
-  userModel.ToAuthUserT:
-    properties:
-      email:
-        type: string
-      name:
-        type: string
-      presence:
-        type: string
-      profile_pic_url:
-        type: string
-      username:
-        type: string
+        $ref: '#/definitions/UITypes.ClientUser'
     type: object
 host: localhost:8000
 info:
@@ -110,7 +82,7 @@ paths:
         "200":
           description: User info
           schema:
-            $ref: '#/definitions/appTypes.ClientUser'
+            $ref: '#/definitions/UITypes.ClientUser'
         "500":
           description: Internal Server Error
           schema:
@@ -297,39 +269,36 @@ paths:
         required: true
         schema:
           type: string
-      - collectionFormat: csv
-        description: Password Reset session request cookie
+      - description: Password Reset session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Email confirmed. You're about to reset your password
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session request cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/passwordResetService.passReset2RespT'
         "400":
           description: Incorrect or expired confirmation token
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session request cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
         "500":
           description: Internal Server Error
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session request cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Password Reset - Step 2
@@ -353,9 +322,9 @@ paths:
         "200":
           description: Proceed to email confirmation
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/passwordResetService.passReset1RespT'
         "404":
@@ -387,14 +356,11 @@ paths:
         required: true
         schema:
           type: string
-      - collectionFormat: csv
-        description: Password Reset session request cookie
+      - description: Password Reset session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
+        type: string
       produces:
       - application/json
       responses:
@@ -405,17 +371,17 @@ paths:
         "400":
           description: Passwords mismatch.
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
         "500":
           description: Internal Server Error
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Password Reset session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Password Reset user - Step 3
@@ -445,9 +411,10 @@ paths:
         "200":
           description: Signin Success!
           headers:
-            Set-Cookie:
-              description: User session response cookie containing auth JWT
-              type: array
+            Set-cookie:
+              description: Authenticated user session response cookie containing auth
+                JWT
+              type: string
           schema:
             $ref: '#/definitions/signinService.signinRespT'
         "400":
@@ -500,39 +467,37 @@ paths:
         name: bio
         schema:
           type: string
-      - collectionFormat: csv
-        description: Signup session request cookie
+      - description: Signup session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Signup Success
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: User session response cookie containing auth JWT
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/signupService.signup3RespT'
         "400":
           description: Incorrect or expired verification code
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Signup session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
         "500":
           description: Internal Server Error
           headers:
-            Set-Cookie:
-              description: Signup session response cookie
-              type: array
+            Set-cookie:
+              description: Authenticated user session response cookie containing auth
+                JWT
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 3
@@ -556,9 +521,9 @@ paths:
         "200":
           description: Proceed to email verification
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Signup session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/signupService.signup1RespT'
         "400":
@@ -584,39 +549,36 @@ paths:
         required: true
         schema:
           type: string
-      - collectionFormat: csv
-        description: Signup session request cookie
+      - description: Signup session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Email verified
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Signup session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/signupService.signup2RespT'
         "400":
           description: Incorrect or expired verification code
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Signup session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
         "500":
           description: Internal Server Error
           headers:
-            Set-Cookie:
+            Set-cookie:
               description: Signup session response cookie
-              type: array
+              type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 2

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 
 	"i9lyfe/src/services/cloudStorageService"
@@ -78,8 +79,8 @@ func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode 
 }
 
 type signup3RespT struct {
-	Msg  string `json:"msg"`
-	User any    `json:"user"`
+	Msg  string             `json:"msg"`
+	User UITypes.ClientUser `json:"user"`
 }
 
 func RegisterUser(ctx context.Context, sessionData map[string]any, username, password, name, bio string, birthday int64) (signup3RespT, string, error) {
@@ -118,7 +119,7 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
 
 	resp.Msg = "Signup success!"
-	resp.User = userMap
+	resp.User = helpers.MapToStruct[UITypes.ClientUser](userMap)
 
 	return resp, authJwt, nil
 }

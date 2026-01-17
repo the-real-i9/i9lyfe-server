@@ -45,7 +45,7 @@ const docTemplate = `{
                     "200": {
                         "description": "User info",
                         "schema": {
-                            "$ref": "#/definitions/appTypes.ClientUser"
+                            "$ref": "#/definitions/UITypes.ClientUser"
                         }
                     },
                     "500": {
@@ -332,11 +332,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Password Reset session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -350,8 +346,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/passwordResetService.passReset2RespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session request cookie"
                             }
                         }
@@ -362,8 +358,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session request cookie"
                             }
                         }
@@ -374,8 +370,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session request cookie"
                             }
                         }
@@ -414,8 +410,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/passwordResetService.passReset1RespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session response cookie"
                             }
                         }
@@ -468,11 +464,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Password Reset session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -492,8 +484,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session response cookie"
                             }
                         }
@@ -504,8 +496,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Password Reset session response cookie"
                             }
                         }
@@ -553,9 +545,9 @@ const docTemplate = `{
                             "$ref": "#/definitions/signinService.signinRespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
-                                "description": "User session response cookie containing auth JWT"
+                            "Set-cookie": {
+                                "type": "string",
+                                "description": "Authenticated user session response cookie containing auth JWT"
                             }
                         }
                     },
@@ -639,11 +631,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Signup session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -657,8 +645,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/signupService.signup3RespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "User session response cookie containing auth JWT"
                             }
                         }
@@ -669,8 +657,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Signup session response cookie"
                             }
                         }
@@ -681,9 +669,9 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
-                                "description": "Signup session response cookie"
+                            "Set-cookie": {
+                                "type": "string",
+                                "description": "Authenticated user session response cookie containing auth JWT"
                             }
                         }
                     }
@@ -721,8 +709,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/signupService.signup1RespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Signup session response cookie"
                             }
                         }
@@ -766,11 +754,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Signup session request cookie",
                         "name": "Cookie",
                         "in": "header",
@@ -784,8 +768,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/signupService.signup2RespT"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Signup session response cookie"
                             }
                         }
@@ -796,8 +780,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Signup session response cookie"
                             }
                         }
@@ -808,8 +792,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/appErrors.HTTPError"
                         },
                         "headers": {
-                            "Set-Cookie": {
-                                "type": "array",
+                            "Set-cookie": {
+                                "type": "string",
                                 "description": "Signup session response cookie"
                             }
                         }
@@ -819,18 +803,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "appErrors.HTTPError": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "appTypes.ClientUser": {
+        "UITypes.ClientUser": {
             "type": "object",
             "properties": {
                 "name": {
@@ -840,6 +813,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "appErrors.HTTPError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
                     "type": "string"
                 }
             }
@@ -875,7 +859,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/userModel.ToAuthUserT"
+                    "$ref": "#/definitions/UITypes.ClientUser"
                 }
             }
         },
@@ -902,50 +886,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/userModel.NewUserT"
-                }
-            }
-        },
-        "userModel.NewUserT": {
-            "type": "object",
-            "properties": {
-                "bio": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "presence": {
-                    "type": "string"
-                },
-                "profile_pic_url": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "userModel.ToAuthUserT": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "presence": {
-                    "type": "string"
-                },
-                "profile_pic_url": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
+                    "$ref": "#/definitions/UITypes.ClientUser"
                 }
             }
         }

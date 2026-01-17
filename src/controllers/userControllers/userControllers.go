@@ -3,6 +3,7 @@ package userControllers
 import (
 	"fmt"
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/userService"
@@ -36,7 +37,7 @@ func GetSessionUser(c *fiber.Ctx) error {
 	userMap := helpers.StructToMap(user)
 	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
 
-	return c.JSON(userMap)
+	return c.JSON(helpers.MapToStruct[UITypes.ClientUser](userMap))
 }
 
 // Signout session user
@@ -178,15 +179,15 @@ func ChangeUserProfilePicture(c *fiber.Ctx) error {
 //	@Tags			app/private
 //	@Produce		json
 //
-//	@Param			username	path		string		true	"User to follow"
+//	@Param			username	path		string				true	"User to follow"
 //
-//	@Param			Cookie			header		[]string	true	"User session request cookie"
+//	@Param			Cookie		header		[]string			true	"User session request cookie"
 //
-//	@Success		200				{object}	boolean		"Done"
+//	@Success		200			{object}	boolean				"Done"
 //
-//	@Success		400				{object}	appErrors.HTTPError		"Validation error | User trying to follow self"
+//	@Success		400			{object}	appErrors.HTTPError	"Validation error | User trying to follow self"
 //
-//	@Failure		500				{object}	appErrors.HTTPError
+//	@Failure		500			{object}	appErrors.HTTPError
 //
 //	@Router			/app/private/users/:username/follow [post]
 func FollowUser(c *fiber.Ctx) error {
@@ -211,11 +212,11 @@ func FollowUser(c *fiber.Ctx) error {
 //
 //	@Param			username	path		string		true	"User to unfollow"
 //
-//	@Param			Cookie			header		[]string	true	"User session request cookie"
+//	@Param			Cookie		header		[]string	true	"User session request cookie"
 //
-//	@Success		200				{object}	boolean		"Done"
+//	@Success		200			{object}	boolean		"Done"
 //
-//	@Failure		500				{object}	appErrors.HTTPError
+//	@Failure		500			{object}	appErrors.HTTPError
 //
 //	@Router			/app/private/users/:username/unfollow [delete]
 func UnfollowUser(c *fiber.Ctx) error {

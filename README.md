@@ -126,7 +126,7 @@ The following are the features supported by this API. *Visit the API documentati
 
 HTTP request/response Communication: [Click Here](./docs/swagger.json)
 
-WebSocket Real-time Communication: [Click Here](./docs/websocketsapi.md)
+WebSocket Real-time Communication: [Click Here](./docs/asyncapi.json)
 
 ---
 ---
