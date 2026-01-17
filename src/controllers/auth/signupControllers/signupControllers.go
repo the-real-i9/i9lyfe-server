@@ -122,13 +122,13 @@ func VerifyEmail(c *fiber.Ctx) error {
 //	@Param			Cookie		header		string						true	"Signup session request cookie"
 //
 //	@Success		200			{object}	signupService.signup3RespT	"Signup Success"
-//	@Header			200			{string}	Set-cookie					"User session response cookie containing auth JWT"
+//	@Header			200			{string}	Set-cookie					"Authenticated user session response cookie containing auth JWT"
 //
 //	@Failure		400			{object}	appErrors.HTTPError			"Incorrect or expired verification code"
 //	@Header			400			{string}	Set-cookie					"Signup session response cookie"
 //
 //	@Failure		500			{object}	appErrors.HTTPError
-//	@Header			500			{string}	Set-cookie	"Authenticated user session response cookie containing auth JWT"
+//	@Header			500			{string}	Set-cookie	"Signup session response cookie"
 //
 //	@Router			/auth/signup/register_user [post]
 func RegisterUser(c *fiber.Ctx) error {
