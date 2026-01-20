@@ -675,22 +675,6 @@ ALTER TABLE ONLY public.chat_history_in_chat
 
 
 --
--- Name: chat_history_in_chat chat_history_in_chat_owner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.chat_history_in_chat
-    ADD CONSTRAINT chat_history_in_chat_owner_user_fkey FOREIGN KEY (owner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: chat_history_in_chat chat_history_in_chat_partner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.chat_history_in_chat
-    ADD CONSTRAINT chat_history_in_chat_partner_user_fkey FOREIGN KEY (partner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: comment_mentions_user comment_mentions_user_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 

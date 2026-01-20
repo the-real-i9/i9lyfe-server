@@ -124,9 +124,16 @@ The following are the features supported by this API. *Visit the API documentati
 
 ## API Documentation
 
-HTTP request/response Communication: [Click Here](./docs/swagger.json)
+HTTP (REST) API: [Open Swagger JSON](./docs/swagger.json)
 
-WebSocket Real-time Communication: [Click Here](./docs/asyncapi.json)
+WebSockets API: [Open AsyncAPI JSON](./docs/asyncapi.json)
+
+
+## API Diagrams
+
+Architecture Diagrams: [See here](./diagrams/arch-diags.md)
+
+ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open with the dbdiagram.io visualizer.)*
 
 ---
 ---
