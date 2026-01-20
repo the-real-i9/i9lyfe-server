@@ -53,6 +53,7 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Features](#features)
 - [✨Technical Highlights✨](#technical-highlights)
 - [API Documentation](#api-documentation)
+- [API Diagrams](#api-diagrams)
 - [Upcoming features](#upcoming-features)
 
 ## Features
