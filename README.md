@@ -200,6 +200,8 @@ Well, that's a question I'd like to address in a job interview.
 
 Now, when a client sends a READ request for a collection data, we access the target Redis sorted set (ZSET) data structure using the `ZRANGE` class of commands, to which we can specify a `limit` and a `score`. On each item returned in the collection, we attach a `cursor` key that holds the `score` value, so that the next collection of N items can be fetched with the cursor (`score`) of the last item in previous collection.
 
+### Why I offload content media processing to client-side.
+
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
 - I employ the event-sourcing pattern; client request handlers queue events (e.g. users’ reaction to post) into Redis streams, from which dedicated background workers dequeue and execute background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the primary database). This allows client requests to spend the smallest, inevitable processing time, delivering fast user experience.
