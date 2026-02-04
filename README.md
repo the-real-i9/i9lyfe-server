@@ -51,10 +51,10 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [✨Technical Highlights✨](#technical-highlights)
+- [Upcoming features](#upcoming-features)
 - [API Documentation](#api-documentation)
 - [API Diagrams](#api-diagrams)
-- [Upcoming features](#upcoming-features)
+- [✨Technical Highlights✨](#technical-highlights)
 
 ## Features
 
@@ -109,17 +109,32 @@ The following are the features supported by this API. *Visit the API documentati
 - Individual posts receive real-time interaction updates (upon client subscription).
 - Clients receive user "presence" and "last seen" updates (upon subscription)
 
-## ✨Technical Highlights✨
+## Upcoming features
 
-- I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
+The following is a list of features to be supported by this Social Media Backend API.
 
-- I employ the event-sourcing pattern; client request handlers queue events (e.g. users’ reaction to post) into Redis streams, from which dedicated background workers dequeue and execute background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the primary database). This allows client requests to spend the smallest, inevitable processing time, delivering fast user experience.
+### Following Interests
 
-- I use Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
+- Users will be able to follow interests (or topics). Content will also be recommended to them based on the interests they follow.
 
-- Client requests for aggregate data (e.g. reactions count on post) are computed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No linear-time aggregate function is executed, reducing latency and enhancing scalability.
+### Search: Full-text Search | Results Ranking | Fuzzy Matching
 
-- I serve all READ requests from the cache; practically, whole data is built from parts in relevant cache entries. This offers fast user experience. Meanwhile, cached data are dynamically made fresh by relevant WRITE requests, zeroing the chances of having a stale cache at anytime. However, for certain data results, “eventual consistency” reasonably holds.
+- Full-text search through content (photos, videos, and reels)
+- Search user accounts
+- Search hashtaged posts
+
+### Content Recommendation System | User Feed
+
+- A content recommendation system that pushes relevant content to the user's feed, based on:
+  - User following network
+  - User's interest followed
+  - User engagement stats
+  - and more recommendation parameters...
+
+### User Follow Recommendation
+
+- App will recommend users to follow, based on your follow network and content interaction stats.
+
 
 ## API Documentation
 
@@ -137,28 +152,58 @@ ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open with the dbdiagram.io
 ---
 ---
 
-## Upcoming features
+## ✨Technical Highlights✨
 
-The following is a list of features to be supported by this Social Media Backend API.
+### Why I choose Redis over PostgreSQL to serve READ requests.
 
-### Following Interests
+#### The cost of serving a UI component
 
-- Users will be able to follow interests (or topics). Content will also be recommended to them based on the interests they follow.
+The API implements READ requests that serve the whole data required to render a specific UI component. But, in reality, a UI component composes of multiple entities.
 
-### Search: Full-text Search | Results Ranking | Fuzzy Matching
+Hence, from a relational database, it is built from multiple related tables. For example, a post card UI component is built from: 
+- the `users` table - for the post author info, 
+- the `posts` table - for the post content,
+- `post_reactions` - for the post count,
+- `user_post_reactions` - for the end-user's reaction,
+- `comments` table - for comments count,
+- `reposts` table - for reposts count,
+- `user_reposts` table - for the end-user's repost highlight,
+- `post_saves` table - for post saves count, and, finally, 
+-  the `user_post_saves` table for the end-user's post save check.
 
-- Full-text search through content (photos, videos, and reels)
-- Search user accounts
-- Search hashtaged posts
+Each table's tree index will undergo scanning in logarithmic `O(log N)` time complexity, even though some of these tables contribute relatively low UI part compare to others. And, table JOINs at this level brings about low query performance.\
+In addition to this is the cost of aggregation. Counting is a sequential operation. A COUNT aggregate data on a post card UI component, for example, can range from tens to hundreds of thousands.
 
-### Content Recommendation System | User Feed
+This solution scales badly, and latency is high compared to a Redis solution.
 
-- A complex recommendation system that pushes relevant content to the user's feed, based on:
-  - User following network
-  - User's interest followed
-  - User engagement stats
-  - and more...
+The relatively dramatic reduction in cost that a key-value store like Redis provides comes from the fact that we can have hash entries that map directly to the data required to build the same UI component, allowing us to "GET" each of them in constant time `O(1)` complexity; no table scan involved, just one direct lookup to an already prepared data.
 
-### User Follow Recommendation
+> Redis provides several data structures that makes it look almost like it's already predicting what kind of data we might need in that, we can store our data in one or more Redis data structures based on the kinds of accesses we want on that data, allowing us to choose the most efficient data structure for the kind of access we want.
 
-- App will intelligently recommend users to follow, based on your follow network and content interaction stats.
+Even for aggregate (count) data, a `ZCard` or `SCard` on a Redis Set data structure *(e.g. the set of users who reacted to or saved a post, the set of comments on a post, etc.)* executes in constant `O(1)` time complexity.
+
+This solution scales well, with a relatively low latency. Overall performance is better for READ requests.
+
+#### A highly simple, and more efficient pagination solution
+
+Redis allows me to solve cursor-based pagination in a remarkably simpler way compared to how I would have done it with Postgres (by using timestamps for cursor, combined with a WHERE clause that does inequality check).
+
+This solution originates from **event streaming** using Redis Streams.
+
+After every user action/request like post creation, comment, reaction, save etc., an event for that action is added (queued in order of arrival) to the target event stream for that user action.
+
+The goldmine here is that, Redis provides us with a **stream message ID** that is guaranteed to be different for each stream message (one added event) even to the microsecond.\
+This stream message ID `string` is converted to `float64` and used as the `score` value in a Redis sorted set (ZSET) data structure for collection data.
+
+Now, when the clients sends a READ request for a collection data, we access the Redis ZSET data structure using `ZRANGE` related commands, to which we can specify a `limit` and a `score`. On each item returned in the collection, we attach a `cursor` key that holds the `score` value, so that the next collection of N items can be fetched with the cursor (`score`) of the last item in previous collection.
+
+<!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
+
+- I employ the event-sourcing pattern; client request handlers queue events (e.g. users’ reaction to post) into Redis streams, from which dedicated background workers dequeue and execute background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the primary database). This allows client requests to spend the smallest, inevitable processing time, delivering fast user experience.
+
+- I use Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
+
+- Client requests for aggregate data (e.g. reactions count on post) are computed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No linear-time aggregate function is executed, reducing latency and enhancing scalability.
+
+- I serve all READ requests from the cache; practically, whole data is built from parts in relevant cache entries. This offers fast user experience. Meanwhile, cached data are dynamically made fresh by relevant WRITE requests, zeroing the chances of having a stale cache at anytime. However, for certain data results, “eventual consistency” reasonably holds. -->
+
