@@ -195,7 +195,10 @@ After every user action/request like post creation, comment, reaction, save etc.
 The goldmine here is that, Redis provides us with a **stream message ID** that is guaranteed to be different for each stream message (one added event) even to the microsecond.\
 This stream message ID `string` is converted to `float64` and used as the `score` value in a Redis sorted set (ZSET) data structure for collection data.
 
-Now, when the clients sends a READ request for a collection data, we access the Redis ZSET data structure using `ZRANGE` related commands, to which we can specify a `limit` and a `score`. On each item returned in the collection, we attach a `cursor` key that holds the `score` value, so that the next collection of N items can be fetched with the cursor (`score`) of the last item in previous collection.
+> What if there's a collision in stream message ID?\
+Well, that's a question I'd like to address in a job interview.
+
+Now, when a client sends a READ request for a collection data, we access the target Redis sorted set (ZSET) data structure using the `ZRANGE` class of commands, to which we can specify a `limit` and a `score`. On each item returned in the collection, we attach a `cursor` key that holds the `score` value, so that the next collection of N items can be fetched with the cursor (`score`) of the last item in previous collection.
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
