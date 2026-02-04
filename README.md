@@ -55,6 +55,9 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [API Documentation](#api-documentation)
 - [API Diagrams](#api-diagrams)
 - [✨Technical Highlights✨](#technical-highlights)
+  - [Why I choose Redis over PostgreSQL to serve READ requests.
+](#why-i-choose-redis-over-postgresql-to-serve-read-requests)
+  - [Why I offload content media processing to client-side.](#why-i-offload-content-media-processing-to-client-side)
 
 ## Features
 
@@ -201,6 +204,20 @@ Well, that's a question I'd like to address in a job interview.
 Now, when a client sends a READ request for a collection data, we access the target Redis sorted set (ZSET) data structure using the `ZRANGE` class of commands, to which we can specify a `limit` and a `score`. On each item returned in the collection, we attach a `cursor` key that holds the `score` value, so that the next collection of N items can be fetched with the cursor (`score`) of the last item in previous collection.
 
 ### Why I offload content media processing to client-side.
+
+Creating a post, adding comment a with attachment, sending a photo, video, audio, file message, and changing profile picture, all involve binary multimedia processing.
+
+These WRITE requests are hot, frequently made to the API server, and as such should be as cheap as possible.
+
+Media processing is a heavy work requiring hardware resource time and quality. If we do media processing on the server-side, hundreds to thousands of requests will compete for server resources, slowing down response time even API requests that don't involve media processing. This becomes a source of performance bottleneck for the API server. This is at the far end of "cheap".
+
+Even if we choose to offload media processing to a dedicated server, that's additional infrastructure which comes at a high price, a price that'll be unnecessary when today's client's hardware resources are built for high performance media processing. And client requests sent to this dedicated server will still compete for hardware resources&#x2014;still, the requests aren't cheap.
+
+Client hardware resources today are running tools like Figma, Adobe graphics processing products, and, some, AI models. I don't think it's expensive if we also allow our client-side to take advantage of the client's hardware capabilities.
+
+The level of media processing our social media system requires isn't something even many old hardwares with just a CPU and a graphics card can't handle. Cropping, blurring, compressing, audio enhancement, etc., all these are media processing operations that WhatsApp executes fast on a mobile device without an internet connection.
+
+So, as media processing is offloaded to client-side, a client only experiences the slight delay caused by their own hardware capabilities, rather than the heavy delay caused by the competition between many client WRITE requests involving media processing.
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
