@@ -55,9 +55,9 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [API Documentation](#api-documentation)
 - [API Diagrams](#api-diagrams)
 - [✨Technical Highlights✨](#technical-highlights)
-  - [Why I choose Redis over PostgreSQL to serve READ requests.
-](#why-i-choose-redis-over-postgresql-to-serve-read-requests)
+  - [Why I serve all READ requests from Redis.](#why-i-serve-all-read-requests-from-redis)
   - [Why I offload content media processing to client-side.](#why-i-offload-content-media-processing-to-client-side)
+  - [Why event streaming and background workers?](#why-event-streaming-and-background-workers)
 
 ## Features
 
@@ -157,7 +157,7 @@ ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open with the dbdiagram.io
 
 ## ✨Technical Highlights✨
 
-### Why I choose Redis over PostgreSQL to serve READ requests.
+### Why I serve all READ requests from Redis.
 
 #### The cost of serving a UI component
 
@@ -174,7 +174,7 @@ Hence, from a relational database, it is built from multiple related tables. For
 - `post_saves` table - for post saves count, and, finally, 
 -  the `user_post_saves` table for the end-user's post save check.
 
-Each table's tree index will undergo scanning in logarithmic `O(log N)` time complexity, even though some of these tables contribute relatively low UI part compare to others. And, table JOINs at this level brings about low query performance.\
+Each table's tree index will undergo scanning in logarithmic `O(log n)` time complexity, even though some of these tables contribute relatively low UI part compare to others. And, table JOINs at this level brings about low query performance.\
 In addition to this is the cost of aggregation. Counting is a sequential operation. A COUNT aggregate data on a post card UI component, for example, can range from tens to hundreds of thousands.
 
 This solution scales badly, and latency is high compared to a Redis solution.
@@ -186,6 +186,8 @@ The relatively dramatic reduction in cost that a key-value store like Redis prov
 Even for aggregate (count) data, a `ZCard` or `SCard` on a Redis Set data structure *(e.g. the set of users who reacted to or saved a post, the set of comments on a post, etc.)* executes in constant `O(1)` time complexity.
 
 This solution scales well, with a relatively low latency. Overall performance is better for READ requests.
+
+Another benefit derived from Redis is that I can use the same hash entry with a single data structure to serve multiple requests. `ZRANGE` on `ZSET` `(user:X:followers)` allows me to get a collection of followers `O(n)`, while `ZCARD` on the same entry gives me the total number of followers `O(1)`
 
 #### A highly simple, and more efficient pagination solution
 
@@ -218,6 +220,21 @@ Client hardware resources today are running tools like Figma, Adobe graphics pro
 The level of media processing our social media system requires isn't something even many old hardwares with just a CPU and a graphics card can't handle. Cropping, blurring, compressing, audio enhancement, etc., all these are media processing operations that WhatsApp executes fast on a mobile device without an internet connection.
 
 So, as media processing is offloaded to client-side, a client only experiences the slight delay caused by their own hardware capabilities, rather than the heavy delay caused by the competition between many client WRITE requests involving media processing.
+
+### Why event streaming and background workers?
+
+In the client-side's reality, the task that the client asks the server to perform by sending a WRITE request is usually small and cheap. But, in the server-side reality, no task is actually cheap, even if it appears small to the client. This is because, on the server-side, there are two sides to the task, one is the main, cheap task that the client is asking the server to perform, and the other is the side effect of performing that main task, which mosttimes can be expensive.
+
+A high performance, scalable system separates the main task (client task) of a WRITE request from its side effects (server task). A WRITE request that the client expects to perform task X shouldn't perform task X, Y, and Z. A client request that says "create post", isn't saying "create post", then "notify the users I mentioned", then "update cache A, B, C", then "show my post to users D, E, F".
+
+On a WRITE request path we should only perform the client task and resulting side effects (server task) should be performed off this path, this way we ensure the client's request is cheap. How we achieve this is through the **event-sourcing pattern**, using event streaming with background workers.
+
+For a WRITE request, when client task is done, an event that communicates "X has been done" is added to a target event stream for that particular task along with necessary parameters, and we immediately return to the client.\
+Then, a dedicated background worker watching and consuming this stream, performs the necessary side effects (server task) in the background, for each added event.
+
+> Event stream goes by several names including event stream, event queue, or background task queue. All these are the same thing.
+
+In this API, background tasks (side effects) include cache management, message delivery, expensive database operations, and more.
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
