@@ -54,8 +54,8 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Upcoming features](#upcoming-features)
 - [API Documentation](#api-documentation)
 - [API Diagrams](#api-diagrams)
-- [✨Technical Highlights✨](#technical-highlights)
-  - [Why I serve all READ requests from Redis.](#why-i-serve-all-read-requests-from-redis)
+- [Technical Highlights](#technical-notes)
+  - [Why I serve all READ requests from Redis (cache).](#why-i-serve-all-read-requests-from-redis-cache)
   - [Why I offload content media processing to client-side.](#why-i-offload-content-media-processing-to-client-side)
   - [Why event streaming and background workers?](#why-event-streaming-and-background-workers)
 
@@ -150,14 +150,14 @@ WebSockets API: [Open AsyncAPI JSON](./docs/asyncapi.json)
 
 Architecture Diagrams: [See here](./diagrams/arch-diags.md)
 
-ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open with the dbdiagram.io visualizer.)*
+ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open in dbdiagram.io editor.)*
 
 ---
 ---
 
-## ✨Technical Highlights✨
+## Technical Notes
 
-### Why I serve all READ requests from Redis.
+### Why I serve all READ requests from Redis (cache).
 
 #### The cost of serving a UI component
 
@@ -181,7 +181,7 @@ This solution scales badly, and latency is high compared to a Redis solution.
 
 The relatively dramatic reduction in cost that a key-value store like Redis provides comes from the fact that we can have hash entries that map directly to the data required to build the same UI component, allowing us to "GET" each of them in constant time `O(1)` complexity; no table scan involved, just one direct lookup to an already prepared data.
 
-> Redis provides several data structures that makes it look almost like it's already predicting what kind of data we might need in that, we can store our data in one or more Redis data structures based on the kinds of accesses we want on that data, allowing us to choose the most efficient data structure for the kind of access we want.
+> Redis provides several data structures that makes it look almost like it's already predicting what kind of data we might need, in that, we can store our data in one or more Redis data structures based on the kinds of accesses we want on that data, allowing us to choose the most efficient data structure for the kind of access we want.
 
 Even for aggregate (count) data, a `ZCard` or `SCard` on a Redis Set data structure *(e.g. the set of users who reacted to or saved a post, the set of comments on a post, etc.)* executes in constant `O(1)` time complexity.
 
@@ -238,11 +238,11 @@ In this API, background tasks (side effects) include cache management, message d
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
-- I employ the event-sourcing pattern; client request handlers queue events (e.g. users’ reaction to post) into Redis streams, from which dedicated background workers dequeue and execute background tasks (e.g. incrementing reactions count on post in Redis cache, notifying post owners, performing expensive operations in the primary database). This allows client requests to spend the smallest, inevitable processing time, delivering fast user experience.
+- I make use of the event-sourcing pattern; client request handlers queue events (e.g. user reacted to post) into Redis streams, from which dedicated background workers dequeue and execute necessary background tasks like caching for future READs, notifying post owners, performing expensive database operations etc. This allows client requests to be as cheap as possible, thereby delivering fast user experience.
 
 - I use Redis's sorted set data structure to serve cursor-based, paginated results (e.g. post comments, user chats, chat messages, notifications etc.) to the client. Each result item includes a cursor data that can be supplied on the next request for a new chunk of N items.
 
 - Client requests for aggregate data (e.g. reactions count on post) are computed in constant time from Redis's set data structure using ZCard (sorted) or SCard (unsorted). No linear-time aggregate function is executed, reducing latency and enhancing scalability.
 
-- I serve all READ requests from the cache; practically, whole data is built from parts in relevant cache entries. This offers fast user experience. Meanwhile, cached data are dynamically made fresh by relevant WRITE requests, zeroing the chances of having a stale cache at anytime. However, for certain data results, “eventual consistency” reasonably holds. -->
+- I serve all READ requests from the cache—practically, whole data is built from parts in relevant cache entries. This offers fast user experience. Meanwhile, the cache is dynamically made fresh by relevant WRITE requests. This is backed up by the database for possible cache misses, however, for collection or aggregate data results, “eventual consistency ” reasonably holds. -->
 
