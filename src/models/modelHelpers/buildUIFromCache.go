@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
+	"i9lyfe/src/services/cloudStorageService"
 )
 
 func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {
@@ -15,10 +16,16 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 		return nilVal, err
 	}
 
-	postUI.OwnerUser, err = cache.GetUser[UITypes.ContentOwnerUser](ctx, postUI.OwnerUser.(string))
+	postUI.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(postUI.MediaUrls)
+
+	puiou, err := cache.GetUser[UITypes.ContentOwnerUser](ctx, postUI.OwnerUser.(string))
 	if err != nil {
 		return nilVal, err
 	}
+
+	puiou.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(puiou.ProfilePicUrl)
+
+	postUI.OwnerUser = puiou
 
 	postUI.ReactionsCount, err = cache.GetPostReactionsCount(ctx, postId)
 	if err != nil {
@@ -66,10 +73,16 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 		return nilVal, err
 	}
 
-	commentUI.OwnerUser, err = cache.GetUser[UITypes.ContentOwnerUser](ctx, commentUI.OwnerUser.(string))
+	commentUI.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(commentUI.AttachmentUrl)
+
+	cuiou, err := cache.GetUser[UITypes.ContentOwnerUser](ctx, commentUI.OwnerUser.(string))
 	if err != nil {
 		return nilVal, err
 	}
+
+	cuiou.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(cuiou.ProfilePicUrl)
+
+	commentUI.OwnerUser = cuiou
 
 	commentUI.ReactionsCount, err = cache.GetCommentReactionsCount(ctx, commentId)
 	if err != nil {
@@ -97,6 +110,8 @@ func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername s
 		return nilVal, err
 	}
 
+	userSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userSnippetUI.ProfilePicUrl)
+
 	userSnippetUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
 	if err != nil {
 		return nilVal, err
@@ -117,6 +132,8 @@ func buildReactorSnippetUIFromCache(ctx context.Context, username, postOrComment
 	if err != nil {
 		return nilVal, err
 	}
+
+	reactorSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(reactorSnippetUI.ProfilePicUrl)
 
 	switch postOrComment {
 	case "post":
@@ -143,6 +160,8 @@ func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername s
 	if err != nil {
 		return nilVal, err
 	}
+
+	userProfileUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userProfileUI.ProfilePicUrl)
 
 	userProfileUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
 	if err != nil {
@@ -192,10 +211,13 @@ func buildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSni
 
 	setNotifUserDetail := func(userKey string) error {
 		uname := notifSnippetUI.Details[userKey].(string)
+
 		user, err := cache.GetUser[UITypes.NotifUser](ctx, uname)
 		if err != nil {
 			return err
 		}
+
+		user.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(user.ProfilePicUrl)
 
 		notifSnippetUI.Details[userKey] = user
 
@@ -236,10 +258,14 @@ func buildChatSnippetUIFromCache(ctx context.Context, clientUsername, partnerUse
 		return nilVal, err
 	}
 
-	chatSnippetUI.PartnerUser, err = cache.GetUser[UITypes.ChatPartnerUser](ctx, chatSnippetUI.PartnerUser.(string))
+	csuipu, err := cache.GetUser[UITypes.ChatPartnerUser](ctx, chatSnippetUI.PartnerUser.(string))
 	if err != nil {
 		return nilVal, err
 	}
+
+	csuipu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(csuipu.ProfilePicUrl)
+
+	chatSnippetUI.PartnerUser = csuipu
 
 	chatSnippetUI.UnreadMC, err = cache.GetChatUnreadMsgsCount(ctx, clientUsername, partnerUser)
 	if err != nil {
@@ -258,10 +284,16 @@ func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatH
 	}
 
 	if CHEUI.CHEType == "message" {
-		CHEUI.Sender, err = cache.GetUser[UITypes.MsgSender](ctx, CHEUI.Sender.(string))
+		cuis, err := cache.GetUser[UITypes.MsgSender](ctx, CHEUI.Sender.(string))
 		if err != nil {
 			return nilVal, err
 		}
+
+		cuis.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(cuis.ProfilePicUrl)
+
+		CHEUI.Sender = cuis
+
+		cloudStorageService.MessageMediaCloudNameToUrl(CHEUI.Content)
 
 		userEmojiMap, err := cache.GetMsgReactions(ctx, CHEId)
 		if err != nil {
@@ -275,10 +307,15 @@ func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatH
 			var msgr UITypes.MsgReaction
 
 			msgr.Emoji = emoji
-			msgr.Reactor, err = cache.GetUser[UITypes.MsgReactor](ctx, user)
+
+			uimsgr, err := cache.GetUser[UITypes.MsgReactor](ctx, user)
 			if err != nil {
 				return nilVal, err
 			}
+
+			uimsgr.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimsgr.ProfilePicUrl)
+
+			msgr.Reactor = uimsgr
 
 			msgReactions = append(msgReactions, msgr)
 			reactionsCount[emoji]++

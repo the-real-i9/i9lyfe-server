@@ -3,12 +3,9 @@ package cloudStorageService
 import (
 	"fmt"
 	"i9lyfe/src/helpers"
-	"slices"
 )
 
-func ProfilePicCloudNameToUrl(userMap map[string]any) error {
-	ppicCloudName := userMap["profile_pic_cloud_name"].(string)
-
+func ProfilePicCloudNameToUrl(ppicCloudName string) string {
 	if ppicCloudName != "{notset}" {
 		var (
 			smallPPicn  string
@@ -19,41 +16,27 @@ func ProfilePicCloudNameToUrl(userMap map[string]any) error {
 		_, err := fmt.Sscanf(ppicCloudName, "small:%s medium:%s large:%s", &smallPPicn, &mediumPPicn, &largePPicn)
 		if err != nil {
 			helpers.LogError(err)
-			return err
 		}
 
-		smallPicUrl, err := GetMediaurl(smallPPicn)
-		if err != nil {
-			return err
-		}
+		smallPicUrl := GetMediaurl(smallPPicn)
+		mediumPicUrl := GetMediaurl(mediumPPicn)
+		largePicUrl := GetMediaurl(largePPicn)
 
-		mediumPicUrl, err := GetMediaurl(mediumPPicn)
-		if err != nil {
-			return err
-		}
-
-		largePicUrl, err := GetMediaurl(largePPicn)
-		if err != nil {
-			return err
-		}
-
-		userMap["profile_pic_url"] = fmt.Sprintf("small:%s medium:%s large:%s", smallPicUrl, mediumPicUrl, largePicUrl)
-	} else {
-		userMap["profile_pic_url"] = "{notset}"
+		return fmt.Sprintf("small:%s medium:%s large:%s", smallPicUrl, mediumPicUrl, largePicUrl)
 	}
 
-	delete(userMap, "profile_pic_cloud_name")
-
-	return nil
+	return ppicCloudName
 }
 
-func MessageMediaCloudNameToUrl(msgContent map[string]any) error {
+func MessageMediaCloudNameToUrl(msgContent map[string]any) {
 	contentProps := msgContent["props"].(map[string]any)
 
-	if msgContent["type"].(string) != "text" {
+	msgContentType := msgContent["type"].(string)
+
+	if msgContentType != "text" {
 		mediaCloudName := contentProps["media_cloud_name"].(string)
 
-		if slices.Contains([]string{"photo", "video"}, msgContent["type"].(string)) {
+		if msgContentType == "photo" || msgContentType == "video" {
 			var (
 				blurPlchMcn string
 				actualMcn   string
@@ -62,42 +45,26 @@ func MessageMediaCloudNameToUrl(msgContent map[string]any) error {
 			_, err := fmt.Sscanf(mediaCloudName, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
 			if err != nil {
 				helpers.LogError(err)
-				return err
 			}
 
-			blurPlchUrl, err := GetMediaurl(blurPlchMcn)
-			if err != nil {
-				return err
-			}
-
-			actualUrl, err := GetMediaurl(actualMcn)
-			if err != nil {
-				return err
-			}
+			blurPlchUrl := GetMediaurl(blurPlchMcn)
+			actualUrl := GetMediaurl(actualMcn)
 
 			contentProps["media_url"] = fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl)
 		} else {
-			mediaUrl, err := GetMediaurl(mediaCloudName)
-			if err != nil {
-				return err
-			}
+			mediaUrl := GetMediaurl(mediaCloudName)
 
 			contentProps["media_url"] = mediaUrl
 		}
 
 		delete(contentProps, "media_cloud_name")
 	}
-
-	return nil
 }
 
-func PostMediaCloudNamesToUrl(postMap map[string]any) error {
-	mediaCloudNames := postMap["media_cloud_names"].([]any)
-
+func PostMediaCloudNamesToUrl(mediaCloudNames []string) []string {
 	var replacement []string
 
 	for _, mcn := range mediaCloudNames {
-		mcn := mcn.(string)
 
 		var (
 			blurPlchMcn string
@@ -107,47 +74,23 @@ func PostMediaCloudNamesToUrl(postMap map[string]any) error {
 		_, err := fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &blurPlchMcn, &actualMcn)
 		if err != nil {
 			helpers.LogError(err)
-			return err
 		}
 
-		blurPlchUrl, err := GetMediaurl(blurPlchMcn)
-		if err != nil {
-			return err
-		}
-
-		actualUrl, err := GetMediaurl(actualMcn)
-		if err != nil {
-			return err
-		}
+		blurPlchUrl := GetMediaurl(blurPlchMcn)
+		actualUrl := GetMediaurl(actualMcn)
 
 		replacement = append(replacement, fmt.Sprintf("blur_placeholder:%s actual:%s", blurPlchUrl, actualUrl))
 	}
 
-	postMap["media_urls"] = replacement
-
-	delete(postMap, "media_cloud_names")
-
-	return nil
+	return replacement
 }
 
-func CommentAttachCloudNameToUrl(commentMap map[string]any) error {
-	attachmentCloudName := commentMap["attachment_cloud_name"].(string)
-
-	var (
-		attachmentUrl string
-		err           error
-	)
+func CommentAttachCloudNameToUrl(attachmentCloudName string) string {
+	var attachmentUrl string
 
 	if attachmentCloudName != "" {
-		attachmentUrl, err = GetMediaurl(attachmentCloudName)
-		if err != nil {
-			return err
-		}
+		attachmentUrl = GetMediaurl(attachmentCloudName)
 	}
 
-	commentMap["attachment_url"] = attachmentUrl
-
-	delete(commentMap, "attachment_cloud_name")
-
-	return nil
+	return attachmentUrl
 }

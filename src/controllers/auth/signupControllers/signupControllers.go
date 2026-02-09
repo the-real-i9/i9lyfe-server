@@ -5,6 +5,8 @@ import (
 	"i9lyfe/src/services/auth/signupService"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -78,7 +80,7 @@ func RequestNewAccount(c *fiber.Ctx) error {
 func VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("signup_sess_data").(map[string]any)
+	sessionData := c.Locals("signup_sess_data").(json.RawMessage)
 
 	var body verifyEmailBody
 
@@ -134,7 +136,7 @@ func VerifyEmail(c *fiber.Ctx) error {
 func RegisterUser(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("signup_sess_data").(map[string]any)
+	sessionData := c.Locals("signup_sess_data").(json.RawMessage)
 
 	var body registerUserBody
 
@@ -148,7 +150,7 @@ func RegisterUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	respData, authJwt, err := signupService.RegisterUser(ctx, sessionData, body.Username, body.Password, body.Name, body.Bio, body.Birthday)
+	respData, authJwt, err := signupService.RegisterUser(ctx, sessionData, body.Username, body.Name, body.Bio, body.Birthday, body.Password)
 	if err != nil {
 		return err
 	}

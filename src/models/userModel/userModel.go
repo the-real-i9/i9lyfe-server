@@ -34,20 +34,20 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 }
 
 type NewUserT struct {
-	Email               string `json:"email"`
-	Username            string `json:"username"`
-	Name                string `json:"name" db:"name_"`
-	ProfilePicCloudName string `json:"profile_pic_cloud_name" db:"profile_pic_cloud_name"`
-	Bio                 string `json:"bio"`
-	Presence            string `json:"presence"`
+	Email         string `json:"email"`
+	Username      string `json:"username"`
+	Name          string `json:"name" db:"name_"`
+	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
+	Bio           string `json:"bio"`
+	Presence      string `json:"presence"`
 }
 
-func New(ctx context.Context, email, username, password, name, bio string, birthday int64) (NewUserT, error) {
+func New(ctx context.Context, email, username, name, bio string, birthday int64, password []byte) (NewUserT, error) {
 	newUser, err := pgDB.QueryRowType[NewUserT](ctx,
 		/* sql */ `
 		INSERT INTO users (username, email, password_, name_, bio, birthday)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING email, username, name_, profile_pic_cloud_name, bio, presence
+		RETURNING email, username, name_, profile_pic_url, bio, presence
 		`, username, email, password, name, bio, birthday,
 	)
 	if err != nil {
@@ -59,17 +59,17 @@ func New(ctx context.Context, email, username, password, name, bio string, birth
 }
 
 type SignedInUserT struct {
-	Username            string `json:"username"`
-	Name                string `json:"name" db:"name_"`
-	ProfilePicCloudName string `json:"profile_pic_cloud_name" db:"profile_pic_cloud_name"`
-	Password            string `json:"-" db:"password_"`
+	Username      string `json:"username"`
+	Name          string `json:"name" db:"name_"`
+	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
+	Password      []byte `json:"-" db:"password_"`
 }
 
 func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error) {
 	user, err := pgDB.QueryRowType[SignedInUserT](
 		ctx,
 		/* sql */ `
-		SELECT username, name_, profile_pic_cloud_name, password_ 
+		SELECT username, name_, profile_pic_url, password_ 
 		FROM users 
 		WHERE username = $1 OR email = $1
 		`, uniqueIdent,
@@ -82,7 +82,7 @@ func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error)
 	return user, nil
 }
 
-func ChangePassword(ctx context.Context, email, newPassword string) error {
+func ChangePassword(ctx context.Context, email string, newPassword []byte) error {
 	err := pgDB.Exec(
 		ctx,
 		/* sql */ `
@@ -139,7 +139,7 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 		ctx,
 		/* sql */ `
 		UPDATE users
-		SET profile_pic_cloud_name = $2
+		SET profile_pic_url = $2
 		WHERE username = $1
 		RETURNING true AS done
 		`, clientUsername, pictureUrl,
@@ -158,12 +158,13 @@ func Follow(ctx context.Context, clientUsername, targetUsername string, at int64
 		/* sql */ `
 		INSERT INTO user_follows_user (follower_username, following_username, at_)
 		VALUES ($1, $2, $3)
+		ON CONFLICT ON CONSTRAINT no_dup_follow DO NOTHING
 		RETURNING true AS done
 		`, clientUsername, targetUsername, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
+		return false, helpers.HandleDBError(err)
 	}
 
 	return *done, nil

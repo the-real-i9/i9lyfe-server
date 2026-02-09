@@ -22,10 +22,18 @@ func extractHashtags(description string) []string {
 
 	matches := re.FindAllString(description, -1)
 
-	res := make([]string, len(matches))
+	exist := make(map[string]bool)
 
-	for i, m := range matches {
-		res[i] = m[1:]
+	res := []string{}
+
+	for _, m := range matches {
+		ht := m[1:]
+
+		if !exist[ht] {
+			res = append(res, ht)
+		}
+
+		exist[ht] = true
 	}
 
 	return res
@@ -36,10 +44,18 @@ func extractMentions(description string) []string {
 
 	matches := re.FindAllString(description, -1)
 
-	res := make([]string, len(matches))
+	exist := make(map[string]bool)
 
-	for i, m := range matches {
-		res[i] = m[1:]
+	res := []string{}
+
+	for _, m := range matches {
+		mnt := m[1:]
+
+		if !exist[mnt] {
+			res = append(res, mnt)
+		}
+
+		exist[mnt] = true
 	}
 
 	return res
@@ -64,6 +80,8 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 			At:        at,
 		})
 	}
+
+	newPost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(newPost.MediaUrls)
 
 	return newPost, nil
 }
@@ -173,6 +191,8 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 			At:            at,
 		})
 	}
+
+	newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
 
 	return newComment, nil
 }
@@ -292,6 +312,8 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 			At:                 at,
 		})
 	}
+
+	newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
 
 	return newComment, nil
 }

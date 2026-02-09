@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cloudStorageService"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -16,13 +15,7 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 		return post, err
 	}
 
-	postMap := helpers.FromJson[map[string]any](postJson)
-
-	if err := cloudStorageService.PostMediaCloudNamesToUrl(postMap); err != nil {
-		return post, err
-	}
-
-	return helpers.MapToStruct[T](postMap), nil
+	return helpers.FromJson[T](postJson), nil
 }
 
 func GetComment[T any](ctx context.Context, commentId string) (comment T, err error) {
@@ -32,13 +25,7 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 		return comment, err
 	}
 
-	commentMap := helpers.FromJson[map[string]any](commentJson)
-
-	if err := cloudStorageService.CommentAttachCloudNameToUrl(commentMap); err != nil {
-		return comment, err
-	}
-
-	return helpers.MapToStruct[T](commentMap), nil
+	return helpers.FromJson[T](commentJson), nil
 }
 
 func GetPostReactionsCount(ctx context.Context, postId string) (int64, error) {

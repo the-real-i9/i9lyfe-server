@@ -10,7 +10,7 @@ import (
 
 type signInBody struct {
 	EmailOrUsername string `json:"emailOrUsername"`
-	Password        string `json:"password"`
+	Password        []byte `json:"password"`
 }
 
 func (b signInBody) Validate() error {

@@ -37,7 +37,7 @@ func (b verifyEmailBody) Validate() error {
 
 type registerUserBody struct {
 	Username string `json:"username"`
-	Password string `json:"password"`
+	Password []byte `json:"password"`
 	Name     string `json:"name"`
 	Birthday int64  `json:"birthday"`
 	Bio      string `json:"bio"`
@@ -47,16 +47,16 @@ func (b registerUserBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Username,
 			validation.Required,
-			validation.Length(2, 0).Error("username too short. minimum of 2 characters"),
+			validation.Length(2, 20).Error("username length out of range. min:2 max:20"),
 			validation.Match(regexp.MustCompile(`^\w[\w-]*\w$`)).Error("username contains invalid characters"),
 		),
 		validation.Field(&b.Password,
 			validation.Required,
-			validation.Length(8, 0).Error("password too short. minimun of 8 characters"),
+			validation.Length(8, 16).Error("password length out of range. min:8 max:16"),
 		),
 		validation.Field(&b.Name, validation.Required),
 		validation.Field(&b.Birthday, validation.Required),
-		validation.Field(&b.Bio, validation.Required, validation.Length(0, 150).Error("too many characters (max is 150)")),
+		validation.Field(&b.Bio, validation.Required, validation.Length(0, 150).Error("bio too long (max chars: 150)")),
 	)
 
 	return helpers.ValidationError(err, "signupControllers_requestBody.go", "registerUserBody")

@@ -7,6 +7,7 @@ import (
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -101,8 +102,14 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				userNotifications[msg.CommentOwner] = append(userNotifications[msg.CommentOwner], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+					uiru, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.ReactorUser)
+					if err != nil {
+						return
+					}
+					uiru.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiru.ProfilePicUrl)
+
 					notif["unread"] = true
-					notif["details"].(map[string]any)["reactor_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.ReactorUser)
+					notif["details"].(map[string]any)["reactor_user"] = uiru
 
 					realtimeService.SendEventMsg(msg.CommentOwner, appTypes.ServerEventMsg{
 						Event: "new notification",

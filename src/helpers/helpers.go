@@ -2,44 +2,12 @@ package helpers
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"runtime"
 
 	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-func LogError(err error) {
-	if err == nil {
-		return
-	}
-
-	pc, file, line, ok := runtime.Caller(1)
-	fn := "unknown"
-	if !ok {
-		file = "???"
-		line = 0
-	} else {
-		fn = runtime.FuncForPC(pc).Name()
-	}
-
-	log.Printf("[ERROR] %s:%d %s(): %v\n", file, line, fn, err)
-}
-
-func MapToStruct[T any](val map[string]any) (dest T) {
-	bt, err := json.Marshal(val)
-	if err != nil {
-		LogError(err)
-	}
-
-	if err := json.Unmarshal(bt, &dest); err != nil {
-		LogError(err)
-	}
-
-	return
-}
 
 func StructToMap(val any) (dest map[string]any) {
 	bt, err := json.Marshal(val)
@@ -88,7 +56,7 @@ func WSReply(data any, toAction string) map[string]any {
 func Session(kvPairs map[string]any, path string, maxAge int) *fiber.Cookie {
 	c := &fiber.Cookie{
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   os.Getenv("GO_ENV") == "production",
 		Domain:   os.Getenv("SERVER_HOST"),
 	}
 
@@ -115,6 +83,19 @@ func FromJson[T any](jsonStr string) (res T) {
 	}
 
 	err := json.Unmarshal([]byte(jsonStr), &res)
+	if err != nil {
+		LogError(err)
+	}
+
+	return
+}
+
+func FromBtJson[T any](jsonBt []byte) (res T) {
+	if jsonBt == nil {
+		return res
+	}
+
+	err := json.Unmarshal((jsonBt), &res)
 	if err != nil {
 		LogError(err)
 	}

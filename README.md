@@ -189,7 +189,7 @@ This solution scales well, with a relatively low latency. Overall performance is
 
 Another benefit derived from Redis is that I can use the same hash entry with a single data structure to serve multiple requests. `ZRANGE` on `ZSET` `(user:X:followers)` allows me to get a collection of followers `O(n)`, while `ZCARD` on the same entry gives me the total number of followers `O(1)`
 
-#### A highly simple, and more efficient pagination solution
+#### A simpler, and more efficient pagination
 
 Redis allows me to solve cursor-based pagination in a remarkably simpler way compared to how I would have done it with Postgres (by using timestamps for cursor, combined with a WHERE clause that does inequality check).
 
@@ -235,6 +235,8 @@ Then, a dedicated background worker watching and consuming this stream, performs
 > Event stream goes by several names including event stream, event queue, or background task queue. All these are the same thing.
 
 In this API, background tasks (side effects) include cache management, message delivery, expensive database operations, and more.
+
+### Why I parse user password field into byte slice.
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 

@@ -1,6 +1,7 @@
 package passwordResetControllers
 
 import (
+	"github.com/goccy/go-json"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/auth/passwordResetService"
 	"time"
@@ -78,7 +79,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 func ConfirmEmail(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("passwordReset_sess_data").(map[string]any)
+	sessionData := c.Locals("passwordReset_sess_data").(json.RawMessage)
 
 	var body confirmEmailBody
 
@@ -130,7 +131,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 func ResetPassword(c *fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("passwordReset_sess_data").(map[string]any)
+	sessionData := c.Locals("passwordReset_sess_data").(json.RawMessage)
 
 	var body resetPasswordBody
 

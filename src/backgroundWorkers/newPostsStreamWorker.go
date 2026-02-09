@@ -8,6 +8,7 @@ import (
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
@@ -112,8 +113,15 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{notifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+						uimu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.OwnerUser)
+						if err != nil {
+							return
+						}
+
+						uimu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimu.ProfilePicUrl)
+
 						notif["unread"] = true
-						notif["details"].(map[string]any)["mentioning_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.OwnerUser)
+						notif["details"].(map[string]any)["mentioning_user"] = uimu
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",

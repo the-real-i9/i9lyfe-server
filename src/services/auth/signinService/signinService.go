@@ -4,7 +4,6 @@ import (
 	"context"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
-	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/securityServices"
 	"i9lyfe/src/services/userService"
@@ -19,7 +18,7 @@ type signinRespT struct {
 	User UITypes.ClientUser `json:"user"`
 }
 
-func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {
+func Signin(ctx context.Context, emailOrUsername string, inputPassword []byte) (signinRespT, string, error) {
 	var resp signinRespT
 
 	theUser, err := userService.SigninUserFind(ctx, emailOrUsername)
@@ -50,11 +49,10 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinR
 		return resp, "", err
 	}
 
-	userMap := helpers.StructToMap(theUser)
-	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
+	theUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(theUser.ProfilePicUrl)
 
 	resp.Msg = "Signin success!"
-	resp.User = helpers.MapToStruct[UITypes.ClientUser](userMap)
+	resp.User = UITypes.ClientUser{Username: theUser.Username, Name: theUser.Name, ProfilePicUrl: theUser.ProfilePicUrl}
 
 	return resp, authJwt, nil
 }

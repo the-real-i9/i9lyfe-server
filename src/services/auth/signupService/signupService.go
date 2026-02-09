@@ -7,6 +7,8 @@ import (
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 
+	"github.com/goccy/go-json"
+
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
@@ -52,10 +54,10 @@ type signup2RespT struct {
 	Msg string `json:"msg"`
 }
 
-func VerifyEmail(ctx context.Context, sessionData map[string]any, inputVerfCode string) (signup2RespT, map[string]any, error) {
+func VerifyEmail(ctx context.Context, sessionData json.RawMessage, inputVerfCode string) (signup2RespT, map[string]any, error) {
 	var resp signup2RespT
 
-	sd := helpers.MapToStruct[struct {
+	sd := helpers.FromBtJson[struct {
 		Email        string
 		VCode        string
 		VCodeExpires time.Time
@@ -83,10 +85,12 @@ type signup3RespT struct {
 	User UITypes.ClientUser `json:"user"`
 }
 
-func RegisterUser(ctx context.Context, sessionData map[string]any, username, password, name, bio string, birthday int64) (signup3RespT, string, error) {
+func RegisterUser(ctx context.Context, sessionData json.RawMessage, username, name, bio string, birthday int64, password []byte) (signup3RespT, string, error) {
 	var resp signup3RespT
 
-	email := sessionData["email"].(string)
+	email := helpers.FromBtJson[struct {
+		Email string
+	}](sessionData).Email
 
 	userExists, err := userService.UserExists(ctx, username)
 	if err != nil {
@@ -102,7 +106,7 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 		return resp, "", err
 	}
 
-	newUser, err := userService.NewUser(ctx, email, username, hashedPassword, name, bio, birthday)
+	newUser, err := userService.NewUser(ctx, email, username, name, bio, birthday, hashedPassword)
 	if err != nil {
 		return resp, "", err
 	}
@@ -115,11 +119,10 @@ func RegisterUser(ctx context.Context, sessionData map[string]any, username, pas
 		return resp, "", err
 	}
 
-	userMap := helpers.StructToMap(newUser)
-	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
+	newUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(newUser.ProfilePicUrl)
 
 	resp.Msg = "Signup success!"
-	resp.User = helpers.MapToStruct[UITypes.ClientUser](userMap)
+	resp.User = UITypes.ClientUser{Username: newUser.Username, Name: newUser.Name, ProfilePicUrl: newUser.ProfilePicUrl}
 
 	return resp, authJwt, nil
 }

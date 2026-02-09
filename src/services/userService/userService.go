@@ -21,8 +21,8 @@ func UserExists(ctx context.Context, uniqueIdent string) (bool, error) {
 	return user.Exists(ctx, uniqueIdent)
 }
 
-func NewUser(ctx context.Context, email, username, password, name, bio string, birthday int64) (user.NewUserT, error) {
-	newUser, err := user.New(ctx, email, username, password, name, bio, birthday)
+func NewUser(ctx context.Context, email, username, name, bio string, birthday int64, password []byte) (user.NewUserT, error) {
+	newUser, err := user.New(ctx, email, username, name, bio, birthday, password)
 	if err != nil {
 		return user.NewUserT{}, err
 	}
@@ -41,7 +41,7 @@ func SigninUserFind(ctx context.Context, uniqueIdent string) (*user.SignedInUser
 	return user.SigninFind(ctx, uniqueIdent)
 }
 
-func ChangeUserPassword(ctx context.Context, email, newPassword string) error {
+func ChangeUserPassword(ctx context.Context, email string, newPassword []byte) error {
 	return user.ChangePassword(ctx, email, newPassword)
 }
 

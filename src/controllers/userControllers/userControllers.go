@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
-	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/userService"
 	"time"
@@ -34,10 +33,9 @@ func GetSessionUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	userMap := helpers.StructToMap(user)
-	cloudStorageService.ProfilePicCloudNameToUrl(userMap)
+	user.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(user.ProfilePicUrl)
 
-	return c.JSON(helpers.MapToStruct[UITypes.ClientUser](userMap))
+	return c.JSON(UITypes.ClientUser{Username: user.Username, Name: user.Name, ProfilePicUrl: user.ProfilePicUrl})
 }
 
 // Signout session user

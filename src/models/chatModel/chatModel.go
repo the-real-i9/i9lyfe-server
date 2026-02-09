@@ -82,7 +82,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, msgConten
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return NewMessageT{}, fiber.ErrInternalServerError
+		return NewMessageT{}, helpers.HandleDBError(err)
 	}
 
 	return *newMessage, nil

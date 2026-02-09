@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cloudStorageService"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -16,13 +15,9 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 		return user, err
 	}
 
-	userMap := helpers.FromJson[map[string]any](userJson)
+	user = helpers.FromJson[T](userJson)
 
-	if err := cloudStorageService.ProfilePicCloudNameToUrl(userMap); err != nil {
-		return user, nil
-	}
-
-	return helpers.MapToStruct[T](userMap), nil
+	return user, nil
 }
 
 func GetUserPostReaction(ctx context.Context, postId, username string) (string, error) {

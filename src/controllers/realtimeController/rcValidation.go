@@ -5,11 +5,12 @@ import (
 	"slices"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/goccy/go-json"
 )
 
 type rtActionBody struct {
-	Action string         `json:"action"`
-	Data   map[string]any `json:"data"`
+	Action string          `json:"action"`
+	Data   json.RawMessage `json:"data"`
 }
 
 func (b rtActionBody) Validate() error {

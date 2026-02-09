@@ -66,7 +66,14 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 
 	if newMessage.Id != "" {
 		go func(msgData chat.NewMessageT) {
-			msgData.Sender, _ = cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
+			uisender, err := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
+			if err != nil {
+				return
+			}
+
+			uisender.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uisender.ProfilePicUrl)
+			msgData.Sender = uisender
+
 			cloudStorageService.MessageMediaCloudNameToUrl(msgData.Content)
 
 			realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{

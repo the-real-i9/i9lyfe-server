@@ -44,7 +44,7 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return "", fiber.ErrInternalServerError
+		return "", helpers.HandleDBError(err)
 	}
 
 	return *commentOwner, nil
@@ -92,12 +92,12 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 }
 
 type newCommentT struct {
-	Id                  string `json:"id" db:"comment_id"`
-	OwnerUser           string `json:"owner_user" db:"owner_user"`
-	CommentText         string `json:"comment_text" db:"comment_text"`
-	AttachmentCloudName string `json:"attachment_cloud_name" db:"attachment_cloud_name"`
-	At                  int64  `json:"at" db:"at_"`
-	ParentCommentOwner  string `json:"-" db:"parent_comment_owner"`
+	Id                 string `json:"id" db:"comment_id"`
+	OwnerUser          string `json:"owner_user" db:"owner_user"`
+	CommentText        string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
+	At                 int64  `json:"at" db:"at_"`
+	ParentCommentOwner string `json:"-" db:"parent_comment_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
@@ -105,16 +105,16 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
-			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_cloud_name, at_)
+			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, username AS owner_user, comment_text, attachment_cloud_name, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_cloud_name, at_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newCommentT{}, fiber.ErrInternalServerError
+		return newCommentT{}, helpers.HandleDBError(err)
 	}
 
 	return *newComment, nil

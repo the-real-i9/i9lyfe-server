@@ -9,6 +9,7 @@ import (
 	"i9lyfe/src/services/userService"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -47,10 +48,10 @@ type passReset2RespT struct {
 	Msg string `json:"msg"`
 }
 
-func ConfirmEmail(ctx context.Context, sessionData map[string]any, inputResetToken string) (passReset2RespT, map[string]any, error) {
+func ConfirmEmail(ctx context.Context, sessionData json.RawMessage, inputResetToken string) (passReset2RespT, map[string]any, error) {
 	var resp passReset2RespT
 
-	sd := helpers.MapToStruct[struct {
+	sd := helpers.FromBtJson[struct {
 		Email            string
 		PwdrToken        string
 		PwdrTokenExpires time.Time
@@ -75,10 +76,12 @@ type passReset3RespT struct {
 	Msg string `json:"msg"`
 }
 
-func ResetPassword(ctx context.Context, sessionData map[string]any, newPassword string) (passReset3RespT, error) {
+func ResetPassword(ctx context.Context, sessionData json.RawMessage, newPassword []byte) (passReset3RespT, error) {
 	var resp passReset3RespT
 
-	email := sessionData["email"].(string)
+	email := helpers.FromBtJson[struct {
+		Email string
+	}](sessionData).Email
 
 	hashedPassword, err := securityServices.HashPassword(newPassword)
 	if err != nil {

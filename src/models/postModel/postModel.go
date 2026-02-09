@@ -2,6 +2,7 @@ package postModel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/appTypes/UITypes"
@@ -10,6 +11,7 @@ import (
 	"i9lyfe/src/models/modelHelpers"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -18,21 +20,21 @@ func redisDB() *redis.Client {
 }
 
 type newPostT struct {
-	Id              string   `json:"id" db:"id_"`
-	Type            string   `json:"type" db:"type_"`
-	MediaCloudNames []string `json:"media_cloud_names" db:"media_cloud_names"`
-	Description     string   `json:"description"`
-	CreatedAt       int64    `json:"created_at" db:"created_at"`
-	OwnerUser       any      `json:"owner_user" db:"owner_user"`
+	Id          string   `json:"id" db:"id_"`
+	Type        string   `json:"type" db:"type_"`
+	MediaUrls   []string `json:"media_urls" db:"media_urls"`
+	Description string   `json:"description"`
+	CreatedAt   int64    `json:"created_at" db:"created_at"`
+	OwnerUser   any      `json:"owner_user" db:"owner_user"`
 }
 
 func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post newPostT, err error) {
 	newPost, err := pgDB.QueryRowType[newPostT](
 		ctx,
 		/* sql */ `
-		INSERT INTO posts (owner_user, type_, media_cloud_names, description, created_at)
+		INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id_, owner_user, type_, media_cloud_names, description, created_at
+		RETURNING id_, owner_user, type_, media_urls, description, created_at
 		`, clientUsername, postType, mediaCloudNames, description, at,
 	)
 	if err != nil {
@@ -63,7 +65,9 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 		)
 		if err != nil {
 			helpers.LogError(err)
-			return err
+			if !errors.Is(err, &pgconn.PgError{}) {
+				return err
+			}
 		}
 	}
 
@@ -157,7 +161,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return "", fiber.ErrInternalServerError
+		return "", helpers.HandleDBError(err)
 	}
 
 	return *postOwnerUser, nil
@@ -205,12 +209,12 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 }
 
 type newCommentT struct {
-	Id                  string `json:"id" db:"comment_id"`
-	OwnerUser           string `json:"owner_user" db:"owner_user"`
-	CommentText         string `json:"comment_text" db:"comment_text"`
-	AttachmentCloudName string `json:"attachment_cloud_name" db:"attachment_cloud_name"`
-	At                  int64  `json:"at" db:"at_"`
-	PostOwner           string `json:"-" db:"post_owner"`
+	Id            string `json:"id" db:"comment_id"`
+	OwnerUser     string `json:"owner_user" db:"owner_user"`
+	CommentText   string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
+	At            int64  `json:"at" db:"at_"`
+	PostOwner     string `json:"-" db:"post_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
@@ -218,16 +222,16 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
-			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_cloud_name, at_)
+			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, username AS owner_user, comment_text, attachment_cloud_name, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_cloud_name, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
 		`, clientUsername, postId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newCommentT{}, fiber.ErrInternalServerError
+		return newCommentT{}, helpers.HandleDBError(err)
 	}
 
 	return *newComment, nil
@@ -253,7 +257,9 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 		)
 		if err != nil {
 			helpers.LogError(err)
-			return err
+			if !errors.Is(err, &pgconn.PgError{}) {
+				return err
+			}
 		}
 	}
 
@@ -342,7 +348,7 @@ func Save(ctx context.Context, clientUsername, postId string) (bool, error) {
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
+		return false, helpers.HandleDBError(err)
 	}
 
 	return *done, nil

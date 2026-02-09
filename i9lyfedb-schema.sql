@@ -150,20 +150,27 @@ WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND 
 INTO msg_in_chat;
 
 IF NOT msg_in_chat THEN
-  RETURN null;
+  RAISE EXCEPTION
+    USING
+        ERRCODE = 'UX001',
+        MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
 END IF;
 
 INSERT INTO chat_history_entry (type_, reactor_username, emoji, reaction_at, reaction_to)
 VALUES ('reaction', from_user, emoji_val, at_val, msg_id)
+ON CONFLICT ON CONSTRAINT no_dup_msg_rxn DO UPDATE 
+SET emoji = emoji_val, reaction_at = at_val
 RETURNING id_ INTO che_id_val;
 
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
-VALUES (from_user, to_user, che_id_val, 'sent');
+VALUES (from_user, to_user, che_id_val, 'sent')
+ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
 
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
-VALUES (to_user, from_user, che_id_val, 'received');
+VALUES (to_user, from_user, che_id_val, 'received')
+ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
 
-SELECT json_build_object('username', username, 'profile_pic_cloud_name', profile_pic_cloud_name)
+SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url)
 FROM users WHERE username = from_user
 INTO reactor_user;
   
@@ -193,7 +200,10 @@ BEGIN
   INTO msg_in_chat;
 
   IF NOT msg_in_chat THEN
-    RETURN '';
+    RAISE EXCEPTION
+    USING
+        ERRCODE = 'UX001',
+        MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
   END IF;
 		
   DELETE FROM chat_history_entry
@@ -227,7 +237,10 @@ WHERE owner_user = from_user AND partner_user = to_user AND che_id = reply_targe
 INTO msg_in_chat;
 
 IF NOT msg_in_chat THEN
-  RETURN null;
+  RAISE EXCEPTION
+    USING
+        ERRCODE = 'UX001',
+        MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
 END IF;
 
 INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at, reply_to)
@@ -399,7 +412,7 @@ CREATE TABLE public.posts (
     id_ uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_user text NOT NULL,
     type_ text NOT NULL,
-    media_cloud_names text[] NOT NULL,
+    media_urls text[] NOT NULL,
     description text DEFAULT ''::text NOT NULL,
     deleted boolean DEFAULT false,
     reposted_by_user text,
@@ -433,7 +446,7 @@ CREATE TABLE public.user_comments_on (
     parent_comment_id uuid,
     post_id uuid,
     comment_text text NOT NULL,
-    attachment_cloud_name text NOT NULL,
+    attachment_url text NOT NULL,
     deleted boolean DEFAULT false,
     deleted_at bigint,
     at_ bigint,
@@ -506,7 +519,7 @@ CREATE TABLE public.users (
     password_ text NOT NULL,
     name_ text NOT NULL,
     bio text DEFAULT 'Thanks for using i9lyfe'::text,
-    profile_pic_cloud_name text DEFAULT '{notset}'::text,
+    profile_pic_url text DEFAULT '{notset}'::text,
     presence text DEFAULT 'online'::text NOT NULL,
     birthday bigint,
     last_seen bigint,
@@ -592,6 +605,14 @@ ALTER TABLE ONLY public.user_reacts_to_post
 
 ALTER TABLE ONLY public.user_saves_post
     ADD CONSTRAINT no_dup_saves UNIQUE (username, post_id);
+
+
+--
+-- Name: chat_history_in_chat no_dup_che; Type: CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.chat_history_in_chat
+    ADD CONSTRAINT no_dup_che UNIQUE (owner_user, partner_user, che_id);
 
 
 --

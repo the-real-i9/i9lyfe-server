@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cloudStorageService"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -36,26 +35,14 @@ func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err e
 		return CHE, err
 	}
 
-	CHEMap := helpers.FromJson[map[string]any](CHEJson)
-
-	cheType := CHEMap["che_type"].(string)
-
-	if cheType == "message" {
-		content := CHEMap["content"].(map[string]any)
-
-		if err := cloudStorageService.MessageMediaCloudNameToUrl(content); err != nil {
-			return CHE, nil
-		}
-	}
-
-	return helpers.MapToStruct[T](CHEMap), nil
+	return helpers.FromJson[T](CHEJson), nil
 }
 
 func GetMsgReactions(ctx context.Context, msgId string) (map[string]string, error) {
 	msgReactions, err := rdb().HGetAll(ctx, fmt.Sprintf("message:%s:reactions", msgId)).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
-		return nil, err
+		return msgReactions, err
 	}
 
 	return msgReactions, nil

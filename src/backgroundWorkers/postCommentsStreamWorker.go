@@ -8,6 +8,7 @@ import (
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/postModel"
+	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -108,8 +109,15 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+						uicu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
+						if err != nil {
+							return
+						}
+
+						uicu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uicu.ProfilePicUrl)
+
 						copNotif["unread"] = true
-						copNotif["details"].(map[string]any)["commenter_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
+						copNotif["details"].(map[string]any)["commenter_user"] = uicu
 
 						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
@@ -135,8 +143,15 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
+						uimu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
+						if err != nil {
+							return
+						}
+
+						uimu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimu.ProfilePicUrl)
+
 						micNotif["unread"] = true
-						micNotif["details"].(map[string]any)["mentioning_user"], _ = cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
+						micNotif["details"].(map[string]any)["mentioning_user"] = uimu
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",

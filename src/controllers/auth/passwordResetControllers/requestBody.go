@@ -35,8 +35,8 @@ func (b confirmEmailBody) Validate() error {
 }
 
 type resetPasswordBody struct {
-	NewPassword        string `json:"newPassword"`
-	ConfirmNewPassword string `json:"confirmNewPassword"`
+	NewPassword        []byte `json:"newPassword"`
+	ConfirmNewPassword []byte `json:"confirmNewPassword"`
 }
 
 func (b resetPasswordBody) Validate() error {

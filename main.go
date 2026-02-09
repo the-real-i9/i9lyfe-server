@@ -45,7 +45,10 @@ func main() {
 	app := fiber.New()
 
 	app.Use(helmet.New())
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		// AllowOrigins: "*", /* will be our client's host in production */
+		// AllowCredentials: false, /* will be true in production */
+	}))
 
 	app.Use(encryptcookie.New(encryptcookie.Config{
 		Key: os.Getenv("COOKIE_SECRET"),
