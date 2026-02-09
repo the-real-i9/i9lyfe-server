@@ -15,9 +15,7 @@ func GetUser[T any](ctx context.Context, username string) (user T, err error) {
 		return user, err
 	}
 
-	user = helpers.FromJson[T](userJson)
-
-	return user, nil
+	return helpers.FromJson[T](userJson), nil
 }
 
 func GetUserPostReaction(ctx context.Context, postId, username string) (string, error) {

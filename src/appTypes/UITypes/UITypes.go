@@ -19,12 +19,12 @@ type ContentOwnerUser struct {
 }
 
 type Post struct {
-	Id             string   `json:"id"`
-	Type           string   `json:"type"`
-	OwnerUser      any      `json:"owner_user"`
-	MediaUrls      []string `json:"media_urls"`
+	Id             string   `json:"id" db:"id_"`
+	Type           string   `json:"type" db:"type_"`
+	OwnerUser      any      `json:"owner_user" db:"owner_user"`
+	MediaUrls      []string `json:"media_urls" db:"media_urls"`
 	Description    string   `json:"description"`
-	CreatedAt      int64    `json:"created_at"`
+	CreatedAt      int64    `json:"created_at" db:"created_at"`
 	ReactionsCount int64    `json:"reactions_count"`
 	CommentsCount  int64    `json:"comments_count"`
 	RepostsCount   int64    `json:"reposts_count"`
@@ -36,11 +36,11 @@ type Post struct {
 }
 
 type Comment struct {
-	Id             string  `json:"id"`
-	OwnerUser      any     `json:"owner_user"`
-	AttachmentUrl  string  `json:"attachment_url"`
-	CommentText    string  `json:"comment_text"`
-	At             int64   `json:"at"`
+	Id             string  `json:"id" db:"comment_id"`
+	OwnerUser      any     `json:"owner_user" db:"owner_user"`
+	AttachmentUrl  string  `json:"attachment_url" db:"attachment_url"`
+	CommentText    string  `json:"comment_text" db:"comment_text"`
+	At             int64   `json:"at" db:"at_"`
 	ReactionsCount int64   `json:"reactions_count"`
 	CommentsCount  int64   `json:"comments_count"`
 	MeReaction     string  `json:"me_reaction"`
@@ -92,7 +92,7 @@ type ChatPartnerUser struct {
 }
 
 type ChatSnippet struct {
-	PartnerUser any     `json:"partner_user"`
+	PartnerUser any     `json:"partner_user" db:"partner_user"`
 	UnreadMC    int64   `json:"unread_messages_count"`
 	Cursor      float64 `json:"cursor"`
 }
@@ -118,25 +118,25 @@ type MsgReaction struct {
 
 type ChatHistoryEntry struct {
 	// appears always
-	CHEType string `json:"che_type"`
+	CHEType string `json:"che_type" db:"type_"`
 
 	// appears for message che_type
-	Id             string         `json:"id,omitempty"`
-	Content        map[string]any `json:"content,omitempty"`
-	DeliveryStatus string         `json:"delivery_status,omitempty"`
-	CreatedAt      int64          `json:"created_at,omitempty"`
-	DeliveredAt    int64          `json:"delivered_at,omitempty"`
-	ReadAt         int64          `json:"read_at,omitempty"`
-	Sender         any            `json:"sender,omitempty"`
+	Id             string         `json:"id,omitempty" db:"id_"`
+	Content        map[string]any `json:"content,omitempty" db:"content_"`
+	DeliveryStatus string         `json:"delivery_status,omitempty" db:"delivery_status"`
+	CreatedAt      int64          `json:"created_at,omitempty" db:"created_at"`
+	DeliveredAt    int64          `json:"delivered_at,omitempty" db:"delivered_at"`
+	ReadAt         int64          `json:"read_at,omitempty" db:"read_at"`
+	Sender         any            `json:"sender,omitempty" db:"sender_username"`
 	ReactionsCount map[string]int `json:"reactions_count,omitempty"`
 	Reactions      []MsgReaction  `json:"reactions,omitempty"`
 
 	// appears if che_type:message is a reply
-	ReplyTargetMsg map[string]any `json:"reply_target_msg,omitempty"`
+	ReplyTargetMsg map[string]any `json:"reply_target_msg,omitempty" db:"reply_target_msg"`
 
 	// appears for reaction che_type
-	Reactor any    `json:"reactor,omitempty"`
-	Emoji   string `json:"emoji,omitempty"`
+	Reactor any    `json:"reactor,omitempty" db:"reactor_username"`
+	Emoji   string `json:"emoji,omitempty" db:"emoji"`
 
 	// cursor for pagination
 	Cursor float64 `json:"cursor"`

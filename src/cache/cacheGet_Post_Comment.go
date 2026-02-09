@@ -15,6 +15,15 @@ func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
 		return post, err
 	}
 
+	if err == redis.Nil {
+		dbPost, err := GetPostFromDB[T](ctx, postId)
+		if err != nil {
+			return post, err
+		}
+
+		return *dbPost, nil
+	}
+
 	return helpers.FromJson[T](postJson), nil
 }
 
@@ -23,6 +32,15 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return comment, err
+	}
+
+	if err == redis.Nil {
+		dbComment, err := GetCommentFromDB[T](ctx, commentId)
+		if err != nil {
+			return comment, err
+		}
+
+		return *dbComment, nil
 	}
 
 	return helpers.FromJson[T](commentJson), nil
