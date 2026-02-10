@@ -58,6 +58,28 @@ func StoreOfflineUsers(ctx context.Context, user_lastSeen_Pairs map[string]int64
 	return nil
 }
 
+func StoreUserFeedPost(ctx context.Context, user, postId string) error {
+	count, err := rdb().ZCard(ctx, fmt.Sprintf("user:%s:feed", user)).Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	member := redis.Z{
+		Score:  float64(count + 1),
+		Member: postId,
+	}
+
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:feed", user), member).Err(); err != nil {
+		helpers.LogError(err)
+
+		return err
+	}
+
+	return nil
+}
+
 func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_stmsgId_Pair [][2]string) error {
 	members := []redis.Z{}
 	for _, pair := range followerUser_stmsgId_Pair {

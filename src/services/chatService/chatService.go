@@ -66,10 +66,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 
 	if newMessage.Id != "" {
 		go func(msgData chat.NewMessageT) {
-			uisender, err := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
-			if err != nil {
-				return
-			}
+			uisender, _ := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
 
 			uisender.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uisender.ProfilePicUrl)
 			msgData.Sender = uisender

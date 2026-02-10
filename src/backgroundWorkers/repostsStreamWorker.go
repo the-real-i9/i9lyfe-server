@@ -92,7 +92,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]string{msg.PostId, stmsgIds[i]})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					contentRecommendationService.FanOutPost(msg.RepostId)
+					contentRecommendationService.FanOutPostToFollowers(msg.RepostId, msg.ReposterUser)
 				})
 
 				if msg.ReposterUser == msg.PostOwner {

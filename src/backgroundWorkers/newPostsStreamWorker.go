@@ -131,7 +131,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				}
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					contentRecommendationService.FanOutPost(msg.PostId)
+					contentRecommendationService.FanOutNewPostToFollowers(msg.PostId, msg.OwnerUser)
 				})
 			}
 

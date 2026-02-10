@@ -36,6 +36,21 @@ func SendEventMsg(toUser string, msg appTypes.ServerEventMsg) {
 	storeUndelvMsg()
 }
 
+func SendNewFeedPostEventMsg(toUser string, data any) {
+	if userPipe, ok := AllClientSockets.Load(toUser); ok {
+		pipe := userPipe.(*websocket.Conn)
+
+		if err := pipe.WriteJSON(appTypes.ServerEventMsg{
+			Event: "new feed post",
+			Data:  data,
+		}); err != nil {
+			helpers.LogError(err)
+		}
+
+		return
+	}
+}
+
 func AddPipe(ctx context.Context, clientUsername string, pipe *websocket.Conn) {
 	for {
 		msgJson, err := rdb().LPop(ctx, fmt.Sprintf("user_event_msgs_queue:%s", clientUsername)).Result()

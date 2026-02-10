@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
+	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
@@ -79,9 +80,14 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 			Mentions:  mentions,
 			At:        at,
 		})
-	}
 
-	newPost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(newPost.MediaUrls)
+		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
+
+		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
+		newPost.OwnerUser = uiowneruser
+
+		newPost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(newPost.MediaUrls)
+	}
 
 	return newPost, nil
 }
@@ -190,9 +196,14 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 			Mentions:      mentions,
 			At:            at,
 		})
-	}
 
-	newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
+
+		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
+		newComment.OwnerUser = uiowneruser
+
+		newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+	}
 
 	return newComment, nil
 }
@@ -311,9 +322,14 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 			Mentions:           mentions,
 			At:                 at,
 		})
-	}
 
-	newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
+
+		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
+		newComment.OwnerUser = uiowneruser
+
+		newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+	}
 
 	return newComment, nil
 }
@@ -356,20 +372,26 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (any, error)
 		return nil, err
 	}
 
-	// cache (re)post list a new post created
-	// bg worker: add to (re)post to user posts
-	// notify post owner
-	// publish post metric
-	// fan out repost
 	if repost.Id != "" {
 		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
 			ReposterUser: clientUsername,
 			PostId:       postId,
-			PostOwner:    repost.OwnerUser,
+			PostOwner:    repost.OwnerUser.(string),
 			RepostId:     repost.Id,
 			RepostData:   helpers.ToJson(repost),
 			At:           at,
 		})
+
+		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, repost.OwnerUser.(string))
+		uireposteruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
+
+		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
+		uireposteruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uireposteruser.ProfilePicUrl)
+
+		repost.OwnerUser = uiowneruser
+		repost.ReposterUser = uireposteruser
+
+		repost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(repost.MediaUrls)
 	}
 
 	return repost.Id != "", nil

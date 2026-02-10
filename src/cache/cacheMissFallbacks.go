@@ -10,7 +10,7 @@ func GetPostFromDB[T any](ctx context.Context, postId string) (post *T, err erro
 	post, err = pgDB.QueryRowType[T](
 		ctx,
 		/* sql */ `
-		SELECT id_, owner_user, type_, media_urls, description, created_at FROM posts
+		SELECT id_, owner_user, type_, media_urls, description, created_at, reposted_by_user FROM posts
 		WHERE id_ = $1
 		`, postId,
 	)

@@ -27,6 +27,17 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 
 	postUI.OwnerUser = puiou
 
+	if postUI.ReposterUser != nil {
+		puiru, err := cache.GetUser[UITypes.ClientUser](ctx, postUI.ReposterUser.(string))
+		if err != nil {
+			return nilVal, err
+		}
+
+		puiru.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(puiru.ProfilePicUrl)
+
+		postUI.ReposterUser = puiru
+	}
+
 	postUI.ReactionsCount, err = cache.GetPostReactionsCount(ctx, postId)
 	if err != nil {
 		return nilVal, err

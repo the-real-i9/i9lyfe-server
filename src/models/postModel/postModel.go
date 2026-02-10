@@ -210,7 +210,7 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 
 type newCommentT struct {
 	Id            string `json:"id" db:"comment_id"`
-	OwnerUser     string `json:"owner_user" db:"owner_user"`
+	OwnerUser     any    `json:"owner_user" db:"owner_user"`
 	CommentText   string `json:"comment_text" db:"comment_text"`
 	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
 	At            int64  `json:"at" db:"at_"`
@@ -310,23 +310,23 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type repostT struct {
-	Id              string   `json:"id" db:"id_"`
-	Type            string   `json:"type" db:"type_"`
-	MediaCloudNames []string `json:"media_cloud_names" db:"media_cloud_names"`
-	Description     string   `json:"description"`
-	CreatedAt       int64    `json:"created_at" db:"created_at"`
-	OwnerUser       string   `json:"owner_user" db:"owner_user"`
-	ReposterByUser  string   `json:"reposted_by_user" db:"reposted_by_user"`
+	Id           string   `json:"id" db:"id_"`
+	Type         string   `json:"type" db:"type_"`
+	MediaUrls    []string `json:"media_urls" db:"media_urls"`
+	Description  string   `json:"description"`
+	CreatedAt    int64    `json:"created_at" db:"created_at"`
+	OwnerUser    any      `json:"owner_user" db:"owner_user"`
+	ReposterUser any      `json:"reposter_user" db:"reposted_by_user"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {
 	repost, err := pgDB.QueryRowType[repostT](
 		ctx,
 		/* sql */ `
-		INSERT INTO posts (owner_user, type_, media_cloud_names, description, created_at, reposted_by_user)
-		SELECT owner_user, type_, media_cloud_names, description, $3, $1 FROM posts
+		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
+		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
 		WHERE id_ = $2
-		RETURNING id_, owner_user, type_, media_cloud_names, description, created_at, reposted_by_user
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user
 		`, clientUsername, postId, at,
 	)
 	if err != nil {

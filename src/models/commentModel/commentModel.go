@@ -93,7 +93,7 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 
 type newCommentT struct {
 	Id                 string `json:"id" db:"comment_id"`
-	OwnerUser          string `json:"owner_user" db:"owner_user"`
+	OwnerUser          any    `json:"owner_user" db:"owner_user"`
 	CommentText        string `json:"comment_text" db:"comment_text"`
 	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
 	At                 int64  `json:"at" db:"at_"`

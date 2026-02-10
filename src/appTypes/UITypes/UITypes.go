@@ -22,6 +22,7 @@ type Post struct {
 	Id             string   `json:"id" db:"id_"`
 	Type           string   `json:"type" db:"type_"`
 	OwnerUser      any      `json:"owner_user" db:"owner_user"`
+	ReposterUser   any      `json:"reposter_user,omitempty" db:"reposted_by_user"`
 	MediaUrls      []string `json:"media_urls" db:"media_urls"`
 	Description    string   `json:"description"`
 	CreatedAt      int64    `json:"created_at" db:"created_at"`
