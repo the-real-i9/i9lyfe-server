@@ -15,18 +15,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func HashPassword(password []byte) ([]byte, error) {
-	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return "", fiber.ErrInternalServerError
 	}
 
-	return hash, nil
+	return string(hash), nil
 }
 
-func PasswordMatchesHash(hash, password []byte) (bool, error) {
-	err := bcrypt.CompareHashAndPassword(hash, password)
+func PasswordMatchesHash(hash, password string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return false, nil

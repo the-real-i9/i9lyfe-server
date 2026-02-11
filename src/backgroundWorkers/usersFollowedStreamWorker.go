@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cloudStorageService"
+	"i9lyfe/src/models/modelHelpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -90,19 +89,11 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]string{notifUniqueId, stmsgIds[i]})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					uifu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.FollowerUser)
-					if err != nil {
-						return
-					}
-
-					uifu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uifu.ProfilePicUrl)
-
-					notif["unread"] = true
-					notif["details"].(map[string]any)["follower_user"] = uifu
+					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
 
 					realtimeService.SendEventMsg(msg.FollowingUser, appTypes.ServerEventMsg{
 						Event: "new notification",
-						Data:  notif,
+						Data:  notifSnippet,
 					})
 				})
 

@@ -2,7 +2,6 @@ package modelHelpers
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/services/cloudStorageService"
@@ -15,10 +14,19 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 	if err != nil {
 		return nilVal, err
 	}
+	var reposterUsername string = "/nil/"
+	if postUI.ReposterUser != nil {
+		reposterUsername = postUI.ReposterUser.(string)
+	}
+
+	pud, err := cache.GetPostUIData(ctx, postId, postUI.OwnerUser.(string), reposterUsername, clientUsername)
+	if err != nil {
+		return nilVal, err
+	}
 
 	postUI.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(postUI.MediaUrls)
 
-	puiou, err := cache.GetUser[UITypes.ContentOwnerUser](ctx, postUI.OwnerUser.(string))
+	puiou, err := pud.OwnerUser()
 	if err != nil {
 		return nilVal, err
 	}
@@ -28,7 +36,7 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 	postUI.OwnerUser = puiou
 
 	if postUI.ReposterUser != nil {
-		puiru, err := cache.GetUser[UITypes.ClientUser](ctx, postUI.ReposterUser.(string))
+		puiru, err := pud.ReposterUser()
 		if err != nil {
 			return nilVal, err
 		}
@@ -38,37 +46,37 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 		postUI.ReposterUser = puiru
 	}
 
-	postUI.ReactionsCount, err = cache.GetPostReactionsCount(ctx, postId)
+	postUI.ReactionsCount, err = pud.ReactionsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.CommentsCount, err = cache.GetPostCommentsCount(ctx, postId)
+	postUI.CommentsCount, err = pud.CommentsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.RepostsCount, err = cache.GetPostRepostsCount(ctx, postId)
+	postUI.RepostsCount, err = pud.RepostsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.SavesCount, err = cache.GetPostSavesCount(ctx, postId)
+	postUI.SavesCount, err = pud.SavesCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.MeReaction, err = cache.GetUserPostReaction(ctx, clientUsername, postId)
+	postUI.MeReaction, err = pud.MeReaction()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.MeSaved, err = cache.UserSavedPost(ctx, clientUsername, postId)
+	postUI.MeSaved, err = pud.MeSaved()
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.MeReposted, err = cache.UserRepostedPost(ctx, clientUsername, postId)
+	postUI.MeReposted, err = pud.MeReposted()
 	if err != nil {
 		return nilVal, err
 	}
@@ -84,9 +92,14 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 		return nilVal, err
 	}
 
+	cud, err := cache.GetCommentUIData(ctx, commentId, commentUI.OwnerUser.(string), clientUsername)
+	if err != nil {
+		return nilVal, err
+	}
+
 	commentUI.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(commentUI.AttachmentUrl)
 
-	cuiou, err := cache.GetUser[UITypes.ContentOwnerUser](ctx, commentUI.OwnerUser.(string))
+	cuiou, err := cud.OwnerUser()
 	if err != nil {
 		return nilVal, err
 	}
@@ -95,17 +108,17 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 
 	commentUI.OwnerUser = cuiou
 
-	commentUI.ReactionsCount, err = cache.GetCommentReactionsCount(ctx, commentId)
+	commentUI.ReactionsCount, err = cud.ReactionsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	commentUI.CommentsCount, err = cache.GetCommentCommentsCount(ctx, commentId)
+	commentUI.CommentsCount, err = cud.CommentsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	commentUI.MeReaction, err = cache.GetUserCommentReaction(ctx, clientUsername, commentId)
+	commentUI.MeReaction, err = cud.MeReaction()
 	if err != nil {
 		return nilVal, err
 	}
@@ -116,19 +129,24 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername string) (userSnippetUI UITypes.UserSnippet, err error) {
 	nilVal := UITypes.UserSnippet{}
 
-	userSnippetUI, err = cache.GetUser[UITypes.UserSnippet](ctx, username)
+	usud, err := cache.GetUserSnippetUIData(ctx, username, clientUsername)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userSnippetUI, err = usud.User()
 	if err != nil {
 		return nilVal, err
 	}
 
 	userSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userSnippetUI.ProfilePicUrl)
 
-	userSnippetUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
+	userSnippetUI.MeFollow, err = usud.MeFollow()
 	if err != nil {
 		return nilVal, err
 	}
 
-	userSnippetUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	userSnippetUI.FollowsMe, err = usud.FollowsMe()
 	if err != nil {
 		return nilVal, err
 	}
@@ -139,26 +157,21 @@ func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername s
 func buildReactorSnippetUIFromCache(ctx context.Context, username, postOrComment, entityId string) (reactorSnippetUI UITypes.ReactorSnippet, err error) {
 	nilVal := UITypes.ReactorSnippet{}
 
-	reactorSnippetUI, err = cache.GetUser[UITypes.ReactorSnippet](ctx, username)
+	rsud, err := cache.GetReactorSnippetUIData(ctx, username, postOrComment, entityId)
+	if err != nil {
+		return nilVal, err
+	}
+
+	reactorSnippetUI, err = rsud.User()
 	if err != nil {
 		return nilVal, err
 	}
 
 	reactorSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(reactorSnippetUI.ProfilePicUrl)
 
-	switch postOrComment {
-	case "post":
-		reactorSnippetUI.Emoji, err = cache.GetUserPostReaction(ctx, entityId, username)
-		if err != nil {
-			return nilVal, err
-		}
-	case "comment":
-		reactorSnippetUI.Emoji, err = cache.GetUserCommentReaction(ctx, entityId, username)
-		if err != nil {
-			return nilVal, err
-		}
-	default:
-		return nilVal, fmt.Errorf(`postOrComment wants value "post" or "comment"`)
+	reactorSnippetUI.Emoji, err = rsud.UserReaction()
+	if err != nil {
+		return nilVal, err
 	}
 
 	return reactorSnippetUI, nil
@@ -167,39 +180,39 @@ func buildReactorSnippetUIFromCache(ctx context.Context, username, postOrComment
 func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername string) (userProfileUI UITypes.UserProfile, err error) {
 	nilVal := UITypes.UserProfile{}
 
-	userProfileUI, err = cache.GetUser[UITypes.UserProfile](ctx, username)
+	upud, err := cache.GetUserProfileUIData(ctx, username, clientUsername)
+	if err != nil {
+		return nilVal, err
+	}
+
+	userProfileUI, err = upud.User()
 	if err != nil {
 		return nilVal, err
 	}
 
 	userProfileUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userProfileUI.ProfilePicUrl)
 
-	userProfileUI.MeFollow, err = cache.MeFollowUser(ctx, clientUsername, username)
+	userProfileUI.MeFollow, err = upud.MeFollow()
 	if err != nil {
 		return nilVal, err
 	}
 
-	userProfileUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	userProfileUI.FollowsMe, err = upud.FollowsMe()
 	if err != nil {
 		return nilVal, err
 	}
 
-	userProfileUI.FollowsMe, err = cache.UserFollowsMe(ctx, clientUsername, username)
+	userProfileUI.PostsCount, err = upud.PostsCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	userProfileUI.PostsCount, err = cache.GetUserPostsCount(ctx, username)
+	userProfileUI.FollowersCount, err = upud.FollowersCount()
 	if err != nil {
 		return nilVal, err
 	}
 
-	userProfileUI.FollowersCount, err = cache.GetUserFollowersCount(ctx, username)
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.FollowingsCount, err = cache.GetUserFollowingsCount(ctx, username)
+	userProfileUI.FollowingsCount, err = upud.FollowingsCount()
 	if err != nil {
 		return nilVal, err
 	}
@@ -207,7 +220,7 @@ func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername s
 	return userProfileUI, nil
 }
 
-func buildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSnippetUI UITypes.NotifSnippet, err error) {
+func BuildNotifSnippetUIFromCache(ctx context.Context, notifId string) (notifSnippetUI UITypes.NotifSnippet, err error) {
 	nilVal := UITypes.NotifSnippet{}
 
 	notifSnippetUI, err = cache.GetNotification[UITypes.NotifSnippet](ctx, notifId)
@@ -286,7 +299,7 @@ func buildChatSnippetUIFromCache(ctx context.Context, clientUsername, partnerUse
 	return chatSnippetUI, nil
 }
 
-func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatHistoryEntry, err error) {
+func BuildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatHistoryEntry, err error) {
 	nilVal := UITypes.ChatHistoryEntry{}
 
 	CHEUI, err = cache.GetChatHistoryEntry[UITypes.ChatHistoryEntry](ctx, CHEId)
@@ -334,8 +347,6 @@ func buildCHEUIFromCache(ctx context.Context, CHEId string) (CHEUI UITypes.ChatH
 
 		CHEUI.Reactions = msgReactions
 		CHEUI.ReactionsCount = reactionsCount
-
-		// TODO: change media_cloud_name for
 	}
 
 	return CHEUI, nil

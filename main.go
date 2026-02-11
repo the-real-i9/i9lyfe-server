@@ -5,6 +5,7 @@ import (
 	"i9lyfe/src/routes/authRoute"
 	"i9lyfe/src/routes/privateRoutes"
 	"i9lyfe/src/routes/publicRoutes"
+	"i9lyfe/src/routes/testSessionRoute"
 	"log"
 	"os"
 
@@ -46,8 +47,8 @@ func main() {
 
 	app.Use(helmet.New())
 	app.Use(cors.New(cors.Config{
-		// AllowOrigins: "*", /* will be our client's host in production */
-		// AllowCredentials: false, /* will be true in production */
+		// AllowOrigins:     "localhost:3000", /* (our client) */
+		// AllowCredentials: true,
 	}))
 
 	app.Use(encryptcookie.New(encryptcookie.Config{
@@ -58,6 +59,8 @@ func main() {
 
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
+
+	app.Route("/__test_session", testSessionRoute.Route)
 
 	var PORT string
 

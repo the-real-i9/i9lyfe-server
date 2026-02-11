@@ -31,6 +31,7 @@ CREATE TYPE public.message_struct AS (
 	created_at bigint,
 	sender text,
 	reply_target_msg json,
+  snum bigint,
 	ffu boolean,
 	ftu boolean
 );
@@ -46,7 +47,8 @@ CREATE TYPE public.msg_reaction_struct AS (
 	che_id uuid,
 	che_type text,
 	emoji text,
-	reactor json,
+	reactor text,
+  snum bigint,
 	to_msg_id uuid
 );
 
@@ -57,32 +59,37 @@ ALTER TYPE public.msg_reaction_struct OWNER TO i9;
 -- Name: ack_msg(text, text, uuid, text, bigint); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id uuid, ack_val text, at_val bigint) RETURNS boolean
+CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 DECLARE
   msg_received_in_chat bool;
 BEGIN
 
-SELECT EXISTS (SELECT true FROM chat_history_in_chat 
-WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
-INTO msg_received_in_chat;
+FOREACH msg_id IN ARRAY msg_id_list LOOP
+  SELECT EXISTS (SELECT true FROM chat_history_in_chat 
+  WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
+  INTO msg_received_in_chat;
 
-IF NOT msg_received_in_chat THEN
-  RETURN false;
-END IF;
+  IF NOT msg_received_in_chat THEN
+    RAISE EXCEPTION
+      USING
+          ERRCODE = 'UX001',
+          MESSAGE = 'you do not have a chat with the specified user or a specified message is not received in the chat';
+  END IF;
+END LOOP;
 
 IF ack_val = 'delivered' THEN
   UPDATE chat_history_entry
   SET delivery_status = ack_val, delivered_at = at_val
-  WHERE id_ = msg_id AND type_ = 'message' AND delivery_status = 'sent';
+  WHERE id_ IN msg_id_list AND type_ = 'message' AND delivery_status = 'sent';
   IF FOUND THEN
     RETURN true;
   END IF;
 ELSIF ack_val = 'read' THEN
   UPDATE chat_history_entry
   SET delivery_status = ack_val, read_at = at_val
-  WHERE id_ = msg_id AND type_ = 'message' AND delivery_status IN ('sent', 'delivered');
+  WHERE id_ = msg_id_list AND type_ = 'message' AND delivery_status IN ('sent', 'delivered');
   IF FOUND THEN
     RETURN true;
   END IF;
@@ -140,6 +147,7 @@ CREATE FUNCTION public.react_to_msg(from_user text, to_user text, msg_id uuid, e
 DECLARE
   msg_in_chat bool;
   che_id_val uuid;
+  snum_val bigint;
   reactor_user json;
 BEGIN
 
@@ -160,7 +168,7 @@ INSERT INTO chat_history_entry (type_, reactor_username, emoji, reaction_at, rea
 VALUES ('reaction', from_user, emoji_val, at_val, msg_id)
 ON CONFLICT ON CONSTRAINT no_dup_msg_rxn DO UPDATE 
 SET emoji = emoji_val, reaction_at = at_val
-RETURNING id_ INTO che_id_val;
+RETURNING id_, snum INTO che_id_val, snum_val;
 
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (from_user, to_user, che_id_val, 'sent')
@@ -169,12 +177,8 @@ ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received')
 ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
-
-SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url)
-FROM users WHERE username = from_user
-INTO reactor_user;
   
-RETURN ROW(che_id_val, 'reaction', emoji_val, reactor_user, msg_id)::msg_reaction_struct;
+RETURN ROW(che_id_val, 'reaction', emoji_val, from_user, snum_val, msg_id)::msg_reaction_struct;
 
 END;
 $$;
@@ -227,7 +231,10 @@ CREATE FUNCTION public.reply_to_msg(from_user text, to_user text, content_val js
 DECLARE
   msg_in_chat bool;
   che_id_val uuid;
+  snum_val bigint;
   reply_target_msg json;
+  first_from_user boolean := false;
+  first_to_user boolean := false;
 BEGIN
 
 SELECT EXISTS (SELECT 1 FROM chat_history_in_chat 
@@ -243,9 +250,23 @@ IF NOT msg_in_chat THEN
         MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
 END IF;
 
+IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = from_user AND partner_user = to_user) THEN
+	first_from_user := true;
+	
+    INSERT INTO user_chats_user (owner_user, partner_user)
+    VALUES (from_user, to_user);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = to_user AND partner_user = from_user) THEN
+	first_to_user := true;
+	
+    INSERT INTO user_chats_user (owner_user, partner_user)
+    VALUES (to_user, from_user);
+  END IF;
+
 INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at, reply_to)
 VALUES ('message', content_val, from_user, 'sent', created_at_val, reply_target_msg_id)
-RETURNING id_ INTO che_id_val;
+RETURNING id_, snum INTO che_id_val, snum_val;
 
 INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (from_user, to_user, che_id_val, 'sent');
@@ -258,7 +279,7 @@ FROM chat_history_entry WHERE id_ = reply_target_msg_id
 INTO reply_target_msg;
 
   
-RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, reply_target_msg, false, false)::message_struct;
+RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, reply_target_msg, snum_val, first_from_user, first_to_user)::message_struct;
 
 END;
 $$;
@@ -275,6 +296,7 @@ CREATE FUNCTION public.send_message(from_user text, to_user text, content_val js
     AS $$
 DECLARE
   che_id_val uuid;
+  snum_val bigint;
   first_from_user boolean := false;
   first_to_user boolean := false;
 BEGIN
@@ -295,7 +317,7 @@ BEGIN
 
   INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at)
   VALUES ('message', content_val, from_user, 'sent', created_at_val)
-  RETURNING id_ INTO che_id_val;
+  RETURNING id_, snum INTO che_id_val, snum_val;
 
   INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
   VALUES (from_user, to_user, che_id_val, 'sent');
@@ -303,7 +325,7 @@ BEGIN
   INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
   VALUES (to_user, from_user, che_id_val, 'received');
   
-  RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, null, first_from_user, first_to_user)::message_struct;
+  RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, null, snum_val, first_from_user, first_to_user)::message_struct;
 END;
 $$;
 
@@ -333,6 +355,7 @@ CREATE TABLE public.chat_history_entry (
     edited_at bigint,
     created_at bigint,
     reaction_at bigint,
+    snum bigserial,
     CONSTRAINT chat_history_entry_delivery_status_check CHECK ((delivery_status = ANY (ARRAY['sent'::text, 'delivered'::text, 'read'::text]))),
     CONSTRAINT chat_history_entry_type__check CHECK ((type_ = ANY (ARRAY['message'::text, 'reaction'::text])))
 );
@@ -418,6 +441,7 @@ CREATE TABLE public.posts (
     reposted_by_user text,
     created_at bigint,
     deleted_at bigint,
+    snum bigserial,
     CONSTRAINT posts_type__check CHECK ((type_ = ANY (ARRAY['photo:portrait'::text, 'photo:square'::text, 'photo:landscape'::text, 'video:portrait'::text, 'video:square'::text, 'video:landscape'::text, 'reel'::text])))
 );
 
@@ -450,6 +474,7 @@ CREATE TABLE public.user_comments_on (
     deleted boolean DEFAULT false,
     deleted_at bigint,
     at_ bigint,
+    snum bigserial,
     CONSTRAINT on_post_xor_on_comment CHECK ((((post_id IS NULL) AND (parent_comment_id IS NOT NULL)) OR ((post_id IS NOT NULL) AND (parent_comment_id IS NULL))))
 );
 

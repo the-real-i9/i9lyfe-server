@@ -270,15 +270,15 @@ func (vb sendMsgAcd) Validate(ctx context.Context) error {
 }
 
 type ackMsgDeliveredAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	MsgId           string `json:"msgId"`
-	At              int64  `json:"at"`
+	PartnerUsername string   `json:"partnerUsername"`
+	MsgIdList       []string `json:"msgIdList"`
+	At              int64    `json:"at"`
 }
 
 func (d ackMsgDeliveredAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
-		validation.Field(&d.MsgId, validation.Required),
+		validation.Field(&d.MsgIdList, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 
@@ -286,15 +286,15 @@ func (d ackMsgDeliveredAcd) Validate() error {
 }
 
 type ackMsgReadAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	MsgId           string `json:"msgId"`
-	At              int64  `json:"at"`
+	PartnerUsername string   `json:"partnerUsername"`
+	MsgIdList       []string `json:"msgIdList"`
+	At              int64    `json:"at"`
 }
 
 func (d ackMsgReadAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
-		validation.Field(&d.MsgId, validation.Required),
+		validation.Field(&d.MsgIdList, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 

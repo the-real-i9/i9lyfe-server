@@ -33,7 +33,7 @@ type Post struct {
 	MeReaction     string   `json:"me_reaction"`
 	MeSaved        bool     `json:"me_saved"`
 	MeReposted     bool     `json:"me_reposted"`
-	Cursor         float64  `json:"cursor"`
+	Cursor         float64  `json:"cursor,omitempty" db:"snum"`
 }
 
 type Comment struct {
@@ -45,7 +45,7 @@ type Comment struct {
 	ReactionsCount int64   `json:"reactions_count"`
 	CommentsCount  int64   `json:"comments_count"`
 	MeReaction     string  `json:"me_reaction"`
-	Cursor         float64 `json:"cursor"`
+	Cursor         float64 `json:"cursor,omitempty" db:"snum"`
 }
 
 type UserSnippet struct {
@@ -98,10 +98,6 @@ type ChatSnippet struct {
 	Cursor      float64 `json:"cursor"`
 }
 
-type msgReactorKind interface {
-	MsgReactor | any
-}
-
 type MsgReactor struct {
 	Username      string `json:"username"`
 	ProfilePicUrl string `json:"profile_pic_url"`
@@ -113,8 +109,8 @@ type MsgSender struct {
 }
 
 type MsgReaction struct {
-	Emoji   string         `json:"emoji"`
-	Reactor msgReactorKind `json:"reactor"`
+	Emoji   string     `json:"emoji"`
+	Reactor MsgReactor `json:"reactor"`
 }
 
 type ChatHistoryEntry struct {

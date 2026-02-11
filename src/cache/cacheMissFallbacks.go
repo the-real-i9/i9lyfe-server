@@ -10,7 +10,7 @@ func GetPostFromDB[T any](ctx context.Context, postId string) (post *T, err erro
 	post, err = pgDB.QueryRowType[T](
 		ctx,
 		/* sql */ `
-		SELECT id_, owner_user, type_, media_urls, description, created_at, reposted_by_user FROM posts
+		SELECT id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, null as snum FROM posts
 		WHERE id_ = $1
 		`, postId,
 	)
@@ -26,7 +26,7 @@ func GetCommentFromDB[T any](ctx context.Context, commentId string) (comment *T,
 	comment, err = pgDB.QueryRowType[T](
 		ctx,
 		/* sql */ `
-		SELECT comment_id, username AS owner_user, comment_text, attachment_url, at_ FROM user_comments_on
+		SELECT comment_id, username AS owner_user, comment_text, attachment_url, at_, null as snum FROM user_comments_on
 		WHERE id_ = $1
 		`, commentId,
 	)

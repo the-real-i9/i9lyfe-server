@@ -26,6 +26,7 @@ type newPostT struct {
 	Description string   `json:"description"`
 	CreatedAt   int64    `json:"created_at" db:"created_at"`
 	OwnerUser   any      `json:"owner_user" db:"owner_user"`
+	Snum        float64  `json:"cursor" db:"snum"`
 }
 
 func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post newPostT, err error) {
@@ -34,7 +35,7 @@ func New(ctx context.Context, clientUsername string, mediaCloudNames []string, p
 		/* sql */ `
 		INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id_, owner_user, type_, media_urls, description, created_at
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, snum
 		`, clientUsername, postType, mediaCloudNames, description, at,
 	)
 	if err != nil {
@@ -209,12 +210,13 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 }
 
 type newCommentT struct {
-	Id            string `json:"id" db:"comment_id"`
-	OwnerUser     any    `json:"owner_user" db:"owner_user"`
-	CommentText   string `json:"comment_text" db:"comment_text"`
-	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
-	At            int64  `json:"at" db:"at_"`
-	PostOwner     string `json:"-" db:"post_owner"`
+	Id            string  `json:"id" db:"comment_id"`
+	OwnerUser     any     `json:"owner_user" db:"owner_user"`
+	CommentText   string  `json:"comment_text" db:"comment_text"`
+	AttachmentUrl string  `json:"attachment_url" db:"attachment_url"`
+	At            int64   `json:"at" db:"at_"`
+	Snum          float64 `json:"cursor" db:"snum"`
+	PostOwner     string  `json:"-" db:"post_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
@@ -226,7 +228,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, snum, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
 		`, clientUsername, postId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
@@ -309,7 +311,7 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 	return *done, nil
 }
 
-type repostT struct {
+type RepostT struct {
 	Id           string   `json:"id" db:"id_"`
 	Type         string   `json:"type" db:"type_"`
 	MediaUrls    []string `json:"media_urls" db:"media_urls"`
@@ -317,21 +319,22 @@ type repostT struct {
 	CreatedAt    int64    `json:"created_at" db:"created_at"`
 	OwnerUser    any      `json:"owner_user" db:"owner_user"`
 	ReposterUser any      `json:"reposter_user" db:"reposted_by_user"`
+	Snum         float64  `json:"cursor" db:"snum"`
 }
 
-func Repost(ctx context.Context, clientUsername, postId string, at int64) (repostT, error) {
-	repost, err := pgDB.QueryRowType[repostT](
+func Repost(ctx context.Context, clientUsername, postId string, at int64) (RepostT, error) {
+	repost, err := pgDB.QueryRowType[RepostT](
 		ctx,
 		/* sql */ `
 		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
 		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
 		WHERE id_ = $2
-		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, snum
 		`, clientUsername, postId, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return repostT{}, fiber.ErrInternalServerError
+		return RepostT{}, fiber.ErrInternalServerError
 	}
 
 	return *repost, nil

@@ -4,7 +4,7 @@ Table users {
   password_ text [NOT NULL]
   name_ text [NOT NULL]
   bio text [DEFAULT: 'Thanks for using i9lyfe']
-  profile_pic_cloud_name text [DEFAULT: '{notset}']
+  profile_pic_url text [DEFAULT: '{notset}']
   presence text [DEFAULT: 'online', NOT NULL]
   birthday bigint
   last_seen bigint
@@ -28,12 +28,13 @@ Table posts {
   id_ uuid [pk, DEFAULT: 'gen_random_uuid()', NOT NULL]
   owner_user text [NOT NULL, ref: > users.username]
   type_ text [NOT NULL]
-  media_cloud_names text[] [NOT NULL]
+  media_urls text[] [NOT NULL]
   description text [DEFAULT: '""', NOT NULL]
   deleted boolean [DEFAULT: false]
   reposted_by_user text [ref: > users.username]
   created_at bigint
   deleted_at bigint
+  snum bigserial
 
   checks {
     `type_ IN ['photo:portrait', 'photo:square', 'photo:landscape', 'video:portrait', 'video:square', 'video:landscape', 'reel']` [name: 'posts_type__check']
@@ -88,10 +89,11 @@ Table user_comments_on {
   parent_comment_id uuid [ref: > user_comments_on.comment_id]
   post_id uuid [ref: > posts.id_]
   comment_text text [NOT NULL]
-  attachment_cloud_name text [NOT NULL]
+  attachment_url text [NOT NULL]
   deleted boolean [DEFAULT: false]
   deleted_at bigint
   at_ bigint
+  snum bigserial
 
   checks {
     `post_id XOR parent_comment_id` [name: 'on_post_xor_on_comment']
@@ -143,6 +145,7 @@ Table chat_history_entry {
   edited_at bigint
   created_at bigint
   reaction_at bigint
+  snum bigserial
 
   checks {
     `delivery_status IN ['sent', 'delivered', 'read'])` [name: 'chat_history_entry_delivery_status_check']
@@ -164,6 +167,10 @@ Table chat_history_in_chat {
 
   checks {
     `receipt IN ['sent', 'received'])` [name: 'chat_history_entry_delivery_status_check']
+  }
+
+  indexes {
+    (owner_user, partner_user, che_id) [unique, name: 'no_dup_che']
   }
 }
 

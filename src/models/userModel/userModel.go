@@ -42,7 +42,7 @@ type NewUserT struct {
 	Presence      string `json:"presence"`
 }
 
-func New(ctx context.Context, email, username, name, bio string, birthday int64, password []byte) (NewUserT, error) {
+func New(ctx context.Context, email, username, name, bio string, birthday int64, password string) (NewUserT, error) {
 	newUser, err := pgDB.QueryRowType[NewUserT](ctx,
 		/* sql */ `
 		INSERT INTO users (username, email, password_, name_, bio, birthday)
@@ -62,7 +62,7 @@ type SignedInUserT struct {
 	Username      string `json:"username"`
 	Name          string `json:"name" db:"name_"`
 	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Password      []byte `json:"-" db:"password_"`
+	Password      string `json:"-" db:"password_"`
 }
 
 func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error) {
@@ -82,21 +82,22 @@ func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error)
 	return user, nil
 }
 
-func ChangePassword(ctx context.Context, email string, newPassword []byte) error {
-	err := pgDB.Exec(
+func ChangePassword(ctx context.Context, email string, newPassword string) (string, error) {
+	username, err := pgDB.QueryRowField[string](
 		ctx,
 		/* sql */ `
 		UPDATE users
 		SET password_ = $2
 		WHERE email = $1
+		RETURNING username
 		`, email, newPassword,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return fiber.ErrInternalServerError
+		return "", fiber.ErrInternalServerError
 	}
 
-	return nil
+	return *username, nil
 }
 
 func EditProfile(ctx context.Context, clientUsername string, updateKVMap map[string]any) (bool, error) {

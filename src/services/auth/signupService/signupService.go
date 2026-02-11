@@ -85,7 +85,7 @@ type signup3RespT struct {
 	User UITypes.ClientUser `json:"user"`
 }
 
-func RegisterUser(ctx context.Context, sessionData json.RawMessage, username, name, bio string, birthday int64, password []byte) (signup3RespT, string, error) {
+func RegisterUser(ctx context.Context, sessionData json.RawMessage, username, name, bio string, birthday int64, password string) (signup3RespT, string, error) {
 	var resp signup3RespT
 
 	email := helpers.FromBtJson[struct {

@@ -10,6 +10,7 @@ import (
 	"i9lyfe/src/routes/authRoute"
 	"i9lyfe/src/routes/privateRoutes"
 	"i9lyfe/src/routes/publicRoutes"
+	"i9lyfe/src/routes/testSessionRoute"
 	"io"
 	"log"
 	"net/http"
@@ -31,14 +32,16 @@ import (
 const HOST_URL string = "http://localhost:8000"
 const WSHOST_URL string = "ws://localhost:8000"
 
-const signupPath string = HOST_URL + "/api/auth/signup"
-const signinPath string = HOST_URL + "/api/auth/signin"
-const forgotPasswordPath string = HOST_URL + "/api/auth/forgot_password"
-const signoutPath string = HOST_URL + "/api/app/private/me/signout"
+const signupPath string = "/api/auth/signup"
+const signinPath string = "/api/auth/signin"
+const forgotPasswordPath string = "/api/auth/forgot_password"
+const signoutPath string = "/api/app/private/me/signout"
 
-const appPathPriv = HOST_URL + "/api/app/private"
-const appPathPublic = HOST_URL + "/api/app/public"
+const appPathPriv = "/api/app/private"
+const appPathPublic = "/api/app/public"
 const wsPath = WSHOST_URL + "/api/app/private/ws"
+
+const testSessionPath = "/__test_session"
 
 type UserT struct {
 	Email          string
@@ -72,8 +75,9 @@ func TestMain(m *testing.M) {
 	app.Route("/api/auth", authRoute.Route)
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
+	app.Route("/__test_session", testSessionRoute.Route)
 
-	var PORT string
+	/* var PORT string
 
 	if os.Getenv("GO_ENV") != "production" {
 		PORT = "8000"
@@ -83,15 +87,12 @@ func TestMain(m *testing.M) {
 
 	go func() {
 		app.Listen("0.0.0.0:" + PORT)
-	}()
+	}() */
 
 	waitReady := time.NewTimer(2 * time.Second)
 	<-waitReady.C
 
 	c := m.Run()
-
-	waitFinish := time.NewTimer(2 * time.Second)
-	<-waitFinish.C
 
 	app.Shutdown()
 

@@ -35,6 +35,7 @@ type NewPostEvent struct {
 	PostData  string                `redis:"postData" json:"postData"`
 	Hashtags  appTypes.BinableSlice `redis:"hashtags" json:"hashtags"`
 	Mentions  appTypes.BinableSlice `redis:"mentions" json:"mentions"`
+	Score     float64               `redis:"score" json:"score"`
 	At        int64                 `redis:"at" json:"at"`
 }
 
@@ -65,6 +66,7 @@ type PostCommentEvent struct {
 	CommentData   string                `redis:"commentData" json:"commentData"`
 	Mentions      appTypes.BinableSlice `redis:"mentions" json:"mentions"`
 	At            int64                 `redis:"at" json:"at"`
+	Score         float64               `redis:"score" json:"score"`
 }
 
 type PostCommentRemovedEvent struct {
@@ -94,6 +96,7 @@ type CommentCommentEvent struct {
 	CommentData        string                `redis:"commentData" json:"commentData"`
 	Mentions           appTypes.BinableSlice `redis:"mentions" json:"mentions"`
 	At                 int64                 `redis:"at" json:"at"`
+	Score              float64               `redis:"score" json:"score"`
 }
 
 type CommentCommentRemovedEvent struct {
@@ -103,12 +106,13 @@ type CommentCommentRemovedEvent struct {
 }
 
 type RepostEvent struct {
-	ReposterUser string `redis:"reposterUser" json:"reposterUser"`
-	PostId       string `redis:"postId" json:"postId"`
-	PostOwner    string `redis:"postOwner" json:"postOwner"`
-	RepostId     string `redis:"repostId" json:"repostId"`
-	RepostData   string `redis:"repostData" json:"repostData"`
-	At           int64  `redis:"at" json:"at"`
+	ReposterUser string  `redis:"reposterUser" json:"reposterUser"`
+	PostId       string  `redis:"postId" json:"postId"`
+	PostOwner    string  `redis:"postOwner" json:"postOwner"`
+	RepostId     string  `redis:"repostId" json:"repostId"`
+	RepostData   string  `redis:"repostData" json:"repostData"`
+	Score        float64 `redis:"score" json:"score"`
+	At           int64   `redis:"at" json:"at"`
 }
 
 type PostSaveEvent struct {
@@ -122,29 +126,32 @@ type PostUnsaveEvent struct {
 }
 
 type NewMessageEvent struct {
-	FirstFromUser bool   `redis:"ffu" json:"ffu"`
-	FirstToUser   bool   `redis:"ftu" json:"ftu"`
-	FromUser      string `redis:"fromUser" json:"fromUser"`
-	ToUser        string `redis:"toUser" json:"toUser"`
-	CHEId         string `redis:"CHEId" json:"CHEId"`
-	MsgData       string `redis:"msgData" json:"msgData"`
+	FirstFromUser bool    `redis:"ffu" json:"ffu"`
+	FirstToUser   bool    `redis:"ftu" json:"ftu"`
+	FromUser      string  `redis:"fromUser" json:"fromUser"`
+	ToUser        string  `redis:"toUser" json:"toUser"`
+	CHEId         string  `redis:"CHEId" json:"CHEId"`
+	MsgData       string  `redis:"msgData" json:"msgData"`
+	Score         float64 `redis:"score" json:"score"`
 }
 
 type NewMsgReactionEvent struct {
-	FromUser string `redis:"fromUser" json:"fromUser"`
-	ToUser   string `redis:"toUser" json:"toUser"`
-	CHEId    string `redis:"CHEId" json:"CHEId"`
-	RxnData  string `redis:"rxnData" json:"rxnData"`
-	ToMsgId  string `redis:"toMsgId" json:"toMsgId"`
-	Emoji    string `redis:"emoji" json:"emoji"`
+	FromUser string  `redis:"fromUser" json:"fromUser"`
+	ToUser   string  `redis:"toUser" json:"toUser"`
+	CHEId    string  `redis:"CHEId" json:"CHEId"`
+	RxnData  string  `redis:"rxnData" json:"rxnData"`
+	ToMsgId  string  `redis:"toMsgId" json:"toMsgId"`
+	Emoji    string  `redis:"emoji" json:"emoji"`
+	Score    float64 `redis:"score" json:"score"`
 }
 
-type MsgAckEvent struct {
-	FromUser string `redis:"fromUser" json:"fromUser"`
-	ToUser   string `redis:"toUser" json:"toUser"`
-	CHEId    string `redis:"CHEId" json:"CHEId"`
-	Ack      string `redis:"ack" json:"ack"`
-	At       int64  `redis:"at" json:"at"`
+type MsgsAckEvent struct {
+	FromUser  string                `redis:"fromUser" json:"fromUser"`
+	ToUser    string                `redis:"toUser" json:"toUser"`
+	CHEIdList appTypes.BinableSlice `redis:"cheIdList" json:"cheIdList"`
+	Ack       string                `redis:"ack" json:"ack"`
+	At        int64                 `redis:"at" json:"at"`
+	Score     float64               `redis:"score" json:"score"`
 }
 
 type MsgDeletionEvent struct {

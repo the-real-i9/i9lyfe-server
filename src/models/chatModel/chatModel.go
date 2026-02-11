@@ -62,22 +62,23 @@ func History(ctx context.Context, clientUsername, partnerUsername string, limit 
 }
 
 type NewMessageT struct {
-	Id                   string         `json:"id" db:"id_"`
-	ChatHistoryEntryType string         `json:"che_type" db:"che_type"`
-	Content              map[string]any `json:"content" db:"content_"`
-	DeliveryStatus       string         `json:"delivery_status" db:"delivery_status"`
-	CreatedAt            int64          `json:"created_at" db:"created_at"`
-	Sender               any            `json:"sender" db:"sender"`
-	ReplyTargetMsg       map[string]any `json:"reply_target_msg,omitempty" db:"reply_target_msg"`
-	FirstFromUser        bool           `json:"-" db:"ffu"`
-	FirstToUser          bool           `json:"-" db:"ftu"`
+	Id             string         `json:"id" db:"id_"`
+	CHEType        string         `json:"che_type" db:"che_type"`
+	Content        map[string]any `json:"content" db:"content_"`
+	DeliveryStatus string         `json:"delivery_status" db:"delivery_status"`
+	CreatedAt      int64          `json:"created_at" db:"created_at"`
+	Sender         any            `json:"sender" db:"sender"`
+	ReplyTargetMsg map[string]any `json:"reply_target_msg,omitempty" db:"reply_target_msg"`
+	Snum           float64        `json:"cursor" db:"snum"`
+	FirstFromUser  bool           `json:"-" db:"ffu"`
+	FirstToUser    bool           `json:"-" db:"ftu"`
 }
 
 func SendMessage(ctx context.Context, clientUsername, partnerUsername, msgContent string, at int64) (NewMessageT, error) {
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, ffu, ftu FROM send_message($1, $2, $3, $4);
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, snum, ffu, ftu FROM send_message($1, $2, $3, $4);
 		`, clientUsername, partnerUsername, msgContent, at,
 	)
 	if err != nil {
@@ -88,12 +89,12 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, msgConten
 	return *newMessage, nil
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId string, deliveredAt int64) (bool, error) {
+func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, deliveredAt int64) (bool, error) {
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
-		`, clientUsername, partnerUsername, msgId, "delivered", deliveredAt,
+		`, clientUsername, partnerUsername, msgIdList, "delivered", deliveredAt,
 	)
 	if err != nil {
 		helpers.LogError(err)
@@ -103,12 +104,12 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId
 	return *done, nil
 }
 
-func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId string, readAt int64) (bool, error) {
+func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, readAt int64) (bool, error) {
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
 		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
-		`, clientUsername, partnerUsername, msgId, "read", readAt,
+		`, clientUsername, partnerUsername, msgIdList, "read", readAt,
 	)
 	if err != nil {
 		helpers.LogError(err)
@@ -122,7 +123,7 @@ func ReplyMessage(ctx context.Context, clientUsername, partnerUsername, targetMs
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, ffu, ftu FROM reply_to_msg($1, $2, $3, $4, $5);
+		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, snum, ffu, ftu FROM reply_to_msg($1, $2, $3, $4, $5);
 		`, clientUsername, partnerUsername, msgContent, at, targetMsgId,
 	)
 	if err != nil {
@@ -134,18 +135,19 @@ func ReplyMessage(ctx context.Context, clientUsername, partnerUsername, targetMs
 }
 
 type RxnToMessageT struct {
-	CHEId                string `json:"-" db:"che_id"`
-	ChatHistoryEntryType string `json:"che_type" db:"che_type"`
-	Emoji                string `json:"emoji" db:"emoji"`
-	Reactor              any    `json:"reactor" db:"reactor"`
-	ToMsgId              string `json:"-" db:"to_msg_id"`
+	CHEId   string  `json:"-" db:"che_id"`
+	CHEType string  `json:"che_type" db:"che_type"`
+	Emoji   string  `json:"emoji" db:"emoji"`
+	Reactor any     `json:"reactor" db:"reactor"`
+	Snum    float64 `json:"cursor" db:"snum"`
+	ToMsgId string  `json:"-" db:"to_msg_id"`
 }
 
 func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (RxnToMessageT, error) {
 	rxnToMessage, err := pgDB.QueryRowType[RxnToMessageT](
 		ctx,
 		/* sql */ `
-		SELECT che_id, che_type, emoji, reactor, to_msg_id FROM react_to_msg($1, $2, $3, $4, $5)
+		SELECT che_id, che_type, emoji, reactor, snum, to_msg_id FROM react_to_msg($1, $2, $3, $4, $5)
 		`, clientUsername, partnerUsername, msgId, emoji, at,
 	)
 	if err != nil {

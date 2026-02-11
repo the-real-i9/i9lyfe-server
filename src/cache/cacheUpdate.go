@@ -26,8 +26,8 @@ func UpdateUser(ctx context.Context, username string, updateKVMap map[string]any
 	return nil
 }
 
-func UpdateMessage(ctx context.Context, CHEId string, updateKVMap map[string]any) error {
-	msgDataJson, err := rdb().HGet(ctx, "chat_history_entries", CHEId).Result()
+func UpdateMessage(ctx context.Context, msgId string, updateKVMap map[string]any) error {
+	msgDataJson, err := rdb().HGet(ctx, "chat_history_entries", msgId).Result()
 	if err != nil {
 		helpers.LogError(err)
 		return err
@@ -37,7 +37,7 @@ func UpdateMessage(ctx context.Context, CHEId string, updateKVMap map[string]any
 
 	maps.Copy(msgData, updateKVMap)
 
-	err = rdb().HSet(ctx, "chat_history_entries", CHEId, helpers.ToJson(msgData)).Err()
+	err = rdb().HSet(ctx, "chat_history_entries", msgId, helpers.ToJson(msgData)).Err()
 	if err != nil {
 		helpers.LogError(err)
 		return err

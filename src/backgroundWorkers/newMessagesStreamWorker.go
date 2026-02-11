@@ -54,6 +54,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				msg.ToUser = stmsg.Values["toUser"].(string)
 				msg.CHEId = stmsg.Values["CHEId"].(string)
 				msg.MsgData = stmsg.Values["msgData"].(string)
+				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 			}
@@ -62,44 +63,44 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 
 			newUserChats := make(map[string][]string)
 
-			userChats := make(map[string]map[string]string)
+			userChats := make(map[string]map[string]float64)
 
-			updatedFromUserChats := make(map[string]map[string]string)
+			updatedFromUserChats := make(map[string]map[string]float64)
 
-			chatMessages := make(map[string][][2]string)
+			chatMessages := make(map[string][][2]any)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
 
 				if msg.FirstFromUser {
 					newUserChats[msg.FromUser] = append(newUserChats[msg.FromUser], msg.ToUser, helpers.ToJson(map[string]any{"partner_user": msg.ToUser}))
 
 					if userChats[msg.FromUser] == nil {
-						userChats[msg.FromUser] = make(map[string]string)
+						userChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					userChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+					userChats[msg.FromUser][msg.ToUser] = msg.Score
 				} else {
 
 					if updatedFromUserChats[msg.FromUser] == nil {
-						updatedFromUserChats[msg.FromUser] = make(map[string]string)
+						updatedFromUserChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+					updatedFromUserChats[msg.FromUser][msg.ToUser] = msg.Score
 				}
 
 				if msg.FirstToUser {
 					newUserChats[msg.ToUser] = append(newUserChats[msg.ToUser], msg.FromUser, helpers.ToJson(map[string]any{"partner_user": msg.FromUser}))
 
 					if userChats[msg.ToUser] == nil {
-						userChats[msg.ToUser] = make(map[string]string)
+						userChats[msg.ToUser] = make(map[string]float64)
 					}
 
-					userChats[msg.ToUser][msg.FromUser] = stmsgIds[i]
+					userChats[msg.ToUser][msg.FromUser] = msg.Score
 				}
 
-				chatMessages[msg.FromUser+" "+msg.ToUser] = append(chatMessages[msg.FromUser+" "+msg.ToUser], [2]string{msg.CHEId, stmsgIds[i]})
+				chatMessages[msg.FromUser+" "+msg.ToUser] = append(chatMessages[msg.FromUser+" "+msg.ToUser], [2]any{msg.CHEId, msg.Score})
 			}
 
 			// batch processing
@@ -117,31 +118,31 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for ownerUser, partnerUser_stmsgId_Pairs := range userChats {
+			for ownerUser, partnerUser_score_Pairs := range userChats {
 				eg.Go(func() error {
-					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+					ownerUser, partnerUser_score_Pairs := ownerUser, partnerUser_score_Pairs
 
-					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_stmsgId_Pairs)
+					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_score_Pairs)
 				})
 			}
 
-			for ownerUser, partnerUser_stmsgId_Pairs := range updatedFromUserChats {
+			for ownerUser, partnerUser_score_Pairs := range updatedFromUserChats {
 				eg.Go(func() error {
-					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+					ownerUser, partnerUser_score_Pairs := ownerUser, partnerUser_score_Pairs
 
-					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_stmsgId_Pairs)
+					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_score_Pairs)
 				})
 			}
 
-			for ownerUserPartnerUser, CHEId_stmsgId_Pairs := range chatMessages {
+			for ownerUserPartnerUser, CHEId_score_Pairs := range chatMessages {
 				eg.Go(func() error {
-					ownerUserPartnerUser, CHEId_stmsgId_Pairs := ownerUserPartnerUser, CHEId_stmsgId_Pairs
+					ownerUserPartnerUser, CHEId_score_Pairs := ownerUserPartnerUser, CHEId_score_Pairs
 
 					var ownerUser, partnerUser string
 
 					fmt.Sscanf(ownerUserPartnerUser, "%s %s", &ownerUser, &partnerUser)
 
-					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_stmsgId_Pairs)
+					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_score_Pairs)
 				})
 			}
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes/UITypes"
-	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
+	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"regexp"
@@ -62,7 +62,7 @@ func extractMentions(description string) []string {
 	return res
 }
 
-func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (any, error) {
+func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (map[string]any, error) {
 	hashtags := extractHashtags(description)
 	mentions := extractMentions(description)
 
@@ -71,25 +71,25 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 		return nil, err
 	}
 
-	if newPost.Id != "" {
-		go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
-			OwnerUser: clientUsername,
-			PostId:    newPost.Id,
-			PostData:  helpers.ToJson(newPost),
-			Hashtags:  hashtags,
-			Mentions:  mentions,
-			At:        at,
-		})
-
-		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
-
-		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
-		newPost.OwnerUser = uiowneruser
-
-		newPost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(newPost.MediaUrls)
+	if newPost.Id == "" {
+		return nil, nil
 	}
 
-	return newPost, nil
+	now := float64(time.Now().UnixMicro())
+
+	go contentRecommendationService.FanOutPostToFollowers(newPost.Id, newPost.Snum+now, newPost.OwnerUser.(string))
+
+	go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
+		OwnerUser: clientUsername,
+		PostId:    newPost.Id,
+		PostData:  helpers.ToJson(newPost),
+		Hashtags:  hashtags,
+		Mentions:  mentions,
+		Score:     newPost.Snum + now,
+		At:        at,
+	})
+
+	return map[string]any{"new_post_id": newPost.Id, "cursor": newPost.Snum + now}, nil
 }
 
 func GetPost(ctx context.Context, clientUsername, postId string) (UITypes.Post, error) {
@@ -101,10 +101,10 @@ func GetPost(ctx context.Context, clientUsername, postId string) (UITypes.Post, 
 	return thePost, nil
 }
 
-func DeletePost(ctx context.Context, clientUsername, postId string) (any, error) {
+func DeletePost(ctx context.Context, clientUsername, postId string) (bool, error) {
 	mentionedUsers, err := post.Delete(ctx, clientUsername, postId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	done := mentionedUsers != nil
@@ -123,10 +123,10 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (any, error)
 	return done, nil
 }
 
-func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (any, error) {
+func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (bool, error) {
 	postOwner, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	done := postOwner != ""
@@ -162,10 +162,10 @@ func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit
 	return reactors, nil
 } */
 
-func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (any, error) {
+func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := post.RemoveReaction(ctx, clientUsername, postId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -178,7 +178,7 @@ func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (a
 	return done, nil
 }
 
-func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (any, error) {
+func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (map[string]any, error) {
 	mentions := extractMentions(commentText)
 
 	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentCloudName, at)
@@ -186,26 +186,24 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 		return nil, err
 	}
 
-	if newComment.Id != "" {
-		go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
-			CommenterUser: clientUsername,
-			PostId:        postId,
-			PostOwner:     newComment.PostOwner,
-			CommentId:     newComment.Id,
-			CommentData:   helpers.ToJson(newComment),
-			Mentions:      mentions,
-			At:            at,
-		})
-
-		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
-
-		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
-		newComment.OwnerUser = uiowneruser
-
-		newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+	if newComment.Id == "" {
+		return nil, nil
 	}
 
-	return newComment, nil
+	now := float64(time.Now().UnixMicro())
+
+	go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
+		CommenterUser: clientUsername,
+		PostId:        postId,
+		PostOwner:     newComment.PostOwner,
+		CommentId:     newComment.Id,
+		CommentData:   helpers.ToJson(newComment),
+		Mentions:      mentions,
+		At:            at,
+		Score:         newComment.Snum + now,
+	})
+
+	return map[string]any{"new_comment_id": newComment.Id, "cursor": newComment.Snum + now}, nil
 }
 
 func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.Comment, error) {
@@ -226,10 +224,10 @@ func GetComment(ctx context.Context, clientUsername, commentId string) (UITypes.
 	return theComment, nil
 }
 
-func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId string) (any, error) {
+func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId string) (bool, error) {
 	done, err := post.RemoveComment(ctx, clientUsername, postId, commentId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -247,10 +245,10 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 	return done, nil
 }
 
-func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (any, error) {
+func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (bool, error) {
 	commentOwner, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	done := commentOwner != ""
@@ -287,10 +285,10 @@ func GetReactorsToComment(ctx context.Context, clientUsername, commentId string,
 	return reactors, nil
 } */
 
-func RemoveReactionToComment(ctx context.Context, clientUsername, commentId string) (any, error) {
+func RemoveReactionToComment(ctx context.Context, clientUsername, commentId string) (bool, error) {
 	done, err := comment.RemoveReaction(ctx, clientUsername, commentId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -304,7 +302,7 @@ func RemoveReactionToComment(ctx context.Context, clientUsername, commentId stri
 	return done, nil
 }
 
-func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (any, error) {
+func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (map[string]any, error) {
 	mentions := extractMentions(commentText)
 
 	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentCloudName, at)
@@ -312,26 +310,24 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 		return nil, err
 	}
 
-	if newComment.Id != "" {
-		go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
-			CommenterUser:      clientUsername,
-			ParentCommentId:    parentCommentId,
-			ParentCommentOwner: newComment.ParentCommentOwner,
-			CommentId:          newComment.Id,
-			CommentData:        helpers.ToJson(newComment),
-			Mentions:           mentions,
-			At:                 at,
-		})
-
-		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
-
-		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
-		newComment.OwnerUser = uiowneruser
-
-		newComment.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(newComment.AttachmentUrl)
+	if newComment.Id == "" {
+		return nil, nil
 	}
 
-	return newComment, nil
+	now := float64(time.Now().UnixMicro())
+
+	go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
+		CommenterUser:      clientUsername,
+		ParentCommentId:    parentCommentId,
+		ParentCommentOwner: newComment.ParentCommentOwner,
+		CommentId:          newComment.Id,
+		CommentData:        helpers.ToJson(newComment),
+		Mentions:           mentions,
+		At:                 at,
+		Score:              newComment.Snum + now,
+	})
+
+	return map[string]any{"new_comment_id": newComment.Id, "cursor": newComment.Snum + now}, nil
 }
 
 func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.Comment, error) {
@@ -343,10 +339,10 @@ func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string,
 	return comments, nil
 }
 
-func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (any, error) {
+func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (bool, error) {
 	done, err := comment.RemoveComment(ctx, clientUsername, parentCommentId, commentId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -364,43 +360,39 @@ func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId
 	return done, nil
 }
 
-func RepostPost(ctx context.Context, clientUsername, postId string) (any, error) {
+func RepostPost(ctx context.Context, clientUsername, postId string) (bool, error) {
 	at := time.Now().UnixMilli()
 
 	repost, err := post.Repost(ctx, clientUsername, postId, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if repost.Id != "" {
+	done := repost.Id != ""
+
+	if done {
+		now := float64(time.Now().UnixMicro())
+
+		go contentRecommendationService.FanOutPostToFollowers(repost.Id, repost.Snum+now, repost.ReposterUser.(string))
+
 		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
 			ReposterUser: clientUsername,
 			PostId:       postId,
 			PostOwner:    repost.OwnerUser.(string),
 			RepostId:     repost.Id,
 			RepostData:   helpers.ToJson(repost),
+			Score:        repost.Snum + now,
 			At:           at,
 		})
-
-		uiowneruser, _ := cache.GetUser[UITypes.ClientUser](ctx, repost.OwnerUser.(string))
-		uireposteruser, _ := cache.GetUser[UITypes.ClientUser](ctx, clientUsername)
-
-		uiowneruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uiowneruser.ProfilePicUrl)
-		uireposteruser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uireposteruser.ProfilePicUrl)
-
-		repost.OwnerUser = uiowneruser
-		repost.ReposterUser = uireposteruser
-
-		repost.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(repost.MediaUrls)
 	}
 
-	return repost.Id != "", nil
+	return done, nil
 }
 
-func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
+func SavePost(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := post.Save(ctx, clientUsername, postId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -416,10 +408,10 @@ func SavePost(ctx context.Context, clientUsername, postId string) (any, error) {
 	return done, nil
 }
 
-func UnsavePost(ctx context.Context, clientUsername, postId string) (any, error) {
+func UnsavePost(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := post.Unsave(ctx, clientUsername, postId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {

@@ -21,7 +21,7 @@ func UserExists(ctx context.Context, uniqueIdent string) (bool, error) {
 	return user.Exists(ctx, uniqueIdent)
 }
 
-func NewUser(ctx context.Context, email, username, name, bio string, birthday int64, password []byte) (user.NewUserT, error) {
+func NewUser(ctx context.Context, email, username, name, bio string, birthday int64, password string) (user.NewUserT, error) {
 	newUser, err := user.New(ctx, email, username, name, bio, birthday, password)
 	if err != nil {
 		return user.NewUserT{}, err
@@ -41,8 +41,22 @@ func SigninUserFind(ctx context.Context, uniqueIdent string) (*user.SignedInUser
 	return user.SigninFind(ctx, uniqueIdent)
 }
 
-func ChangeUserPassword(ctx context.Context, email string, newPassword []byte) error {
-	return user.ChangePassword(ctx, email, newPassword)
+func ChangeUserPassword(ctx context.Context, email string, newPassword string) error {
+	username, err := user.ChangePassword(ctx, email, newPassword)
+	if err != nil {
+		return err
+	}
+
+	done := username != ""
+
+	if done {
+		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
+			Username:    username,
+			UpdateKVMap: map[string]any{"password": newPassword},
+		})
+	}
+
+	return nil
 }
 
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {

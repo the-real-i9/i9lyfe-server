@@ -16,7 +16,7 @@ func rdb() *redis.Client {
 	return appGlobals.RedisClient
 }
 
-func FanOutPostToFollowers(postId, user string) {
+func FanOutPostToFollowers(postId string, score float64, user string) {
 	ctx := context.Background()
 
 	var nextCursor uint64
@@ -28,26 +28,26 @@ func FanOutPostToFollowers(postId, user string) {
 			break
 		}
 
-		for _, fuser := range followers {
-			if err := cache.StoreUserFeedPost(ctx, fuser, postId); err != nil {
-				helpers.LogError(err)
-				continue
-			}
+		go func(followers []string) {
+			ctx := context.Background()
 
-			postUI, err := modelHelpers.BuildPostUIFromCache(ctx, postId, fuser)
-			if err != nil {
-				helpers.LogError(err)
-				continue
-			}
+			for _, fuser := range followers {
+				if err := cache.StoreUserFeedPosts(ctx, fuser, [][2]any{{postId, score}}); err != nil {
+					helpers.LogError(err)
+					continue
+				}
 
-			postUI.Cursor, err = rdb().ZScore(ctx, fmt.Sprintf("user:%s:feed", fuser), postId).Result()
-			if err != nil {
-				helpers.LogError(err)
-				continue
-			}
+				postUI, err := modelHelpers.BuildPostUIFromCache(ctx, postId, fuser)
+				if err != nil {
+					helpers.LogError(err)
+					continue
+				}
 
-			realtimeService.SendNewFeedPostEventMsg(fuser, postUI)
-		}
+				postUI.Cursor = score
+
+				realtimeService.SendNewFeedPostEventMsg(fuser, postUI)
+			}
+		}(followers)
 
 		if cursor == 0 {
 			break

@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/commentModel"
-	"i9lyfe/src/services/cloudStorageService"
+	"i9lyfe/src/models/modelHelpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -62,13 +61,14 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentData = stmsg.Values["commentData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 			}
 
 			newComments := []string{}
 
-			commentComments := make(map[string][][2]string)
+			commentComments := make(map[string][][2]any)
 
 			newCommentDBExtrasFuncs := []func() error{}
 
@@ -83,7 +83,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newComments = append(newComments, msg.CommentId, msg.CommentData)
 
-				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]string{msg.CommentId, stmsgIds[i]})
+				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]any{msg.CommentId, msg.Score})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
 					return commentModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
@@ -104,19 +104,11 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[msg.ParentCommentOwner] = append(userNotifications[msg.ParentCommentOwner], [2]string{cocNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						uicu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
-						if err != nil {
-							return
-						}
-
-						uicu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uicu.ProfilePicUrl)
-
-						cocNotif["unread"] = true
-						cocNotif["details"].(map[string]any)["commenter_user"] = uicu
+						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), cocNotifUniqueId)
 
 						realtimeService.SendEventMsg(msg.ParentCommentOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  cocNotif,
+							Data:  notifSnippet,
 						})
 					})
 				}
@@ -138,19 +130,11 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						uimu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
-						if err != nil {
-							return
-						}
-
-						uimu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimu.ProfilePicUrl)
-
-						micNotif["unread"] = true
-						micNotif["details"].(map[string]any)["mentioning_user"] = uimu
+						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), micNotifUniqueId)
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  micNotif,
+							Data:  notifSnippet,
 						})
 					})
 				}
@@ -173,11 +157,11 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 
 			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for parentCommentId, commentId_stmsgId_Pairs := range commentComments {
+			for parentCommentId, commentId_score_Pairs := range commentComments {
 				eg.Go(func() error {
-					parentCommentId, commentId_stmsgId_Pairs := parentCommentId, commentId_stmsgId_Pairs
+					parentCommentId, commentId_score_Pairs := parentCommentId, commentId_score_Pairs
 
-					if err := cache.StoreCommentComments(sharedCtx, parentCommentId, commentId_stmsgId_Pairs); err != nil {
+					if err := cache.StoreCommentComments(sharedCtx, parentCommentId, commentId_score_Pairs); err != nil {
 						return err
 					}
 

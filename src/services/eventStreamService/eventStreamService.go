@@ -253,11 +253,11 @@ func QueueNewMsgReactionEvent(nmre eventTypes.NewMsgReactionEvent) {
 	}
 }
 
-func QueueMsgAckEvent(mae eventTypes.MsgAckEvent) {
+func QueueMsgsAckEvent(mae eventTypes.MsgsAckEvent) {
 	ctx := context.Background()
 
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
-		Stream: "msg_acks",
+		Stream: "msgs_acks",
 		Values: mae,
 	}).Err()
 	if err != nil {

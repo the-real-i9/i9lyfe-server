@@ -28,10 +28,10 @@ func GetChats(ctx context.Context, clientUsername string, limit int, cursor floa
 }
 
 // not implemented
-func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (any, error) {
+func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (bool, error) {
 	done, err := chat.Delete(ctx, clientUsername, partnerUsername)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	return done, nil
@@ -64,136 +64,164 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 		}
 	}
 
-	if newMessage.Id != "" {
-		go func(msgData chat.NewMessageT) {
-			uisender, _ := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
+	if newMessage.Id == "" {
+		return nil, nil
+	}
 
-			uisender.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uisender.ProfilePicUrl)
-			msgData.Sender = uisender
+	now := float64(time.Now().UnixMicro())
 
-			cloudStorageService.MessageMediaCloudNameToUrl(msgData.Content)
+	go func(msg chat.NewMessageT) {
+		uisender, _ := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
 
+		uisender.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uisender.ProfilePicUrl)
+
+		cloudStorageService.MessageMediaCloudNameToUrl(msg.Content)
+
+		msgUI := UITypes.ChatHistoryEntry{CHEType: msg.CHEType, Id: msg.Id, Content: msg.Content, DeliveryStatus: msg.DeliveryStatus, CreatedAt: msg.CreatedAt, Sender: uisender, ReplyTargetMsg: msg.ReplyTargetMsg, Cursor: msg.Snum + now}
+
+		if newMessage.FirstToUser {
 			realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-				Event: "chat: new message",
-				Data:  msgData,
+				Event: "new chat",
+				Data: map[string]any{
+					"chat":    UITypes.ChatSnippet{PartnerUser: uisender, UnreadMC: 1, Cursor: msg.Snum + now},
+					"history": []UITypes.ChatHistoryEntry{msgUI},
+				},
 			})
-		}(newMessage)
 
-		go func(msgData chat.NewMessageT) {
-			eventStreamService.QueueNewMessageEvent(eventTypes.NewMessageEvent{
-				FirstFromUser: msgData.FirstFromUser,
-				FirstToUser:   msgData.FirstToUser,
-				FromUser:      clientUsername,
-				ToUser:        partnerUsername,
-				CHEId:         msgData.Id,
-				MsgData:       helpers.ToJson(msgData),
-			})
-		}(newMessage)
-	}
+			return
+		}
 
-	return map[string]any{"new_msg_id": newMessage.Id}, nil
+		realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
+			Event: "chat: new message",
+			Data:  msgUI,
+		})
+	}(newMessage)
+
+	go eventStreamService.QueueNewMessageEvent(eventTypes.NewMessageEvent{
+		FirstFromUser: newMessage.FirstFromUser,
+		FirstToUser:   newMessage.FirstToUser,
+		FromUser:      clientUsername,
+		ToUser:        partnerUsername,
+		CHEId:         newMessage.Id,
+		MsgData:       helpers.ToJson(newMessage),
+		Score:         newMessage.Snum + now,
+	})
+
+	return map[string]any{"new_msg_id": newMessage.Id, "che_cursor": newMessage.Snum + now}, nil
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername, msgId string, at int64) (any, error) {
-	done, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgId, at)
+func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, at int64) (bool, error) {
+	done, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgIdList, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
+		now := float64(time.Now().UnixMicro())
+
 		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-			Event: "chat: message delivered",
+			Event: "chat: messages delivered",
 			Data: map[string]any{
-				"partner_username": clientUsername,
-				"msg_id":           msgId,
-				"delivered_at":     at,
+				"chat_partner":    clientUsername,
+				"msg_id_list":     msgIdList,
+				"delivered_at":    at,
+				"new_chat_cursor": now,
 			},
 		})
 
-		go eventStreamService.QueueMsgAckEvent(eventTypes.MsgAckEvent{
-			FromUser: clientUsername,
-			ToUser:   partnerUsername,
-			CHEId:    msgId,
-			Ack:      "delivered",
-			At:       at,
+		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
+			FromUser:  clientUsername,
+			ToUser:    partnerUsername,
+			CHEIdList: msgIdList,
+			Ack:       "delivered",
+			At:        at,
+			Score:     now,
 		})
 	}
 
 	return done, nil
 }
 
-func AckMsgRead(ctx context.Context, clientUsername, partnerUsername, msgId string, at int64) (any, error) {
-	done, err := chat.AckMsgRead(ctx, clientUsername, partnerUsername, msgId, at)
+func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, at int64) (bool, error) {
+	done, err := chat.AckMsgRead(ctx, clientUsername, partnerUsername, msgIdList, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
 		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-			Event: "chat: message read",
+			Event: "chat: messages read",
 			Data: map[string]any{
-				"partner_username": clientUsername,
-				"msg_id":           msgId,
-				"read_at":          at,
+				"chat_partner": clientUsername,
+				"msg_id_list":  msgIdList,
+				"read_at":      at,
 			},
 		})
 
-		go eventStreamService.QueueMsgAckEvent(eventTypes.MsgAckEvent{
-			FromUser: clientUsername,
-			ToUser:   partnerUsername,
-			CHEId:    msgId,
-			Ack:      "read",
-			At:       at,
+		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
+			FromUser:  clientUsername,
+			ToUser:    partnerUsername,
+			CHEIdList: msgIdList,
+			Ack:       "read",
+			At:        at,
 		})
 	}
 
 	return done, nil
 }
 
-func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (any, error) {
+func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (map[string]any, error) {
 	rxnToMessage, err := chat.ReactToMsg(ctx, clientUsername, partnerUsername, msgId, emoji, at)
 	if err != nil {
 		return nil, err
 	}
 
-	done := rxnToMessage.CHEId != ""
+	if rxnToMessage.CHEId == "" {
+		return nil, nil
+	}
 
-	if done {
-		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
+	now := float64(time.Now().UnixMicro())
+
+	go func(rxnData chat.RxnToMessageT) {
+		uireactor, _ := cache.GetUser[UITypes.MsgReactor](context.Background(), clientUsername)
+
+		uireactor.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uireactor.ProfilePicUrl)
+
+		realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message reaction",
 			Data: map[string]any{
-				"partner_username": clientUsername,
-				"to_msg_id":        msgId,
-				"reaction": UITypes.MsgReaction{
-					Emoji:   emoji,
-					Reactor: rxnToMessage.Reactor,
+				"chat_partner": clientUsername,
+				"che":          UITypes.ChatHistoryEntry{CHEType: rxnData.CHEType, Reactor: clientUsername, Emoji: rxnData.Emoji, Cursor: rxnData.Snum + now},
+				"msg_reaction": map[string]any{
+					"msg_id": msgId,
+					"reaction": UITypes.MsgReaction{
+						Emoji:   emoji,
+						Reactor: uireactor,
+					},
 				},
 			},
 		})
+	}(rxnToMessage)
 
-		go func(rxnData chat.RxnToMessageT) {
-			rxnData.Reactor = clientUsername
+	go func(rxnData chat.RxnToMessageT) {
+		eventStreamService.QueueNewMsgReactionEvent(eventTypes.NewMsgReactionEvent{
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			CHEId:    rxnData.CHEId,
+			RxnData:  helpers.ToJson(rxnData),
+			ToMsgId:  rxnData.ToMsgId,
+			Emoji:    rxnData.Emoji,
+			Score:    rxnData.Snum + now,
+		})
+	}(rxnToMessage)
 
-			// push CHE id to each user's chat history
-			// store Rxn data to ToMsg reactions
-			eventStreamService.QueueNewMsgReactionEvent(eventTypes.NewMsgReactionEvent{
-				FromUser: clientUsername,
-				ToUser:   partnerUsername,
-				CHEId:    rxnData.CHEId,
-				RxnData:  helpers.ToJson(rxnData),
-				ToMsgId:  rxnData.ToMsgId,
-				Emoji:    rxnData.Emoji,
-			})
-		}(rxnToMessage)
-	}
-
-	return done, nil
+	return map[string]any{"che_cursor": rxnToMessage.Snum + now}, nil
 }
 
-func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, msgId string) (any, error) {
+func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, msgId string) (bool, error) {
 	CHEId, err := chat.RemoveMsgReaction(ctx, clientUsername, partnerUsername, msgId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	done := CHEId != ""
@@ -202,8 +230,8 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: message reaction removed",
 			Data: map[string]any{
-				"partner_username": clientUsername,
-				"msg_id":           msgId,
+				"chat_partner": clientUsername,
+				"msg_id":       msgId,
 			},
 		})
 
@@ -218,30 +246,29 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 	return done, nil
 }
 
-func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, deleteFor string) (any, error) {
+func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, deleteFor string) (bool, error) {
 	at := time.Now().UnixMilli()
 
 	done, err := chat.DeleteMsg(ctx, clientUsername, partnerUsername, msgId, deleteFor, at)
 	if err != nil {
-		return nil, err
-	}
-
-	if done && deleteFor == "everyone" {
-		go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-			Event: "chat: message deleted",
-			Data: map[string]any{
-				"partner_username": clientUsername,
-				"msg_id":           msgId,
-			},
-		})
+		return false, err
 	}
 
 	if done {
+		if deleteFor == "everyone" {
+			go realtimeService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
+				Event: "chat: message deleted",
+				Data: map[string]any{
+					"chat_partner": clientUsername,
+					"msg_id":       msgId,
+				},
+			})
+		}
+
 		go eventStreamService.QueueMsgDeletionEvent(eventTypes.MsgDeletionEvent{
 			CHEId: msgId,
 			For:   deleteFor,
 		})
-
 	}
 
 	return done, nil

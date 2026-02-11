@@ -92,12 +92,13 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 }
 
 type newCommentT struct {
-	Id                 string `json:"id" db:"comment_id"`
-	OwnerUser          any    `json:"owner_user" db:"owner_user"`
-	CommentText        string `json:"comment_text" db:"comment_text"`
-	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
-	At                 int64  `json:"at" db:"at_"`
-	ParentCommentOwner string `json:"-" db:"parent_comment_owner"`
+	Id                 string  `json:"id" db:"comment_id"`
+	OwnerUser          any     `json:"owner_user" db:"owner_user"`
+	CommentText        string  `json:"comment_text" db:"comment_text"`
+	AttachmentUrl      string  `json:"attachment_url" db:"attachment_url"`
+	At                 int64   `json:"at" db:"at_"`
+	Snum               float64 `json:"cursor" db:"snum"`
+	ParentCommentOwner string  `json:"-" db:"parent_comment_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
@@ -109,7 +110,7 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, snum, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {

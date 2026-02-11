@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/models/modelHelpers"
 	"i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -62,6 +61,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentData = stmsg.Values["commentData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -69,7 +69,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			newComments := []string{}
 
-			postComments := make(map[string][][2]string)
+			postComments := make(map[string][][2]any)
 
 			userCommentedPosts := make(map[string][][2]string)
 
@@ -86,7 +86,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			for i, msg := range msgs {
 				newComments = append(newComments, msg.CommentId, msg.CommentData)
 
-				postComments[msg.PostId] = append(postComments[msg.PostId], [2]string{msg.CommentId, stmsgIds[i]})
+				postComments[msg.PostId] = append(postComments[msg.PostId], [2]any{msg.CommentId, msg.Score})
 
 				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]string{msg.PostId, stmsgIds[i]})
 
@@ -109,19 +109,11 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						uicu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
-						if err != nil {
-							return
-						}
-
-						uicu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uicu.ProfilePicUrl)
-
-						copNotif["unread"] = true
-						copNotif["details"].(map[string]any)["commenter_user"] = uicu
+						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), copNotifUniqueId)
 
 						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  copNotif,
+							Data:  notifSnippet,
 						})
 					})
 				}
@@ -143,19 +135,11 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						uimu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.CommenterUser)
-						if err != nil {
-							return
-						}
-
-						uimu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimu.ProfilePicUrl)
-
-						micNotif["unread"] = true
-						micNotif["details"].(map[string]any)["mentioning_user"] = uimu
+						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), micNotifUniqueId)
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  micNotif,
+							Data:  notifSnippet,
 						})
 					})
 				}
@@ -178,11 +162,11 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for postId, commentId_stmsgId_Pairs := range postComments {
+			for postId, commentId_score_Pairs := range postComments {
 				eg.Go(func() error {
-					postId, commentId_stmsgId_Pairs := postId, commentId_stmsgId_Pairs
+					postId, commentId_score_Pairs := postId, commentId_score_Pairs
 
-					if err := cache.StorePostComments(sharedCtx, postId, commentId_stmsgId_Pairs); err != nil {
+					if err := cache.StorePostComments(sharedCtx, postId, commentId_score_Pairs); err != nil {
 						return err
 					}
 

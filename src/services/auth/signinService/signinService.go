@@ -18,7 +18,7 @@ type signinRespT struct {
 	User UITypes.ClientUser `json:"user"`
 }
 
-func Signin(ctx context.Context, emailOrUsername string, inputPassword []byte) (signinRespT, string, error) {
+func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {
 	var resp signinRespT
 
 	theUser, err := userService.SigninUserFind(ctx, emailOrUsername)

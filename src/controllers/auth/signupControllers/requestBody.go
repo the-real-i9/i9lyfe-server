@@ -37,7 +37,7 @@ func (b verifyEmailBody) Validate() error {
 
 type registerUserBody struct {
 	Username string `json:"username"`
-	Password []byte `json:"password"`
+	Password string `json:"password"`
 	Name     string `json:"name"`
 	Birthday int64  `json:"birthday"`
 	Bio      string `json:"bio"`

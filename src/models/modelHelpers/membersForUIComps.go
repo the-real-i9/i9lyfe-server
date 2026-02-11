@@ -194,7 +194,7 @@ func NotifMembersForUINotifSnippets(ctx context.Context, notifMembers []redis.Z)
 				notifId := notifMembers[pIndx].Member.(string)
 				cursor := notifMembers[pIndx].Score
 
-				notifSnippet, err := buildNotifSnippetUIFromCache(sharedCtx, notifId)
+				notifSnippet, err := BuildNotifSnippetUIFromCache(sharedCtx, notifId)
 				if err != nil {
 					return err
 				}
@@ -313,7 +313,7 @@ func CHEMembersForUICHEs(ctx context.Context, CHEMembers []redis.Z) ([]UITypes.C
 				CHEId := CHEMembers[pIndx].Member.(string)
 				cursor := CHEMembers[pIndx].Score
 
-				CHE, err := buildCHEUIFromCache(sharedCtx, CHEId)
+				CHE, err := BuildCHEUIFromCache(sharedCtx, CHEId)
 				if err != nil {
 					return err
 				}

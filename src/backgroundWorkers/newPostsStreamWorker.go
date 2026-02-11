@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/models/modelHelpers"
 	"i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/cloudStorageService"
-	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -61,6 +59,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				msg.PostData = stmsg.Values["postData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 				msg.Hashtags = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
+				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
 
 				msgs = append(msgs, msg)
@@ -71,6 +70,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			userPosts := make(map[string][][2]string)
 
+			userFeedPosts := make(map[string][][2]any)
+
 			userMentionedPosts := make(map[string][][2]string)
 
 			notifications := []string{}
@@ -80,8 +81,6 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			newPostDBExtrasFuncs := []func() error{}
 
-			fanOutPostFuncs := []func(){}
-
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
@@ -89,6 +88,8 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				newPosts = append(newPosts, msg.PostId, msg.PostData)
 
 				userPosts[msg.OwnerUser] = append(userPosts[msg.OwnerUser], [2]string{msg.PostId, stmsgIds[i]})
+
+				userFeedPosts[msg.OwnerUser] = append(userFeedPosts[msg.OwnerUser], [2]any{msg.PostId, msg.Score})
 
 				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, func() error {
 					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
@@ -113,26 +114,14 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					userNotifications[mu] = append(userNotifications[mu], [2]string{notifUniqueId, stmsgIds[i]})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-						uimu, err := cache.GetUser[UITypes.ClientUser](context.Background(), msg.OwnerUser)
-						if err != nil {
-							return
-						}
-
-						uimu.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(uimu.ProfilePicUrl)
-
-						notif["unread"] = true
-						notif["details"].(map[string]any)["mentioning_user"] = uimu
+						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
 
 						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
-							Data:  notif,
+							Data:  notifSnippet,
 						})
 					})
 				}
-
-				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					contentRecommendationService.FanOutNewPostToFollowers(msg.PostId, msg.OwnerUser)
-				})
 			}
 
 			// batch processing
@@ -160,6 +149,18 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
+			for user, postId_score_Pairs := range userFeedPosts {
+				eg.Go(func() error {
+					user, postId_score_Pairs := user, postId_score_Pairs
+
+					if err := cache.StoreUserFeedPosts(sharedCtx, user, postId_score_Pairs); err != nil {
+						return err
+					}
+
+					return nil
+				})
+			}
+
 			for user, postId_stmsgId_Pairs := range userMentionedPosts {
 				eg.Go(func() error {
 					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
@@ -183,12 +184,6 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					return fn()
 				})
 			}
-
-			go func() {
-				for _, fn := range fanOutPostFuncs {
-					fn()
-				}
-			}()
 
 			go func() {
 				for _, fn := range sendNotifEventMsgFuncs {

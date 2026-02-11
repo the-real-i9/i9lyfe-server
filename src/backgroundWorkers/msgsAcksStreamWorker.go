@@ -3,6 +3,7 @@ package backgroundWorkers
 import (
 	"context"
 	"fmt"
+	"i9lyfe/src/appTypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
@@ -14,8 +15,8 @@ import (
 
 func msgAcksStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "msg_acks"
-		groupName    = "msg_ack_listeners"
+		streamName   = "msgs_acks"
+		groupName    = "msgs_ack_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -43,18 +44,19 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var msgs []eventTypes.MsgAckEvent
+			var msgs []eventTypes.MsgsAckEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
 
-				var msg eventTypes.MsgAckEvent
+				var msg eventTypes.MsgsAckEvent
 
 				msg.FromUser = stmsg.Values["fromUser"].(string)
 				msg.ToUser = stmsg.Values["toUser"].(string)
-				msg.CHEId = stmsg.Values["CHEId"].(string)
+				msg.CHEIdList = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["cheIdList"].(string))
 				msg.Ack = stmsg.Values["ack"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -65,25 +67,29 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			userChatUnreadMsgs := make(map[string]map[string][]any)
 			userChatReadMsgs := make(map[string]map[string][]any)
 
-			updatedFromUserChats := make(map[string]map[string]string)
+			updatedFromUserChats := make(map[string]map[string]float64)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 
-				ackMessages = append(ackMessages, [3]any{msg.CHEId, msg.Ack, msg.At})
+				for _, cheId := range msg.CHEIdList {
+					ackMessages = append(ackMessages, [3]any{cheId, msg.Ack, msg.At})
+				}
 
 				if msg.Ack == "delivered" {
 					if updatedFromUserChats[msg.FromUser] == nil {
-						updatedFromUserChats[msg.FromUser] = make(map[string]string)
+						updatedFromUserChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					updatedFromUserChats[msg.FromUser][msg.ToUser] = stmsgIds[i]
+					updatedFromUserChats[msg.FromUser][msg.ToUser] = msg.Score
 
 					if userChatUnreadMsgs[msg.FromUser] == nil {
 						userChatUnreadMsgs[msg.FromUser] = make(map[string][]any)
 					}
 
-					userChatUnreadMsgs[msg.FromUser][msg.ToUser] = append(userChatUnreadMsgs[msg.FromUser][msg.ToUser], msg.CHEId)
+					for _, cheId := range msg.CHEIdList {
+						userChatUnreadMsgs[msg.FromUser][msg.ToUser] = append(userChatUnreadMsgs[msg.FromUser][msg.ToUser], cheId)
+					}
 				}
 
 				if msg.Ack == "read" {
@@ -91,19 +97,21 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 						userChatReadMsgs[msg.FromUser] = make(map[string][]any)
 					}
 
-					userChatReadMsgs[msg.FromUser][msg.ToUser] = append(userChatReadMsgs[msg.FromUser][msg.ToUser], msg.CHEId)
+					for _, cheId := range msg.CHEIdList {
+						userChatReadMsgs[msg.FromUser][msg.ToUser] = append(userChatReadMsgs[msg.FromUser][msg.ToUser], cheId)
+					}
 				}
 			}
 
 			// batch processing
 			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for _, CHEId_ack_ackAt_stmsgId := range ackMessages {
+			for _, msgId_ack_ackAt_stmsgId := range ackMessages {
 
 				eg.Go(func() error {
-					CHEId, ack, ackAt := CHEId_ack_ackAt_stmsgId[0], CHEId_ack_ackAt_stmsgId[1], CHEId_ack_ackAt_stmsgId[2]
+					msgId, ack, ackAt := msgId_ack_ackAt_stmsgId[0], msgId_ack_ackAt_stmsgId[1], msgId_ack_ackAt_stmsgId[2]
 
-					return cache.UpdateMessage(sharedCtx, CHEId.(string), map[string]any{
+					return cache.UpdateMessage(sharedCtx, msgId.(string), map[string]any{
 						"delivery_status":         ack,
 						fmt.Sprintf("%s_at", ack): ackAt.(int64),
 					})

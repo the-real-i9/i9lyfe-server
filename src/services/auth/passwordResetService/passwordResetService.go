@@ -76,7 +76,7 @@ type passReset3RespT struct {
 	Msg string `json:"msg"`
 }
 
-func ResetPassword(ctx context.Context, sessionData json.RawMessage, newPassword []byte) (passReset3RespT, error) {
+func ResetPassword(ctx context.Context, sessionData json.RawMessage, newPassword string) (passReset3RespT, error) {
 	var resp passReset3RespT
 
 	email := helpers.FromBtJson[struct {
