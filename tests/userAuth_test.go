@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
@@ -194,6 +195,12 @@ func TestSignup(t *testing.T) {
 				"user": td.Ignore(),
 				"msg":  "Signup success!",
 			}, nil))
+
+		<-time.NewTimer(500 * time.Millisecond).C /* wait for redis to queue and bg worker to add to cache */
+
+		userExists, err := rdb().HExists(t.Context(), "users", user1.Username).Result()
+		require.NoError(t, err)
+		require.True(t, userExists)
 
 		err = registerUserCleanUp(t.Context(), user1.Username)
 		require.NoError(t, err)

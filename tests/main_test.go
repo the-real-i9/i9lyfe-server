@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/initializers"
 	"i9lyfe/src/routes/authRoute"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -50,9 +52,9 @@ type UserT struct {
 	Password       string
 	Birthday       int64
 	Bio            string
-	SessionCookie  string
-	WSConn         *websocket.Conn
-	ServerEventMsg chan map[string]any
+	SessionCookie  string              `json:"-"`
+	WSConn         *websocket.Conn     `json:"-"`
+	ServerEventMsg chan map[string]any `json:"-"`
 }
 
 var app *fiber.App
@@ -97,6 +99,10 @@ func TestMain(m *testing.M) {
 	app.Shutdown()
 
 	os.Exit(c)
+}
+
+func rdb() *redis.Client {
+	return appGlobals.RedisClient
 }
 
 func makeReqBody(data map[string]any) (io.Reader, error) {

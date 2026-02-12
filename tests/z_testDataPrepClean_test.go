@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/securityServices"
 )
@@ -15,9 +16,11 @@ func requestNewAccountCleanUp(ctx context.Context, username string) error {
 }
 
 func registerUserCleanUp(ctx context.Context, username string) error {
-	return removeDBUser(ctx, username)
+	if err := removeDBUser(ctx, username); err != nil {
+		return err
+	}
 
-	// remove user from cache
+	return removeCacheUser(ctx, username)
 }
 
 func signinUserPrep(ctx context.Context, user UserT) error {
@@ -29,12 +32,19 @@ func signinUserCleanUp(ctx context.Context, username string) error {
 }
 
 func forgotPasswordPrep(ctx context.Context, user UserT) error {
-	// add a user data to cache
-	return createDBUser(ctx, user)
+	if err := createDBUser(ctx, user); err != nil {
+		return err
+	}
+
+	return addCacheUser(ctx, user)
 }
 
 func forgotPasswordCleanUp(ctx context.Context, username string) error {
-	return removeDBUser(ctx, username)
+	if err := removeDBUser(ctx, username); err != nil {
+		return err
+	}
+
+	return removeCacheUser(ctx, username)
 }
 
 func createDBUser(ctx context.Context, user UserT) error {
@@ -59,6 +69,24 @@ func removeDBUser(ctx context.Context, username string) error {
 		WHERE username = $1
 		`, username,
 	)
+}
+
+func addCacheUser(ctx context.Context, user UserT) error {
+	_, err := rdb().HSet(ctx, "users", []string{user.Username, helpers.ToJson(user)}).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeCacheUser(ctx context.Context, username string) error {
+	_, err := rdb().HDel(ctx, "users", username).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // sample users
