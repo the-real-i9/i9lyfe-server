@@ -58,10 +58,10 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				msg.OwnerUser = stmsg.Values["ownerUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.PostData = stmsg.Values["postData"].(string)
-				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
-				msg.Hashtags = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
-				msg.PostCursor = helpers.FromJson[int64](stmsg.Values["postCursor"].(string))
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.Mentions = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.Hashtags = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
+				msg.PostCursor = helpers.FromMsgPack[int64](stmsg.Values["postCursor"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -111,7 +111,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 						"mentioning_user": msg.OwnerUser,
 					})
 
-					notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+					notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
 					unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 					userNotifications[mu] = append(userNotifications[mu], [2]any{notifUniqueId, float64(msg.PostCursor)})

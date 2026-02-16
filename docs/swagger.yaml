@@ -4,7 +4,7 @@ definitions:
     properties:
       name:
         type: string
-      profile_pic_url:
+      profilePicUrl:
         type: string
       username:
         type: string
@@ -77,7 +77,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: User info
@@ -111,7 +111,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Done
@@ -152,7 +152,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Done
@@ -178,7 +178,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Bye message
@@ -209,7 +209,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Done
@@ -244,7 +244,7 @@ paths:
         required: true
         type: array
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Done
@@ -260,7 +260,7 @@ paths:
   /auth/forgot_password/confirm_email:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Provide the 6-digit token sent to email
       parameters:
       - description: 6-digit token
@@ -275,7 +275,7 @@ paths:
         required: true
         type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Email confirmed. You're about to reset your password
@@ -307,7 +307,7 @@ paths:
   /auth/forgot_password/request_password_reset:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Submit your email to request a password reset
       parameters:
       - description: Provide your email address
@@ -317,7 +317,7 @@ paths:
         schema:
           type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Proceed to email confirmation
@@ -341,7 +341,7 @@ paths:
   /auth/forgot_password/reset_password:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Set new password
       parameters:
       - description: Choose a new password
@@ -362,7 +362,7 @@ paths:
         required: true
         type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Password changed successfully
@@ -390,7 +390,7 @@ paths:
   /auth/signin:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Signin with email/username and password
       parameters:
       - description: Email or Username
@@ -406,7 +406,7 @@ paths:
         schema:
           type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Signin Success!
@@ -435,7 +435,7 @@ paths:
   /auth/signup/register_user:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Provide remaining user credentials
       parameters:
       - description: Choose a username
@@ -473,13 +473,14 @@ paths:
         required: true
         type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Signup Success
           headers:
             Set-cookie:
-              description: User session response cookie containing auth JWT
+              description: Authenticated user session response cookie containing auth
+                JWT
               type: string
           schema:
             $ref: '#/definitions/signupService.signup3RespT'
@@ -495,8 +496,7 @@ paths:
           description: Internal Server Error
           headers:
             Set-cookie:
-              description: Authenticated user session response cookie containing auth
-                JWT
+              description: Signup session response cookie
               type: string
           schema:
             $ref: '#/definitions/appErrors.HTTPError'
@@ -506,7 +506,7 @@ paths:
   /auth/signup/request_new_account:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Submit email to request a new account
       parameters:
       - description: Provide your email address
@@ -516,7 +516,7 @@ paths:
         schema:
           type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Proceed to email verification
@@ -540,7 +540,7 @@ paths:
   /auth/signup/verify_email:
     post:
       consumes:
-      - application/json
+      - application/vnd.msgpack
       description: Provide the 6-digit code sent to email
       parameters:
       - description: 6-digit code
@@ -555,7 +555,7 @@ paths:
         required: true
         type: string
       produces:
-      - application/json
+      - application/vnd.msgpack
       responses:
         "200":
           description: Email verified

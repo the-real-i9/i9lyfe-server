@@ -218,7 +218,7 @@ func StoreUserNotifications(ctx context.Context, user string, notifId_score_Pair
 			Member: notifId,
 		})
 	}
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%s", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
+	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
 		helpers.LogError(err)
 
 		return err

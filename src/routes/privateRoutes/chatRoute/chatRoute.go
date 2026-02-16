@@ -3,7 +3,7 @@ package chatRoute
 import (
 	CC "i9lyfe/src/controllers/chatControllers"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Route(router fiber.Router) {

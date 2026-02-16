@@ -12,7 +12,7 @@ import (
 )
 
 func publishContentMetric(ctx context.Context, data any, contentType string) {
-	if err := rdb().Publish(ctx, "live_content_metrics", helpers.ToJson(appTypes.ServerEventMsg{
+	if err := rdb().Publish(ctx, "live_content_metrics", helpers.ToMsgPack(appTypes.ServerEventMsg{
 		Event: "latest " + contentType + " metric",
 		Data:  data,
 	})).Err(); err != nil {
@@ -44,7 +44,7 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, c
 			if userPipe, ok := AllClientSockets.Load(clientUsername); ok {
 				pipe := userPipe.(*websocket.Conn)
 
-				if err := pipe.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+				if err := pipe.WriteMessage(websocket.BinaryMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
 					ctxCancel()
 				}
@@ -54,7 +54,7 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, c
 }
 
 func PublishUserPresenceChange(ctx context.Context, targetUsername string, data map[string]any) {
-	if err := rdb().Publish(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername), helpers.ToJson(appTypes.ServerEventMsg{
+	if err := rdb().Publish(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername), helpers.ToMsgPack(appTypes.ServerEventMsg{
 		Event: "user presence changed",
 		Data:  data,
 	})).Err(); err != nil {
@@ -78,7 +78,7 @@ func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetU
 			if userPipe, ok := AllClientSockets.Load(clientUsername); ok {
 				pipe := userPipe.(*websocket.Conn)
 
-				if err := pipe.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+				if err := pipe.WriteMessage(websocket.BinaryMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
 					ctxCancel()
 				}

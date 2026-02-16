@@ -10,7 +10,7 @@ import (
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/models/modelHelpers"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -34,12 +34,12 @@ func Exists(ctx context.Context, uniqueIdent string) (bool, error) {
 }
 
 type NewUserT struct {
-	Email         string `json:"email"`
-	Username      string `json:"username"`
-	Name          string `json:"name" db:"name_"`
-	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Bio           string `json:"bio"`
-	Presence      string `json:"presence"`
+	Email         string `msgpack:"email"`
+	Username      string `msgpack:"username"`
+	Name          string `msgpack:"name" db:"name_"`
+	ProfilePicUrl string `msgpack:"profile_pic_url" db:"profile_pic_url"`
+	Bio           string `msgpack:"bio"`
+	Presence      string `msgpack:"presence"`
 }
 
 func New(ctx context.Context, email, username, name, bio string, birthday int64, password string) (NewUserT, error) {
@@ -59,10 +59,10 @@ func New(ctx context.Context, email, username, name, bio string, birthday int64,
 }
 
 type SignedInUserT struct {
-	Username      string `json:"username"`
-	Name          string `json:"name" db:"name_"`
-	ProfilePicUrl string `json:"profile_pic_url" db:"profile_pic_url"`
-	Password      string `json:"-" db:"password_"`
+	Username      string `msgpack:"username"`
+	Name          string `msgpack:"name" db:"name_"`
+	ProfilePicUrl string `msgpack:"profile_pic_url" db:"profile_pic_url"`
+	Password      string `msgpack:"-" db:"password_"`
 }
 
 func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error) {
@@ -188,11 +188,11 @@ func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool,
 	return *done, nil
 }
 
-func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
+func GetMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
 	mentPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:mentioned_posts", clientUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -208,11 +208,11 @@ func GetMentionedPosts(ctx context.Context, clientUsername string, limit int, cu
 	return mentPosts, nil
 }
 
-func GetReactedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
+func GetReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
 	reactedPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:reacted_posts", clientUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -228,11 +228,11 @@ func GetReactedPosts(ctx context.Context, clientUsername string, limit int, curs
 	return reactedPosts, nil
 }
 
-func GetSavedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
+func GetSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
 	savedPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:saved_posts", clientUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -248,11 +248,11 @@ func GetSavedPosts(ctx context.Context, clientUsername string, limit int, cursor
 	return savedPosts, nil
 }
 
-func GetNotifications(ctx context.Context, clientUsername string, year int, month string, limit int, cursor float64) ([]UITypes.NotifSnippet, error) {
-	notifsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:notifications:%d-%s", clientUsername, year, month), &redis.ZRangeBy{
+func GetNotifications(ctx context.Context, clientUsername string, year, month, limit int64, cursor float64) ([]UITypes.NotifSnippet, error) {
+	notifsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", clientUsername, year, month), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -296,11 +296,11 @@ func GetProfile(ctx context.Context, clientUsername, targetUsername string) (UIT
 	return userProfile, nil
 }
 
-func GetFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
+func GetFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
 	followerMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:followers", targetUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -315,11 +315,11 @@ func GetFollowers(ctx context.Context, clientUsername, targetUsername string, li
 	return followers, nil
 }
 
-func GetFollowings(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
+func GetFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
 	followingMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:followings", targetUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -334,11 +334,11 @@ func GetFollowings(ctx context.Context, clientUsername, targetUsername string, l
 	return followings, nil
 }
 
-func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
+func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
 	userPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:posts", targetUsername), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)

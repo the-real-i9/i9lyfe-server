@@ -55,7 +55,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 
 				req, err := http.NewRequest("POST", signupPath+"/request_new_account", reqBody)
 				require.NoError(err)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -86,7 +86,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -121,7 +121,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -214,7 +214,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("PUT", appPathPriv+"/me/edit_profile", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -253,7 +253,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/me/profile_pic_upload/authorize", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user1.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -316,7 +316,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("PUT", appPathPriv+"/me/change_profile_picture", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -339,7 +339,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -375,7 +375,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user2.Username+"/follow", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -411,7 +411,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user3.Username+"/follow", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -447,7 +447,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -480,7 +480,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/users/"+user1.Username+"/follow", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -516,7 +516,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/followings", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -549,7 +549,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("DELETE", appPathPriv+"/users/"+user2.Username+"/unfollow", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -575,7 +575,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user2.Username+"/followers", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -608,7 +608,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user3.Username+"/followings", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -639,7 +639,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPublic+"/"+user1.Username, nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -698,7 +698,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/post_upload/authorize", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user1.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -774,7 +774,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user1.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -841,7 +841,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user3.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -906,7 +906,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/react", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user2.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -949,7 +949,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/react", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user2.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -986,7 +986,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1PostId+"/save", nil)
 			require.NoError(err)
 			req.Header.Set("Cookie", user2.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -1009,7 +1009,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3PostId+"/save", nil)
 			require.NoError(err)
 			req.Header.Set("Cookie", user2.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -1035,7 +1035,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPriv+"/me/mentioned_posts", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1072,7 +1072,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPriv+"/me/reacted_posts", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1109,7 +1109,7 @@ func XTestUserPersonalOperationsStory(t *testing.T) {
 		req, err := http.NewRequest("GET", appPathPriv+"/me/saved_posts", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)

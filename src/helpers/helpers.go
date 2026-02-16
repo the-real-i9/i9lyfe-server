@@ -5,17 +5,17 @@ import (
 	"os"
 
 	"github.com/goccy/go-json"
-
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 func StructToMap(val any) (dest map[string]any) {
-	bt, err := json.Marshal(val)
+	bt, err := msgpack.Marshal(val)
 	if err != nil {
 		LogError(err)
 	}
 
-	if err := json.Unmarshal(bt, &dest); err != nil {
+	if err := msgpack.Unmarshal(bt, &dest); err != nil {
 		LogError(err)
 	}
 
@@ -61,11 +61,29 @@ func Session(kvPairs map[string]any, path string, maxAge int) *fiber.Cookie {
 	}
 
 	c.Name = "session"
-	c.Value = ToJson(kvPairs)
+	c.Value = ToMsgPack(kvPairs)
 	c.Path = path
 	c.MaxAge = maxAge
 
 	return c
+}
+
+func ToMsgPack(data any) string {
+	d, err := msgpack.Marshal(data)
+	if err != nil {
+		LogError(err)
+	}
+
+	return string(d)
+}
+
+func ToBtMsgPack(data any) []byte {
+	d, err := msgpack.Marshal(data)
+	if err != nil {
+		LogError(err)
+	}
+
+	return d
 }
 
 func ToJson(data any) string {
@@ -77,12 +95,12 @@ func ToJson(data any) string {
 	return string(d)
 }
 
-func FromJson[T any](jsonStr string) (res T) {
-	if jsonStr == "" {
+func FromMsgPack[T any](msgPackStr string) (res T) {
+	if msgPackStr == "" {
 		return res
 	}
 
-	err := json.Unmarshal([]byte(jsonStr), &res)
+	err := msgpack.Unmarshal([]byte(msgPackStr), &res)
 	if err != nil {
 		LogError(err)
 	}
@@ -90,12 +108,12 @@ func FromJson[T any](jsonStr string) (res T) {
 	return
 }
 
-func FromBtJson[T any](jsonBt []byte) (res T) {
-	if jsonBt == nil {
+func FromBtMsgPack[T any](msgPackBt []byte) (res T) {
+	if msgPackBt == nil {
 		return res
 	}
 
-	err := json.Unmarshal((jsonBt), &res)
+	err := msgpack.Unmarshal((msgPackBt), &res)
 	if err != nil {
 		LogError(err)
 	}
@@ -118,4 +136,12 @@ func MaxCursor(cursor float64) string {
 	}
 
 	return fmt.Sprintf("(%f", cursor)
+}
+
+func CoalesceInt(input int64, def int64) int64 {
+	if input == 0 {
+		return def
+	}
+
+	return input
 }

@@ -42,24 +42,24 @@ func GetPostUIData(ctx context.Context, postId, ownerUsername, reposterUsername,
 		return postUIData{}, err
 	}
 
-	userJson, err := ownerUser.Result()
+	userMsgPack, err := ownerUser.Result()
 	pud.OwnerUser = func() (UITypes.ContentOwnerUser, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.ContentOwnerUser{}, err
 		}
 
-		return helpers.FromJson[UITypes.ContentOwnerUser](userJson), nil
+		return helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack), nil
 	}
 
-	userJson, err = reposterUser.Result()
+	userMsgPack, err = reposterUser.Result()
 	pud.ReposterUser = func() (UITypes.ClientUser, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.ClientUser{}, err
 		}
 
-		return helpers.FromJson[UITypes.ClientUser](userJson), nil
+		return helpers.FromMsgPack[UITypes.ClientUser](userMsgPack), nil
 	}
 
 	count, err := reactionsCount.Result()
@@ -158,14 +158,14 @@ func GetCommentUIData(ctx context.Context, commentId, ownerUsername, clientUsern
 		return commentUIData{}, err
 	}
 
-	userJson, err := ownerUser.Result()
+	userMsgPack, err := ownerUser.Result()
 	cud.OwnerUser = func() (UITypes.ContentOwnerUser, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.ContentOwnerUser{}, err
 		}
 
-		return helpers.FromJson[UITypes.ContentOwnerUser](userJson), nil
+		return helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack), nil
 	}
 
 	count, err := reactionsCount.Result()
@@ -222,14 +222,14 @@ func GetUserSnippetUIData(ctx context.Context, username, clientUsername string) 
 		return userSnippetUIData{}, err
 	}
 
-	userJson, err := user.Result()
+	userMsgPack, err := user.Result()
 	usud.User = func() (UITypes.UserSnippet, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.UserSnippet{}, err
 		}
 
-		return helpers.FromJson[UITypes.UserSnippet](userJson), nil
+		return helpers.FromMsgPack[UITypes.UserSnippet](userMsgPack), nil
 	}
 
 	_, err = meFollow.Result()
@@ -281,14 +281,14 @@ func GetReactorSnippetUIData(ctx context.Context, username, whichEntity, entityI
 		return reactorSnippetUIData{}, err
 	}
 
-	userJson, err := user.Result()
+	userMsgPack, err := user.Result()
 	rsud.User = func() (UITypes.ReactorSnippet, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.ReactorSnippet{}, err
 		}
 
-		return helpers.FromJson[UITypes.ReactorSnippet](userJson), nil
+		return helpers.FromMsgPack[UITypes.ReactorSnippet](userMsgPack), nil
 	}
 
 	rxn, err := userReaction.Result()
@@ -331,14 +331,14 @@ func GetUserProfileUIData(ctx context.Context, username, clientUsername string) 
 		return userProfileUIData{}, err
 	}
 
-	userJson, err := user.Result()
+	userMsgPack, err := user.Result()
 	upud.User = func() (UITypes.UserProfile, error) {
 		if err != nil && err != redis.Nil {
 			helpers.LogError(err)
 			return UITypes.UserProfile{}, err
 		}
 
-		return helpers.FromJson[UITypes.UserProfile](userJson), nil
+		return helpers.FromMsgPack[UITypes.UserProfile](userMsgPack), nil
 	}
 
 	count, err := postsCount.Result()

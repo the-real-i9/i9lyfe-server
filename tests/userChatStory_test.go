@@ -46,7 +46,7 @@ func XTestUserChatStory(t *testing.T) {
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(err)
 
-				res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
+				res, err := http.Post(signupPath+"/request_new_account", "application/vnd.msgpack", reqBody)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -75,7 +75,7 @@ func XTestUserChatStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -110,7 +110,7 @@ func XTestUserChatStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -386,7 +386,7 @@ func XTestUserChatStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/chat_upload/authorize/visual", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user1.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)

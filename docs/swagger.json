@@ -20,7 +20,7 @@
             "get": {
                 "description": "Get info on the user currently in session",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -59,7 +59,7 @@
             "put": {
                 "description": "Change user profile picture",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -110,7 +110,7 @@
             "put": {
                 "description": "Edit user profile",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -173,7 +173,7 @@
             "get": {
                 "description": "Signout the user currently in session",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -212,7 +212,7 @@
             "post": {
                 "description": "Follow user",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -264,7 +264,7 @@
             "delete": {
                 "description": "Unfollow user",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -310,10 +310,10 @@
             "post": {
                 "description": "Provide the 6-digit token sent to email",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -381,10 +381,10 @@
             "post": {
                 "description": "Submit your email to request a password reset",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -433,10 +433,10 @@
             "post": {
                 "description": "Set new password",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -507,10 +507,10 @@
             "post": {
                 "description": "Signin with email/username and password",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -574,10 +574,10 @@
             "post": {
                 "description": "Provide remaining user credentials",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -645,7 +645,7 @@
                         "headers": {
                             "Set-cookie": {
                                 "type": "string",
-                                "description": "User session response cookie containing auth JWT"
+                                "description": "Authenticated user session response cookie containing auth JWT"
                             }
                         }
                     },
@@ -669,7 +669,7 @@
                         "headers": {
                             "Set-cookie": {
                                 "type": "string",
-                                "description": "Authenticated user session response cookie containing auth JWT"
+                                "description": "Signup session response cookie"
                             }
                         }
                     }
@@ -680,10 +680,10 @@
             "post": {
                 "description": "Submit email to request a new account",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -732,10 +732,10 @@
             "post": {
                 "description": "Provide the 6-digit code sent to email",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -807,7 +807,7 @@
                 "name": {
                     "type": "string"
                 },
-                "profile_pic_url": {
+                "profilePicUrl": {
                     "type": "string"
                 },
                 "username": {

@@ -7,7 +7,7 @@ package appService
 	"i9lyfe/src/services/contentRecommendationService"
 	"slices"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func FetchPosts(ctx context.Context, clientUsername string, types, hashtags []string) (any, error) {

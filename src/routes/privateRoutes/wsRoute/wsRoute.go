@@ -4,13 +4,12 @@ package wsRoute
 import (
 	"i9lyfe/src/controllers/realtimeController"
 
-	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Route(router fiber.Router) {
-	router.Use("/ws", func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
+	router.Use("/ws", func(c fiber.Ctx) error {
+		if c.IsWebSocket() {
 			return c.Next()
 		}
 		return fiber.ErrUpgradeRequired

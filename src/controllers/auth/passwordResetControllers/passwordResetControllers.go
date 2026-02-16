@@ -5,9 +5,8 @@ import (
 	"i9lyfe/src/services/auth/passwordResetService"
 	"time"
 
-	"github.com/goccy/go-json"
-
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 // Forgot Password - Request Password Reset
@@ -15,8 +14,8 @@ import (
 //	@Summary		Password Reset - Step 1
 //	@Description	Submit your email to request a password reset
 //	@Tags			auth
-//	@Accept			json
-//	@Produce		json
+//	@Accept			application/vnd.msgpack
+//	@Produce		application/vnd.msgpack
 //
 //	@Param			email	body		string									true	"Provide your email address"
 //
@@ -28,12 +27,12 @@ import (
 //	@Failure		500		{object}	appErrors.HTTPError
 //
 //	@Router			/auth/forgot_password/request_password_reset [post]
-func RequestPasswordReset(c *fiber.Ctx) error {
+func RequestPasswordReset(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	var body requestPasswordResetBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 
 	c.Cookie(helpers.Session(reqSession, "/api/auth/forgot_password/confirm_email", int(time.Hour/time.Second)))
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
 // Forgot Password - Confirm Email
@@ -61,8 +60,8 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 //	@Summary		Password Reset - Step 2
 //	@Description	Provide the 6-digit token sent to email
 //	@Tags			auth
-//	@Accept			json
-//	@Produce		json
+//	@Accept			application/vnd.msgpack
+//	@Produce		application/vnd.msgpack
 //
 //	@Param			token	body		string									true	"6-digit token"
 //	@Param			Cookie	header		string									true	"Password Reset session request cookie"
@@ -77,14 +76,14 @@ func RequestPasswordReset(c *fiber.Ctx) error {
 //	@Header			500		{string}	Set-cookie	"Password Reset session request cookie"
 //
 //	@Router			/auth/forgot_password/confirm_email [post]
-func ConfirmEmail(c *fiber.Ctx) error {
+func ConfirmEmail(c fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("passwordReset_sess_data").(json.RawMessage)
+	sessionData := c.Locals("passwordReset_sess_data").(msgpack.RawMessage)
 
 	var body confirmEmailBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -104,7 +103,7 @@ func ConfirmEmail(c *fiber.Ctx) error {
 
 	c.Cookie(helpers.Session(reqSession, "/api/auth/forgot_password/reset_password", int(time.Hour/time.Second)))
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
 // Forgot Password - Reset Password
@@ -112,8 +111,8 @@ func ConfirmEmail(c *fiber.Ctx) error {
 //	@Summary		Password Reset user - Step 3
 //	@Description	Set new password
 //	@Tags			auth
-//	@Accept			json
-//	@Produce		json
+//	@Accept			application/vnd.msgpack
+//	@Produce		application/vnd.msgpack
 //
 //	@Param			newPassword			body		string									true	"Choose a new password"
 //	@Param			confirmNewPassword	body		string									true	"Conform new password"
@@ -129,14 +128,14 @@ func ConfirmEmail(c *fiber.Ctx) error {
 //	@Header			500					{string}	Set-cookie	"Password Reset session response cookie"
 //
 //	@Router			/auth/forgot_password/reset_password [post]
-func ResetPassword(c *fiber.Ctx) error {
+func ResetPassword(c fiber.Ctx) error {
 	ctx := c.Context()
 
-	sessionData := c.Locals("passwordReset_sess_data").(json.RawMessage)
+	sessionData := c.Locals("passwordReset_sess_data").(msgpack.RawMessage)
 
 	var body resetPasswordBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -153,5 +152,5 @@ func ResetPassword(c *fiber.Ctx) error {
 
 	c.ClearCookie()
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }

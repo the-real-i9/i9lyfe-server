@@ -5,12 +5,12 @@ import (
 	"slices"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/goccy/go-json"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type rtActionBody struct {
-	Action string          `json:"action"`
-	Data   json.RawMessage `json:"data"`
+	Action string             `msgpack:"action"`
+	Data   msgpack.RawMessage `msgpack:"data"`
 }
 
 func (b rtActionBody) Validate() error {
@@ -32,7 +32,7 @@ func (b rtActionBody) Validate() error {
 }
 
 type subToUserPresenceAcd struct {
-	Usernames []string `json:"users"`
+	Usernames []string `msgpack:"users"`
 }
 
 func (vb subToUserPresenceAcd) Validate() error {
@@ -44,7 +44,7 @@ func (vb subToUserPresenceAcd) Validate() error {
 }
 
 type unsubFromUserPresenceAcd struct {
-	Usernames []string `json:"users"`
+	Usernames []string `msgpack:"users"`
 }
 
 func (vb unsubFromUserPresenceAcd) Validate() error {

@@ -53,10 +53,10 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 
 				msg.FromUser = stmsg.Values["fromUser"].(string)
 				msg.ToUser = stmsg.Values["toUser"].(string)
-				msg.CHEIdList = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["cheIdList"].(string))
+				msg.CHEIdList = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["cheIdList"].(string))
 				msg.Ack = stmsg.Values["ack"].(string)
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.ChatCursor = helpers.FromJson[int64](stmsg.Values["chatCursor"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.ChatCursor = helpers.FromMsgPack[int64](stmsg.Values["chatCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -111,7 +111,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 				eg.Go(func() error {
 					msgId, ack, ackAt := msgId_ack_ackAt[0], msgId_ack_ackAt[1], msgId_ack_ackAt[2]
 
-					return cache.UpdateMessage(sharedCtx, msgId.(string), map[string]any{
+					return cache.UpdateMessageDelivery(sharedCtx, msgId.(string), map[string]any{
 						"delivery_status":         ack,
 						fmt.Sprintf("%s_at", ack): ackAt.(int64),
 					})

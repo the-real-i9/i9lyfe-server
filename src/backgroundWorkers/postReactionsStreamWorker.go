@@ -57,8 +57,8 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.RxnCursor = helpers.FromJson[int64](stmsg.Values["rxnCursor"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.RxnCursor = helpers.FromMsgPack[int64](stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -100,7 +100,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 					"emoji":        msg.Emoji,
 				})
 
-				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RxnCursor)})

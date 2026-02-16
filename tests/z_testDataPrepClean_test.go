@@ -72,7 +72,7 @@ func removeDBUser(ctx context.Context, username string) error {
 }
 
 func addCacheUser(ctx context.Context, user UserT) error {
-	_, err := rdb().HSet(ctx, "users", []string{user.Username, helpers.ToJson(user)}).Result()
+	_, err := rdb().HSet(ctx, "users", []string{user.Username, helpers.ToMsgPack(user)}).Result()
 	if err != nil {
 		return err
 	}

@@ -55,8 +55,8 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 				msg.FollowerUser = stmsg.Values["followerUser"].(string)
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.FollowCursor = helpers.FromJson[int64](stmsg.Values["followCursor"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.FollowCursor = helpers.FromMsgPack[int64](stmsg.Values["followCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
@@ -84,7 +84,7 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 					"follower_user": msg.FollowerUser,
 				})
 
-				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]any{notifUniqueId, float64(msg.FollowCursor)})

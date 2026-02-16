@@ -22,7 +22,7 @@ const docTemplate = `{
             "get": {
                 "description": "Get info on the user currently in session",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -61,7 +61,7 @@ const docTemplate = `{
             "put": {
                 "description": "Change user profile picture",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -112,7 +112,7 @@ const docTemplate = `{
             "put": {
                 "description": "Edit user profile",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -175,7 +175,7 @@ const docTemplate = `{
             "get": {
                 "description": "Signout the user currently in session",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -214,7 +214,7 @@ const docTemplate = `{
             "post": {
                 "description": "Follow user",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -266,7 +266,7 @@ const docTemplate = `{
             "delete": {
                 "description": "Unfollow user",
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "app/private"
@@ -312,10 +312,10 @@ const docTemplate = `{
             "post": {
                 "description": "Provide the 6-digit token sent to email",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -383,10 +383,10 @@ const docTemplate = `{
             "post": {
                 "description": "Submit your email to request a password reset",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -435,10 +435,10 @@ const docTemplate = `{
             "post": {
                 "description": "Set new password",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -509,10 +509,10 @@ const docTemplate = `{
             "post": {
                 "description": "Signin with email/username and password",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -576,10 +576,10 @@ const docTemplate = `{
             "post": {
                 "description": "Provide remaining user credentials",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -647,7 +647,7 @@ const docTemplate = `{
                         "headers": {
                             "Set-cookie": {
                                 "type": "string",
-                                "description": "User session response cookie containing auth JWT"
+                                "description": "Authenticated user session response cookie containing auth JWT"
                             }
                         }
                     },
@@ -671,7 +671,7 @@ const docTemplate = `{
                         "headers": {
                             "Set-cookie": {
                                 "type": "string",
-                                "description": "Authenticated user session response cookie containing auth JWT"
+                                "description": "Signup session response cookie"
                             }
                         }
                     }
@@ -682,10 +682,10 @@ const docTemplate = `{
             "post": {
                 "description": "Submit email to request a new account",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -734,10 +734,10 @@ const docTemplate = `{
             "post": {
                 "description": "Provide the 6-digit code sent to email",
                 "consumes": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/vnd.msgpack"
                 ],
                 "tags": [
                     "auth"
@@ -809,7 +809,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "profile_pic_url": {
+                "profilePicUrl": {
                     "type": "string"
                 },
                 "username": {

@@ -4,7 +4,7 @@ import (
 	"i9lyfe/src/middlewares/authMiddlewares"
 	"i9lyfe/src/routes/publicRoutes/publicUserRoute"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Routes(router fiber.Router) {

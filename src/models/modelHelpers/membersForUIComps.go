@@ -72,14 +72,11 @@ func PostMembersForUIPosts(ctx context.Context, postMembers []redis.Z, clientUse
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				postId := postMembers[pIndx].Member.(string)
-				cursor := postMembers[pIndx].Score
 
 				post, err := BuildPostUIFromCache(sharedCtx, postId, clientUsername)
 				if err != nil {
 					return err
 				}
-
-				post.Cursor = int64(cursor)
 
 				postsAcc[pIndx] = post
 			}

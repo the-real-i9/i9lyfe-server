@@ -9,7 +9,7 @@ import (
 )
 
 type requestNewAccountBody struct {
-	Email string `json:"email"`
+	Email string `msgpack:"email"`
 }
 
 func (b requestNewAccountBody) Validate() error {
@@ -24,7 +24,7 @@ func (b requestNewAccountBody) Validate() error {
 }
 
 type verifyEmailBody struct {
-	Code string `json:"code"`
+	Code string `msgpack:"code"`
 }
 
 func (b verifyEmailBody) Validate() error {
@@ -36,11 +36,11 @@ func (b verifyEmailBody) Validate() error {
 }
 
 type registerUserBody struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	Birthday int64  `json:"birthday"`
-	Bio      string `json:"bio"`
+	Username string `msgpack:"username"`
+	Password string `msgpack:"password"`
+	Name     string `msgpack:"name"`
+	Birthday int64  `msgpack:"birthday"`
+	Bio      string `msgpack:"bio"`
 }
 
 func (b registerUserBody) Validate() error {

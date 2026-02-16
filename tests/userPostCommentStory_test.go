@@ -56,7 +56,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 				req, err := http.NewRequest("POST", signupPath+"/request_new_account", reqBody)
 				require.NoError(err)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -87,7 +87,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -122,7 +122,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
 				require.NoError(err)
 				req.Header.Set("Cookie", user.SessionCookie)
-				req.Header.Add("Content-Type", "application/json")
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 				res, err := http.DefaultClient.Do(req)
 				require.NoError(err)
@@ -228,7 +228,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/post_upload/authorize", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -304,7 +304,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -338,7 +338,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -381,7 +381,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -560,7 +560,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 			req, err := http.NewRequest("POST", appPathPriv+"/comment_upload/authorize", reqBody)
 			require.NoError(err)
 			req.Header.Set("Cookie", user1.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(err)
@@ -609,7 +609,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -659,7 +659,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -829,7 +829,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -879,7 +879,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1023,7 +1023,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1066,7 +1066,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1232,7 +1232,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1309,7 +1309,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
 		require.NoError(err)
 		req.Header.Set("Cookie", user3.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1337,7 +1337,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/repost", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user2.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1373,7 +1373,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/save", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)
@@ -1396,7 +1396,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user3Post1Id+"/unsave", nil)
 		require.NoError(err)
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(err)

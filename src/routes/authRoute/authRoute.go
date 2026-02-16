@@ -6,7 +6,7 @@ import (
 	"i9lyfe/src/controllers/auth/signupControllers"
 	"i9lyfe/src/middlewares/authMiddlewares"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Route(router fiber.Router) {

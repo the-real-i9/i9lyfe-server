@@ -59,9 +59,9 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.CommentId = stmsg.Values["commentId"].(string)
 				msg.CommentData = stmsg.Values["commentData"].(string)
-				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.CommentCursor = helpers.FromJson[int64](stmsg.Values["score"].(string))
+				msg.Mentions = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.CommentCursor = helpers.FromMsgPack[int64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -103,7 +103,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 						"comment_id":     msg.CommentId,
 					})
 
-					notifications = append(notifications, copNotifUniqueId, helpers.ToJson(copNotif))
+					notifications = append(notifications, copNotifUniqueId, helpers.ToMsgPack(copNotif))
 					unreadNotifications = append(unreadNotifications, copNotifUniqueId)
 
 					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{copNotifUniqueId, float64(msg.CommentCursor)})
@@ -129,7 +129,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 						"mentioning_user": msg.CommenterUser,
 					})
 
-					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
+					notifications = append(notifications, micNotifUniqueId, helpers.ToMsgPack(micNotif))
 					unreadNotifications = append(unreadNotifications, micNotifUniqueId)
 
 					userNotifications[mu] = append(userNotifications[mu], [2]any{micNotifUniqueId, float64(msg.CommentCursor)})

@@ -3,7 +3,7 @@ package publicUserRoute
 import (
 	UC "i9lyfe/src/controllers/userControllers"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Route(router fiber.Router) {

@@ -7,8 +7,6 @@ import (
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 
-	"github.com/goccy/go-json"
-
 	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
@@ -16,11 +14,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type signup1RespT struct {
-	Msg string `json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[string]any, error) {
@@ -51,13 +50,13 @@ func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[str
 }
 
 type signup2RespT struct {
-	Msg string `json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
-func VerifyEmail(ctx context.Context, sessionData json.RawMessage, inputVerfCode string) (signup2RespT, map[string]any, error) {
+func VerifyEmail(ctx context.Context, sessionData msgpack.RawMessage, inputVerfCode string) (signup2RespT, map[string]any, error) {
 	var resp signup2RespT
 
-	sd := helpers.FromBtJson[struct {
+	sd := helpers.FromBtMsgPack[struct {
 		Email        string
 		VCode        string
 		VCodeExpires time.Time
@@ -81,14 +80,14 @@ func VerifyEmail(ctx context.Context, sessionData json.RawMessage, inputVerfCode
 }
 
 type signup3RespT struct {
-	Msg  string             `json:"msg"`
-	User UITypes.ClientUser `json:"user"`
+	Msg  string             `msgpack:"msg"`
+	User UITypes.ClientUser `msgpack:"user"`
 }
 
-func RegisterUser(ctx context.Context, sessionData json.RawMessage, username, name, bio string, birthday int64, password string) (signup3RespT, string, error) {
+func RegisterUser(ctx context.Context, sessionData msgpack.RawMessage, username, name, bio string, birthday int64, password string) (signup3RespT, string, error) {
 	var resp signup3RespT
 
-	email := helpers.FromBtJson[struct {
+	email := helpers.FromBtMsgPack[struct {
 		Email string
 	}](sessionData).Email
 

@@ -52,7 +52,7 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 				msg.SaverUser = stmsg.Values["saverUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.SaveCursor = helpers.FromJson[int64](stmsg.Values["saveCursor"].(string))
+				msg.SaveCursor = helpers.FromMsgPack[int64](stmsg.Values["saveCursor"].(string))
 
 				msgs = append(msgs, msg)
 

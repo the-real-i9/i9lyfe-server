@@ -15,9 +15,9 @@ import (
 )
 
 type authorizePostUploadBody struct {
-	PostType   string     `json:"post_type"`
-	MediaMIME  [2]string  `json:"media_mime"`  // {blur_placeholder, actual}
-	MediaSizes [][2]int64 `json:"media_sizes"` // {{blur_placeholder, actual}, ...}
+	PostType   string     `msgpack:"post_type"`
+	MediaMIME  [2]string  `msgpack:"media_mime"`  // {blur_placeholder, actual}
+	MediaSizes [][2]int64 `msgpack:"media_sizes"` // {{blur_placeholder, actual}, ...}
 }
 
 func (b authorizePostUploadBody) Validate() error {
@@ -101,10 +101,10 @@ func (b authorizePostUploadBody) Validate() error {
 }
 
 type createNewPostBody struct {
-	MediaCloudNames []string `json:"media_cloud_names"`
-	Type            string   `json:"type"`
-	Description     string   `json:"description"`
-	At              int64    `json:"at"`
+	MediaCloudNames []string `msgpack:"media_cloud_names"`
+	Type            string   `msgpack:"type"`
+	Description     string   `msgpack:"description"`
+	At              int64    `msgpack:"at"`
 }
 
 func (b createNewPostBody) Validate(ctx context.Context) error {
@@ -174,8 +174,8 @@ func (b createNewPostBody) Validate(ctx context.Context) error {
 }
 
 type reactToPostBody struct {
-	Emoji string `json:"emoji"`
-	At    int64  `json:"at"`
+	Emoji string `msgpack:"emoji"`
+	At    int64  `msgpack:"at"`
 }
 
 func (b reactToPostBody) Validate() error {
@@ -189,8 +189,8 @@ func (b reactToPostBody) Validate() error {
 }
 
 type authorizeCommentUploadBody struct {
-	AttachmentMIME string `json:"attachment_mime"`
-	AttachmentSize int64  `json:"attachment_size"`
+	AttachmentMIME string `msgpack:"attachment_mime"`
+	AttachmentSize int64  `msgpack:"attachment_size"`
 }
 
 func (b authorizeCommentUploadBody) Validate() error {
@@ -216,9 +216,9 @@ func (b authorizeCommentUploadBody) Validate() error {
 }
 
 type commentOnPostBody struct {
-	CommentText         string `json:"comment_text"`
-	AttachmentCloudName string `json:"attachment_cloud_name"`
-	At                  int64  `json:"at"`
+	CommentText         string `msgpack:"comment_text"`
+	AttachmentCloudName string `msgpack:"attachment_cloud_name"`
+	At                  int64  `msgpack:"at"`
 }
 
 func (b commentOnPostBody) Validate(ctx context.Context) error {
@@ -253,8 +253,8 @@ func (b commentOnPostBody) Validate(ctx context.Context) error {
 }
 
 type reactToCommentBody struct {
-	Emoji string `json:"emoji"`
-	At    int64  `json:"at"`
+	Emoji string `msgpack:"emoji"`
+	At    int64  `msgpack:"at"`
 }
 
 func (b reactToCommentBody) Validate() error {
@@ -268,9 +268,9 @@ func (b reactToCommentBody) Validate() error {
 }
 
 type commentOnCommentBody struct {
-	CommentText         string `json:"comment_text"`
-	AttachmentCloudName string `json:"attachment_cloud_name"`
-	At                  int64  `json:"at"`
+	CommentText         string `msgpack:"comment_text"`
+	AttachmentCloudName string `msgpack:"attachment_cloud_name"`
+	At                  int64  `msgpack:"at"`
 }
 
 func (b commentOnCommentBody) Validate(ctx context.Context) error {

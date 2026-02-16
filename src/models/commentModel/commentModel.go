@@ -9,7 +9,7 @@ import (
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/models/modelHelpers"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -56,11 +56,11 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 	return *res, nil
 }
 
-func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
+func GetReactors(ctx context.Context, clientUsername, commentId string, limit int64, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
 	reactorMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -76,7 +76,7 @@ func GetReactors(ctx context.Context, clientUsername, commentId string, limit in
 	return reactors, nil
 }
 
-/* func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset time.Time) ([]any, error) {
+/* func GetReactorsWithReaction(ctx context.Context, clientUsername, commentId, reaction string, limit int64, offset time.Time) ([]any, error) {
 
 } */
 
@@ -98,13 +98,13 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 }
 
 type NewCommentT struct {
-	Id                 string `json:"id" db:"comment_id"`
-	OwnerUser          any    `json:"owner_user" db:"owner_user"`
-	CommentText        string `json:"comment_text" db:"comment_text"`
-	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
-	At                 int64  `json:"at" db:"at_"`
-	Cursor             int64  `json:"cursor" db:"cursor_"`
-	ParentCommentOwner string `json:"-" db:"parent_comment_owner"`
+	Id                 string `msgpack:"id" db:"comment_id"`
+	OwnerUser          any    `msgpack:"owner_user" db:"owner_user"`
+	CommentText        string `msgpack:"comment_text" db:"comment_text"`
+	AttachmentUrl      string `msgpack:"attachment_url" db:"attachment_url"`
+	At                 int64  `msgpack:"at" db:"at_"`
+	Cursor             int64  `msgpack:"cursor" db:"cursor_"`
+	ParentCommentOwner string `msgpack:"-" db:"parent_comment_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (NewCommentT, error) {
@@ -160,11 +160,11 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 	return nil
 }
 
-func GetComments(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) (comments []UITypes.Comment, err error) {
+func GetComments(ctx context.Context, clientUsername, commentId string, limit int64, cursor float64) (comments []UITypes.Comment, err error) {
 	commentMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("commented_comment:%s:comments", commentId), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)

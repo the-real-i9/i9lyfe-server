@@ -13,7 +13,7 @@ import (
 	"maps"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 )
 
@@ -30,7 +30,7 @@ func NewUser(ctx context.Context, email, username, name, bio string, birthday in
 	if newUser.Email != "" {
 		go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
 			Username: newUser.Username,
-			UserData: helpers.ToJson(newUser),
+			UserData: helpers.ToMsgPack(newUser),
 		})
 	}
 
@@ -78,8 +78,8 @@ func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct 
 }
 
 type AuthPPicDataT struct {
-	UploadUrl     string `json:"uploadUrl"`
-	PPicCloudName string `json:"profilePicCloudName"`
+	UploadUrl     string `msgpack:"uploadUrl"`
+	PPicCloudName string `msgpack:"profilePicCloudName"`
 }
 
 func AuthorizePPicUpload(ctx context.Context, picMIME string) (AuthPPicDataT, error) {
@@ -120,10 +120,10 @@ func AuthorizePPicUpload(ctx context.Context, picMIME string) (AuthPPicDataT, er
 	return res, nil
 }
 
-func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicCloudName string) (any, error) {
+func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicCloudName string) (bool, error) {
 	done, err := user.ChangeProfilePicture(ctx, clientUsername, profilePicCloudName)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	if done {
@@ -176,21 +176,21 @@ func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (a
 	return done, nil
 }
 
-func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
+func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
 	return user.GetMentionedPosts(ctx, clientUsername, limit, cursor)
 
 }
 
-func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
+func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
 	return user.GetReactedPosts(ctx, clientUsername, limit, cursor)
 }
 
-func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int, cursor float64) (any, error) {
+func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
 	return user.GetSavedPosts(ctx, clientUsername, limit, cursor)
 
 }
 
-func GetUserNotifications(ctx context.Context, clientUsername string, year int, month string, limit int, cursor float64) (any, error) {
+func GetUserNotifications(ctx context.Context, clientUsername string, year int64, month int64, limit int64, cursor float64) (any, error) {
 	return user.GetNotifications(ctx, clientUsername, year, month, limit, cursor)
 
 }
@@ -205,16 +205,16 @@ func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) 
 
 }
 
-func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
+func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
 	return user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
 
 }
 
-func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.UserSnippet, error) {
+func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
 	return user.GetFollowings(ctx, clientUsername, targetUsername, limit, cursor)
 }
 
-func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int, cursor float64) ([]UITypes.Post, error) {
+func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
 	return user.GetPosts(ctx, clientUsername, targetUsername, limit, cursor)
 }
 

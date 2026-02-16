@@ -9,41 +9,23 @@ import (
 )
 
 func GetPost[T any](ctx context.Context, postId string) (post T, err error) {
-	postJson, err := rdb().HGet(ctx, "posts", postId).Result()
+	postMsgPack, err := rdb().HGet(ctx, "posts", postId).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return post, err
 	}
 
-	/* if err == redis.Nil {
-		dbPost, err := GetPostFromDB[T](ctx, postId)
-		if err != nil {
-			return post, err
-		}
-
-		return *dbPost, nil
-	} */
-
-	return helpers.FromJson[T](postJson), nil
+	return helpers.FromMsgPack[T](postMsgPack), nil
 }
 
 func GetComment[T any](ctx context.Context, commentId string) (comment T, err error) {
-	commentJson, err := rdb().HGet(ctx, "comments", commentId).Result()
+	commentMsgPack, err := rdb().HGet(ctx, "comments", commentId).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return comment, err
 	}
 
-	/* if err == redis.Nil {
-		dbComment, err := GetCommentFromDB[T](ctx, commentId)
-		if err != nil {
-			return comment, err
-		}
-
-		return *dbComment, nil
-	} */
-
-	return helpers.FromJson[T](commentJson), nil
+	return helpers.FromMsgPack[T](commentMsgPack), nil
 }
 
 func GetPostReactionsCount(ctx context.Context, postId string) (int64, error) {

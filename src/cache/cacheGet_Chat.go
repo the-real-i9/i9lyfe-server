@@ -9,22 +9,13 @@ import (
 )
 
 func GetChat[T any](ctx context.Context, ownerUser, partnerUser string) (chat T, err error) {
-	chatJson, err := rdb().HGet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUser).Result()
+	chatMsgPack, err := rdb().HGet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUser).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return chat, err
 	}
 
-	/* if err == redis.Nil {
-		dbChat, err := GetChatFromDB[T](ctx, ownerUser, partnerUser)
-		if err != nil {
-			return chat, err
-		}
-
-		return *dbChat, nil
-	} */
-
-	return helpers.FromJson[T](chatJson), nil
+	return helpers.FromMsgPack[T](chatMsgPack), nil
 }
 
 func GetChatUnreadMsgsCount(ctx context.Context, ownerUser, partnerUser string) (int64, error) {
@@ -38,22 +29,13 @@ func GetChatUnreadMsgsCount(ctx context.Context, ownerUser, partnerUser string) 
 }
 
 func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err error) {
-	CHEJson, err := rdb().HGet(ctx, "chat_history_entries", CHEId).Result()
+	CHEMsgPack, err := rdb().HGet(ctx, "chat_history_entries", CHEId).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return CHE, err
 	}
 
-	/* if err == redis.Nil {
-		dbCHE, err := GetChatHistoryEntryFromDB[T](ctx, CHEId)
-		if err != nil {
-			return CHE, err
-		}
-
-		return *dbCHE, nil
-	} */
-
-	return helpers.FromJson[T](CHEJson), nil
+	return helpers.FromMsgPack[T](CHEMsgPack), nil
 }
 
 func GetMsgReactions(ctx context.Context, msgId string) (map[string]string, error) {

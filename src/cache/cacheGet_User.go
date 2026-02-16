@@ -9,13 +9,13 @@ import (
 )
 
 func GetUser[T any](ctx context.Context, username string) (user T, err error) {
-	userJson, err := rdb().HGet(ctx, "users", username).Result()
+	userMsgPack, err := rdb().HGet(ctx, "users", username).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return user, err
 	}
 
-	return helpers.FromJson[T](userJson), nil
+	return helpers.FromMsgPack[T](userMsgPack), nil
 }
 
 func GetUserPostReaction(ctx context.Context, postId, username string) (string, error) {
@@ -119,13 +119,13 @@ func IsUserNotification(ctx context.Context, username, year, month, notifId stri
 }
 
 func GetNotification[T any](ctx context.Context, notifId string) (notif T, err error) {
-	notifJson, err := rdb().HGet(ctx, "notifications", notifId).Result()
+	notifMsgPack, err := rdb().HGet(ctx, "notifications", notifId).Result()
 	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return notif, err
 	}
 
-	return helpers.FromJson[T](notifJson), nil
+	return helpers.FromMsgPack[T](notifMsgPack), nil
 }
 
 func NotificationIsUnread(ctx context.Context, notifId string) (bool, error) {

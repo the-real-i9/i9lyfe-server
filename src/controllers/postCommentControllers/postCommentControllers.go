@@ -2,17 +2,18 @@ package postCommentControllers
 
 import (
 	"i9lyfe/src/appTypes"
+	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/postCommentService"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
-func AuthorizePostUpload(c *fiber.Ctx) error {
+func AuthorizePostUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	var body authorizePostUploadBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -26,15 +27,15 @@ func AuthorizePostUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func AuthorizeCommentUpload(c *fiber.Ctx) error {
+func AuthorizeCommentUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	var body authorizeCommentUploadBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -48,10 +49,10 @@ func AuthorizeCommentUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func CreateNewPost(c *fiber.Ctx) error {
+func CreateNewPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -60,7 +61,7 @@ func CreateNewPost(c *fiber.Ctx) error {
 
 	var err error
 
-	err = c.BodyParser(&body)
+	err = c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -74,10 +75,10 @@ func CreateNewPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(respData)
+	return c.Status(201).MsgPack(respData)
 }
 
-func GetPost(c *fiber.Ctx) error {
+func GetPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -87,10 +88,10 @@ func GetPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func DeletePost(c *fiber.Ctx) error {
+func DeletePost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -100,10 +101,10 @@ func DeletePost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func ReactToPost(c *fiber.Ctx) error {
+func ReactToPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -112,7 +113,7 @@ func ReactToPost(c *fiber.Ctx) error {
 
 	var body reactToPostBody
 
-	err = c.BodyParser(&body)
+	err = c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -126,23 +127,32 @@ func ReactToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(respData)
+	return c.Status(201).MsgPack(respData)
 }
 
-func GetReactorsToPost(c *fiber.Ctx) error {
+func GetReactorsToPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	var query struct {
+		Limit  int64
+		Cursor float64
+	}
+
+	if err := c.Bind().Query(&query); err != nil {
+		return err
+	}
+
+	respData, err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, c.Params("postId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-/* func GetReactorsWithReactionToPost(c *fiber.Ctx) error {
+/* func GetReactorsWithReactionToPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -157,10 +167,10 @@ func GetReactorsToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 } */
 
-func RemoveReactionToPost(c *fiber.Ctx) error {
+func RemoveReactionToPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -170,10 +180,10 @@ func RemoveReactionToPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func CommentOnPost(c *fiber.Ctx) error {
+func CommentOnPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -182,7 +192,7 @@ func CommentOnPost(c *fiber.Ctx) error {
 
 	var body commentOnPostBody
 
-	err = c.BodyParser(&body)
+	err = c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -196,23 +206,32 @@ func CommentOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(respData)
+	return c.Status(201).MsgPack(respData)
 }
 
-func GetCommentsOnPost(c *fiber.Ctx) error {
+func GetCommentsOnPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, c.Params("postId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	var query struct {
+		Limit  int64
+		Cursor float64
+	}
+
+	if err := c.Bind().Query(&query); err != nil {
+		return err
+	}
+
+	respData, err := postCommentService.GetCommentsOnPost(ctx, clientUser.Username, c.Params("postId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func GetComment(c *fiber.Ctx) error {
+func GetComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -222,10 +241,10 @@ func GetComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func RemoveCommentOnPost(c *fiber.Ctx) error {
+func RemoveCommentOnPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -235,10 +254,10 @@ func RemoveCommentOnPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func ReactToComment(c *fiber.Ctx) error {
+func ReactToComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -247,7 +266,7 @@ func ReactToComment(c *fiber.Ctx) error {
 
 	var body reactToCommentBody
 
-	err = c.BodyParser(&body)
+	err = c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -261,23 +280,32 @@ func ReactToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(respData)
+	return c.Status(201).MsgPack(respData)
 }
 
-func GetReactorsToComment(c *fiber.Ctx) error {
+func GetReactorsToComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	var query struct {
+		Limit  int64
+		Cursor float64
+	}
+
+	if err := c.Bind().Query(&query); err != nil {
+		return err
+	}
+
+	respData, err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, c.Params("commentId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-/* func GetReactorsWithReactionToComment(c *fiber.Ctx) error {
+/* func GetReactorsWithReactionToComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -292,10 +320,10 @@ func GetReactorsToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 } */
 
-func RemoveReactionToComment(c *fiber.Ctx) error {
+func RemoveReactionToComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -305,10 +333,10 @@ func RemoveReactionToComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func CommentOnComment(c *fiber.Ctx) error {
+func CommentOnComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -317,7 +345,7 @@ func CommentOnComment(c *fiber.Ctx) error {
 
 	var body commentOnCommentBody
 
-	err = c.BodyParser(&body)
+	err = c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -331,23 +359,32 @@ func CommentOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(201).JSON(respData)
+	return c.Status(201).MsgPack(respData)
 }
 
-func GetCommentsOnComment(c *fiber.Ctx) error {
+func GetCommentsOnComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, c.Params("commentId"), c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	var query struct {
+		Limit  int64
+		Cursor float64
+	}
+
+	if err := c.Bind().Query(&query); err != nil {
+		return err
+	}
+
+	respData, err := postCommentService.GetCommentsOnComment(ctx, clientUser.Username, c.Params("commentId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func RemoveCommentOnComment(c *fiber.Ctx) error {
+func RemoveCommentOnComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -357,10 +394,10 @@ func RemoveCommentOnComment(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func RepostPost(c *fiber.Ctx) error {
+func RepostPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -370,10 +407,10 @@ func RepostPost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func SavePost(c *fiber.Ctx) error {
+func SavePost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -383,10 +420,10 @@ func SavePost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func UnsavePost(c *fiber.Ctx) error {
+func UnsavePost(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -396,5 +433,5 @@ func UnsavePost(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }

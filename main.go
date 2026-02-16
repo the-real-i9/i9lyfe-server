@@ -9,10 +9,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
-	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/encryptcookie"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 )
 
 func init() {
@@ -36,8 +37,8 @@ func init() {
 //	@name						Cookie
 //	@description				JWT API key in encrypted cookie to protect private endpoints
 
-//	@accepts	json
-//	@produces	json
+//	@accepts	application/vnd.msgpack
+//	@produces	application/vnd.msgpack
 
 // @schemes	http https
 func main() {
@@ -45,9 +46,14 @@ func main() {
 
 	app := fiber.New()
 
-	app.Use(helmet.New())
+	app.Use(limiter.New())
+
+	app.Use(helmet.New(helmet.Config{
+		// CrossOriginResourcePolicy: "cross-origin", /* for production */
+	}))
+
 	app.Use(cors.New(cors.Config{
-		// AllowOrigins:     "localhost:3000", /* (our client) */
+		// AllowOrigins:     []string{"http://localhost:5173"}, /* production client host */
 		// AllowCredentials: true,
 	}))
 

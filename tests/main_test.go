@@ -19,16 +19,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/fasthttp/websocket"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
-	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/encryptcookie"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
 )
 
 const HOST_URL string = "http://localhost:8000"
@@ -52,9 +52,9 @@ type UserT struct {
 	Password       string
 	Birthday       int64
 	Bio            string
-	SessionCookie  string              `json:"-"`
-	WSConn         *websocket.Conn     `json:"-"`
-	ServerEventMsg chan map[string]any `json:"-"`
+	SessionCookie  string              `msgpack:"-"`
+	WSConn         *websocket.Conn     `msgpack:"-"`
+	ServerEventMsg chan map[string]any `msgpack:"-"`
 }
 
 var app *fiber.App
@@ -106,7 +106,7 @@ func rdb() *redis.Client {
 }
 
 func makeReqBody(data map[string]any) (io.Reader, error) {
-	dataBt, err := json.Marshal(data)
+	dataBt, err := msgpack.Marshal(data)
 
 	return bytes.NewReader(dataBt), err
 }
@@ -121,7 +121,7 @@ func succResBody[T any](body io.ReadCloser) (T, error) {
 		return d, err
 	}
 
-	if err := json.Unmarshal(bt, &d); err != nil {
+	if err := msgpack.Unmarshal(bt, &d); err != nil {
 		return d, err
 	}
 

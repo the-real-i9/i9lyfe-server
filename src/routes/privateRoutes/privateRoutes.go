@@ -7,7 +7,7 @@ import (
 	"i9lyfe/src/routes/privateRoutes/privateUserRoute"
 	"i9lyfe/src/routes/privateRoutes/wsRoute"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Routes(router fiber.Router) {

@@ -11,7 +11,7 @@ import (
 	"i9lyfe/src/models/modelHelpers"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redis/go-redis/v9"
 )
@@ -21,13 +21,13 @@ func redisDB() *redis.Client {
 }
 
 type NewPostT struct {
-	Id          string   `json:"id" db:"id_"`
-	Type        string   `json:"type" db:"type_"`
-	MediaUrls   []string `json:"media_urls" db:"media_urls"`
-	Description string   `json:"description"`
-	CreatedAt   int64    `json:"created_at" db:"created_at"`
-	OwnerUser   any      `json:"owner_user" db:"owner_user"`
-	Cursor      int64    `json:"cursor" db:"cursor_"`
+	Id          string   `msgpack:"id" db:"id_"`
+	Type        string   `msgpack:"type" db:"type_"`
+	MediaUrls   []string `msgpack:"media_urls" db:"media_urls"`
+	Description string   `msgpack:"description"`
+	CreatedAt   int64    `msgpack:"created_at" db:"created_at"`
+	OwnerUser   any      `msgpack:"owner_user" db:"owner_user"`
+	Cursor      int64    `msgpack:"cursor" db:"cursor_"`
 }
 
 func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post NewPostT, err error) {
@@ -177,11 +177,11 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 	return *res, nil
 }
 
-func GetReactors(ctx context.Context, clientUsername, postId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
+func GetReactors(ctx context.Context, clientUsername, postId string, limit int64, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
 	reactorMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -197,7 +197,7 @@ func GetReactors(ctx context.Context, clientUsername, postId string, limit int, 
 	return reactors, nil
 }
 
-/* func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int, offset time.Time) ([]any, error) {
+/* func GetReactorsWithReaction(ctx context.Context, clientUsername, postId, reaction string, limit int64, offset time.Time) ([]any, error) {
 
 } */
 
@@ -219,13 +219,13 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 }
 
 type NewCommentT struct {
-	Id            string `json:"id" db:"comment_id"`
-	OwnerUser     any    `json:"owner_user" db:"owner_user"`
-	CommentText   string `json:"comment_text" db:"comment_text"`
-	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
-	At            int64  `json:"at" db:"at_"`
-	Cursor        int64  `json:"cursor" db:"cursor_"`
-	PostOwner     string `json:"-" db:"post_owner"`
+	Id            string `msgpack:"id" db:"comment_id"`
+	OwnerUser     any    `msgpack:"owner_user" db:"owner_user"`
+	CommentText   string `msgpack:"comment_text" db:"comment_text"`
+	AttachmentUrl string `msgpack:"attachment_url" db:"attachment_url"`
+	At            int64  `msgpack:"at" db:"at_"`
+	Cursor        int64  `msgpack:"cursor" db:"cursor_"`
+	PostOwner     string `msgpack:"-" db:"post_owner"`
 }
 
 func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (NewCommentT, error) {
@@ -283,11 +283,11 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 	return nil
 }
 
-func GetComments(ctx context.Context, clientUsername, postId string, limit int, cursor float64) (comments []UITypes.Comment, err error) {
+func GetComments(ctx context.Context, clientUsername, postId string, limit int64, cursor float64) (comments []UITypes.Comment, err error) {
 	commentMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("commented_post:%s:comments", postId), &redis.ZRangeBy{
 		Max:   helpers.MaxCursor(cursor),
 		Min:   "-inf",
-		Count: int64(limit),
+		Count: limit,
 	}).Result()
 	if err != nil {
 		helpers.LogError(err)
@@ -321,14 +321,14 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type RepostT struct {
-	Id           string   `json:"id" db:"id_"`
-	Type         string   `json:"type" db:"type_"`
-	MediaUrls    []string `json:"media_urls" db:"media_urls"`
-	Description  string   `json:"description"`
-	CreatedAt    int64    `json:"created_at" db:"created_at"`
-	OwnerUser    any      `json:"owner_user" db:"owner_user"`
-	ReposterUser any      `json:"reposter_user" db:"reposted_by_user"`
-	Cursor       int64    `json:"cursor" db:"cursor_"`
+	Id           string   `msgpack:"id" db:"id_"`
+	Type         string   `msgpack:"type" db:"type_"`
+	MediaUrls    []string `msgpack:"media_urls" db:"media_urls"`
+	Description  string   `msgpack:"description"`
+	CreatedAt    int64    `msgpack:"created_at" db:"created_at"`
+	OwnerUser    any      `msgpack:"owner_user" db:"owner_user"`
+	ReposterUser any      `msgpack:"reposter_user" db:"reposted_by_user"`
+	Cursor       int64    `msgpack:"cursor" db:"cursor_"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (RepostT, error) {

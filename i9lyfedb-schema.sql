@@ -93,7 +93,7 @@ IF ack_val = 'delivered' THEN
 	END IF;
 ELSIF ack_val = 'read' THEN
 	UPDATE chat_history_entry
-	SET delivery_status = ack_val, read_at = at_val
+	SET delivery_status = ack_val, read_at = at_val, delivered_at = CASE WHEN delivered_at IS NULL THEN at_val ELSE delivered_at END
 	WHERE id_ = msg_id_list AND type_ = 'message' AND delivery_status <> 'read';
 	IF FOUND THEN
 		last_msg_cursor := 0;

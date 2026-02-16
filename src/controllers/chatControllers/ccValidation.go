@@ -15,9 +15,9 @@ import (
 )
 
 type authorizeUploadBody struct {
-	MsgType   string `json:"msg_type"`
-	MediaMIME string `json:"media_mime"`
-	MediaSize int64  `json:"media_size"`
+	MsgType   string `msgpack:"msg_type"`
+	MediaMIME string `msgpack:"media_mime"`
+	MediaSize int64  `msgpack:"media_size"`
 }
 
 func (b authorizeUploadBody) Validate() error {
@@ -83,9 +83,9 @@ func (b authorizeUploadBody) Validate() error {
 }
 
 type authorizeVisualUploadBody struct {
-	MsgType   string    `json:"msg_type"`
-	MediaMIME [2]string `json:"media_mime"`
-	MediaSize [2]int64  `json:"media_size"`
+	MsgType   string    `msgpack:"msg_type"`
+	MediaMIME [2]string `msgpack:"media_mime"`
+	MediaSize [2]int64  `msgpack:"media_size"`
 }
 
 func (b authorizeVisualUploadBody) Validate() error {
@@ -159,16 +159,16 @@ func (b authorizeVisualUploadBody) Validate() error {
 }
 
 type MsgProps struct {
-	TextContent    *string `json:"text_content,omitempty"`
-	MediaCloudName *string `json:"media_cloud_name,omitempty"`
-	Duration       *int64  `json:"duration,omitempty"`
-	Caption        *string `json:"caption,omitempty"`
-	Name           *string `json:"name,omitempty"`
+	TextContent    *string `msgpack:"text_content,omitempty" json:"text_content,omitempty"`
+	MediaCloudName *string `msgpack:"media_cloud_name,omitempty" json:"media_cloud_name,omitempty"`
+	Duration       *int64  `msgpack:"duration,omitempty" json:"duration,omitempty"`
+	Caption        *string `msgpack:"caption,omitempty" json:"caption,omitempty"`
+	Name           *string `msgpack:"name,omitempty" json:"name,omitempty"`
 }
 
 type MsgContent struct {
-	Type     string `json:"type"`
-	MsgProps `json:"props"`
+	Type     string `msgpack:"type" json:"type"`
+	MsgProps `msgpack:"props" json:"props"`
 }
 
 func (m MsgContent) Validate() error {
@@ -250,11 +250,11 @@ func (m MsgContent) Validate() error {
 }
 
 type sendMsgAcd struct {
-	PartnerUsername  string     `json:"toUser"`
-	IsReply          bool       `json:"isReply"`
-	ReplyTargetMsgId string     `json:"replyTargetMsgId"`
-	Msg              MsgContent `json:"msg"`
-	At               int64      `json:"at"`
+	PartnerUsername  string     `msgpack:"toUser"`
+	IsReply          bool       `msgpack:"isReply"`
+	ReplyTargetMsgId string     `msgpack:"replyTargetMsgId"`
+	Msg              MsgContent `msgpack:"msg"`
+	At               int64      `msgpack:"at"`
 }
 
 func (vb sendMsgAcd) Validate(ctx context.Context) error {
@@ -270,9 +270,9 @@ func (vb sendMsgAcd) Validate(ctx context.Context) error {
 }
 
 type ackMsgDeliveredAcd struct {
-	PartnerUsername string   `json:"partnerUsername"`
-	MsgIdList       []string `json:"msgIdList"`
-	At              int64    `json:"at"`
+	PartnerUsername string   `msgpack:"partnerUsername"`
+	MsgIdList       []string `msgpack:"msgIdList"`
+	At              int64    `msgpack:"at"`
 }
 
 func (d ackMsgDeliveredAcd) Validate() error {
@@ -286,9 +286,9 @@ func (d ackMsgDeliveredAcd) Validate() error {
 }
 
 type ackMsgReadAcd struct {
-	PartnerUsername string   `json:"partnerUsername"`
-	MsgIdList       []string `json:"msgIdList"`
-	At              int64    `json:"at"`
+	PartnerUsername string   `msgpack:"partnerUsername"`
+	MsgIdList       []string `msgpack:"msgIdList"`
+	At              int64    `msgpack:"at"`
 }
 
 func (d ackMsgReadAcd) Validate() error {
@@ -302,9 +302,9 @@ func (d ackMsgReadAcd) Validate() error {
 }
 
 type getChatHistoryAcd struct {
-	PartnerUsername string  `json:"partnerUsername"`
-	Limit           int     `json:"limit"`
-	Cursor          float64 `json:"cursor"`
+	PartnerUsername string  `msgpack:"partnerUsername"`
+	Limit           int64   `msgpack:"limit"`
+	Cursor          float64 `msgpack:"cursor"`
 }
 
 func (d getChatHistoryAcd) Validate() error {
@@ -316,10 +316,10 @@ func (d getChatHistoryAcd) Validate() error {
 }
 
 type reactToMsgAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	MsgId           string `json:"msgId"`
-	Emoji           string `json:"emoji"`
-	At              int64  `json:"at"`
+	PartnerUsername string `msgpack:"partnerUsername"`
+	MsgId           string `msgpack:"msgId"`
+	Emoji           string `msgpack:"emoji"`
+	At              int64  `msgpack:"at"`
 }
 
 func (d reactToMsgAcd) Validate() error {
@@ -334,9 +334,9 @@ func (d reactToMsgAcd) Validate() error {
 }
 
 type removeReactionToMsgAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	MsgId           string `json:"msgId"`
-	At              int64  `json:"at"`
+	PartnerUsername string `msgpack:"partnerUsername"`
+	MsgId           string `msgpack:"msgId"`
+	At              int64  `msgpack:"at"`
 }
 
 func (d removeReactionToMsgAcd) Validate() error {
@@ -350,9 +350,9 @@ func (d removeReactionToMsgAcd) Validate() error {
 }
 
 type deleteMsgAcd struct {
-	PartnerUsername string `json:"partnerUsername"`
-	MsgId           string `json:"msgId"`
-	DeleteFor       string `json:"deleteFor"`
+	PartnerUsername string `msgpack:"partnerUsername"`
+	MsgId           string `msgpack:"msgId"`
+	DeleteFor       string `msgpack:"deleteFor"`
 }
 
 func (d deleteMsgAcd) Validate() error {

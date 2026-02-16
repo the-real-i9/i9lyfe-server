@@ -6,11 +6,11 @@ import (
 	"i9lyfe/src/services/securityServices"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
-func UserAuthRequired(c *fiber.Ctx) error {
-	usData := helpers.FromJson[map[string]any](c.Cookies("session"))["user"]
+func UserAuthRequired(c fiber.Ctx) error {
+	usData := helpers.FromMsgPack[map[string]any](c.Cookies("session"))["user"]
 
 	if usData == nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("authentication required")
@@ -28,8 +28,8 @@ func UserAuthRequired(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func UserAuthOptional(c *fiber.Ctx) error {
-	usData := helpers.FromJson[map[string]any](c.Cookies("session"))["user"]
+func UserAuthOptional(c fiber.Ctx) error {
+	usData := helpers.FromMsgPack[map[string]any](c.Cookies("session"))["user"]
 
 	if usData == nil {
 		c.Locals("user", appTypes.ClientUser{})

@@ -6,16 +6,16 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/chatService"
 
-	"github.com/goccy/go-json"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
-func AuthorizeUpload(c *fiber.Ctx) error {
+func AuthorizeUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	var body authorizeUploadBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -29,15 +29,15 @@ func AuthorizeUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func AuthorizeVisualUpload(c *fiber.Ctx) error {
+func AuthorizeVisualUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	var body authorizeVisualUploadBody
 
-	err := c.BodyParser(&body)
+	err := c.Bind().Body(&body)
 	if err != nil {
 		return err
 	}
@@ -51,23 +51,32 @@ func AuthorizeVisualUpload(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func GetChats(c *fiber.Ctx) error {
+func GetChats(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := chatService.GetChats(ctx, clientUser.Username, c.QueryInt("limit", 20), c.QueryFloat("cursor"))
+	var query struct {
+		Limit  int64
+		Cursor float64
+	}
+
+	if err := c.Bind().Query(&query); err != nil {
+		return err
+	}
+
+	respData, err := chatService.GetChats(ctx, clientUser.Username, helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func DeleteChat(c *fiber.Ctx) error {
+func DeleteChat(c fiber.Ctx) error {
 	ctx := c.Context()
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
@@ -77,11 +86,11 @@ func DeleteChat(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(respData)
+	return c.MsgPack(respData)
 }
 
-func SendMessage(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[sendMsgAcd](actionData)
+func SendMessage(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[sendMsgAcd](actionData)
 
 	if err := data.Validate(ctx); err != nil {
 		return nil, err
@@ -90,8 +99,8 @@ func SendMessage(ctx context.Context, clientUsername string, actionData json.Raw
 	return chatService.SendMessage(ctx, clientUsername, data.PartnerUsername, data.ReplyTargetMsgId, data.IsReply, helpers.ToJson(data.Msg), data.At)
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[ackMsgDeliveredAcd](actionData)
+func AckMsgDelivered(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[ackMsgDeliveredAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err
@@ -100,8 +109,8 @@ func AckMsgDelivered(ctx context.Context, clientUsername string, actionData json
 	return chatService.AckMsgDelivered(ctx, clientUsername, data.PartnerUsername, data.MsgIdList, data.At)
 }
 
-func AckMsgRead(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[ackMsgReadAcd](actionData)
+func AckMsgRead(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[ackMsgReadAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err
@@ -110,22 +119,18 @@ func AckMsgRead(ctx context.Context, clientUsername string, actionData json.RawM
 	return chatService.AckMsgRead(ctx, clientUsername, data.PartnerUsername, data.MsgIdList, data.At)
 }
 
-func GetChatHistory(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[getChatHistoryAcd](actionData)
+func GetChatHistory(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[getChatHistoryAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err
 	}
 
-	if data.Limit == 0 {
-		data.Limit = 50
-	}
-
-	return chatService.GetChatHistory(ctx, clientUsername, data.PartnerUsername, data.Limit, data.Cursor)
+	return chatService.GetChatHistory(ctx, clientUsername, data.PartnerUsername, helpers.CoalesceInt(data.Limit, 50), data.Cursor)
 }
 
-func ReactToMsg(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[reactToMsgAcd](actionData)
+func ReactToMsg(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[reactToMsgAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err
@@ -134,8 +139,8 @@ func ReactToMsg(ctx context.Context, clientUsername string, actionData json.RawM
 	return chatService.ReactToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId, data.Emoji, data.At)
 }
 
-func RemoveReactionToMsg(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[removeReactionToMsgAcd](actionData)
+func RemoveReactionToMsg(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[removeReactionToMsgAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err
@@ -144,8 +149,8 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername string, actionData 
 	return chatService.RemoveReactionToMsg(ctx, clientUsername, data.PartnerUsername, data.MsgId)
 }
 
-func DeleteMsg(ctx context.Context, clientUsername string, actionData json.RawMessage) (any, error) {
-	data := helpers.FromBtJson[deleteMsgAcd](actionData)
+func DeleteMsg(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
+	data := helpers.FromBtMsgPack[deleteMsgAcd](actionData)
 
 	if err := data.Validate(); err != nil {
 		return nil, err

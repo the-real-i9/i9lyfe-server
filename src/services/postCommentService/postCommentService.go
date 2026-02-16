@@ -14,7 +14,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 )
 
@@ -79,7 +79,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 		eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
 			OwnerUser:  clientUsername,
 			PostId:     newPost.Id,
-			PostData:   helpers.ToJson(newPost),
+			PostData:   helpers.ToMsgPack(newPost),
 			Hashtags:   hashtags,
 			Mentions:   mentions,
 			At:         at,
@@ -145,7 +145,7 @@ func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at i
 	return done, nil
 }
 
-func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.ReactorSnippet, error) {
+func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit int64, cursor float64) ([]UITypes.ReactorSnippet, error) {
 	reactors, err := post.GetReactors(ctx, clientUsername, postId, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func GetReactorsToPost(ctx context.Context, clientUsername, postId string, limit
 	return reactors, nil
 }
 
-/* func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, reaction string, limit int, offset int64) (any, error) {
+/* func GetReactorsWithReactionToPost(ctx context.Context, clientUsername, postId, reaction string, limit int64, offset int64) (any, error) {
 	reactors, err := post.GetReactorsWithReaction(ctx, clientUsername, postId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 			PostId:        postId,
 			PostOwner:     newComment.PostOwner,
 			CommentId:     newComment.Id,
-			CommentData:   helpers.ToJson(newComment),
+			CommentData:   helpers.ToMsgPack(newComment),
 			Mentions:      mentions,
 			At:            at,
 			CommentCursor: newComment.Cursor,
@@ -212,7 +212,7 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 	return map[string]any{"new_comment_id": newComment.Id, "comment_cursor": newComment.Cursor}, nil
 }
 
-func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.Comment, error) {
+func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int64, cursor float64) ([]UITypes.Comment, error) {
 	comments, err := post.GetComments(ctx, clientUsername, postId, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string
 	return done, nil
 }
 
-func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.ReactorSnippet, error) {
+func GetReactorsToComment(ctx context.Context, clientUsername, commentId string, limit int64, cursor float64) ([]UITypes.ReactorSnippet, error) {
 	reactors, err := comment.GetReactors(ctx, clientUsername, commentId, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -283,7 +283,7 @@ func GetReactorsToComment(ctx context.Context, clientUsername, commentId string,
 	return reactors, nil
 }
 
-/* func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId, reaction string, limit int, offset int64) (any, error) {
+/* func GetReactorsWithReactionToComment(ctx context.Context, clientUsername, commentId, reaction string, limit int64, offset int64) (any, error) {
 	reactors, err := comment.GetReactorsWithReaction(ctx, clientUsername, commentId, reaction, limit, helpers.OffsetTime(offset))
 	if err != nil {
 		return nil, err
@@ -327,7 +327,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 			ParentCommentId:    parentCommentId,
 			ParentCommentOwner: newComment.ParentCommentOwner,
 			CommentId:          newComment.Id,
-			CommentData:        helpers.ToJson(newComment),
+			CommentData:        helpers.ToMsgPack(newComment),
 			Mentions:           mentions,
 			At:                 at,
 			CommentCursor:      newComment.Cursor,
@@ -337,7 +337,7 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 	return map[string]any{"new_comment_id": newComment.Id, "comment_cursor": newComment.Cursor}, nil
 }
 
-func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.Comment, error) {
+func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int64, cursor float64) ([]UITypes.Comment, error) {
 	comments, err := comment.GetComments(ctx, clientUsername, commentId, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -384,7 +384,7 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (bool, error
 				PostId:       postId,
 				PostOwner:    repost.OwnerUser.(string),
 				RepostId:     repost.Id,
-				RepostData:   helpers.ToJson(repost),
+				RepostData:   helpers.ToMsgPack(repost),
 				At:           at,
 				RepostCursor: repost.Cursor,
 			})
@@ -438,8 +438,8 @@ func UnsavePost(ctx context.Context, clientUsername, postId string) (bool, error
 /* ------------- */
 
 type AuthCommAttDataT struct {
-	UploadUrl           string `json:"uploadUrl"`
-	AttachmentCloudName string `json:"attachmentCloudName"`
+	UploadUrl           string `msgpack:"uploadUrl"`
+	AttachmentCloudName string `msgpack:"attachmentCloudName"`
 }
 
 func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCommAttDataT, error) {
@@ -459,8 +459,8 @@ func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCom
 }
 
 type AuthPostMediaDataT struct {
-	UploadUrl      string `json:"uploadUrl"`
-	MediaCloudName string `json:"mediaCloudName"`
+	UploadUrl      string `msgpack:"uploadUrl"`
+	MediaCloudName string `msgpack:"mediaCloudName"`
 }
 
 func AuthorizePostMediaUpload(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthPostMediaDataT, error) {

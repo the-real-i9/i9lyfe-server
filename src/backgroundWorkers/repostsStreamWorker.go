@@ -59,8 +59,8 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.RepostId = stmsg.Values["repostId"].(string)
 				msg.RepostData = stmsg.Values["repostData"].(string)
-				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.RepostCursor = helpers.FromJson[int64](stmsg.Values["repostCursor"].(string))
+				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.RepostCursor = helpers.FromMsgPack[int64](stmsg.Values["repostCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -108,7 +108,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 					"repost_id":        msg.RepostId,
 				})
 
-				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
+				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
 				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RepostCursor)})

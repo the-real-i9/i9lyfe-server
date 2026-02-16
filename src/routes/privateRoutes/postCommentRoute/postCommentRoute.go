@@ -3,7 +3,7 @@ package postCommentRoute
 import (
 	PCC "i9lyfe/src/controllers/postCommentControllers"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func Route(router fiber.Router) {

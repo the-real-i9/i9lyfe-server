@@ -54,7 +54,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				msg.ToUser = stmsg.Values["toUser"].(string)
 				msg.CHEId = stmsg.Values["CHEId"].(string)
 				msg.MsgData = stmsg.Values["msgData"].(string)
-				msg.CHECursor = helpers.FromJson[int64](stmsg.Values["cheCursor"].(string))
+				msg.CHECursor = helpers.FromMsgPack[int64](stmsg.Values["cheCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
@@ -74,7 +74,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				newMessageEntries = append(newMessageEntries, msg.CHEId, msg.MsgData)
 
 				if msg.FirstFromUser {
-					newUserChats[msg.FromUser] = append(newUserChats[msg.FromUser], msg.ToUser, helpers.ToJson(map[string]any{"partner_user": msg.ToUser}))
+					newUserChats[msg.FromUser] = append(newUserChats[msg.FromUser], msg.ToUser, helpers.ToMsgPack(map[string]any{"partner_user": msg.ToUser}))
 
 					if userChats[msg.FromUser] == nil {
 						userChats[msg.FromUser] = make(map[string]float64)
@@ -91,7 +91,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				}
 
 				if msg.FirstToUser {
-					newUserChats[msg.ToUser] = append(newUserChats[msg.ToUser], msg.FromUser, helpers.ToJson(map[string]any{"partner_user": msg.FromUser}))
+					newUserChats[msg.ToUser] = append(newUserChats[msg.ToUser], msg.FromUser, helpers.ToMsgPack(map[string]any{"partner_user": msg.FromUser}))
 
 					if userChats[msg.ToUser] == nil {
 						userChats[msg.ToUser] = make(map[string]float64)

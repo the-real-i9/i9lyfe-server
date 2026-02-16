@@ -14,11 +14,11 @@ import (
 	"i9lyfe/src/services/realtimeService"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 )
 
-func GetChats(ctx context.Context, clientUsername string, limit int, cursor float64) ([]UITypes.ChatSnippet, error) {
+func GetChats(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.ChatSnippet, error) {
 	chats, err := chat.MyChats(ctx, clientUsername, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (bo
 	return done, nil
 }
 
-func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, limit int, cursor float64) ([]UITypes.ChatHistoryEntry, error) {
+func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, limit int64, cursor float64) ([]UITypes.ChatHistoryEntry, error) {
 	history, err := chat.History(ctx, clientUsername, partnerUsername, limit, cursor)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 			FromUser:      clientUsername,
 			ToUser:        partnerUsername,
 			CHEId:         newMessage.Id,
-			MsgData:       helpers.ToJson(newMessage),
+			MsgData:       helpers.ToMsgPack(newMessage),
 			CHECursor:     newMessage.Cursor,
 		})
 	}(newMessage, clientUsername, partnerUsername)
@@ -206,7 +206,7 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 			FromUser:  clientUsername,
 			ToUser:    partnerUsername,
 			CHEId:     rxnToMessage.CHEId,
-			RxnData:   helpers.ToJson(rxnToMessage),
+			RxnData:   helpers.ToMsgPack(rxnToMessage),
 			ToMsgId:   rxnToMessage.ToMsgId,
 			Emoji:     rxnToMessage.Emoji,
 			CHECursor: rxnToMessage.Cursor,
@@ -275,8 +275,8 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 /* ------------ */
 
 type AuthMediaDataT struct {
-	UploadUrl      string `json:"uploadUrl"`
-	MediaCloudName string `json:"mediaCloudName"`
+	UploadUrl      string `msgpack:"uploadUrl"`
+	MediaCloudName string `msgpack:"mediaCloudName"`
 }
 
 func AuthorizeUpload(ctx context.Context, msgType, mediaMIME string) (AuthMediaDataT, error) {
