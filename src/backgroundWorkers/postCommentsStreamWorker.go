@@ -61,7 +61,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentData = stmsg.Values["commentData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
+				msg.CommentCursor = helpers.FromJson[int64](stmsg.Values["score"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -71,24 +71,24 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			postComments := make(map[string][][2]any)
 
-			userCommentedPosts := make(map[string][][2]string)
+			userCommentedPosts := make(map[string][][2]any)
 
 			newCommentDBExtrasFuncs := []func() error{}
 
 			notifications := []string{}
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string)
+			userNotifications := make(map[string][][2]any)
 
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				newComments = append(newComments, msg.CommentId, msg.CommentData)
 
-				postComments[msg.PostId] = append(postComments[msg.PostId], [2]any{msg.CommentId, msg.Score})
+				postComments[msg.PostId] = append(postComments[msg.PostId], [2]any{msg.CommentId, float64(msg.CommentCursor)})
 
-				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]string{msg.PostId, stmsgIds[i]})
+				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]any{msg.PostId, float64(msg.CommentCursor)})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
 					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
@@ -106,7 +106,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					notifications = append(notifications, copNotifUniqueId, helpers.ToJson(copNotif))
 					unreadNotifications = append(unreadNotifications, copNotifUniqueId)
 
-					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{copNotifUniqueId, stmsgIds[i]})
+					userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{copNotifUniqueId, float64(msg.CommentCursor)})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), copNotifUniqueId)
@@ -132,7 +132,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
 					unreadNotifications = append(unreadNotifications, micNotifUniqueId)
 
-					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
+					userNotifications[mu] = append(userNotifications[mu], [2]any{micNotifUniqueId, float64(msg.CommentCursor)})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), micNotifUniqueId)
@@ -189,19 +189,19 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, postId_stmsgId_Pairs := range userCommentedPosts {
+			for user, postId_score_Pairs := range userCommentedPosts {
 				eg.Go(func() error {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					user, postId_score_Pairs := user, postId_score_Pairs
 
-					return cache.StoreUserCommentedPosts(sharedCtx, user, postId_stmsgId_Pairs)
+					return cache.StoreUserCommentedPosts(sharedCtx, user, postId_score_Pairs)
 				})
 			}
 
-			for user, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_score_Pairs := range userNotifications {
 				eg.Go(func() error {
-					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
+					user, notifId_score_Pairs := user, notifId_score_Pairs
 
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
 				})
 			}
 

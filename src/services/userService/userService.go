@@ -41,10 +41,10 @@ func SigninUserFind(ctx context.Context, uniqueIdent string) (*user.SignedInUser
 	return user.SigninFind(ctx, uniqueIdent)
 }
 
-func ChangeUserPassword(ctx context.Context, email string, newPassword string) error {
+func ChangeUserPassword(ctx context.Context, email string, newPassword string) (bool, error) {
 	username, err := user.ChangePassword(ctx, email, newPassword)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	done := username != ""
@@ -56,7 +56,7 @@ func ChangeUserPassword(ctx context.Context, email string, newPassword string) e
 		})
 	}
 
-	return nil
+	return done, nil
 }
 
 func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct any) (bool, error) {
@@ -129,7 +129,7 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicClo
 	if done {
 		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
 			Username:    clientUsername,
-			UpdateKVMap: map[string]any{"profile_pic_cloud_name": profilePicCloudName},
+			UpdateKVMap: map[string]any{"profile_pic_url": profilePicCloudName},
 		})
 	}
 
@@ -141,16 +141,19 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string, at i
 		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	done, err := user.Follow(ctx, clientUsername, targetUsername, at)
+	followCursor, err := user.Follow(ctx, clientUsername, targetUsername, at)
 	if err != nil {
 		return nil, err
 	}
+
+	done := followCursor != 0
 
 	if done {
 		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
 			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
 			At:            at,
+			FollowCursor:  followCursor,
 		})
 	}
 

@@ -88,14 +88,16 @@ func ResetPassword(ctx context.Context, sessionData json.RawMessage, newPassword
 		return resp, err
 	}
 
-	err = userService.ChangeUserPassword(ctx, email, hashedPassword)
+	done, err := userService.ChangeUserPassword(ctx, email, hashedPassword)
 	if err != nil {
 		return resp, err
 	}
 
-	go mailService.SendMail(email, "Password Reset Success", fmt.Sprintf("<p>%s, your password has been changed successfully!</p>", email))
+	if done {
+		go mailService.SendMail(email, "Password Reset Success", fmt.Sprintf("<p>%s, your password has been changed successfully!</p>", email))
 
-	resp.Msg = "Your password has been changed successfully"
+		resp.Msg = "Your password has been changed successfully"
+	}
 
 	return resp, nil
 }

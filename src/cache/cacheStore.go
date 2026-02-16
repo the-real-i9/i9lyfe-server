@@ -4,20 +4,10 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
-
-func stmsgIdToScore(val string) (res float64) {
-	var err error
-	if res, err = strconv.ParseFloat(strings.Replace(val, "-", ".", 1), 64); err != nil {
-		helpers.LogError(err)
-	}
-	return
-}
 
 func StoreNewUsers(ctx context.Context, newUsers []string) error {
 	if err := rdb().HSet(ctx, "users", newUsers).Err(); err != nil {
@@ -78,13 +68,13 @@ func StoreUserFeedPosts(ctx context.Context, user string, postId_score_Pairs [][
 	return nil
 }
 
-func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_stmsgId_Pair [][2]string) error {
+func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_stmsgId_Pair [][2]any) error {
 	members := []redis.Z{}
 	for _, pair := range followerUser_stmsgId_Pair {
 		user := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: user,
 		})
 	}
@@ -98,13 +88,13 @@ func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_
 	return nil
 }
 
-func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_stmsgId_Pairs [][2]string) error {
+func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_stmsgId_Pairs [][2]any) error {
 	members := []redis.Z{}
 	for _, pair := range followingUser_stmsgId_Pairs {
 		user := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: user,
 		})
 	}
@@ -118,13 +108,13 @@ func StoreUserFollowings(ctx context.Context, followerUser string, followingUser
 	return nil
 }
 
-func StoreUserPosts(ctx context.Context, user string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserPosts(ctx context.Context, user string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -138,13 +128,13 @@ func StoreUserPosts(ctx context.Context, user string, postId_stmsgId_Pairs [][2]
 	return nil
 }
 
-func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -158,13 +148,13 @@ func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_s
 	return nil
 }
 
-func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -178,13 +168,13 @@ func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_stmsg
 	return nil
 }
 
-func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -198,13 +188,13 @@ func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_s
 	return nil
 }
 
-func StoreUserRepostedPosts(ctx context.Context, user string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserRepostedPosts(ctx context.Context, user string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -218,13 +208,13 @@ func StoreUserRepostedPosts(ctx context.Context, user string, postId_stmsgId_Pai
 	return nil
 }
 
-func StoreUserNotifications(ctx context.Context, user string, notifId_stmsgId_Pairs [][2]string) error {
+func StoreUserNotifications(ctx context.Context, user string, notifId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range notifId_stmsgId_Pairs {
+	for _, pair := range notifId_score_Pairs {
 		notifId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: notifId,
 		})
 	}
@@ -237,13 +227,13 @@ func StoreUserNotifications(ctx context.Context, user string, notifId_stmsgId_Pa
 	return nil
 }
 
-func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_stmsgId_Pairs [][2]string) error {
+func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range postId_stmsgId_Pairs {
+	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: postId,
 		})
 	}
@@ -267,13 +257,13 @@ func StorePostReactions(ctx context.Context, postId string, userWithEmojiPairs [
 	return nil
 }
 
-func StorePostReactors(ctx context.Context, postId string, reactorUser_stmsgId_Pairs [][2]string) error {
+func StorePostReactors(ctx context.Context, postId string, reactorUser_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range reactorUser_stmsgId_Pairs {
+	for _, pair := range reactorUser_score_Pairs {
 		rUser := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: rUser,
 		})
 	}
@@ -297,13 +287,13 @@ func StoreCommentReactions(ctx context.Context, commentId string, userWithEmojiP
 	return nil
 }
 
-func StoreCommentReactors(ctx context.Context, commentId string, reactorUser_stmsgId_Pairs [][2]string) error {
+func StoreCommentReactors(ctx context.Context, commentId string, reactorUser_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range reactorUser_stmsgId_Pairs {
+	for _, pair := range reactorUser_score_Pairs {
 		rUser := pair[0]
 
 		members = append(members, redis.Z{
-			Score:  stmsgIdToScore(pair[1]),
+			Score:  pair[1].(float64),
 			Member: rUser,
 		})
 	}
@@ -357,9 +347,9 @@ func StorePostReposts(ctx context.Context, postId string, repostIds []any) error
 	return nil
 }
 
-func StoreCommentComments(ctx context.Context, parentCommentId string, commentId_stmsgId_Pairs [][2]any) error {
+func StoreCommentComments(ctx context.Context, parentCommentId string, commentId_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range commentId_stmsgId_Pairs {
+	for _, pair := range commentId_score_Pairs {
 		commentId := pair[0]
 
 		members = append(members, redis.Z{

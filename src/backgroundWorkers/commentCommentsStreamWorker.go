@@ -61,7 +61,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentData = stmsg.Values["commentData"].(string)
 				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
+				msg.CommentCursor = helpers.FromJson[int64](stmsg.Values["commentCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
@@ -75,15 +75,15 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 			notifications := []string{}
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string)
+			userNotifications := make(map[string][][2]any)
 
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				newComments = append(newComments, msg.CommentId, msg.CommentData)
 
-				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]any{msg.CommentId, msg.Score})
+				commentComments[msg.ParentCommentId] = append(commentComments[msg.ParentCommentId], [2]any{msg.CommentId, float64(msg.CommentCursor)})
 
 				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
 					return commentModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
@@ -101,7 +101,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 					notifications = append(notifications, cocNotifUniqueId, helpers.ToJson(cocNotif))
 					unreadNotifications = append(unreadNotifications, cocNotifUniqueId)
 
-					userNotifications[msg.ParentCommentOwner] = append(userNotifications[msg.ParentCommentOwner], [2]string{cocNotifUniqueId, stmsgIds[i]})
+					userNotifications[msg.ParentCommentOwner] = append(userNotifications[msg.ParentCommentOwner], [2]any{cocNotifUniqueId, float64(msg.CommentCursor)})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), cocNotifUniqueId)
@@ -127,7 +127,7 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 					notifications = append(notifications, micNotifUniqueId, helpers.ToJson(micNotif))
 					unreadNotifications = append(unreadNotifications, micNotifUniqueId)
 
-					userNotifications[mu] = append(userNotifications[mu], [2]string{micNotifUniqueId, stmsgIds[i]})
+					userNotifications[mu] = append(userNotifications[mu], [2]any{micNotifUniqueId, float64(msg.CommentCursor)})
 
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), micNotifUniqueId)
@@ -184,11 +184,11 @@ func commentCommentsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_score_Pairs := range userNotifications {
 				eg.Go(func() error {
-					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
+					user, notifId_score_Pairs := user, notifId_score_Pairs
 
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
 				})
 			}
 

@@ -56,7 +56,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.RxnData = stmsg.Values["rxnData"].(string)
 				msg.ToMsgId = stmsg.Values["toMsgId"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
+				msg.CHECursor = helpers.FromJson[int64](stmsg.Values["cheCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -72,7 +72,7 @@ func msgReactionsStreamBgWorker(rdb *redis.Client) {
 			for _, msg := range msgs {
 				newMsgReactionEntries = append(newMsgReactionEntries, msg.CHEId, msg.RxnData)
 
-				chatMsgReactions[msg.FromUser+" "+msg.ToUser] = append(chatMsgReactions[msg.FromUser+" "+msg.ToUser], [2]any{msg.CHEId, msg.Score})
+				chatMsgReactions[msg.FromUser+" "+msg.ToUser] = append(chatMsgReactions[msg.FromUser+" "+msg.ToUser], [2]any{msg.CHEId, float64(msg.CHECursor)})
 
 				msgReactions[msg.ToMsgId] = append(msgReactions[msg.ToMsgId], msg.FromUser, msg.Emoji)
 			}

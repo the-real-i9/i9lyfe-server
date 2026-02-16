@@ -15,14 +15,14 @@ func GetChat[T any](ctx context.Context, ownerUser, partnerUser string) (chat T,
 		return chat, err
 	}
 
-	if err == redis.Nil {
+	/* if err == redis.Nil {
 		dbChat, err := GetChatFromDB[T](ctx, ownerUser, partnerUser)
 		if err != nil {
 			return chat, err
 		}
 
 		return *dbChat, nil
-	}
+	} */
 
 	return helpers.FromJson[T](chatJson), nil
 }
@@ -44,14 +44,14 @@ func GetChatHistoryEntry[T any](ctx context.Context, CHEId string) (CHE T, err e
 		return CHE, err
 	}
 
-	if err == redis.Nil {
+	/* if err == redis.Nil {
 		dbCHE, err := GetChatHistoryEntryFromDB[T](ctx, CHEId)
 		if err != nil {
 			return CHE, err
 		}
 
 		return *dbCHE, nil
-	}
+	} */
 
 	return helpers.FromJson[T](CHEJson), nil
 }

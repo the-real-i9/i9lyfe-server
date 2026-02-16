@@ -58,6 +58,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentOwner = stmsg.Values["commentOwner"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.RxnCursor = helpers.FromJson[int64](stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -69,20 +70,20 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// having comment reactors separate, allows us to
 			// paginate through the list of reactions on a comment
-			commentReactors := make(map[string][][2]string)
+			commentReactors := make(map[string][][2]any)
 
 			notifications := []string{}
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string, msgsLen)
+			userNotifications := make(map[string][][2]any, msgsLen)
 
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				commentReactions[msg.CommentId] = append(commentReactions[msg.CommentId], msg.ReactorUser, msg.Emoji)
 
-				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				commentReactors[msg.CommentId] = append(commentReactors[msg.CommentId], [2]any{msg.ReactorUser, float64(msg.RxnCursor)})
 
 				if msg.CommentOwner == msg.ReactorUser {
 					continue
@@ -98,7 +99,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
-				userNotifications[msg.CommentOwner] = append(userNotifications[msg.CommentOwner], [2]string{notifUniqueId, stmsgIds[i]})
+				userNotifications[msg.CommentOwner] = append(userNotifications[msg.CommentOwner], [2]any{notifUniqueId, float64(msg.RxnCursor)})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
@@ -150,19 +151,19 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for commentId, rUser_stmsgId_Pairs := range commentReactors {
+			for commentId, rUser_score_Pairs := range commentReactors {
 				eg.Go(func() error {
-					commentId, rUser_stmsgId_Pairs := commentId, rUser_stmsgId_Pairs
+					commentId, rUser_score_Pairs := commentId, rUser_score_Pairs
 
-					return cache.StoreCommentReactors(sharedCtx, commentId, rUser_stmsgId_Pairs)
+					return cache.StoreCommentReactors(sharedCtx, commentId, rUser_score_Pairs)
 				})
 			}
 
-			for user, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_score_Pairs := range userNotifications {
 				eg.Go(func() error {
-					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
+					user, notifId_score_Pairs := user, notifId_score_Pairs
 
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
 				})
 			}
 

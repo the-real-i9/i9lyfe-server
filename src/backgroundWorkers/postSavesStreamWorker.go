@@ -52,6 +52,7 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 				msg.SaverUser = stmsg.Values["saverUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
+				msg.SaveCursor = helpers.FromJson[int64](stmsg.Values["saveCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -59,13 +60,13 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 			postSaves := make(map[string][]any)
 
-			userSavedPosts := make(map[string][][2]string)
+			userSavedPosts := make(map[string][][2]any)
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				postSaves[msg.PostId] = append(postSaves[msg.PostId], msg.SaverUser)
 
-				userSavedPosts[msg.SaverUser] = append(userSavedPosts[msg.SaverUser], [2]string{msg.PostId, stmsgIds[i]})
+				userSavedPosts[msg.SaverUser] = append(userSavedPosts[msg.SaverUser], [2]any{msg.PostId, float64(msg.SaveCursor)})
 			}
 
 			// batch processing
@@ -98,11 +99,11 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, postId_stmsgId_Pairs := range userSavedPosts {
+			for user, postId_score_Pairs := range userSavedPosts {
 				eg.Go(func() error {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					user, postId_score_Pairs := user, postId_score_Pairs
 
-					return cache.StoreUserSavedPosts(sharedCtx, user, postId_stmsgId_Pairs)
+					return cache.StoreUserSavedPosts(sharedCtx, user, postId_score_Pairs)
 				})
 			}
 

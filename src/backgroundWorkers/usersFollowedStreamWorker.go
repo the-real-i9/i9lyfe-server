@@ -56,27 +56,28 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				msg.FollowerUser = stmsg.Values["followerUser"].(string)
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.FollowCursor = helpers.FromJson[int64](stmsg.Values["followCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
 
-			userFollowers := make(map[string][][2]string)
-			userFollowings := make(map[string][][2]string)
+			userFollowers := make(map[string][][2]any)
+			userFollowings := make(map[string][][2]any)
 
 			notifications := []string{}
 
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string)
+			userNotifications := make(map[string][][2]any)
 
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 
-				userFollowings[msg.FollowerUser] = append(userFollowings[msg.FollowerUser], [2]string{msg.FollowingUser, stmsgIds[i]})
+				userFollowings[msg.FollowerUser] = append(userFollowings[msg.FollowerUser], [2]any{msg.FollowingUser, float64(msg.FollowCursor)})
 
-				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]string{msg.FollowerUser, stmsgIds[i]})
+				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]any{msg.FollowerUser, float64(msg.FollowCursor)})
 
 				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser, msg.FollowingUser)
 				notif := helpers.BuildNotification(notifUniqueId, "user_follow", msg.At, map[string]any{
@@ -86,7 +87,7 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
-				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]string{notifUniqueId, stmsgIds[i]})
+				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]any{notifUniqueId, float64(msg.FollowCursor)})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
@@ -112,27 +113,27 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for followerUser, followingUser_stmsgId_Pairs := range userFollowings {
+			for followerUser, followingUser_score_Pairs := range userFollowings {
 				eg.Go(func() error {
-					followerUser, followingUser_stmsgId_Pairs := followerUser, followingUser_stmsgId_Pairs
+					followerUser, followingUser_score_Pairs := followerUser, followingUser_score_Pairs
 
-					return cache.StoreUserFollowings(sharedCtx, followerUser, followingUser_stmsgId_Pairs)
+					return cache.StoreUserFollowings(sharedCtx, followerUser, followingUser_score_Pairs)
 				})
 			}
 
-			for followingUser, followerUser_stmsgId_Pairs := range userFollowers {
+			for followingUser, followerUser_score_Pairs := range userFollowers {
 				eg.Go(func() error {
-					followingUser, followerUser_stmsgId_Pairs := followingUser, followerUser_stmsgId_Pairs
+					followingUser, followerUser_score_Pairs := followingUser, followerUser_score_Pairs
 
-					return cache.StoreUserFollowers(sharedCtx, followingUser, followerUser_stmsgId_Pairs)
+					return cache.StoreUserFollowers(sharedCtx, followingUser, followerUser_score_Pairs)
 				})
 			}
 
-			for user, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_score_Pairs := range userNotifications {
 				eg.Go(func() error {
-					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
+					user, notifId_score_Pairs := user, notifId_score_Pairs
 
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
 				})
 			}
 

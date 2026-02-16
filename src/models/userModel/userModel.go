@@ -153,22 +153,22 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 	return *done, nil
 }
 
-func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (bool, error) {
-	done, err := pgDB.QueryRowField[bool](
+func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (int64, error) {
+	followCursor, err := pgDB.QueryRowType[int64](
 		ctx,
 		/* sql */ `
 		INSERT INTO user_follows_user (follower_username, following_username, at_)
 		VALUES ($1, $2, $3)
 		ON CONFLICT ON CONSTRAINT no_dup_follow DO NOTHING
-		RETURNING true AS done
+		RETURNING cursor_
 		`, clientUsername, targetUsername, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return false, helpers.HandleDBError(err)
+		return 0, helpers.HandleDBError(err)
 	}
 
-	return *done, nil
+	return *followCursor, nil
 }
 
 func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool, error) {

@@ -79,7 +79,7 @@ func PostMembersForUIPosts(ctx context.Context, postMembers []redis.Z, clientUse
 					return err
 				}
 
-				post.Cursor = cursor
+				post.Cursor = int64(cursor)
 
 				postsAcc[pIndx] = post
 			}
@@ -112,14 +112,11 @@ func CommentMembersForUIComments(ctx context.Context, commentMembers []redis.Z, 
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				commentId := commentMembers[pIndx].Member.(string)
-				cursor := commentMembers[pIndx].Score
 
 				comment, err := BuildCommentUIFromCache(sharedCtx, commentId, clientUsername)
 				if err != nil {
 					return err
 				}
-
-				comment.Cursor = cursor
 
 				commentsAcc[pIndx] = comment
 			}
@@ -152,14 +149,11 @@ func UserMembersForUIUserSnippets(ctx context.Context, userMembers []redis.Z, cl
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				username := userMembers[pIndx].Member.(string)
-				cursor := userMembers[pIndx].Score
 
 				userSnippet, err := buildUserSnippetUIFromCache(sharedCtx, username, clientUsername)
 				if err != nil {
 					return err
 				}
-
-				userSnippet.Cursor = cursor
 
 				userSnippetsAcc[pIndx] = userSnippet
 			}
@@ -199,7 +193,7 @@ func NotifMembersForUINotifSnippets(ctx context.Context, notifMembers []redis.Z)
 					return err
 				}
 
-				notifSnippet.Cursor = cursor
+				notifSnippet.Cursor = int64(cursor)
 
 				notifSnippetsAcc[pIndx] = notifSnippet
 			}
@@ -232,14 +226,11 @@ func ReactorMembersForUIReactorSnippets(ctx context.Context, reactorMembers []re
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				username := reactorMembers[pIndx].Member.(string)
-				cursor := reactorMembers[pIndx].Score
 
 				reactorSnippet, err := buildReactorSnippetUIFromCache(sharedCtx, username, postOrComment, entityId)
 				if err != nil {
 					return err
 				}
-
-				reactorSnippet.Cursor = cursor
 
 				reactorSnippetsAcc[pIndx] = reactorSnippet
 			}
@@ -272,14 +263,11 @@ func ChatPartnerMembersForUIChatSnippets(ctx context.Context, partnerMembers []r
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				partnerUser := partnerMembers[pIndx].Member.(string)
-				cursor := partnerMembers[pIndx].Score
 
 				chatSnippet, err := buildChatSnippetUIFromCache(sharedCtx, clientUsername, partnerUser)
 				if err != nil {
 					return err
 				}
-
-				chatSnippet.Cursor = cursor
 
 				chatSnippetsAcc[pIndx] = chatSnippet
 			}
@@ -311,14 +299,11 @@ func CHEMembersForUICHEs(ctx context.Context, CHEMembers []redis.Z) ([]UITypes.C
 
 			for pIndx := start; pIndx < end; pIndx++ {
 				CHEId := CHEMembers[pIndx].Member.(string)
-				cursor := CHEMembers[pIndx].Score
 
 				CHE, err := BuildCHEUIFromCache(sharedCtx, CHEId)
 				if err != nil {
 					return err
 				}
-
-				CHE.Cursor = cursor
 
 				CHEsAcc[pIndx] = CHE
 			}

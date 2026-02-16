@@ -7,6 +7,7 @@ import (
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/models/modelHelpers"
+	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"i9lyfe/src/services/realtimeService"
 	"log"
@@ -58,8 +59,8 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.RepostId = stmsg.Values["repostId"].(string)
 				msg.RepostData = stmsg.Values["repostData"].(string)
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.RepostCursor = helpers.FromJson[int64](stmsg.Values["repostCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -69,34 +70,36 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 			postReposts := make(map[string][]any)
 
-			userRepostedPosts := make(map[string][][2]string)
+			userRepostedPosts := make(map[string][][2]any)
 
-			userPosts := make(map[string][][2]string)
+			userPosts := make(map[string][][2]any)
 
 			userFeedPosts := make(map[string][][2]any)
 
 			notifications := []string{}
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string)
+			userNotifications := make(map[string][][2]any)
 
 			sendNotifEventMsgFuncs := []func(){}
 
+			fanOutPostFuncs := []func(){}
+
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				reposts = append(reposts, msg.RepostId, msg.RepostData)
 
 				postReposts[msg.PostId] = append(postReposts[msg.PostId], msg.RepostId)
 
-				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]string{msg.PostId, stmsgIds[i]})
+				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]any{msg.PostId, float64(msg.RepostCursor)})
 
 				if msg.ReposterUser == msg.PostOwner {
 					continue
 				}
 
-				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]string{msg.RepostId, stmsgIds[i]})
+				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]any{msg.RepostId, float64(msg.RepostCursor)})
 
-				userFeedPosts[msg.ReposterUser] = append(userFeedPosts[msg.ReposterUser], [2]any{msg.PostId, msg.Score})
+				userFeedPosts[msg.ReposterUser] = append(userFeedPosts[msg.ReposterUser], [2]any{msg.PostId, float64(msg.RepostCursor)})
 
 				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser, msg.PostId)
 				notif := helpers.BuildNotification(notifUniqueId, "repost", msg.At, map[string]any{
@@ -108,7 +111,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
-				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
+				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RepostCursor)})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
@@ -117,6 +120,10 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 						Event: "new notification",
 						Data:  notifSnippet,
 					})
+				})
+
+				fanOutPostFuncs = append(fanOutPostFuncs, func() {
+					go contentRecommendationService.FanOutPostToFollowers(msg.RepostId, float64(msg.RepostCursor), msg.ReposterUser)
 				})
 			}
 
@@ -164,11 +171,11 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, postId_stmsgId_Pairs := range userPosts {
+			for user, postId_score_Pairs := range userPosts {
 				eg.Go(func() error {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					user, postId_score_Pairs := user, postId_score_Pairs
 
-					return cache.StoreUserPosts(sharedCtx, user, postId_stmsgId_Pairs)
+					return cache.StoreUserPosts(sharedCtx, user, postId_score_Pairs)
 				})
 			}
 
@@ -184,19 +191,19 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, postId_stmsgId_Pairs := range userRepostedPosts {
+			for user, postId_score_Pairs := range userRepostedPosts {
 				eg.Go(func() error {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					user, postId_score_Pairs := user, postId_score_Pairs
 
-					return cache.StoreUserRepostedPosts(sharedCtx, user, postId_stmsgId_Pairs)
+					return cache.StoreUserRepostedPosts(sharedCtx, user, postId_score_Pairs)
 				})
 			}
 
-			for user, notifId_stmsgId_Pairs := range userNotifications {
+			for user, notifId_score_Pairs := range userNotifications {
 				eg.Go(func() error {
-					user, notifId_stmsgId_Pairs := user, notifId_stmsgId_Pairs
+					user, notifId_score_Pairs := user, notifId_score_Pairs
 
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_stmsgId_Pairs)
+					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
 				})
 			}
 

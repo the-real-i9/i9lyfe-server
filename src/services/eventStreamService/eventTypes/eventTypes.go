@@ -22,6 +22,7 @@ type UserFollowEvent struct {
 	FollowerUser  string `redis:"followerUser" json:"followerUser"`
 	FollowingUser string `redis:"followingUser" json:"followingUser"`
 	At            int64  `redis:"at" json:"at"`
+	FollowCursor  int64  `redis:"followCursor" json:"followCursor"`
 }
 
 type UserUnfollowEvent struct {
@@ -30,13 +31,13 @@ type UserUnfollowEvent struct {
 }
 
 type NewPostEvent struct {
-	OwnerUser string                `redis:"ownerUser" json:"ownerUser"`
-	PostId    string                `redis:"postId" json:"postId"`
-	PostData  string                `redis:"postData" json:"postData"`
-	Hashtags  appTypes.BinableSlice `redis:"hashtags" json:"hashtags"`
-	Mentions  appTypes.BinableSlice `redis:"mentions" json:"mentions"`
-	Score     float64               `redis:"score" json:"score"`
-	At        int64                 `redis:"at" json:"at"`
+	OwnerUser  string                `redis:"ownerUser" json:"ownerUser"`
+	PostId     string                `redis:"postId" json:"postId"`
+	PostData   string                `redis:"postData" json:"postData"`
+	Hashtags   appTypes.BinableSlice `redis:"hashtags" json:"hashtags"`
+	Mentions   appTypes.BinableSlice `redis:"mentions" json:"mentions"`
+	At         int64                 `redis:"at" json:"at"`
+	PostCursor int64                 `redis:"postCursor" json:"postCursor"`
 }
 
 type PostDeletionEvent struct {
@@ -51,6 +52,7 @@ type PostReactionEvent struct {
 	PostId      string `redis:"postId" json:"postId"`
 	Emoji       string `redis:"emoji" json:"emoji"`
 	At          int64  `redis:"at" json:"at"`
+	RxnCursor   int64  `redis:"rxnCursor" json:"rxnCursor"`
 }
 
 type PostReactionRemovedEvent struct {
@@ -66,7 +68,7 @@ type PostCommentEvent struct {
 	CommentData   string                `redis:"commentData" json:"commentData"`
 	Mentions      appTypes.BinableSlice `redis:"mentions" json:"mentions"`
 	At            int64                 `redis:"at" json:"at"`
-	Score         float64               `redis:"score" json:"score"`
+	CommentCursor int64                 `redis:"commentCursor" json:"commentCursor"`
 }
 
 type PostCommentRemovedEvent struct {
@@ -81,6 +83,7 @@ type CommentReactionEvent struct {
 	CommentOwner string `redis:"commentOwner" json:"commentOwner"`
 	Emoji        string `redis:"emoji" json:"emoji"`
 	At           int64  `redis:"at" json:"at"`
+	RxnCursor    int64  `redis:"rxnCursor" json:"rxnCursor"`
 }
 
 type CommentReactionRemovedEvent struct {
@@ -96,7 +99,7 @@ type CommentCommentEvent struct {
 	CommentData        string                `redis:"commentData" json:"commentData"`
 	Mentions           appTypes.BinableSlice `redis:"mentions" json:"mentions"`
 	At                 int64                 `redis:"at" json:"at"`
-	Score              float64               `redis:"score" json:"score"`
+	CommentCursor      int64                 `redis:"commentCursor" json:"commentCursor"`
 }
 
 type CommentCommentRemovedEvent struct {
@@ -113,11 +116,13 @@ type RepostEvent struct {
 	RepostData   string  `redis:"repostData" json:"repostData"`
 	Score        float64 `redis:"score" json:"score"`
 	At           int64   `redis:"at" json:"at"`
+	RepostCursor int64   `redis:"repostCursor" json:"repostCursor"`
 }
 
 type PostSaveEvent struct {
-	SaverUser string `redis:"saverUser" json:"saverUser"`
-	PostId    string `redis:"postId" json:"postId"`
+	SaverUser  string `redis:"saverUser" json:"saverUser"`
+	PostId     string `redis:"postId" json:"postId"`
+	SaveCursor int64  `redis:"saveCursor" json:"saveCursor"`
 }
 
 type PostUnsaveEvent struct {
@@ -126,32 +131,32 @@ type PostUnsaveEvent struct {
 }
 
 type NewMessageEvent struct {
-	FirstFromUser bool    `redis:"ffu" json:"ffu"`
-	FirstToUser   bool    `redis:"ftu" json:"ftu"`
-	FromUser      string  `redis:"fromUser" json:"fromUser"`
-	ToUser        string  `redis:"toUser" json:"toUser"`
-	CHEId         string  `redis:"CHEId" json:"CHEId"`
-	MsgData       string  `redis:"msgData" json:"msgData"`
-	Score         float64 `redis:"score" json:"score"`
+	FirstFromUser bool   `redis:"ffu" json:"ffu"`
+	FirstToUser   bool   `redis:"ftu" json:"ftu"`
+	FromUser      string `redis:"fromUser" json:"fromUser"`
+	ToUser        string `redis:"toUser" json:"toUser"`
+	CHEId         string `redis:"CHEId" json:"CHEId"`
+	MsgData       string `redis:"msgData" json:"msgData"`
+	CHECursor     int64  `redis:"cheCursor" json:"cheCursor"`
 }
 
 type NewMsgReactionEvent struct {
-	FromUser string  `redis:"fromUser" json:"fromUser"`
-	ToUser   string  `redis:"toUser" json:"toUser"`
-	CHEId    string  `redis:"CHEId" json:"CHEId"`
-	RxnData  string  `redis:"rxnData" json:"rxnData"`
-	ToMsgId  string  `redis:"toMsgId" json:"toMsgId"`
-	Emoji    string  `redis:"emoji" json:"emoji"`
-	Score    float64 `redis:"score" json:"score"`
+	FromUser  string `redis:"fromUser" json:"fromUser"`
+	ToUser    string `redis:"toUser" json:"toUser"`
+	CHEId     string `redis:"CHEId" json:"CHEId"`
+	RxnData   string `redis:"rxnData" json:"rxnData"`
+	ToMsgId   string `redis:"toMsgId" json:"toMsgId"`
+	Emoji     string `redis:"emoji" json:"emoji"`
+	CHECursor int64  `redis:"cheCursor" json:"cheCursor"`
 }
 
 type MsgsAckEvent struct {
-	FromUser  string                `redis:"fromUser" json:"fromUser"`
-	ToUser    string                `redis:"toUser" json:"toUser"`
-	CHEIdList appTypes.BinableSlice `redis:"cheIdList" json:"cheIdList"`
-	Ack       string                `redis:"ack" json:"ack"`
-	At        int64                 `redis:"at" json:"at"`
-	Score     float64               `redis:"score" json:"score"`
+	FromUser   string                `redis:"fromUser" json:"fromUser"`
+	ToUser     string                `redis:"toUser" json:"toUser"`
+	CHEIdList  appTypes.BinableSlice `redis:"cheIdList" json:"cheIdList"`
+	Ack        string                `redis:"ack" json:"ack"`
+	At         int64                 `redis:"at" json:"at"`
+	ChatCursor int64                 `redis:"chatCursor" json:"chatCursor"`
 }
 
 type MsgDeletionEvent struct {

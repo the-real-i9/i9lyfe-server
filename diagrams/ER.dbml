@@ -18,6 +18,7 @@ Table user_follows_user {
   follower_username text [NOT NULL, ref: > users.username]
   following_username text [NOT NULL, ref: > users.username]
   at_ bigint
+  cursor_ bigserial
 
   indexes {
     (follower_username, following_username) [unique, name: 'no_dup_follow']
@@ -34,7 +35,7 @@ Table posts {
   reposted_by_user text [ref: > users.username]
   created_at bigint
   deleted_at bigint
-  snum bigserial
+  cursor_ bigserial
 
   checks {
     `type_ IN ['photo:portrait', 'photo:square', 'photo:landscape', 'video:portrait', 'video:square', 'video:landscape', 'reel']` [name: 'posts_type__check']
@@ -68,6 +69,7 @@ Table user_reacts_to_post {
   post_id uuid [NOT NULL, ref: > posts.id_]
   emoji text [NOT NULL]
   at_ bigint
+  cursor_ bigserial
 
   indexes {
     (username, post_id) [unique, name: 'no_dup_post_rxn']
@@ -77,6 +79,7 @@ Table user_reacts_to_post {
 Table user_saves_post {
   username text [NOT NULL, ref: > users.username]
   post_id uuid [NOT NULL, ref: > posts.id_]
+  cursor_ bigserial
 
   indexes {
     (username, post_id) [unique, name: 'no_dup_saves']
@@ -93,7 +96,7 @@ Table user_comments_on {
   deleted boolean [DEFAULT: false]
   deleted_at bigint
   at_ bigint
-  snum bigserial
+  cursor_ bigserial
 
   checks {
     `post_id XOR parent_comment_id` [name: 'on_post_xor_on_comment']
@@ -114,6 +117,7 @@ Table user_reacts_to_comment {
   comment_id uuid [NOT NULL, ref: > user_comments_on.comment_id]
   emoji text [NOT NULL]
   at_ bigint
+  cursor_ bigserial
 
 
   indexes {
@@ -145,7 +149,7 @@ Table chat_history_entry {
   edited_at bigint
   created_at bigint
   reaction_at bigint
-  snum bigserial
+  cursor_ bigserial
 
   checks {
     `delivery_status IN ['sent', 'delivered', 'read'])` [name: 'chat_history_entry_delivery_status_check']

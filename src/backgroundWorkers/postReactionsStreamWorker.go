@@ -58,6 +58,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
+				msg.RxnCursor = helpers.FromJson[int64](stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -69,24 +70,24 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 			// having post reactors separate, allows us to
 			// paginate through the list of reactions on a post
-			postReactors := make(map[string][][2]string)
+			postReactors := make(map[string][][2]any)
 
-			userReactedPosts := make(map[string][][2]string)
+			userReactedPosts := make(map[string][][2]any)
 
 			notifications := []string{}
 			unreadNotifications := []any{}
 
-			userNotifications := make(map[string][][2]string, msgsLen)
+			userNotifications := make(map[string][][2]any, msgsLen)
 
 			sendNotifEventMsgFuncs := []func(){}
 
 			// batch data for batch processing
-			for i, msg := range msgs {
+			for _, msg := range msgs {
 				postReactions[msg.PostId] = append(postReactions[msg.PostId], msg.ReactorUser, msg.Emoji)
 
-				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]string{msg.ReactorUser, stmsgIds[i]})
+				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]any{msg.ReactorUser, float64(msg.RxnCursor)})
 
-				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]string{msg.PostId, stmsgIds[i]})
+				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]any{msg.PostId, float64(msg.RxnCursor)})
 
 				if msg.PostOwner == msg.ReactorUser {
 					continue
@@ -102,7 +103,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				notifications = append(notifications, notifUniqueId, helpers.ToJson(notif))
 				unreadNotifications = append(unreadNotifications, notifUniqueId)
 
-				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]string{notifUniqueId, stmsgIds[i]})
+				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RxnCursor)})
 
 				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
@@ -154,19 +155,19 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for user, postId_stmsgId_Pairs := range userReactedPosts {
+			for user, postId_score_Pairs := range userReactedPosts {
 				eg.Go(func() error {
-					user, postId_stmsgId_Pairs := user, postId_stmsgId_Pairs
+					user, postId_score_Pairs := user, postId_score_Pairs
 
-					return cache.StoreUserReactedPosts(sharedCtx, user, postId_stmsgId_Pairs)
+					return cache.StoreUserReactedPosts(sharedCtx, user, postId_score_Pairs)
 				})
 			}
 
-			for postId, rUser_stmsgId_Pairs := range postReactors {
+			for postId, rUser_score_Pairs := range postReactors {
 				eg.Go(func() error {
-					postId, rUser_stmsgId_Pairs := postId, rUser_stmsgId_Pairs
+					postId, rUser_score_Pairs := postId, rUser_score_Pairs
 
-					return cache.StorePostReactors(sharedCtx, postId, rUser_stmsgId_Pairs)
+					return cache.StorePostReactors(sharedCtx, postId, rUser_score_Pairs)
 				})
 			}
 

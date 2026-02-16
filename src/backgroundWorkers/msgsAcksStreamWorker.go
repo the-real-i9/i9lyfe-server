@@ -56,7 +56,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 				msg.CHEIdList = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["cheIdList"].(string))
 				msg.Ack = stmsg.Values["ack"].(string)
 				msg.At = helpers.FromJson[int64](stmsg.Values["at"].(string))
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
+				msg.ChatCursor = helpers.FromJson[int64](stmsg.Values["chatCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -81,7 +81,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 						updatedFromUserChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					updatedFromUserChats[msg.FromUser][msg.ToUser] = msg.Score
+					updatedFromUserChats[msg.FromUser][msg.ToUser] = float64(msg.ChatCursor)
 
 					if userChatUnreadMsgs[msg.FromUser] == nil {
 						userChatUnreadMsgs[msg.FromUser] = make(map[string][]any)
@@ -106,10 +106,10 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			// batch processing
 			eg, sharedCtx := errgroup.WithContext(ctx)
 
-			for _, msgId_ack_ackAt_stmsgId := range ackMessages {
+			for _, msgId_ack_ackAt := range ackMessages {
 
 				eg.Go(func() error {
-					msgId, ack, ackAt := msgId_ack_ackAt_stmsgId[0], msgId_ack_ackAt_stmsgId[1], msgId_ack_ackAt_stmsgId[2]
+					msgId, ack, ackAt := msgId_ack_ackAt[0], msgId_ack_ackAt[1], msgId_ack_ackAt[2]
 
 					return cache.UpdateMessage(sharedCtx, msgId.(string), map[string]any{
 						"delivery_status":         ack,
@@ -118,11 +118,11 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 				})
 			}
 
-			for ownerUser, partnerUser_stmsgId_Pairs := range updatedFromUserChats {
+			for ownerUser, partnerUser_score_Pairs := range updatedFromUserChats {
 				eg.Go(func() error {
-					ownerUser, partnerUser_stmsgId_Pairs := ownerUser, partnerUser_stmsgId_Pairs
+					ownerUser, partnerUser_score_Pairs := ownerUser, partnerUser_score_Pairs
 
-					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_stmsgId_Pairs)
+					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_score_Pairs)
 				})
 			}
 

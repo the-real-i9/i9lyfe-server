@@ -54,7 +54,7 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				msg.ToUser = stmsg.Values["toUser"].(string)
 				msg.CHEId = stmsg.Values["CHEId"].(string)
 				msg.MsgData = stmsg.Values["msgData"].(string)
-				msg.Score = helpers.FromJson[float64](stmsg.Values["score"].(string))
+				msg.CHECursor = helpers.FromJson[int64](stmsg.Values["cheCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
@@ -80,14 +80,14 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 						userChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					userChats[msg.FromUser][msg.ToUser] = msg.Score
+					userChats[msg.FromUser][msg.ToUser] = float64(msg.CHECursor)
 				} else {
 
 					if updatedFromUserChats[msg.FromUser] == nil {
 						updatedFromUserChats[msg.FromUser] = make(map[string]float64)
 					}
 
-					updatedFromUserChats[msg.FromUser][msg.ToUser] = msg.Score
+					updatedFromUserChats[msg.FromUser][msg.ToUser] = float64(msg.CHECursor)
 				}
 
 				if msg.FirstToUser {
@@ -97,10 +97,10 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 						userChats[msg.ToUser] = make(map[string]float64)
 					}
 
-					userChats[msg.ToUser][msg.FromUser] = msg.Score
+					userChats[msg.ToUser][msg.FromUser] = float64(msg.CHECursor)
 				}
 
-				chatMessages[msg.FromUser+" "+msg.ToUser] = append(chatMessages[msg.FromUser+" "+msg.ToUser], [2]any{msg.CHEId, msg.Score})
+				chatMessages[msg.FromUser+" "+msg.ToUser] = append(chatMessages[msg.FromUser+" "+msg.ToUser], [2]any{msg.CHEId, float64(msg.CHECursor)})
 			}
 
 			// batch processing

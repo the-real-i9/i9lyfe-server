@@ -9,6 +9,7 @@ import (
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/models/modelHelpers"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -19,29 +20,31 @@ func redisDB() *redis.Client {
 	return appGlobals.RedisClient
 }
 
-type newPostT struct {
+type NewPostT struct {
 	Id          string   `json:"id" db:"id_"`
 	Type        string   `json:"type" db:"type_"`
 	MediaUrls   []string `json:"media_urls" db:"media_urls"`
 	Description string   `json:"description"`
 	CreatedAt   int64    `json:"created_at" db:"created_at"`
 	OwnerUser   any      `json:"owner_user" db:"owner_user"`
-	Snum        float64  `json:"cursor" db:"snum"`
+	Cursor      int64    `json:"cursor" db:"cursor_"`
 }
 
-func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post newPostT, err error) {
-	newPost, err := pgDB.QueryRowType[newPostT](
+func New(ctx context.Context, clientUsername string, mediaCloudNames []string, postType, description string, at int64) (post NewPostT, err error) {
+	newPost, err := pgDB.QueryRowType[NewPostT](
 		ctx,
 		/* sql */ `
 		INSERT INTO posts (owner_user, type_, media_urls, description, created_at)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id_, owner_user, type_, media_urls, description, created_at, snum
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, cursor_
 		`, clientUsername, postType, mediaCloudNames, description, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newPostT{}, fiber.ErrInternalServerError
+		return NewPostT{}, fiber.ErrInternalServerError
 	}
+
+	newPost.Cursor += time.Now().UnixMicro()
 
 	return *newPost, nil
 }
@@ -145,8 +148,13 @@ func Delete(ctx context.Context, clientUsername, postId string) (mentionedUsers 
 	return mentionedUsers, nil
 }
 
-func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64) (string, error) {
-	postOwnerUser, err := pgDB.QueryRowField[string](
+type reactToT struct {
+	PostOwnerUser string `db:"owner_user"`
+	RxnCursor     int64  `db:"rxn_cursor"`
+}
+
+func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64) (reactToT, error) {
+	res, err := pgDB.QueryRowType[reactToT](
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
@@ -154,18 +162,19 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT ON CONSTRAINT no_dup_post_rxn DO UPDATE 
 			SET emoji = $3, at_ = $4
-			RETURNING true AS done
+			RETURNING cursor_
 		)
-		SELECT owner_user FROM posts
-		WHERE id_ = $2 AND (SELECT done FROM react_to) = true
+		SELECT p.owner_user AS owner_user, r.cursor_ AS rxn_cursor 
+		FROM posts p, react_to r
+		WHERE id_ = $2 AND r.cursor_ IS NOT NULL
 		`, clientUsername, postId, emoji, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return "", helpers.HandleDBError(err)
+		return reactToT{}, helpers.HandleDBError(err)
 	}
 
-	return *postOwnerUser, nil
+	return *res, nil
 }
 
 func GetReactors(ctx context.Context, clientUsername, postId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
@@ -209,18 +218,18 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 	return *done, nil
 }
 
-type newCommentT struct {
-	Id            string  `json:"id" db:"comment_id"`
-	OwnerUser     any     `json:"owner_user" db:"owner_user"`
-	CommentText   string  `json:"comment_text" db:"comment_text"`
-	AttachmentUrl string  `json:"attachment_url" db:"attachment_url"`
-	At            int64   `json:"at" db:"at_"`
-	Snum          float64 `json:"cursor" db:"snum"`
-	PostOwner     string  `json:"-" db:"post_owner"`
+type NewCommentT struct {
+	Id            string `json:"id" db:"comment_id"`
+	OwnerUser     any    `json:"owner_user" db:"owner_user"`
+	CommentText   string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl string `json:"attachment_url" db:"attachment_url"`
+	At            int64  `json:"at" db:"at_"`
+	Cursor        int64  `json:"cursor" db:"cursor_"`
+	PostOwner     string `json:"-" db:"post_owner"`
 }
 
-func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
-	newComment, err := pgDB.QueryRowType[newCommentT](
+func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (NewCommentT, error) {
+	newComment, err := pgDB.QueryRowType[NewCommentT](
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
@@ -228,12 +237,12 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, snum, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, cursor_, (SELECT p.owner_user FROM posts p WHERE id_ = $2) AS post_owner FROM comment_on
 		`, clientUsername, postId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newCommentT{}, helpers.HandleDBError(err)
+		return NewCommentT{}, helpers.HandleDBError(err)
 	}
 
 	return *newComment, nil
@@ -319,7 +328,7 @@ type RepostT struct {
 	CreatedAt    int64    `json:"created_at" db:"created_at"`
 	OwnerUser    any      `json:"owner_user" db:"owner_user"`
 	ReposterUser any      `json:"reposter_user" db:"reposted_by_user"`
-	Snum         float64  `json:"cursor" db:"snum"`
+	Cursor       int64    `json:"cursor" db:"cursor_"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (RepostT, error) {
@@ -329,7 +338,7 @@ func Repost(ctx context.Context, clientUsername, postId string, at int64) (Repos
 		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
 		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
 		WHERE id_ = $2
-		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, snum
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, cursor_
 		`, clientUsername, postId, at,
 	)
 	if err != nil {
@@ -337,24 +346,26 @@ func Repost(ctx context.Context, clientUsername, postId string, at int64) (Repos
 		return RepostT{}, fiber.ErrInternalServerError
 	}
 
+	repost.Cursor += time.Now().UnixMicro()
+
 	return *repost, nil
 }
 
-func Save(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := pgDB.QueryRowField[bool](
+func Save(ctx context.Context, clientUsername, postId string) (int64, error) {
+	saveCursor, err := pgDB.QueryRowField[int64](
 		ctx,
 		/* sql */ `
 		INSERT INTO user_saves_post(username, post_id)
 		VALUES ($1, $2)
-		RETURNING true AS done
+		RETURNING cursor_
 		`, clientUsername, postId,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return false, helpers.HandleDBError(err)
+		return 0, helpers.HandleDBError(err)
 	}
 
-	return *done, nil
+	return *saveCursor, nil
 }
 
 func Unsave(ctx context.Context, clientUsername, postId string) (bool, error) {

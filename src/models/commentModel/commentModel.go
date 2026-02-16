@@ -27,8 +27,13 @@ func Get(ctx context.Context, clientUsername, commentId string) (comment UITypes
 	return comment, nil
 }
 
-func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (string, error) {
-	commentOwner, err := pgDB.QueryRowField[string](
+type reactToT struct {
+	CommentOwnerUser string `db:"owner_user"`
+	RxnCursor        int64  `db:"rxn_cursor"`
+}
+
+func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (reactToT, error) {
+	res, err := pgDB.QueryRowType[reactToT](
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
@@ -36,18 +41,19 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT ON CONSTRAINT no_dup_comment_rxn DO UPDATE 
 			SET emoji = $3, at_ = $4
-			RETURNING true AS done
+			RETURNING cursor_
 		)
-		SELECT username FROM user_comments_on
-		WHERE comment_id = $2 AND (SELECT done FROM react_to) = true
+		SELECT c.username AS owner_user, r.cursor_ AS rxn_cursor 
+		FROM user_comments_on c, react_to r
+		WHERE comment_id = $2 AND r.cursor_ IS NOT NULL
 		`, clientUsername, commentId, emoji, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return "", helpers.HandleDBError(err)
+		return reactToT{}, helpers.HandleDBError(err)
 	}
 
-	return *commentOwner, nil
+	return *res, nil
 }
 
 func GetReactors(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) (reactors []UITypes.ReactorSnippet, err error) {
@@ -91,18 +97,18 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 	return *done, nil
 }
 
-type newCommentT struct {
-	Id                 string  `json:"id" db:"comment_id"`
-	OwnerUser          any     `json:"owner_user" db:"owner_user"`
-	CommentText        string  `json:"comment_text" db:"comment_text"`
-	AttachmentUrl      string  `json:"attachment_url" db:"attachment_url"`
-	At                 int64   `json:"at" db:"at_"`
-	Snum               float64 `json:"cursor" db:"snum"`
-	ParentCommentOwner string  `json:"-" db:"parent_comment_owner"`
+type NewCommentT struct {
+	Id                 string `json:"id" db:"comment_id"`
+	OwnerUser          any    `json:"owner_user" db:"owner_user"`
+	CommentText        string `json:"comment_text" db:"comment_text"`
+	AttachmentUrl      string `json:"attachment_url" db:"attachment_url"`
+	At                 int64  `json:"at" db:"at_"`
+	Cursor             int64  `json:"cursor" db:"cursor_"`
+	ParentCommentOwner string `json:"-" db:"parent_comment_owner"`
 }
 
-func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (newCommentT, error) {
-	newComment, err := pgDB.QueryRowType[newCommentT](
+func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (NewCommentT, error) {
+	newComment, err := pgDB.QueryRowType[NewCommentT](
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
@@ -110,12 +116,12 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, snum, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, cursor_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return newCommentT{}, helpers.HandleDBError(err)
+		return NewCommentT{}, helpers.HandleDBError(err)
 	}
 
 	return *newComment, nil

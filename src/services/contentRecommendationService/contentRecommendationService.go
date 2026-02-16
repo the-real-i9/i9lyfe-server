@@ -16,7 +16,7 @@ func rdb() *redis.Client {
 	return appGlobals.RedisClient
 }
 
-func FanOutPostToFollowers(postId string, score float64, user string) {
+func FanOutPostToFollowers(postId string, postCursor float64, user string) {
 	ctx := context.Background()
 
 	var nextCursor uint64
@@ -32,7 +32,7 @@ func FanOutPostToFollowers(postId string, score float64, user string) {
 			ctx := context.Background()
 
 			for _, fuser := range followers {
-				if err := cache.StoreUserFeedPosts(ctx, fuser, [][2]any{{postId, score}}); err != nil {
+				if err := cache.StoreUserFeedPosts(ctx, fuser, [][2]any{{postId, postCursor}}); err != nil {
 					helpers.LogError(err)
 					continue
 				}
@@ -42,8 +42,6 @@ func FanOutPostToFollowers(postId string, score float64, user string) {
 					helpers.LogError(err)
 					continue
 				}
-
-				postUI.Cursor = score
 
 				realtimeService.SendNewFeedPostEventMsg(fuser, postUI)
 			}

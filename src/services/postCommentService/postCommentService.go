@@ -8,10 +8,10 @@ import (
 	comment "i9lyfe/src/models/commentModel"
 	post "i9lyfe/src/models/postModel"
 	"i9lyfe/src/services/cloudStorageService"
-	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"regexp"
+	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -75,21 +75,19 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 		return nil, nil
 	}
 
-	now := float64(time.Now().UnixMicro())
+	go func(newPost post.NewPostT, clientUsername string, hashtags, mentions []string, at int64) {
+		eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
+			OwnerUser:  clientUsername,
+			PostId:     newPost.Id,
+			PostData:   helpers.ToJson(newPost),
+			Hashtags:   hashtags,
+			Mentions:   mentions,
+			At:         at,
+			PostCursor: newPost.Cursor,
+		})
+	}(newPost, clientUsername, hashtags, mentions, at)
 
-	go contentRecommendationService.FanOutPostToFollowers(newPost.Id, newPost.Snum+now, newPost.OwnerUser.(string))
-
-	go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
-		OwnerUser: clientUsername,
-		PostId:    newPost.Id,
-		PostData:  helpers.ToJson(newPost),
-		Hashtags:  hashtags,
-		Mentions:  mentions,
-		Score:     newPost.Snum + now,
-		At:        at,
-	})
-
-	return map[string]any{"new_post_id": newPost.Id, "cursor": newPost.Snum + now}, nil
+	return map[string]any{"new_post_id": newPost.Id, "post_cursor": newPost.Cursor}, nil
 }
 
 func GetPost(ctx context.Context, clientUsername, postId string) (UITypes.Post, error) {
@@ -113,31 +111,34 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (bool, error
 		// run a bg worker that:
 		// removes this post and all related data (likes, comments, etc.) from cache
 		// mark post and all related data (likes, comments, etc.) as deleted
-		go eventStreamService.QueuePostDeletionEvent(eventTypes.PostDeletionEvent{
-			OwnerUser: clientUsername,
-			PostId:    postId,
-			Mentions:  mentionedUsers,
-		})
+		go func() {
+			eventStreamService.QueuePostDeletionEvent(eventTypes.PostDeletionEvent{
+				OwnerUser: clientUsername,
+				PostId:    postId,
+				Mentions:  mentionedUsers,
+			})
+		}()
 	}
 
 	return done, nil
 }
 
 func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (bool, error) {
-	postOwner, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
+	res, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
 	if err != nil {
 		return false, err
 	}
 
-	done := postOwner != ""
+	done := res.PostOwnerUser != ""
 
 	if done {
 		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
 			ReactorUser: clientUsername,
-			PostOwner:   postOwner,
+			PostOwner:   res.PostOwnerUser,
 			PostId:      postId,
 			Emoji:       emoji,
 			At:          at,
+			RxnCursor:   res.RxnCursor,
 		})
 	}
 
@@ -190,20 +191,25 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 		return nil, nil
 	}
 
-	now := float64(time.Now().UnixMicro())
+	go func(newComment post.NewCommentT, clientUsername, postId string, mentions []string, at int64) {
+		// we're not creating mention notifications for the post owner
+		mentions = slices.DeleteFunc(mentions, func(u string) bool {
+			return u == newComment.PostOwner
+		})
 
-	go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
-		CommenterUser: clientUsername,
-		PostId:        postId,
-		PostOwner:     newComment.PostOwner,
-		CommentId:     newComment.Id,
-		CommentData:   helpers.ToJson(newComment),
-		Mentions:      mentions,
-		At:            at,
-		Score:         newComment.Snum + now,
-	})
+		eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
+			CommenterUser: clientUsername,
+			PostId:        postId,
+			PostOwner:     newComment.PostOwner,
+			CommentId:     newComment.Id,
+			CommentData:   helpers.ToJson(newComment),
+			Mentions:      mentions,
+			At:            at,
+			CommentCursor: newComment.Cursor,
+		})
+	}(newComment, clientUsername, postId, mentions, at)
 
-	return map[string]any{"new_comment_id": newComment.Id, "cursor": newComment.Snum + now}, nil
+	return map[string]any{"new_comment_id": newComment.Id, "comment_cursor": newComment.Cursor}, nil
 }
 
 func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit int, cursor float64) ([]UITypes.Comment, error) {
@@ -246,21 +252,22 @@ func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId 
 }
 
 func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (bool, error) {
-	commentOwner, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
+	res, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
 	if err != nil {
 		return false, err
 	}
 
-	done := commentOwner != ""
+	done := res.CommentOwnerUser != ""
 
 	if done {
 		// look to post reaction bg worker for todos
 		go eventStreamService.QueueCommentReactionEvent(eventTypes.CommentReactionEvent{
 			ReactorUser:  clientUsername,
 			CommentId:    commentId,
-			CommentOwner: commentOwner,
+			CommentOwner: res.CommentOwnerUser,
 			Emoji:        emoji,
 			At:           at,
+			RxnCursor:    res.RxnCursor,
 		})
 	}
 
@@ -314,20 +321,20 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 		return nil, nil
 	}
 
-	now := float64(time.Now().UnixMicro())
+	go func(newComment comment.NewCommentT, clientUsername, parentCommentId string, mentions []string, at int64) {
+		eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
+			CommenterUser:      clientUsername,
+			ParentCommentId:    parentCommentId,
+			ParentCommentOwner: newComment.ParentCommentOwner,
+			CommentId:          newComment.Id,
+			CommentData:        helpers.ToJson(newComment),
+			Mentions:           mentions,
+			At:                 at,
+			CommentCursor:      newComment.Cursor,
+		})
+	}(newComment, clientUsername, parentCommentId, mentions, at)
 
-	go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
-		CommenterUser:      clientUsername,
-		ParentCommentId:    parentCommentId,
-		ParentCommentOwner: newComment.ParentCommentOwner,
-		CommentId:          newComment.Id,
-		CommentData:        helpers.ToJson(newComment),
-		Mentions:           mentions,
-		At:                 at,
-		Score:              newComment.Snum + now,
-	})
-
-	return map[string]any{"new_comment_id": newComment.Id, "cursor": newComment.Snum + now}, nil
+	return map[string]any{"new_comment_id": newComment.Id, "comment_cursor": newComment.Cursor}, nil
 }
 
 func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string, limit int, cursor float64) ([]UITypes.Comment, error) {
@@ -371,37 +378,38 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (bool, error
 	done := repost.Id != ""
 
 	if done {
-		now := float64(time.Now().UnixMicro())
-
-		go contentRecommendationService.FanOutPostToFollowers(repost.Id, repost.Snum+now, repost.ReposterUser.(string))
-
-		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
-			ReposterUser: clientUsername,
-			PostId:       postId,
-			PostOwner:    repost.OwnerUser.(string),
-			RepostId:     repost.Id,
-			RepostData:   helpers.ToJson(repost),
-			Score:        repost.Snum + now,
-			At:           at,
-		})
+		go func(repost post.RepostT, clientUsername, postId string, at int64) {
+			eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
+				ReposterUser: clientUsername,
+				PostId:       postId,
+				PostOwner:    repost.OwnerUser.(string),
+				RepostId:     repost.Id,
+				RepostData:   helpers.ToJson(repost),
+				At:           at,
+				RepostCursor: repost.Cursor,
+			})
+		}(repost, clientUsername, postId, at)
 	}
 
 	return done, nil
 }
 
 func SavePost(ctx context.Context, clientUsername, postId string) (bool, error) {
-	done, err := post.Save(ctx, clientUsername, postId)
+	saveCursor, err := post.Save(ctx, clientUsername, postId)
 	if err != nil {
 		return false, err
 	}
+
+	done := saveCursor != 0
 
 	if done {
 		// add saves (saver users) to post
 		// add postId to saved posts for saver user
 		// publish latest post metric
 		go eventStreamService.QueuePostSaveEvent(eventTypes.PostSaveEvent{
-			SaverUser: clientUsername,
-			PostId:    postId,
+			SaverUser:  clientUsername,
+			PostId:     postId,
+			SaveCursor: saveCursor,
 		})
 	}
 
