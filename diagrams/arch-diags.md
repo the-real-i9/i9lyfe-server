@@ -1,7 +1,7 @@
 # Architecture Diagram
 
-API (C4) Container Level Diagram: [Open PlantUML Source](./arch.pu). *(Open with a PlantUML source visualizer.)*
+API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](editor.platuml.com))
 
 ### Sequence Diagrams
 
-Coming soon...
+*Coming soon...*

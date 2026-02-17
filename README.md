@@ -25,25 +25,30 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 
 ### Technologies
 - **Go** - Programming Language
-- **Fiber** - REST API Framework
+- **Fiber v3** - HTTP (REST) API Framework
 - **PostgreSQL** - Relational DBMS
 - **SQL** - Structured Query Language for Relational Databases
-- **PL/pgSQL** - Procedural Language for Database Programming
+- **PL/pgSQL** - Procedural Language for PostgreSQL. Stored functions.
 - **Neo4j** - Graph DBMS
-- **CypherQL** - Query Language for a Graph database
-- **WebSocket** - Full-duplex, Bi-directional communications protocol
-- **Redis Key/Value Store** (Cache)
-- **Redis Streams**
-- **Redis Pub/Sub**
-- **Redis Queue** (via LPOP, RPUSH, RPOP, LPUSH)
-- **Google Cloud Storage**
+- **CypherQL** - Query Language for Neo4j
+- **WebSocket** - Full-duplex, Bi-directional communications protocol. Realtime communication.
+- **Redis Key/Value Store** - Cache. Fast data structures. Pagination. Aggregation.
+- **Redis Streams** - Event-based messaging system. Background tasks queue.
+- **Redis Pub/Sub** - PubSub pattern messaging system
+- **Google Cloud Storage** - Cloud object storage
+---
+- **JWT** - User authentication. Token signing and verification.
+- **MessagePack** - Object serializer and deserializer (major use)
+- **JSON** - Object serializer and deserializer (minor use)
 
 ### Tools
-- Docker
-- Ubuntu Linux
+- **Swagger** - HTTP API Documentation
+- **AsyncAPI** - Websockets API Documention
+- **Docker** - Container running Postgres and Redis instances
+- **Git & GitHub** - Repository & Version Control
+- **GitHub Actions** - Continuous Integration. Unit & Integration Testing
 - VSCode
-- Git & GitHub Version Control
-- GitHub Actions CI
+- Ubuntu Linux
 
 ## Table of Contents
 
@@ -52,12 +57,15 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [Upcoming features](#upcoming-features)
-- [API Documentation](#api-documentation)
-- [API Diagrams](#api-diagrams)
-- [Technical Highlights](#technical-notes)
+- [API Documentation](#api-documentation-)
+- [API Diagrams](#api-diagrams-)
+- [Design Docs](#design-docs-)
+- [Articles](#articles-)
+
+<!-- - [Technical Highlights](#technical-notes)
   - [Why I serve all READ requests from Redis (cache).](#why-i-serve-all-read-requests-from-redis-cache)
   - [Why I offload content media processing to client-side.](#why-i-offload-content-media-processing-to-client-side)
-  - [Why event streaming and background workers?](#why-event-streaming-and-background-workers)
+  - [Why event streaming and background workers?](#why-event-streaming-and-background-workers) -->
 
 ## Features
 
@@ -69,7 +77,12 @@ The following are the features supported by this API. *Visit the API documentati
   - Mention users
   - Include hashtags
 
-### User Engagement with Posts and Comments
+### Feed
+
+- Browse posts from people you follow
+- Receive new posts in real-time.
+
+### Content Engagement and Interaction
 
 - **React** to Posts and Comments
 - **Comment** on Posts and Comments (replies).
@@ -77,38 +90,38 @@ The following are the features supported by this API. *Visit the API documentati
 - **Access Interactions:** Access comments on posts and replies to comments, and access the list of users who have reacted to a post or comment.
 - **Save** posts for later
 
-### User Profile
+### User Profile Management
 
 - Edit your profile.
 - Manage your posts.
 - Access to saved posts.
-- Access to contents you've engaged with through likes and comments.
-- Access to contents you we're mentioned in.
-- Access to other user profiles
+- Access to posts you've engaged with through likes and comments.
+- Access to posts you we're mentioned in.
+- Access to other user profiles.
 
 ### Networking
 
 - Follow or unfollow users.
 
-### Chatting and Messaging
+### Chatting and Direct Messaging
 
-- Realtime chatting with users of the application.
+- Realtime chat with users of the application.
 - Supports various message types including:
   - Text and voice message
   - Images and videos with caption
   - Audio
-  - File attachments
+  - File attachments (Documents)
 - Realtime user presence status and last seen.
 
 
 ### Realtime Notification and Message Delivery
 
-- Users receive likes, comments, reposts, and mentions notifications relating to them in realtime.
+- Users receive likes, comments, reposts, and mentions notifications involving them in realtime.
 - Chat messages are delivered to target users in realtime.
+- New posts are delivered to user's feed in realtime.
 
-### Real-Time Updates
+### Realtime Updates
 
-- New posts relevant to users are delivered to them in realtime.
 - Individual posts receive real-time interaction updates (upon client subscription).
 - Clients receive user "presence" and "last seen" updates (upon subscription)
 
@@ -126,7 +139,7 @@ The following is a list of features to be supported by this Social Media Backend
 - Search user accounts
 - Search hashtaged posts
 
-### Content Recommendation System | User Feed
+### Discover: Content Recommendation System
 
 - A content recommendation system that pushes relevant content to the user's feed, based on:
   - User following network
@@ -139,18 +152,37 @@ The following is a list of features to be supported by this Social Media Backend
 - App will recommend users to follow, based on your follow network and content interaction stats.
 
 
-## API Documentation
+## API Documentation &#x1f4d6;
 
-HTTP (REST) API: [Open Swagger JSON](./docs/swagger.json)
+HTTP API (REST): [Here](./docs/swagger.json). Open in [Swagger Editor](editor.swagger.io)
 
-WebSockets API: [Open AsyncAPI JSON](./docs/asyncapi.json)
+WebSockets API: [Here](./docs/asyncapi.json) Open in [AsyncAPI Editor](studio.asyncapi.com).
 
 
-## API Diagrams
+---
+---
 
-Architecture Diagrams: [See here](./diagrams/arch-diags.md)
+## API Diagrams &#x1f3a8;
 
-ER diagram: [Open DBML source](./diagrams/ER.dbml). *(Open in dbdiagram.io editor.)*
+Architecture Diagrams: [Here](./diagrams/arch-diags.md)
+
+ER diagram: [Here](https://dbdiagram.io/d/i9lyfe-6994420dbd82f5fce2ecaf23)
+
+## Design Docs &#x1f31f;
+
+API Components and Interactions (Discussed): [Here](./docs/design-docs/api-comps.md)
+
+Entities and Relationships (Discussed): [Here](./docs/design-docs/ER.md)
+
+API Request Handling Flow: [Here](./docs/design-docs/api-flow.md).\
+*How the backend handles each API request&#x2014;The flow of operations.*
+
+## Articles &#x1f4f0;
+*Coming Soon...*
+
+- [Design Decisions behind a High-performance API]()
+
+<!-- 
 
 ---
 ---
@@ -234,9 +266,7 @@ Then, a dedicated background worker watching and consuming this stream, performs
 
 > Event stream goes by several names including event stream, event queue, or background task queue. All these are the same thing.
 
-In this API, background tasks (side effects) include cache management, message delivery, expensive database operations, and more.
-
-### Why I parse user password field into byte slice.
+In this API, background tasks (side effects) include cache management, message delivery, expensive database operations, and more. -->
 
 <!-- - I store JWT and session data in encrypted cookie for authentication and stateless session management, ensuring security and scalability.
 
