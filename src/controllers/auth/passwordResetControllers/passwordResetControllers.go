@@ -32,7 +32,7 @@ func RequestPasswordReset(c fiber.Ctx) error {
 
 	var body requestPasswordResetBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func ConfirmEmail(c fiber.Ctx) error {
 
 	var body confirmEmailBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func ResetPassword(c fiber.Ctx) error {
 
 	var body resetPasswordBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}

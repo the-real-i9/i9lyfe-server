@@ -89,7 +89,7 @@ func EditUserProfile(c fiber.Ctx) error {
 
 	var body editProfileBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func AuthorizePPicUpload(c fiber.Ctx) error {
 
 	var body authorizePPicUploadBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func ChangeUserProfilePicture(c fiber.Ctx) error {
 
 	var body changeProfilePictureBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}

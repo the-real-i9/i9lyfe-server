@@ -56,7 +56,7 @@ CREATE TYPE public.msg_reaction_struct AS (
 ALTER TYPE public.msg_reaction_struct OWNER TO i9;
 
 --
--- Name: ack_msg(text, text, uuid, text, bigint); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: ack_msg(text, text, uuid[], text, bigint); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) RETURNS TABLE (last_msg_cursor bigint, done boolean)
@@ -109,7 +109,7 @@ RAISE EXCEPTION
 END;$$;
 
 
-ALTER FUNCTION public.ack_msg(from_user text, to_user text, msg_id uuid, ack_val text, at_val bigint) OWNER TO i9;
+ALTER FUNCTION public.ack_msg(from_user text, to_user text, msg_id uuid[], ack_val text, at_val bigint) OWNER TO i9;
 
 --
 -- Name: delete_msg(text, text, uuid, text, bigint); Type: FUNCTION; Schema: public; Owner: i9

@@ -34,7 +34,7 @@ func Signin(c fiber.Ctx) error {
 
 	var body signInBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}

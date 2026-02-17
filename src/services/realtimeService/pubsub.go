@@ -8,7 +8,7 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 
-	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/contrib/v3/websocket"
 )
 
 func publishContentMetric(ctx context.Context, data any, contentType string) {

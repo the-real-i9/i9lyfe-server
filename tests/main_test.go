@@ -1,4 +1,3 @@
-// User-story-based testing for server applications
 package tests
 
 import (
@@ -66,7 +65,10 @@ func TestMain(m *testing.M) {
 
 	defer initializers.CleanUp()
 
-	app = fiber.New()
+	app = fiber.New(fiber.Config{
+		MsgPackEncoder: msgpack.Marshal,
+		MsgPackDecoder: msgpack.Unmarshal,
+	})
 	app.Use(helmet.New())
 	app.Use(cors.New())
 

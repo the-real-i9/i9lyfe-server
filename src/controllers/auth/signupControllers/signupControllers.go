@@ -32,7 +32,7 @@ func RequestNewAccount(c fiber.Ctx) error {
 
 	var body requestNewAccountBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func VerifyEmail(c fiber.Ctx) error {
 
 	var body verifyEmailBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func RegisterUser(c fiber.Ctx) error {
 
 	var body registerUserBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}

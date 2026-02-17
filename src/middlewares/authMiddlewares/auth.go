@@ -1,6 +1,7 @@
 package authMiddlewares
 
 import (
+	"encoding/base64"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/securityServices"
@@ -10,7 +11,17 @@ import (
 )
 
 func UserAuthRequired(c fiber.Ctx) error {
-	usData := helpers.FromMsgPack[map[string]any](c.Cookies("session"))["user"]
+	sess := c.Cookies("session")
+	if sess == "" {
+		return c.Status(fiber.StatusUnauthorized).SendString("authentication required")
+	}
+
+	val, err := base64.RawURLEncoding.DecodeString(sess)
+	if err != nil {
+		return err
+	}
+
+	usData := helpers.FromBtMsgPack[map[string]any](val)["user"]
 
 	if usData == nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("authentication required")
@@ -29,7 +40,18 @@ func UserAuthRequired(c fiber.Ctx) error {
 }
 
 func UserAuthOptional(c fiber.Ctx) error {
-	usData := helpers.FromMsgPack[map[string]any](c.Cookies("session"))["user"]
+	sess := c.Cookies("session")
+	if sess == "" {
+		c.Locals("user", appTypes.ClientUser{})
+		return c.Next()
+	}
+
+	val, err := base64.RawURLEncoding.DecodeString(sess)
+	if err != nil {
+		return err
+	}
+
+	usData := helpers.FromBtMsgPack[map[string]any](val)["user"]
 
 	if usData == nil {
 		c.Locals("user", appTypes.ClientUser{})

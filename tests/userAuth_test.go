@@ -196,7 +196,7 @@ func TestSignup(t *testing.T) {
 				"msg":  "Signup success!",
 			}, nil))
 
-		<-time.NewTimer(500 * time.Millisecond).C /* wait for redis to queue and bg worker to add to cache */
+		<-time.NewTimer(400 * time.Millisecond).C /* wait for redis to queue and bg worker to add to cache */
 
 		userExists, err := rdb().HExists(t.Context(), "users", user1.Username).Result()
 		require.NoError(t, err)

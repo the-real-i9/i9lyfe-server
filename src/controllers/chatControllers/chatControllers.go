@@ -15,7 +15,7 @@ func AuthorizeUpload(c fiber.Ctx) error {
 
 	var body authorizeUploadBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func AuthorizeVisualUpload(c fiber.Ctx) error {
 
 	var body authorizeVisualUploadBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}

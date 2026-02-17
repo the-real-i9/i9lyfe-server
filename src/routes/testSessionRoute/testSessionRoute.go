@@ -13,10 +13,10 @@ import (
 func Route(router fiber.Router) {
 	router.Post("/signup/request_new_account", func(c fiber.Ctx) error {
 		var body struct {
-			Email string
+			Email string `msgpack:"email"`
 		}
 
-		if err := c.Bind().Body(&body); err != nil {
+		if err := c.Bind().MsgPack(&body); err != nil {
 			return err
 		}
 
@@ -37,10 +37,10 @@ func Route(router fiber.Router) {
 
 	router.Post("/signup/verify_email", func(c fiber.Ctx) error {
 		var body struct {
-			Email string
+			Email string `msgpack:"email"`
 		}
 
-		if err := c.Bind().Body(&body); err != nil {
+		if err := c.Bind().MsgPack(&body); err != nil {
 			return err
 		}
 
@@ -55,10 +55,10 @@ func Route(router fiber.Router) {
 
 	router.Post("/forgot_password/request_password_reset", func(c fiber.Ctx) error {
 		var body struct {
-			Email string
+			Email string `msgpack:"email"`
 		}
 
-		if err := c.Bind().Body(&body); err != nil {
+		if err := c.Bind().MsgPack(&body); err != nil {
 			return err
 		}
 
@@ -79,10 +79,10 @@ func Route(router fiber.Router) {
 
 	router.Post("/forgot_password/confirm_email", func(c fiber.Ctx) error {
 		var body struct {
-			Email string
+			Email string `msgpack:"email"`
 		}
 
-		if err := c.Bind().Body(&body); err != nil {
+		if err := c.Bind().MsgPack(&body); err != nil {
 			return err
 		}
 
@@ -97,10 +97,10 @@ func Route(router fiber.Router) {
 
 	router.Post("auth_user", func(c fiber.Ctx) error {
 		var body struct {
-			Username string
+			Username string `msgpack:"username"`
 		}
 
-		if err := c.Bind().Body(&body); err != nil {
+		if err := c.Bind().MsgPack(&body); err != nil {
 			return err
 		}
 

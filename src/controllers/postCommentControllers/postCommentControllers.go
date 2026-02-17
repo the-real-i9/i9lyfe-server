@@ -13,7 +13,7 @@ func AuthorizePostUpload(c fiber.Ctx) error {
 
 	var body authorizePostUploadBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func AuthorizeCommentUpload(c fiber.Ctx) error {
 
 	var body authorizeCommentUploadBody
 
-	err := c.Bind().Body(&body)
+	err := c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func CreateNewPost(c fiber.Ctx) error {
 
 	var err error
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func ReactToPost(c fiber.Ctx) error {
 
 	var body reactToPostBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func CommentOnPost(c fiber.Ctx) error {
 
 	var body commentOnPostBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func ReactToComment(c fiber.Ctx) error {
 
 	var body reactToCommentBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
@@ -345,7 +345,7 @@ func CommentOnComment(c fiber.Ctx) error {
 
 	var body commentOnCommentBody
 
-	err = c.Bind().Body(&body)
+	err = c.Bind().MsgPack(&body)
 	if err != nil {
 		return err
 	}
