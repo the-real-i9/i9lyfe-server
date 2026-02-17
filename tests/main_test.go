@@ -45,12 +45,12 @@ const wsPath = WSHOST_URL + "/api/app/private/ws"
 const testSessionPath = "/__test_session"
 
 type UserT struct {
-	Email          string
-	Username       string
-	Name           string
-	Password       string
-	Birthday       int64
-	Bio            string
+	Email          string              `msgpack:"email"`
+	Username       string              `msgpack:"username"`
+	Name           string              `msgpack:"name"`
+	Password       string              `msgpack:"password"`
+	Birthday       int64               `msgpack:"birthday"`
+	Bio            string              `msgpack:"bio"`
 	SessionCookie  string              `msgpack:"-"`
 	WSConn         *websocket.Conn     `msgpack:"-"`
 	ServerEventMsg chan map[string]any `msgpack:"-"`

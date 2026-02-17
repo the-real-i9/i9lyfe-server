@@ -61,11 +61,10 @@ func Session(kvPairs map[string]any, path string, maxAge int) *fiber.Cookie {
 		Domain:   os.Getenv("SERVER_HOST"),
 	}
 
-	mp := ToBtMsgPack(kvPairs)
-	val := base64.RawURLEncoding.EncodeToString(mp)
+	
 
 	c.Name = "session"
-	c.Value = val
+	c.Value = base64.RawURLEncoding.EncodeToString(ToBtMsgPack(kvPairs))
 	c.Path = path
 	c.MaxAge = maxAge
 
