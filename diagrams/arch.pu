@@ -1,8 +1,6 @@
 @startuml i9lyfe_api_arch
 !include <C4/C4_Component>
 
-' !includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
-
 title Component Diagram for i9lyfe API Server
 
 ' Container(api, "i9lyfe API Server", "Go")
@@ -13,7 +11,7 @@ System(cloudStorageSystem, "Cloud Storage System", "Google Cloud Storage")
 ContainerDb(database, "Database", "PostgreSQL")
 ContainerDb(kvstore, "Key-Value Store Database", "Redis")
 ContainerQueue(eventStream, "Event-Stream Messaging System", "Redis Streams")
-ContainerDb(pubsubMS, "Pub/Sub Messaging System", "Redis Pub/Sub")
+ContainerQueue(pubsubMS, "Pub/Sub Messaging System", "Redis Pub/Sub")
 
 Component(cloudStorageService, "Cloud Storage Service", "GCS Go client library", "Consists functions for GCS bucket management, converting object cloud names to download URLs")
 Rel(cloudStorageService, cloudStorageSystem, "Uses")
@@ -25,7 +23,7 @@ Component(securityServices, "Security Services", "Go, golang-jwt, bcrypt", "Cons
 Component(mailService, "Mail Service", "Go, gomail.v2, crypto/tls", "Consists a function for sending email to client")
 Component(eventStreamService, "Event Stream Service", "Go, go-redis (XAdd)", "Consists functions for queueing events into Redis Streams")
 Rel(mailService, emailSystem, "Uses")
-Rel(eventStreamService, eventStream, "Add events to")
+Rel(eventStreamService, eventStream, "Queue events in")
 
 Component(realtimeService, "Realtime Service", "Go, sync.Map, go-redis (Publish, Subscribe), websocket", "Consists functions for managing active user sockets, subscribing clients to pub/sub channels for realtime updates, publishing messages to channels, sending server event messages like new-chat, new-message, new-post, new-notification etc. to client")
 Rel(realtimeService, pubsubMS, "Calls (Publish/Subscribe)")
@@ -92,7 +90,7 @@ Rel(realtimeController, userService, "Calls")
 Rel(realtimeController, realtimeService, "Calls")
 
 Component(backgroundWorkers, "Background Workers", "Go, go-redis", "Consist long-running functions that consume stream messages (dequeueing events) and execute background tasks including caching, realtime, eventual message delivery, and other expensive, side data-manipulation operations")
-Rel(backgroundWorkers, eventStream, "Dequeue")
+BiRel(backgroundWorkers, eventStream, "Dequeue events from")
 Rel(backgroundWorkers, database, "Read/Write")
 Rel(backgroundWorkers, cache, "Calls")
 Rel(backgroundWorkers, realtimeService, "Calls")
