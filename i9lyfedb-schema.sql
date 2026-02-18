@@ -67,7 +67,7 @@ DECLARE
 BEGIN
 
 FOREACH msg_id IN ARRAY msg_id_list LOOP
-SELECT EXISTS (SELECT true FROM chat_history_in_chat 
+SELECT EXISTS (SELECT true FROM chat_history_entry_in_chat 
 WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
 INTO msg_received_in_chat;
 
@@ -121,7 +121,7 @@ CREATE FUNCTION public.delete_msg(from_user text, to_user text, msg_id uuid, del
 BEGIN
 
 IF deletefor = 'everyone' THEN
-	UPDATE chat_history_in_chat
+	UPDATE chat_history_entry_in_chat
 	SET deleted = true, deleted_at = at_val
 	WHERE che_id = msg_id AND (
 		owner_user = from_user AND partner_user = to_user AND receipt = 'sent' 
@@ -132,7 +132,7 @@ IF deletefor = 'everyone' THEN
 		RETURN true;
 	END IF;
 ELSIF deletefor = 'me' THEN
-	UPDATE chat_history_in_chat
+	UPDATE chat_history_entry_in_chat
 	SET deleted = true, deleted_at = at_val
 	WHERE che_id = msg_id AND owner_user = from_user AND partner_user = to_user AND receipt IN ('sent', 'received');
 	IF FOUND THEN
@@ -161,7 +161,7 @@ cursor_val bigint;
 reactor_user json;
 BEGIN
 
-SELECT EXISTS (SELECT 1 FROM chat_history_in_chat 
+SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat 
 WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND (
 SELECT type_ FROM chat_history_entry WHERE id_ = msg_id) = 'message'
 )
@@ -180,11 +180,11 @@ ON CONFLICT ON CONSTRAINT no_dup_msg_rxn DO UPDATE
 SET emoji = emoji_val, reaction_at = at_val
 RETURNING id_, cursor_ INTO che_id_val, cursor_val;
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (from_user, to_user, che_id_val, 'sent')
 ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received')
 ON CONFLICT ON CONSTRAINT no_dup_che DO NOTHING;
 
@@ -207,7 +207,7 @@ DECLARE
 msg_in_chat bool;
 che_id_val uuid;
 BEGIN
-SELECT EXISTS (SELECT 1 FROM chat_history_in_chat 
+SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat 
 WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND (
 	SELECT type_ FROM chat_history_entry WHERE id_ = msg_id) = 'message'
 )
@@ -247,7 +247,7 @@ first_from_user boolean := false;
 first_to_user boolean := false;
 BEGIN
 
-SELECT EXISTS (SELECT 1 FROM chat_history_in_chat 
+SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat 
 WHERE owner_user = from_user AND partner_user = to_user AND che_id = reply_target_msg_id AND (
 SELECT type_ FROM chat_history_entry WHERE id_ = reply_target_msg_id) = 'message'
 )
@@ -278,10 +278,10 @@ INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_statu
 VALUES ('message', content_val, from_user, 'sent', created_at_val, reply_target_msg_id)
 RETURNING id_, cursor_ INTO che_id_val, cursor_val;
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (from_user, to_user, che_id_val, 'sent');
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
 
 SELECT json_build_object('id', id_, 'content', content_, 'sender_username', sender_username)
@@ -329,10 +329,10 @@ INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_statu
 VALUES ('message', content_val, from_user, 'sent', created_at_val)
 RETURNING id_, cursor_ INTO che_id_val, cursor_val;
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (from_user, to_user, che_id_val, 'sent');
 
-INSERT INTO chat_history_in_chat (owner_user, partner_user, che_id, receipt)
+INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
 
 RETURN ROW(che_id_val, 'message', content_val, 'sent', created_at_val, from_user, null, cursor_val, first_from_user, first_to_user)::message_struct;
@@ -374,21 +374,21 @@ CREATE TABLE public.chat_history_entry (
 ALTER TABLE public.chat_history_entry OWNER TO i9;
 
 --
--- Name: chat_history_in_chat; Type: TABLE; Schema: public; Owner: i9
+-- Name: chat_history_entry_in_chat; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.chat_history_in_chat (
+CREATE TABLE public.chat_history_entry_in_chat (
 	owner_user text NOT NULL,
 	partner_user text NOT NULL,
 	che_id uuid NOT NULL,
 	receipt text NOT NULL,
 	deleted boolean,
 	deleted_at bigint,
-	CONSTRAINT chat_history_in_chat_receipt_check CHECK ((receipt = ANY (ARRAY['sent'::text, 'received'::text])))
+	CONSTRAINT chat_history_entry_in_chat_receipt_check CHECK ((receipt = ANY (ARRAY['sent'::text, 'received'::text])))
 );
 
 
-ALTER TABLE public.chat_history_in_chat OWNER TO i9;
+ALTER TABLE public.chat_history_entry_in_chat OWNER TO i9;
 
 --
 -- Name: comment_mentions_user; Type: TABLE; Schema: public; Owner: i9
@@ -647,10 +647,10 @@ ALTER TABLE ONLY public.user_saves_post
 
 
 --
--- Name: chat_history_in_chat no_dup_che; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat_history_entry_in_chat no_dup_che; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.chat_history_in_chat
+ALTER TABLE ONLY public.chat_history_entry_in_chat
 	ADD CONSTRAINT no_dup_che UNIQUE (owner_user, partner_user, che_id);
 
 
@@ -727,11 +727,11 @@ ALTER TABLE ONLY public.chat_history_entry
 
 
 --
--- Name: chat_history_in_chat chat_history_in_chat_che_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat_history_entry_in_chat chat_history_entry_in_chat_che_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.chat_history_in_chat
-	ADD CONSTRAINT chat_history_in_chat_che_id_fkey FOREIGN KEY (che_id) REFERENCES public.chat_history_entry(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.chat_history_entry_in_chat
+	ADD CONSTRAINT chat_history_entry_in_chat_che_id_fkey FOREIGN KEY (che_id) REFERENCES public.chat_history_entry(id_) ON DELETE CASCADE;
 
 
 --
@@ -751,10 +751,10 @@ ALTER TABLE ONLY public.comment_mentions_user
 
 
 --
--- Name: chat_history_in_chat hist_in_chat; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chat_history_entry_in_chat hist_in_chat; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.chat_history_in_chat
+ALTER TABLE ONLY public.chat_history_entry_in_chat
 	ADD CONSTRAINT hist_in_chat FOREIGN KEY (owner_user, partner_user) REFERENCES public.user_chats_user(owner_user, partner_user) ON DELETE CASCADE;
 
 

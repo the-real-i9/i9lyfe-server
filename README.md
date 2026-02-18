@@ -179,7 +179,8 @@ API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](
 API ER diagram: [Here](./diagrams/ER.dbml). View in [DBDiagram Editor](dbdiagram.io).
 
 ### Sequence Diagrams
-*Coming Soon...*
+
+API sequence diagrams: [Here](./diagrams/sequence-diagrams.md)
 
 ## Articles &#x1f4f0;
 *Coming Soon...*

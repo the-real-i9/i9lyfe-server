@@ -1,0 +1,51 @@
+---
+title: i9lyfe ER Diagram
+config:
+    layout: elk
+    theme: dark
+    elk:
+---
+erDiagram
+    users ||--o{ posts : creates
+
+    users ||--o{ user_follows_user : follows
+    users ||--o{ user_follows_user : is_followed
+
+    posts ||--o{ post_mentions_user : mentions
+    users ||--o{ post_mentions_user : is_mentioned
+
+    posts ||--o{ post_includes_hashtag : includes
+    hashtags ||--|{ post_includes_hashtag : is_included
+
+    users ||--o{ user_reacts_to_post: reacts_to
+    posts ||--o{ user_reacts_to_post: is_reacted_to
+
+    users ||--o{ user_saves_post: saves
+    posts ||--o{ user_saves_post: is_saved
+
+    users ||--o{ user_comments_on_post: comments_on
+    posts ||--o{ user_comments_on_post: is_commented_on
+
+    comments ||--o{ comment_mentions_user : mentions
+    users ||--o{ comment_mentions_user : is_mentioned
+
+    users ||--o{ user_reacts_to_comment: reacts_to
+    comments ||--o{ user_reacts_to_comment: is_reacted_to
+
+    users ||--o{ user_chats_user : chats
+    users ||--o{ user_chats_user : is_chatted
+
+    user_chats_user ||--o{ chat_history_entry_in_chat : contains
+    chat_history_entry ||--|| chat_history_entry_in_chat : exists
+
+    users {
+      text username PK
+      text email UK
+      text password_
+      text name_
+      text bio
+      text profile_pic_url
+      text presence
+      bigint birthday
+      bigint last_seen
+    }

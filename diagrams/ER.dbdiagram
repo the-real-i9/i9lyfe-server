@@ -83,7 +83,7 @@
       "y": 728
     },
     {
-      "name": "chat_history_in_chat",
+      "name": "chat_history_entry_in_chat",
       "schemaName": "public",
       "x": 648,
       "y": 216
@@ -477,7 +477,7 @@
       "secondFieldNames": [
         "che_id"
       ],
-      "secondTableName": "chat_history_in_chat",
+      "secondTableName": "chat_history_entry_in_chat",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -487,7 +487,7 @@
         "owner_user",
         "partner_user"
       ],
-      "firstTableName": "chat_history_in_chat",
+      "firstTableName": "chat_history_entry_in_chat",
       "firstSchemaName": "public",
       "firstRelation": "*",
       "secondFieldNames": [

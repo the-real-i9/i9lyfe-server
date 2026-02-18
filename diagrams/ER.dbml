@@ -161,7 +161,7 @@ Table chat_history_entry {
   }
 }
 
-Table chat_history_in_chat {
+Table chat_history_entry_in_chat {
   owner_user text [NOT NULL]
   partner_user text [NOT NULL]
   che_id uuid [NOT NULL, ref: > chat_history_entry.id_]
@@ -178,7 +178,7 @@ Table chat_history_in_chat {
   }
 }
 
-Ref hist_in_chat: chat_history_in_chat.(owner_user, partner_user) > user_chats_user.(owner_user, partner_user)
+Ref hist_in_chat: chat_history_entry_in_chat.(owner_user, partner_user) > user_chats_user.(owner_user, partner_user)
 
 
 
