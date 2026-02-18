@@ -14,6 +14,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetUserProfile(t *testing.T) {
+	require := require.New(t)
+
+	// Test Cases
+	// 1. view a profile as a non-logged-in user
+	// 2. view a profile as a logged-in user
+	// 3. view a profile that has followers and followings
+	// 4. view a profile (user) that you follow
+	// 4. view a profile (user) that follows you
+}
+
 func XTestUserPersonalOperationsStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)

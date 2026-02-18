@@ -65,7 +65,7 @@ type SignedInUserT struct {
 	Password      string `msgpack:"-" db:"password_"`
 }
 
-func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error) {
+func SigninFind(ctx context.Context, uniqueIdent string) (SignedInUserT, error) {
 	user, err := pgDB.QueryRowType[SignedInUserT](
 		ctx,
 		/* sql */ `
@@ -76,10 +76,10 @@ func SigninFind(ctx context.Context, uniqueIdent string) (*SignedInUserT, error)
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return SignedInUserT{}, fiber.ErrInternalServerError
 	}
 
-	return user, nil
+	return *user, nil
 }
 
 func ChangePassword(ctx context.Context, email string, newPassword string) (string, error) {

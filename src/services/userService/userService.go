@@ -32,13 +32,22 @@ func NewUser(ctx context.Context, email, username, name, bio string, birthday in
 			Username: newUser.Username,
 			UserData: helpers.ToMsgPack(newUser),
 		})
+
+		newUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(newUser.ProfilePicUrl)
 	}
 
 	return newUser, nil
 }
 
-func SigninUserFind(ctx context.Context, uniqueIdent string) (*user.SignedInUserT, error) {
-	return user.SigninFind(ctx, uniqueIdent)
+func SigninUserFind(ctx context.Context, uniqueIdent string) (user.SignedInUserT, error) {
+	user, err := user.SigninFind(ctx, uniqueIdent)
+	if err != nil {
+		return user, err
+	}
+
+	user.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(user.ProfilePicUrl)
+
+	return user, nil
 }
 
 func ChangeUserPassword(ctx context.Context, email string, newPassword string) (bool, error) {
@@ -207,7 +216,6 @@ func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) 
 
 func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
 	return user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
-
 }
 
 func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {

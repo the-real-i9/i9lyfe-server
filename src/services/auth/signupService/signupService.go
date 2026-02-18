@@ -7,7 +7,6 @@ import (
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
 
-	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"
 	"i9lyfe/src/services/userService"
@@ -117,8 +116,6 @@ func RegisterUser(ctx context.Context, sessionData msgpack.RawMessage, username,
 	if err != nil {
 		return resp, "", err
 	}
-
-	newUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(newUser.ProfilePicUrl)
 
 	resp.Msg = "Signup success!"
 	resp.User = UITypes.ClientUser{Username: newUser.Username, Name: newUser.Name, ProfilePicUrl: newUser.ProfilePicUrl}

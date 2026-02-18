@@ -5,7 +5,6 @@ import (
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/userService"
 	"time"
 
@@ -33,8 +32,6 @@ func GetSessionUser(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
-	user.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(user.ProfilePicUrl)
 
 	return c.MsgPack(UITypes.ClientUser{Username: user.Username, Name: user.Name, ProfilePicUrl: user.ProfilePicUrl})
 }

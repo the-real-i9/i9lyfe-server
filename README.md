@@ -59,7 +59,9 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
 - [Upcoming features](#upcoming-features)
 - [API Documentation](#api-documentation-)
 - [API Diagrams](#api-diagrams-)
-- [Design Docs](#design-docs-)
+  - [Architecture Diagram](#architecture-diagram)
+  - [ER Diagram](#entity-relationship-diagram)
+  - [Sequence Diagrams](#sequence-diagrams)
 - [Articles](#articles-)
 
 <!-- - [Technical Highlights](#technical-notes)
@@ -92,12 +94,13 @@ The following are the features supported by this API. *Visit the API documentati
 
 ### User Profile Management
 
+- View your profile
+- Access to other user profiles.
 - Edit your profile.
 - Manage your posts.
 - Access to saved posts.
 - Access to posts you've engaged with through likes and comments.
 - Access to posts you we're mentioned in.
-- Access to other user profiles.
 
 ### Networking
 
@@ -159,23 +162,17 @@ HTTP API (REST): [Here](./docs/swagger.json). Open in [Swagger Editor](editor.sw
 WebSockets API: [Here](./docs/asyncapi.json) Open in [AsyncAPI Editor](studio.asyncapi.com).
 
 
----
----
-
 ## API Diagrams &#x1f3a8;
 
-Architecture Diagrams: [Here](./diagrams/arch-diags.md)
+### Architecture Diagram
+API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](editor.platuml.com))
 
-ER diagram: [Here](https://dbdiagram.io/d/i9lyfe-6994420dbd82f5fce2ecaf23)
+### Entity-Relationship Diagram
 
-## Design Docs &#x1f31f;
+API ER diagram: [Here](./diagrams/ER.dbml). View in [DBDiagram Editor](dbdiagram.io).
 
-API Components and Interactions (Discussed): [Here](./docs/design-docs/api-comps.md)
-
-Entities and Relationships (Discussed): [Here](./docs/design-docs/ER.md)
-
-API Request Handling Flow: [Here](./docs/design-docs/api-flow.md).\
-*How the backend handles each API request&#x2014;The flow of operations.*
+### Sequence Diagrams
+*Coming Soon...*
 
 ## Articles &#x1f4f0;
 *Coming Soon...*

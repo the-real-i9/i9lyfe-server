@@ -4,7 +4,6 @@ import (
 	"context"
 	"i9lyfe/src/appTypes"
 	"i9lyfe/src/appTypes/UITypes"
-	"i9lyfe/src/services/cloudStorageService"
 	"i9lyfe/src/services/securityServices"
 	"i9lyfe/src/services/userService"
 	"os"
@@ -26,7 +25,7 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinR
 		return resp, "", err
 	}
 
-	if theUser == nil {
+	if theUser.Username == "" {
 		return resp, "", fiber.NewError(fiber.StatusNotFound, "Incorrect email or password")
 	}
 
@@ -48,8 +47,6 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinR
 	if err != nil {
 		return resp, "", err
 	}
-
-	theUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(theUser.ProfilePicUrl)
 
 	resp.Msg = "Signin success!"
 	resp.User = UITypes.ClientUser{Username: theUser.Username, Name: theUser.Name, ProfilePicUrl: theUser.ProfilePicUrl}
