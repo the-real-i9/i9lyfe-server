@@ -176,7 +176,9 @@ API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](
 
 ### Entity-Relationship Diagram
 
-API ER diagram: [Here](./diagrams/ER.dbml). View in [DBDiagram Editor](dbdiagram.io).
+DBDiagram.io version: [Here](./diagrams/ER.dbml). View in [DBDiagram Editor](dbdiagram.io).
+
+Mermaid version: [Here](./diagrams/ER.mermaid).
 
 ### Sequence Diagrams
 
