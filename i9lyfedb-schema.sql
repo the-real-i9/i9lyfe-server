@@ -449,6 +449,7 @@ CREATE TABLE public.posts (
 	description text DEFAULT ''::text NOT NULL,
 	deleted boolean DEFAULT false,
 	reposted_by_user text,
+	reposted_post_id uuid,
 	created_at bigint,
 	deleted_at bigint,
 	cursor_ bigserial,
@@ -804,6 +805,14 @@ ALTER TABLE ONLY public.posts
 
 ALTER TABLE ONLY public.posts
 	ADD CONSTRAINT posts_reposted_by_user_fkey FOREIGN KEY (reposted_by_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: posts posts_reposted_post_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.posts
+	ADD CONSTRAINT posts_reposted_post_id_fkey FOREIGN KEY (reposted_post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
 
 
 --

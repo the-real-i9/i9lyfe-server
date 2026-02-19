@@ -378,17 +378,17 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (bool, error
 	done := repost.Id != ""
 
 	if done {
-		go func(repost post.RepostT, clientUsername, postId string, at int64) {
+		go func(repost post.RepostT, clientUsername string, at int64) {
 			eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
 				ReposterUser: clientUsername,
-				PostId:       postId,
+				PostId:       repost.RepostedPostId,
 				PostOwner:    repost.OwnerUser.(string),
 				RepostId:     repost.Id,
 				RepostData:   helpers.ToMsgPack(repost),
 				At:           at,
 				RepostCursor: repost.Cursor,
 			})
-		}(repost, clientUsername, postId, at)
+		}(repost, clientUsername, at)
 	}
 
 	return done, nil

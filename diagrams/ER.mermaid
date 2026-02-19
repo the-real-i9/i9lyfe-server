@@ -3,7 +3,6 @@ title: i9lyfe ER Diagram
 config:
     layout: elk
     theme: dark
-    elk:
 ---
 erDiagram
     users ||--o{ posts : creates
@@ -32,20 +31,11 @@ erDiagram
     users ||--o{ user_reacts_to_comment: reacts_to
     comments ||--o{ user_reacts_to_comment: is_reacted_to
 
+    users }o--o{ posts : reposts
+    posts ||--o{ posts : has_repost
+
     users ||--o{ user_chats_user : chats
     users ||--o{ user_chats_user : is_chatted
 
     user_chats_user ||--o{ chat_history_entry_in_chat : contains
     chat_history_entry ||--|| chat_history_entry_in_chat : exists
-
-    users {
-      text username PK
-      text email UK
-      text password_
-      text name_
-      text bio
-      text profile_pic_url
-      text presence
-      bigint birthday
-      bigint last_seen
-    }

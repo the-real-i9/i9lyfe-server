@@ -321,24 +321,25 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 }
 
 type RepostT struct {
-	Id           string   `msgpack:"id" db:"id_"`
-	Type         string   `msgpack:"type" db:"type_"`
-	MediaUrls    []string `msgpack:"media_urls" db:"media_urls"`
-	Description  string   `msgpack:"description"`
-	CreatedAt    int64    `msgpack:"created_at" db:"created_at"`
-	OwnerUser    any      `msgpack:"owner_user" db:"owner_user"`
-	ReposterUser any      `msgpack:"reposter_user" db:"reposted_by_user"`
-	Cursor       int64    `msgpack:"cursor" db:"cursor_"`
+	Id             string   `msgpack:"id" db:"id_"`
+	Type           string   `msgpack:"type" db:"type_"`
+	MediaUrls      []string `msgpack:"media_urls" db:"media_urls"`
+	Description    string   `msgpack:"description"`
+	CreatedAt      int64    `msgpack:"created_at" db:"created_at"`
+	OwnerUser      any      `msgpack:"owner_user" db:"owner_user"`
+	ReposterUser   any      `msgpack:"reposter_user" db:"reposted_by_user"`
+	RepostedPostId string   `msgpack:"reposted_post_id" db:"reposted_post_id"`
+	Cursor         int64    `msgpack:"cursor" db:"cursor_"`
 }
 
 func Repost(ctx context.Context, clientUsername, postId string, at int64) (RepostT, error) {
 	repost, err := pgDB.QueryRowType[RepostT](
 		ctx,
 		/* sql */ `
-		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user)
-		SELECT owner_user, type_, media_urls, description, $3, $1 FROM posts
+		INSERT INTO posts (owner_user, type_, media_urls, description, created_at, reposted_by_user, reposted_post_id)
+		SELECT owner_user, type_, media_urls, description, $3, $1, $2 FROM posts
 		WHERE id_ = $2
-		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, cursor_
+		RETURNING id_, owner_user, type_, media_urls, description, created_at, reposted_by_user, reposted_post_id, cursor_
 		`, clientUsername, postId, at,
 	)
 	if err != nil {

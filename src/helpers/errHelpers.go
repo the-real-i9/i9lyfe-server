@@ -56,6 +56,9 @@ func humanizeForeignKeyError(pgErr *pgconn.PgError) error {
 	case "user_reacts_to_comment_comment_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified comment does not exist")
 
+	case "posts_reposted_post_id_fkey":
+		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
+
 	case "user_saves_post_post_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
 

@@ -33,6 +33,7 @@ Table posts {
   description text [DEFAULT: '""', NOT NULL]
   deleted boolean [DEFAULT: false]
   reposted_by_user text [ref: > users.username]
+  reposted_post_id uuid [ref: > posts.id_]
   created_at bigint
   deleted_at bigint
   cursor_ bigserial
