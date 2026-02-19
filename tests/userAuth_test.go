@@ -42,7 +42,7 @@ func TestSignup(t *testing.T) {
 
 		require.Equal(t, "A user with this email already exists.", rb)
 
-		err = requestNewAccountCleanUp(t.Context(), user1.Username)
+		err = requestNewAccountTeardown(t.Context(), user1.Username)
 		require.NoError(t, err)
 	})
 
@@ -202,7 +202,7 @@ func TestSignup(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, userExists)
 
-		err = registerUserCleanUp(t.Context(), user1.Username)
+		err = registerUserTeardown(t.Context(), user1.Username)
 		require.NoError(t, err)
 	})
 }
@@ -264,7 +264,7 @@ func TestSignin(t *testing.T) {
 				"msg": "Signin success!",
 			}, nil))
 	})
-	err = signinUserCleanUp(t.Context(), user2.Username)
+	err = signinUserTeardown(t.Context(), user2.Username)
 	require.NoError(t, err)
 }
 
@@ -450,6 +450,6 @@ func TestForgotPassword(t *testing.T) {
 			}, nil))
 	})
 
-	err = forgotPasswordCleanUp(t.Context(), user4.Username)
+	err = forgotPasswordTeardown(t.Context(), user4.Username)
 	require.NoError(t, err)
 }

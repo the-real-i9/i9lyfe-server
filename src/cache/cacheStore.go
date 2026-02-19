@@ -68,9 +68,9 @@ func StoreUserFeedPosts(ctx context.Context, user string, postId_score_Pairs [][
 	return nil
 }
 
-func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_stmsgId_Pair [][2]any) error {
+func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_score_Pair [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range followerUser_stmsgId_Pair {
+	for _, pair := range followerUser_score_Pair {
 		user := pair[0]
 
 		members = append(members, redis.Z{
@@ -88,9 +88,9 @@ func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_
 	return nil
 }
 
-func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_stmsgId_Pairs [][2]any) error {
+func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_score_Pairs [][2]any) error {
 	members := []redis.Z{}
-	for _, pair := range followingUser_stmsgId_Pairs {
+	for _, pair := range followingUser_score_Pairs {
 		user := pair[0]
 
 		members = append(members, redis.Z{

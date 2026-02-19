@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -14,15 +15,82 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestGetUserProfile(t *testing.T) {
-	// require := require.New(t)
+func TestGetUserProfile(t *testing.T) {
+	teardown, err := getUserProfileSetup(t.Context(), user1, user2)
+	require.NoError(t, err)
 
-	// Test Cases
-	// 1. view a profile as a non-logged-in user
-	// 2. view a profile as a logged-in user
-	// 3. view a profile that has followers and followings
-	// 4. view a profile (user) that you follow
-	// 4. view a profile (user) that follows you
+	t.Run("view profile: [client not logged in | user has followers]", func(t *testing.T) {
+		req := httptest.NewRequest("GET", appPathPublic+"/"+user1.Username, nil)
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
+
+		res, err := app.Test(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		profile, err := succResBody[map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), profile, td.SuperMapOf(map[string]any{
+			"username":         user1.Username,
+			"name":             user1.Name,
+			"bio":              user1.Bio,
+			"posts_count":      td.Lax(0),
+			"followers_count":  td.Lax(1),
+			"followings_count": td.Lax(0),
+			"me_follow":        false,
+			"follows_me":       false,
+		}, nil))
+	})
+
+	t.Run("view profile: [user follows client]", func(t *testing.T) {
+		reqBody, err := makeReqBody(map[string]any{"username": user1.Username})
+		require.NoError(t, err)
+
+		req := httptest.NewRequest("POST", testSessionPath+"/auth_user", reqBody)
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
+
+		res, err := app.Test(req)
+		require.NoError(t, err)
+
+		/* ---------- */
+
+		req = httptest.NewRequest("GET", appPathPublic+"/"+user2.Username, nil)
+		req.Header.Add("Cookie", res.Header.Get("Set-Cookie"))
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
+
+		res, err = app.Test(req)
+		require.NoError(t, err)
+
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
+			require.NoError(t, err)
+			t.Log("unexpected error:", rb)
+			return
+		}
+
+		profile, err := succResBody[map[string]any](res.Body)
+		require.NoError(t, err)
+
+		td.Cmp(td.Require(t), profile, td.SuperMapOf(map[string]any{
+			"username":         user2.Username,
+			"name":             user2.Name,
+			"bio":              user2.Bio,
+			"posts_count":      td.Lax(0),
+			"followers_count":  td.Lax(0),
+			"followings_count": td.Lax(1),
+			"me_follow":        false,
+			"follows_me":       true,
+		}, nil))
+	})
+
+	err = teardown(t.Context())
+	require.NoError(t, err)
 }
 
 func XTestUserPersonalOperationsStory(t *testing.T) {

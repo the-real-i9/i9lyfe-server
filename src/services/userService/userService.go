@@ -209,7 +209,7 @@ func ReadUserNotification(ctx context.Context, clientUsername, year, month, noti
 
 }
 
-func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (any, error) {
+func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (UITypes.UserProfile, error) {
 	return user.GetProfile(ctx, clientUsername, targetUsername)
 
 }
