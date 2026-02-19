@@ -1,61 +1,163 @@
-basePath: /api
-definitions:
-  UITypes.ClientUser:
-    properties:
-      name:
-        type: string
-      profilePicUrl:
-        type: string
-      username:
-        type: string
-    type: object
-  appErrors.HTTPError:
-    properties:
-      code:
-        type: integer
-      message:
-        type: string
-    type: object
-  passwordResetService.passReset1RespT:
-    properties:
-      msg:
-        type: string
-    type: object
-  passwordResetService.passReset2RespT:
-    properties:
-      msg:
-        type: string
-    type: object
-  passwordResetService.passReset3RespT:
-    properties:
-      msg:
-        type: string
-    type: object
-  signinService.signinRespT:
-    properties:
-      msg:
-        type: string
-      user:
-        $ref: '#/definitions/UITypes.ClientUser'
-    type: object
-  signupService.signup1RespT:
-    properties:
-      msg:
-        type: string
-    type: object
-  signupService.signup2RespT:
-    properties:
-      msg:
-        type: string
-    type: object
-  signupService.signup3RespT:
-    properties:
-      msg:
-        type: string
-      user:
-        $ref: '#/definitions/UITypes.ClientUser'
-    type: object
-host: localhost:8000
+components:
+  schemas:
+    UITypes.ClientUser:
+      properties:
+        name:
+          type: string
+        profile_pic_url:
+          type: string
+        username:
+          type: string
+      type: object
+    appErrors.HTTPError:
+      type: object
+    passwordResetControllers.confirmEmailBody:
+      properties:
+        token:
+          maxLength: 6
+          minLength: 6
+          type: string
+      type: object
+    passwordResetControllers.requestPasswordResetBody:
+      properties:
+        email:
+          format: email
+          type: string
+      type: object
+    passwordResetControllers.resetPasswordBody:
+      properties:
+        confirmNewPassword:
+          format: password
+          type: string
+        newPassword:
+          format: password
+          type: string
+      type: object
+    passwordResetService.passReset1RespT:
+      properties:
+        msg:
+          type: string
+      type: object
+    passwordResetService.passReset2RespT:
+      properties:
+        msg:
+          type: string
+      type: object
+    passwordResetService.passReset3RespT:
+      properties:
+        msg:
+          type: string
+      type: object
+    postCommentControllers.authorizeCommentUploadBody:
+      properties:
+        attachment_mime:
+          type: string
+        attachment_size:
+          type: integer
+      type: object
+    postCommentControllers.authorizePostUploadBody:
+      properties:
+        media_mime:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        media_sizes:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          uniqueItems: false
+        post_type:
+          type: string
+      type: object
+    postCommentService.AuthCommAttDataT:
+      properties:
+        attachmentCloudName:
+          type: string
+        uploadUrl:
+          type: string
+      type: object
+    postCommentService.AuthPostMediaDataT:
+      properties:
+        mediaCloudName:
+          type: string
+        uploadUrl:
+          type: string
+      type: object
+    signinControllers.signInBody:
+      properties:
+        emailOrUsername:
+          type: string
+        password:
+          format: password
+          type: string
+      type: object
+    signinService.signinRespT:
+      properties:
+        msg:
+          type: string
+        user:
+          $ref: '#/components/schemas/UITypes.ClientUser'
+      type: object
+    signupControllers.registerUserBody:
+      properties:
+        bio:
+          type: string
+        birthday:
+          type: integer
+        name:
+          type: string
+        password:
+          format: password
+          type: string
+        username:
+          type: string
+      type: object
+    signupControllers.requestNewAccountBody:
+      properties:
+        email:
+          format: email
+          type: string
+      type: object
+    signupControllers.verifyEmailBody:
+      properties:
+        code:
+          maxLength: 6
+          minLength: 6
+          type: string
+      type: object
+    signupService.signup1RespT:
+      properties:
+        msg:
+          type: string
+      type: object
+    signupService.signup2RespT:
+      properties:
+        msg:
+          type: string
+      type: object
+    signupService.signup3RespT:
+      properties:
+        msg:
+          type: string
+        user:
+          $ref: '#/components/schemas/UITypes.ClientUser'
+      type: object
+    userControllers.changeProfilePictureBody:
+      type: object
+    userControllers.editProfileBody:
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      description: JWT API key in encrypted cookie to protect private endpoints
+      in: header
+      name: Cookie
+      type: apiKey
+externalDocs:
+  description: ""
+  url: ""
 info:
   contact:
     email: oluwarinolasam@gmail.com
@@ -63,30 +165,76 @@ info:
   description: i9lyfe Social Media Backend API.
   title: i9lyfe Backend API
   version: "1.0"
+openapi: 3.1.0
 paths:
+  /app/private/comment_upload/authorize:
+    post:
+      description: Authorization for comment upload
+      parameters:
+      - description: User session request cookie
+        in: header
+        name: Cookie
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postCommentControllers.authorizeCommentUploadBody'
+              description: Request body
+              summary: authorizeCommentUploadBody
+        description: Request body
+        required: true
+      responses:
+        "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/postCommentService.AuthCommAttDataT'
+          description: OK
+        "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
+          description: Validation Error
+        "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
+          description: Server Error
+      summary: Authorize comment upload
+      tags:
+      - app/private
   /app/private/me:
     get:
       description: Get info on the user currently in session
       parameters:
-      - collectionFormat: csv
-        description: User session request cookie
+      - description: User session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/UITypes.ClientUser'
           description: User info
-          schema:
-            $ref: '#/definitions/UITypes.ClientUser'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Get session user
       tags:
       - app/private
@@ -94,33 +242,36 @@ paths:
     put:
       description: Change user profile picture
       parameters:
-      - description: Profile picture data
-        in: body
-        name: picture_data
+      - description: User session request cookie
+        in: header
+        name: Cookie
         required: true
         schema:
           items:
-            type: integer
+            type: string
           type: array
-      - collectionFormat: csv
-        description: User session request cookie
-        in: header
-        items:
-          type: string
-        name: Cookie
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/userControllers.changeProfilePictureBody'
+              description: Request body
+              summary: changeProfilePictureBody
+        description: Request body
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                type: boolean
           description: Done
-          schema:
-            type: boolean
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Change user profile picture
       tags:
       - app/private
@@ -128,40 +279,35 @@ paths:
     put:
       description: Edit user profile
       parameters:
-      - description: User's Name field
-        in: body
-        name: name
-        schema:
-          type: string
-      - description: User's Birthday field in milliseconds since Unix Epoch
-        in: body
-        name: birthday
-        schema:
-          type: integer
-      - description: User's Bio field
-        in: body
-        name: bio
-        schema:
-          type: string
-      - collectionFormat: csv
-        description: User session request cookie
+      - description: User session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/userControllers.editProfileBody'
+              description: Request body
+              summary: editProfileBody
+        description: Request body
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                type: boolean
           description: Done
-          schema:
-            type: boolean
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Edit user profile
       tags:
       - app/private
@@ -169,26 +315,73 @@ paths:
     get:
       description: Signout the user currently in session
       parameters:
-      - collectionFormat: csv
-        description: User session request cookie
+      - description: User session request cookie
         in: header
-        items:
-          type: string
         name: Cookie
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                type: string
           description: Bye message
-          schema:
-            type: string
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Signout user
+      tags:
+      - app/private
+  /app/private/post_upload/authorize:
+    post:
+      description: Authorization for post upload
+      parameters:
+      - description: User session request cookie
+        in: header
+        name: Cookie
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postCommentControllers.authorizePostUploadBody'
+              description: Request body
+              summary: authorizePostUploadBody
+        description: Request body
+        required: true
+      responses:
+        "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                items:
+                  $ref: '#/components/schemas/postCommentService.AuthPostMediaDataT'
+                type: array
+          description: OK
+        "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
+          description: Validation Error
+        "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
+          description: Server Error
+      summary: Authorize post upload
       tags:
       - app/private
   /app/private/users/:username/follow:
@@ -199,30 +392,35 @@ paths:
         in: path
         name: username
         required: true
-        type: string
-      - collectionFormat: csv
-        description: User session request cookie
-        in: header
-        items:
+        schema:
           type: string
+      - description: User session request cookie
+        in: header
         name: Cookie
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                type: boolean
           description: Done
-          schema:
-            type: boolean
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Validation error | User trying to follow self
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Follow user
       tags:
       - app/private
@@ -234,363 +432,347 @@ paths:
         in: path
         name: username
         required: true
-        type: string
-      - collectionFormat: csv
-        description: User session request cookie
-        in: header
-        items:
+        schema:
           type: string
+      - description: User session request cookie
+        in: header
         name: Cookie
         required: true
-        type: array
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                type: boolean
           description: Done
-          schema:
-            type: boolean
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Unfollow user
       tags:
       - app/private
   /auth/forgot_password/confirm_email:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Provide the 6-digit token sent to email
       parameters:
-      - description: 6-digit token
-        in: body
-        name: token
-        required: true
-        schema:
-          type: string
       - description: Password Reset session request cookie
         in: header
         name: Cookie
         required: true
-        type: string
-      produces:
-      - application/vnd.msgpack
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/passwordResetControllers.confirmEmailBody'
+              description: Request body
+              summary: confirmEmailBody
+        description: Request body
+        required: true
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/passwordResetService.passReset2RespT'
           description: Email confirmed. You're about to reset your password
           headers:
             Set-cookie:
               description: Password Reset session request cookie
-              type: string
-          schema:
-            $ref: '#/definitions/passwordResetService.passReset2RespT'
+              schema:
+                type: string
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Incorrect or expired confirmation token
-          headers:
-            Set-cookie:
-              description: Password Reset session request cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          headers:
-            Set-cookie:
-              description: Password Reset session request cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Password Reset - Step 2
       tags:
       - auth
   /auth/forgot_password/request_password_reset:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Submit your email to request a password reset
-      parameters:
-      - description: Provide your email address
-        in: body
-        name: email
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/passwordResetControllers.requestPasswordResetBody'
+              description: Request body
+              summary: requestPasswordResetBody
+        description: Request body
         required: true
-        schema:
-          type: string
-      produces:
-      - application/vnd.msgpack
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/passwordResetService.passReset1RespT'
           description: Proceed to email confirmation
           headers:
             Set-cookie:
               description: Password Reset session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/passwordResetService.passReset1RespT'
+              schema:
+                type: string
         "404":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: No user with this email exists
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Password Reset - Step 1
       tags:
       - auth
   /auth/forgot_password/reset_password:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Set new password
       parameters:
-      - description: Choose a new password
-        in: body
-        name: newPassword
-        required: true
-        schema:
-          type: string
-      - description: Conform new password
-        in: body
-        name: confirmNewPassword
-        required: true
-        schema:
-          type: string
       - description: Password Reset session request cookie
         in: header
         name: Cookie
         required: true
-        type: string
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/passwordResetControllers.resetPasswordBody'
+              description: Choose a new password
+              summary: resetPasswordBody
+          application/vnd.msgpack:
+            schema:
+              type: string
+        description: Choose a new password
+        required: true
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/passwordResetService.passReset3RespT'
           description: Password changed successfully
-          schema:
-            $ref: '#/definitions/passwordResetService.passReset3RespT'
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Passwords mismatch.
-          headers:
-            Set-cookie:
-              description: Password Reset session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          headers:
-            Set-cookie:
-              description: Password Reset session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Password Reset user - Step 3
       tags:
       - auth
   /auth/signin:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Signin with email/username and password
-      parameters:
-      - description: Email or Username
-        in: body
-        name: EmailOrUsername
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signinControllers.signInBody'
+              description: Request body
+              summary: signInBody
+        description: Request body
         required: true
-        schema:
-          type: string
-      - description: User Password
-        in: body
-        name: Password
-        required: true
-        schema:
-          type: string
-      produces:
-      - application/vnd.msgpack
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/signinService.signinRespT'
           description: Signin Success!
           headers:
             Set-cookie:
               description: Authenticated user session response cookie containing auth
                 JWT
-              type: string
-          schema:
-            $ref: '#/definitions/signinService.signinRespT'
+              schema:
+                type: string
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Bad Request
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "404":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Incorrect credentials
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Signin user
       tags:
       - auth
   /auth/signup/register_user:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Provide remaining user credentials
       parameters:
-      - description: Choose a username
-        in: body
-        name: username
-        required: true
-        schema:
-          type: string
-      - description: Choose a password
-        in: body
-        name: password
-        required: true
-        schema:
-          type: string
-      - description: User display name
-        in: body
-        name: name
-        required: true
-        schema:
-          type: string
-      - description: User birthday in milliseconds since Unix Epoch
-        in: body
-        name: birthday
-        required: true
-        schema:
-          type: integer
-      - description: User bio (optional)
-        in: body
-        name: bio
-        schema:
-          type: string
       - description: Signup session request cookie
         in: header
         name: Cookie
         required: true
-        type: string
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signupControllers.registerUserBody'
+              description: Request body
+              summary: registerUserBody
+          application/vnd.msgpack:
+            schema:
+              type: string
+        description: Request body
+        required: true
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/signupService.signup3RespT'
           description: Signup Success
           headers:
             Set-cookie:
               description: Authenticated user session response cookie containing auth
                 JWT
-              type: string
-          schema:
-            $ref: '#/definitions/signupService.signup3RespT'
+              schema:
+                type: string
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Incorrect or expired verification code
-          headers:
-            Set-cookie:
-              description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          headers:
-            Set-cookie:
-              description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 3
       tags:
       - auth
   /auth/signup/request_new_account:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Submit email to request a new account
-      parameters:
-      - description: Provide your email address
-        in: body
-        name: email
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signupControllers.requestNewAccountBody'
+              description: Request body
+              summary: requestNewAccountBody
+        description: Request body
         required: true
-        schema:
-          type: string
-      produces:
-      - application/vnd.msgpack
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/signupService.signup1RespT'
           description: Proceed to email verification
           headers:
             Set-cookie:
               description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/signupService.signup1RespT'
+              schema:
+                type: string
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: An account with email already exists
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 1
       tags:
       - auth
   /auth/signup/verify_email:
     post:
-      consumes:
-      - application/vnd.msgpack
       description: Provide the 6-digit code sent to email
       parameters:
-      - description: 6-digit code
-        in: body
-        name: code
-        required: true
-        schema:
-          type: string
       - description: Signup session request cookie
         in: header
         name: Cookie
         required: true
-        type: string
-      produces:
-      - application/vnd.msgpack
+        schema:
+          items:
+            type: string
+          type: array
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/signupControllers.verifyEmailBody'
+              description: Request body
+              summary: verifyEmailBody
+        description: Request body
+        required: true
       responses:
         "200":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/signupService.signup2RespT'
           description: Email verified
           headers:
             Set-cookie:
               description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/signupService.signup2RespT'
+              schema:
+                type: string
         "400":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Incorrect or expired verification code
-          headers:
-            Set-cookie:
-              description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
         "500":
+          content:
+            application/vnd.msgpack:
+              schema:
+                $ref: '#/components/schemas/appErrors.HTTPError'
           description: Internal Server Error
-          headers:
-            Set-cookie:
-              description: Signup session response cookie
-              type: string
-          schema:
-            $ref: '#/definitions/appErrors.HTTPError'
       summary: Signup user - Step 2
       tags:
       - auth
-schemes:
-- http
-- https
-securityDefinitions:
-  ApiKeyAuth:
-    description: JWT API key in encrypted cookie to protect private endpoints
-    in: header
-    name: Cookie
-    type: apiKey
-swagger: "2.0"
+servers:
+- url: https://localhost:8000/api

@@ -15,6 +15,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/vmihailenco/msgpack/v5"
+
+	_ "i9lyfe/docs"
 )
 
 func init() {
@@ -30,18 +32,15 @@ func init() {
 //	@contact.name	i9ine
 //	@contact.email	oluwarinolasam@gmail.com
 
-//	@host		localhost:8000
-//	@BasePath	/api
+//	@servers.url	https://localhost:8000/api
 
 //	@securityDefinitions.apikey	ApiKeyAuth
 //	@in							header
 //	@name						Cookie
 //	@description				JWT API key in encrypted cookie to protect private endpoints
 
-//	@accepts	application/vnd.msgpack
-//	@produces	application/vnd.msgpack
-
-// @schemes	http https
+// @accepts	application/vnd.msgpack
+// @produces	application/vnd.msgpack
 func main() {
 	defer initializers.CleanUp()
 

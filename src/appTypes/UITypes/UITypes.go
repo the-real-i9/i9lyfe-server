@@ -1,9 +1,9 @@
 package UITypes
 
 type ClientUser struct {
-	Username      string `msgpack:"username"`
-	Name          string `msgpack:"name"`
-	ProfilePicUrl string `msgpack:"profile_pic_url"`
+	Username      string `msgpack:"username" json:"username"`
+	Name          string `msgpack:"name" json:"name"`
+	ProfilePicUrl string `msgpack:"profile_pic_url" json:"profile_pic_url"`
 }
 
 type NotifUser struct {

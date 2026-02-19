@@ -438,8 +438,8 @@ func UnsavePost(ctx context.Context, clientUsername, postId string) (bool, error
 /* ------------- */
 
 type AuthCommAttDataT struct {
-	UploadUrl           string `msgpack:"uploadUrl"`
-	AttachmentCloudName string `msgpack:"attachmentCloudName"`
+	UploadUrl           string `msgpack:"uploadUrl" json:"uploadUrl"`
+	AttachmentCloudName string `msgpack:"attachmentCloudName" json:"attachmentCloudName"`
 }
 
 func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCommAttDataT, error) {
@@ -459,8 +459,8 @@ func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCom
 }
 
 type AuthPostMediaDataT struct {
-	UploadUrl      string `msgpack:"uploadUrl"`
-	MediaCloudName string `msgpack:"mediaCloudName"`
+	UploadUrl      string `msgpack:"uploadUrl" json:"uploadUrl"`
+	MediaCloudName string `msgpack:"mediaCloudName" json:"mediaCloudName"`
 }
 
 func AuthorizePostMediaUpload(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthPostMediaDataT, error) {

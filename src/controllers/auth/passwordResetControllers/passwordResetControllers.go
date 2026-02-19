@@ -14,10 +14,9 @@ import (
 //	@Summary		Password Reset - Step 1
 //	@Description	Submit your email to request a password reset
 //	@Tags			auth
-//	@Accept			application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			email	body		string									true	"Provide your email address"
+//	@Param			requestPasswordResetBody	body		requestPasswordResetBody									true	"Request body"
 //
 //	@Success		200		{object}	passwordResetService.passReset1RespT	"Proceed to email confirmation"
 //	@Header			200		{string}	Set-cookie								"Password Reset session response cookie"
@@ -60,20 +59,17 @@ func RequestPasswordReset(c fiber.Ctx) error {
 //	@Summary		Password Reset - Step 2
 //	@Description	Provide the 6-digit token sent to email
 //	@Tags			auth
-//	@Accept			application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			token	body		string									true	"6-digit token"
+//	@Param			confirmEmailBody	body		confirmEmailBody									true	"Request body"
 //	@Param			Cookie	header		string									true	"Password Reset session request cookie"
 //
 //	@Success		200		{object}	passwordResetService.passReset2RespT	"Email confirmed. You're about to reset your password"
 //	@Header			200		{string}	Set-cookie								"Password Reset session request cookie"
 //
 //	@Failure		400		{object}	appErrors.HTTPError						"Incorrect or expired confirmation token"
-//	@Header			400		{string}	Set-cookie								"Password Reset session request cookie"
 //
 //	@Failure		500		{object}	appErrors.HTTPError
-//	@Header			500		{string}	Set-cookie	"Password Reset session request cookie"
 //
 //	@Router			/auth/forgot_password/confirm_email [post]
 func ConfirmEmail(c fiber.Ctx) error {
@@ -114,18 +110,15 @@ func ConfirmEmail(c fiber.Ctx) error {
 //	@Accept			application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			newPassword			body		string									true	"Choose a new password"
-//	@Param			confirmNewPassword	body		string									true	"Conform new password"
+//	@Param			resetPasswordBody			body		resetPasswordBody									true	"Choose a new password"
 //
-//	@Param			Cookie				header		string									true	"Password Reset session request cookie"
+//	@Param			Cookie				header		[]string									true	"Password Reset session request cookie"
 //
 //	@Success		200					{object}	passwordResetService.passReset3RespT	"Password changed successfully"
 //
 //	@Failure		400					{object}	appErrors.HTTPError						"Passwords mismatch."
-//	@Header			400					{string}	Set-cookie								"Password Reset session response cookie"
 //
 //	@Failure		500					{object}	appErrors.HTTPError
-//	@Header			500					{string}	Set-cookie	"Password Reset session response cookie"
 //
 //	@Router			/auth/forgot_password/reset_password [post]
 func ResetPassword(c fiber.Ctx) error {

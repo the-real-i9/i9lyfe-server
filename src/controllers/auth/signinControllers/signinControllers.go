@@ -13,20 +13,18 @@ import (
 //	@Summary		Signin user
 //	@Description	Signin with email/username and password
 //	@Tags			auth
-//	@Accept			application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			EmailOrUsername	body		string						true	"Email or Username"
-//	@Param			Password		body		string						true	"User Password"
+//	@Param			signInBody	body		signInBody					true	"Request body"
 //
-//	@Success		200				{object}	signinService.signinRespT	"Signin Success!"
-//	@Header			200				{string}	Set-cookie					"Authenticated user session response cookie containing auth JWT"
+//	@Success		200			{object}	signinService.signinRespT	"Signin Success!"
+//	@Header			200			{string}	Set-cookie					"Authenticated user session response cookie containing auth JWT"
 //
-//	@Failure		400				{object}	appErrors.HTTPError
+//	@Failure		400			{object}	appErrors.HTTPError
 //
-//	@Failure		404				{object}	appErrors.HTTPError	"Incorrect credentials"
+//	@Failure		404			{object}	appErrors.HTTPError	"Incorrect credentials"
 //
-//	@Failure		500				{object}	appErrors.HTTPError
+//	@Failure		500			{object}	appErrors.HTTPError
 //
 //	@Router			/auth/signin [post]
 func Signin(c fiber.Ctx) error {

@@ -66,9 +66,7 @@ func Signout(c fiber.Ctx) error {
 //	@Accepts		application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			name		body		string		false	"User's Name field"
-//	@Param			birthday	body		int			false	"User's Birthday field in milliseconds since Unix Epoch"
-//	@Param			bio			body		string		false	"User's Bio field"
+//	@Param			editProfileBody		body		editProfileBody		false	"Request body"
 //
 //	@Param			Cookie		header		[]string	true	"User session request cookie"
 //
@@ -133,7 +131,7 @@ func AuthorizePPicUpload(c fiber.Ctx) error {
 //	@Accepts		application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
-//	@Param			picture_data	body		[]byte		true	"Profile picture data"
+//	@Param			changeProfilePictureBody	body		changeProfilePictureBody		true	"Request body"
 //
 //	@Param			Cookie			header		[]string	true	"User session request cookie"
 //

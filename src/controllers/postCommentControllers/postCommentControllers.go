@@ -8,6 +8,24 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// Authorize post upload
+//
+//	@Summary		Authorize post upload
+//	@Description	Authorization for post upload
+//	@Tags			app/private
+//	@Produce		application/vnd.msgpack
+//
+//	@Param			Cookie					header		[]string				true	"User session request cookie"
+//
+//	@Param			authorizePostUploadBody	body		authorizePostUploadBody	true	"Request body"
+//
+//	@Success		200						{array}		postCommentService.AuthPostMediaDataT
+//
+//	@Failure		400						{object}	appErrors.HTTPError	"Validation Error"
+//
+//	@Failure		500						{object}	appErrors.HTTPError	"Server Error"
+//
+//	@Router			/app/private/post_upload/authorize [post]
 func AuthorizePostUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
@@ -30,6 +48,24 @@ func AuthorizePostUpload(c fiber.Ctx) error {
 	return c.MsgPack(respData)
 }
 
+// Authorize comment upload
+//
+//	@Summary		Authorize comment upload
+//	@Description	Authorization for comment upload
+//	@Tags			app/private
+//	@Produce		application/vnd.msgpack
+//
+//	@Param			Cookie						header		[]string					true	"User session request cookie"
+//
+//	@Param			authorizeCommentUploadBody	body		authorizeCommentUploadBody	true	"Request body"
+//
+//	@Success		200							{object}	postCommentService.AuthCommAttDataT
+//
+//	@Failure		400							{object}	appErrors.HTTPError	"Validation Error"
+//
+//	@Failure		500							{object}	appErrors.HTTPError	"Server Error"
+//
+//	@Router			/app/private/comment_upload/authorize [post]
 func AuthorizeCommentUpload(c fiber.Ctx) error {
 	ctx := c.Context()
 
