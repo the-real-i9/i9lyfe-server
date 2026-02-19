@@ -12,9 +12,9 @@ import (
 )
 
 type editProfileBody struct {
-	Name     string `msgpack:"name"`
-	Birthday int64  `msgpack:"birthday"`
-	Bio      string `msgpack:"bio"`
+	Name     string `msgpack:"name,omitempty" json:"name"`
+	Birthday int64  `msgpack:"birthday,omitempty" json:"birthday"`
+	Bio      string `msgpack:"bio,omitempty" json:"bio" maxLength:"150"`
 }
 
 func (b editProfileBody) Validate() error {
@@ -28,8 +28,8 @@ func (b editProfileBody) Validate() error {
 }
 
 type authorizePPicUploadBody struct {
-	PicMIME string   `msgpack:"pic_mime"`
-	PicSize [3]int64 `msgpack:"pic_size"` // {small, medium, large}
+	PicMIME string   `msgpack:"pic_mime" json:"pic_mime" format:"mime"`
+	PicSize [3]int64 `msgpack:"pic_size" json:"pic_size" minItems:"3" maxItems:"3"`
 }
 
 func (b authorizePPicUploadBody) Validate() error {
@@ -72,7 +72,7 @@ func (b authorizePPicUploadBody) Validate() error {
 }
 
 type changeProfilePictureBody struct {
-	ProfilePicCloudName string `msgpack:"profile_pic_cloud_name"`
+	ProfilePicCloudName string `msgpack:"profile_pic_cloud_name" json:"profile_pic_cloud_name" format:"path"`
 }
 
 func (b changeProfilePictureBody) Validate(ctx context.Context) error {

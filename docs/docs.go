@@ -14,6 +14,7 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "profile_pic_url": {
+                        "format": "url",
                         "type": "string"
                     },
                     "username": {
@@ -23,6 +24,14 @@ const docTemplate = `{
                 "type": "object"
             },
             "appErrors.HTTPError": {
+                "properties": {
+                    "code": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
                 "type": "object"
             },
             "passwordResetControllers.confirmEmailBody": {
@@ -84,6 +93,13 @@ const docTemplate = `{
             "postCommentControllers.authorizeCommentUploadBody": {
                 "properties": {
                     "attachment_mime": {
+                        "enum": [
+                            "image/jpeg",
+                            "image/png",
+                            "image/webp",
+                            "image/avif",
+                            "image/gif"
+                        ],
                         "type": "string"
                     },
                     "attachment_size": {
@@ -112,6 +128,15 @@ const docTemplate = `{
                         "uniqueItems": false
                     },
                     "post_type": {
+                        "enum": [
+                            "photo:portrait",
+                            "photo:square",
+                            "photo:landscape",
+                            "video:portrait",
+                            "video:square",
+                            "video:landscape",
+                            "reel"
+                        ],
                         "type": "string"
                     }
                 },
@@ -120,9 +145,11 @@ const docTemplate = `{
             "postCommentService.AuthCommAttDataT": {
                 "properties": {
                     "attachmentCloudName": {
+                        "format": "path",
                         "type": "string"
                     },
                     "uploadUrl": {
+                        "format": "url",
                         "type": "string"
                     }
                 },
@@ -131,9 +158,11 @@ const docTemplate = `{
             "postCommentService.AuthPostMediaDataT": {
                 "properties": {
                     "mediaCloudName": {
+                        "format": "path",
                         "type": "string"
                     },
                     "uploadUrl": {
+                        "format": "url",
                         "type": "string"
                     }
                 },
@@ -165,6 +194,7 @@ const docTemplate = `{
             "signupControllers.registerUserBody": {
                 "properties": {
                     "bio": {
+                        "maxLength": 150,
                         "type": "string"
                     },
                     "birthday": {
@@ -230,9 +260,27 @@ const docTemplate = `{
                 "type": "object"
             },
             "userControllers.changeProfilePictureBody": {
+                "properties": {
+                    "profile_pic_cloud_name": {
+                        "format": "path",
+                        "type": "string"
+                    }
+                },
                 "type": "object"
             },
             "userControllers.editProfileBody": {
+                "properties": {
+                    "bio": {
+                        "maxLength": 150,
+                        "type": "string"
+                    },
+                    "birthday": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
                 "type": "object"
             }
         },

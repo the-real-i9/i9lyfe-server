@@ -40,7 +40,7 @@ type registerUserBody struct {
 	Password string `msgpack:"password" json:"password" format:"password"`
 	Name     string `msgpack:"name" json:"name"`
 	Birthday int64  `msgpack:"birthday" json:"birthday"`
-	Bio      string `msgpack:"bio" json:"bio" validate:"optional"`
+	Bio      string `msgpack:"bio" json:"bio" maxLength:"150" validate:"optional"`
 }
 
 func (b registerUserBody) Validate() error {

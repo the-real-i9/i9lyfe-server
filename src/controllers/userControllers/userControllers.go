@@ -128,7 +128,6 @@ func AuthorizePPicUpload(c fiber.Ctx) error {
 //	@Summary		Change user profile picture
 //	@Description	Change user profile picture
 //	@Tags			app/private
-//	@Accepts		application/vnd.msgpack
 //	@Produce		application/vnd.msgpack
 //
 //	@Param			changeProfilePictureBody	body		changeProfilePictureBody		true	"Request body"
