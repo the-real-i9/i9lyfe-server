@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func XTestUserAuthStory(t *testing.T) {
+func TestUserAuthStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)
 

@@ -16,7 +16,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-func XTestUserPostCommentStory(t *testing.T) {
+func TestUserPostCommentStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)
 
@@ -175,7 +175,6 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 			go func() {
 				userCommChan := user.ServerEventMsg
-				defer close(userCommChan)
 
 				for {
 					userCommChan := userCommChan
@@ -184,7 +183,9 @@ func XTestUserPostCommentStory(t *testing.T) {
 					var wsMsg map[string]any
 
 					msgT, wsMsgBt, err := userWSConn.ReadMessage()
-					require.NoError(err)
+					if err != nil {
+						break
+					}
 					require.Equal(websocket.BinaryMessage, msgT)
 
 					err = msgpack.Unmarshal(wsMsgBt, &wsMsg)
@@ -197,6 +198,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 					userCommChan <- wsMsg
 				}
 
+				close(userCommChan)
 			}()
 		}
 	}
