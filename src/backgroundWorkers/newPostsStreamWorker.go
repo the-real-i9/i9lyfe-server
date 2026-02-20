@@ -58,10 +58,10 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				msg.OwnerUser = stmsg.Values["ownerUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.PostData = stmsg.Values["postData"].(string)
-				msg.Mentions = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
-				msg.Hashtags = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
-				msg.PostCursor = helpers.FromMsgPack[int64](stmsg.Values["postCursor"].(string))
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.Hashtags = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["hashtags"].(string))
+				msg.PostCursor = helpers.ParseInt(stmsg.Values["postCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -198,11 +198,9 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 				}
 			}()
 
-			go func() {
-				for _, fn := range fanOutPostFuncs {
-					fn()
-				}
-			}()
+			for _, fn := range fanOutPostFuncs {
+				fn()
+			}
 
 			if eg.Wait() != nil {
 				return

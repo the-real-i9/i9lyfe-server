@@ -56,60 +56,72 @@ CREATE TYPE public.msg_reaction_struct AS (
 ALTER TYPE public.msg_reaction_struct OWNER TO i9;
 
 --
+-- Name: ack_msg_struct; Type: TYPE; Schema: public; Owner: i9
+--
+
+CREATE TYPE public.ack_msg_struct AS (
+	last_msg_cursor bigint,
+	done boolean
+);
+
+
+ALTER TYPE public.ack_msg_struct OWNER TO i9;
+
+--
 -- Name: ack_msg(text, text, uuid[], text, bigint); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) RETURNS TABLE (last_msg_cursor bigint, done boolean)
+CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) RETURNS public.ack_msg_struct
 	LANGUAGE plpgsql
 	AS $$
 DECLARE
 	msg_received_in_chat bool;
+	msg_id uuid;
+	last_msg_cursor bigint;
+	done boolean;
 BEGIN
 
-FOREACH msg_id IN ARRAY msg_id_list LOOP
-SELECT EXISTS (SELECT true FROM chat_history_entry_in_chat 
-WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
-INTO msg_received_in_chat;
+FOREACH msg_id IN ARRAY msg_id_list
+LOOP
+	SELECT EXISTS (SELECT true FROM chat_history_entry_in_chat 
+	WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
+	INTO msg_received_in_chat;
 
-IF NOT msg_received_in_chat THEN
-	RAISE EXCEPTION
-		USING
-				ERRCODE = 'UX001',
-				MESSAGE = 'you do not have a chat with the specified user or a specified message is not received in the chat';
-END IF;
+	IF NOT msg_received_in_chat THEN
+		RAISE EXCEPTION
+			USING
+					ERRCODE = 'UX001',
+					MESSAGE = 'you do not have a chat with the specified user or a specified message is not received in the chat';
+	END IF;
 END LOOP;
 
 IF ack_val = 'delivered' THEN
 	WITH updated AS (
 		UPDATE chat_history_entry
 		SET delivery_status = ack_val, delivered_at = at_val
-		WHERE id_ IN msg_id_list AND type_ = 'message' AND delivery_status = 'sent'
+		WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status = 'sent'
 		RETURNING cursor_
 	)
 	SELECT max(cursor_) INTO last_msg_cursor FROM updated;
-	IF FOUND THEN
-		done := true;
-		RETURN;
-	END IF;
+	
+	RETURN ROW (last_msg_cursor, true)::ack_msg_struct;
 ELSIF ack_val = 'read' THEN
 	UPDATE chat_history_entry
 	SET delivery_status = ack_val, read_at = at_val, delivered_at = CASE WHEN delivered_at IS NULL THEN at_val ELSE delivered_at END
-	WHERE id_ = msg_id_list AND type_ = 'message' AND delivery_status <> 'read';
-	IF FOUND THEN
-		last_msg_cursor := 0;
-		done := true;
-		RETURN;
-	END IF;
+	WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status <> 'read';
+	
+	RETURN ROW (0, true)::ack_msg_struct;
 END IF;
 
 RAISE EXCEPTION
 		USING
 				ERRCODE = 'UX001',
 				MESSAGE = 'invalid acknowledgment value';
-END;$$;
+END;
+$$;
 
 
-ALTER FUNCTION public.ack_msg(from_user text, to_user text, msg_id uuid[], ack_val text, at_val bigint) OWNER TO i9;
+ALTER FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) OWNER TO i9;
 
 --
 -- Name: delete_msg(text, text, uuid, text, bigint); Type: FUNCTION; Schema: public; Owner: i9

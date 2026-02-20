@@ -59,9 +59,9 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.CommentId = stmsg.Values["commentId"].(string)
 				msg.CommentData = stmsg.Values["commentData"].(string)
-				msg.Mentions = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.CommentCursor = helpers.FromMsgPack[int64](stmsg.Values["score"].(string))
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.CommentCursor = helpers.ParseInt(stmsg.Values["commentCursor"].(string))
 
 				msgs = append(msgs, msg)
 

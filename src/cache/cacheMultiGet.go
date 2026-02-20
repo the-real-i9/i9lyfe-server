@@ -10,386 +10,332 @@ import (
 )
 
 type postUIData struct {
-	OwnerUser      func() (UITypes.ContentOwnerUser, error)
-	ReposterUser   func() (UITypes.ClientUser, error)
-	ReactionsCount func() (int64, error)
-	CommentsCount  func() (int64, error)
-	RepostsCount   func() (int64, error)
-	SavesCount     func() (int64, error)
-	MeReaction     func() (string, error)
-	MeSaved        func() (bool, error)
-	MeReposted     func() (bool, error)
+	OwnerUser      UITypes.ContentOwnerUser
+	ReposterUser   UITypes.ClientUser
+	ReactionsCount int64
+	CommentsCount  int64
+	RepostsCount   int64
+	SavesCount     int64
+	MeReaction     string
+	MeSaved        bool
+	MeReposted     bool
 }
 
 func GetPostUIData(ctx context.Context, postId, ownerUsername, reposterUsername, clientUsername string) (postUIData, error) {
-	var pud postUIData
+	var (
+		pud                                                     postUIData
+		ownerUser, reposterUser, meReaction                     *redis.StringCmd
+		reactionsCount, commentsCount, repostsCount, savesCount *redis.IntCmd
+		meReposted, meSaved                                     *redis.FloatCmd
+	)
 
-	pipe := rdb().Pipeline()
+	_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		ownerUser = pipe.HGet(ctx, "users", ownerUsername)
+		reposterUser = pipe.HGet(ctx, "users", reposterUsername)
+		reactionsCount = pipe.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId))
+		commentsCount = pipe.ZCard(ctx, fmt.Sprintf("commented_post:%s:comments", postId))
+		repostsCount = pipe.SCard(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId))
+		savesCount = pipe.SCard(ctx, fmt.Sprintf("saved_post:%s:saves", postId))
+		meReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), clientUsername)
+		meReposted = pipe.ZScore(ctx, fmt.Sprintf("user:%s:reposted_posts", clientUsername), postId)
+		meSaved = pipe.ZScore(ctx, fmt.Sprintf("user:%s:saved_posts", clientUsername), postId)
 
-	ownerUser := pipe.HGet(ctx, "users", ownerUsername)
-	reposterUser := pipe.HGet(ctx, "users", reposterUsername)
-	reactionsCount := pipe.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId))
-	commentsCount := pipe.ZCard(ctx, fmt.Sprintf("commented_post:%s:comments", postId))
-	repostsCount := pipe.SCard(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId))
-	savesCount := pipe.SCard(ctx, fmt.Sprintf("saved_post:%s:saves", postId))
-	meReaction := pipe.HGet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), clientUsername)
-	meReposted := pipe.ZScore(ctx, fmt.Sprintf("user:%s:reposted_posts", clientUsername), postId)
-	meSaved := pipe.ZScore(ctx, fmt.Sprintf("user:%s:saved_posts", clientUsername), postId)
-
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+		return nil
+	})
+	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return postUIData{}, err
 	}
 
 	userMsgPack, err := ownerUser.Result()
-	pud.OwnerUser = func() (UITypes.ContentOwnerUser, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.ContentOwnerUser{}, err
-		}
-
-		return helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack), nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
+	pud.OwnerUser = helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack)
 
 	userMsgPack, err = reposterUser.Result()
-	pud.ReposterUser = func() (UITypes.ClientUser, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.ClientUser{}, err
-		}
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
+	}
+	pud.ReposterUser = helpers.FromMsgPack[UITypes.ClientUser](userMsgPack)
 
-		return helpers.FromMsgPack[UITypes.ClientUser](userMsgPack), nil
+	pud.ReactionsCount, err = reactionsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
 
-	count, err := reactionsCount.Result()
-	pud.ReactionsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	pud.CommentsCount, err = commentsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
 
-	count, err = commentsCount.Result()
-	pud.CommentsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	pud.RepostsCount, err = repostsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
 
-	count, err = repostsCount.Result()
-	pud.RepostsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	pud.SavesCount, err = savesCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
 
-	count, err = savesCount.Result()
-	pud.SavesCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
-	}
-
-	rxn, err := meReaction.Result()
-	pud.MeReaction = func() (string, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return rxn, err
-		}
-
-		return rxn, nil
+	pud.MeReaction, err = meReaction.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
 
 	_, err = meReposted.Result()
-	pud.MeReposted = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
+	pud.MeReposted = err == nil
 
 	_, err = meSaved.Result()
-	pud.MeSaved = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return postUIData{}, err
 	}
+	pud.MeSaved = err == nil
 
 	return pud, nil
 }
 
 type commentUIData struct {
-	OwnerUser      func() (UITypes.ContentOwnerUser, error)
-	ReactionsCount func() (int64, error)
-	CommentsCount  func() (int64, error)
-	MeReaction     func() (string, error)
+	OwnerUser      UITypes.ContentOwnerUser
+	ReactionsCount int64
+	CommentsCount  int64
+	MeReaction     string
 }
 
 func GetCommentUIData(ctx context.Context, commentId, ownerUsername, clientUsername string) (commentUIData, error) {
-	var cud commentUIData
 
-	pipe := rdb().Pipeline()
+	var (
+		cud                           commentUIData
+		ownerUser, meReaction         *redis.StringCmd
+		reactionsCount, commentsCount *redis.IntCmd
+	)
 
-	ownerUser := pipe.HGet(ctx, "users", ownerUsername)
-	reactionsCount := pipe.HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId))
-	commentsCount := pipe.ZCard(ctx, fmt.Sprintf("commented_comment:%s:comments", commentId))
-	meReaction := pipe.HGet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), clientUsername)
+	_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		ownerUser = pipe.HGet(ctx, "users", ownerUsername)
+		reactionsCount = pipe.HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId))
+		commentsCount = pipe.ZCard(ctx, fmt.Sprintf("commented_comment:%s:comments", commentId))
+		meReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), clientUsername)
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+		return nil
+	})
+	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return commentUIData{}, err
 	}
 
 	userMsgPack, err := ownerUser.Result()
-	cud.OwnerUser = func() (UITypes.ContentOwnerUser, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.ContentOwnerUser{}, err
-		}
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return commentUIData{}, err
+	}
+	cud.OwnerUser = helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack)
 
-		return helpers.FromMsgPack[UITypes.ContentOwnerUser](userMsgPack), nil
+	cud.ReactionsCount, err = reactionsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return commentUIData{}, err
 	}
 
-	count, err := reactionsCount.Result()
-	cud.ReactionsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	cud.CommentsCount, err = commentsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return commentUIData{}, err
 	}
 
-	count, err = commentsCount.Result()
-	cud.CommentsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
-	}
-
-	rxn, err := meReaction.Result()
-	cud.MeReaction = func() (string, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return rxn, err
-		}
-
-		return rxn, nil
+	cud.MeReaction, err = meReaction.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return commentUIData{}, err
 	}
 
 	return cud, nil
 }
 
 type userSnippetUIData struct {
-	User      func() (UITypes.UserSnippet, error)
-	MeFollow  func() (bool, error)
-	FollowsMe func() (bool, error)
+	User      UITypes.UserSnippet
+	MeFollow  bool
+	FollowsMe bool
 }
 
 func GetUserSnippetUIData(ctx context.Context, username, clientUsername string) (userSnippetUIData, error) {
-	var usud userSnippetUIData
 
-	pipe := rdb().Pipeline()
+	var (
+		usud                userSnippetUIData
+		user                *redis.StringCmd
+		meFollow, followsMe *redis.FloatCmd
+	)
 
-	user := pipe.HGet(ctx, "users", username)
-	meFollow := pipe.ZScore(ctx, fmt.Sprintf("user:%s:followings", clientUsername), username)
-	followsMe := pipe.ZScore(ctx, fmt.Sprintf("user:%s:followers", clientUsername), username)
+	_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		user = pipe.HGet(ctx, "users", username)
+		meFollow = pipe.ZScore(ctx, fmt.Sprintf("user:%s:followings", clientUsername), username)
+		followsMe = pipe.ZScore(ctx, fmt.Sprintf("user:%s:followers", clientUsername), username)
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+		return nil
+	})
+	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return userSnippetUIData{}, err
 	}
 
 	userMsgPack, err := user.Result()
-	usud.User = func() (UITypes.UserSnippet, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.UserSnippet{}, err
-		}
-
-		return helpers.FromMsgPack[UITypes.UserSnippet](userMsgPack), nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userSnippetUIData{}, err
 	}
+
+	usud.User = helpers.FromMsgPack[UITypes.UserSnippet](userMsgPack)
 
 	_, err = meFollow.Result()
-	usud.MeFollow = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userSnippetUIData{}, err
 	}
+
+	usud.MeFollow = err == nil
 
 	_, err = followsMe.Result()
-	usud.FollowsMe = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userSnippetUIData{}, err
 	}
+
+	usud.FollowsMe = err == nil
 
 	return usud, nil
 }
 
 type reactorSnippetUIData struct {
-	User         func() (UITypes.ReactorSnippet, error)
-	UserReaction func() (string, error)
+	User         UITypes.ReactorSnippet
+	UserReaction string
 }
 
 func GetReactorSnippetUIData(ctx context.Context, username, whichEntity, entityId string) (reactorSnippetUIData, error) {
-	var rsud reactorSnippetUIData
 
-	pipe := rdb().Pipeline()
+	var (
+		rsud               reactorSnippetUIData
+		user, userReaction *redis.StringCmd
+	)
 
-	user := pipe.HGet(ctx, "users", username)
-	var userReaction *redis.StringCmd
+	_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		user = pipe.HGet(ctx, "users", username)
 
-	switch whichEntity {
-	case "post":
-		userReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_post:%s:reactions", entityId), username)
-	case "comment":
-		userReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", entityId), username)
-	}
+		switch whichEntity {
+		case "post":
+			userReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_post:%s:reactions", entityId), username)
+		case "comment":
+			userReaction = pipe.HGet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", entityId), username)
+		}
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+		return nil
+	})
+	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return reactorSnippetUIData{}, err
 	}
 
 	userMsgPack, err := user.Result()
-	rsud.User = func() (UITypes.ReactorSnippet, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.ReactorSnippet{}, err
-		}
-
-		return helpers.FromMsgPack[UITypes.ReactorSnippet](userMsgPack), nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return reactorSnippetUIData{}, err
 	}
 
-	rxn, err := userReaction.Result()
-	rsud.UserReaction = func() (string, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return rxn, err
-		}
+	rsud.User = helpers.FromMsgPack[UITypes.ReactorSnippet](userMsgPack)
 
-		return rxn, nil
+	rsud.UserReaction, err = userReaction.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return reactorSnippetUIData{}, err
 	}
 
 	return rsud, nil
 }
 
 type userProfileUIData struct {
-	User            func() (UITypes.UserProfile, error)
-	PostsCount      func() (int64, error)
-	FollowersCount  func() (int64, error)
-	FollowingsCount func() (int64, error)
-	MeFollow        func() (bool, error)
-	FollowsMe       func() (bool, error)
+	User            UITypes.UserProfile
+	PostsCount      int64
+	FollowersCount  int64
+	FollowingsCount int64
+	MeFollow        bool
+	FollowsMe       bool
 }
 
 func GetUserProfileUIData(ctx context.Context, username, clientUsername string) (userProfileUIData, error) {
-	var upud userProfileUIData
 
-	pipe := rdb().Pipeline()
+	var (
+		upud                                        userProfileUIData
+		user                                        *redis.StringCmd
+		postsCount, followersCount, followingsCount *redis.IntCmd
+		meFollow, followsMe                         *redis.FloatCmd
+	)
 
-	user := pipe.HGet(ctx, "users", username)
-	postsCount := pipe.ZCard(ctx, fmt.Sprintf("user:%s:posts", username))
-	followersCount := pipe.ZCard(ctx, fmt.Sprintf("user:%s:followers", username))
-	followingsCount := pipe.ZCard(ctx, fmt.Sprintf("user:%s:followings", username))
-	meFollow := pipe.ZScore(ctx, fmt.Sprintf("user:%s:followings", clientUsername), username)
-	followsMe := pipe.ZScore(ctx, fmt.Sprintf("user:%s:followers", clientUsername), username)
+	_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		user = pipe.HGet(ctx, "users", username)
+		postsCount = pipe.ZCard(ctx, fmt.Sprintf("user:%s:posts", username))
+		followersCount = pipe.ZCard(ctx, fmt.Sprintf("user:%s:followers", username))
+		followingsCount = pipe.ZCard(ctx, fmt.Sprintf("user:%s:followings", username))
+		meFollow = pipe.ZScore(ctx, fmt.Sprintf("user:%s:followings", clientUsername), username)
+		followsMe = pipe.ZScore(ctx, fmt.Sprintf("user:%s:followers", clientUsername), username)
 
-	_, err := pipe.Exec(ctx)
-	if err != nil {
+		return nil
+	})
+	if err != nil && err != redis.Nil {
 		helpers.LogError(err)
 		return userProfileUIData{}, err
 	}
 
 	userMsgPack, err := user.Result()
-	upud.User = func() (UITypes.UserProfile, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return UITypes.UserProfile{}, err
-		}
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
+	}
+	upud.User = helpers.FromMsgPack[UITypes.UserProfile](userMsgPack)
 
-		return helpers.FromMsgPack[UITypes.UserProfile](userMsgPack), nil
+	upud.PostsCount, err = postsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
 	}
 
-	count, err := postsCount.Result()
-	upud.PostsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	upud.FollowersCount, err = followersCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
 	}
 
-	count, err = followersCount.Result()
-	upud.FollowersCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
-	}
-
-	count, err = followingsCount.Result()
-	upud.FollowingsCount = func() (int64, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return count, err
-		}
-
-		return count, nil
+	upud.FollowingsCount, err = followingsCount.Result()
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
 	}
 
 	_, err = meFollow.Result()
-	upud.MeFollow = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
 	}
+
+	upud.MeFollow = err == nil
 
 	_, err = followsMe.Result()
-	upud.FollowsMe = func() (bool, error) {
-		if err != nil && err != redis.Nil {
-			helpers.LogError(err)
-			return false, err
-		}
-
-		return err == nil, nil
+	if err != nil && err != redis.Nil {
+		helpers.LogError(err)
+		return userProfileUIData{}, err
 	}
+
+	upud.FollowsMe = err == nil
 
 	return upud, nil
 }

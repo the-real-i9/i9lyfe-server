@@ -59,8 +59,8 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.RepostId = stmsg.Values["repostId"].(string)
 				msg.RepostData = stmsg.Values["repostData"].(string)
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.RepostCursor = helpers.FromMsgPack[int64](stmsg.Values["repostCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.RepostCursor = helpers.ParseInt(stmsg.Values["repostCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -212,6 +212,10 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 					fn()
 				}
 			}()
+
+			for _, fn := range fanOutPostFuncs {
+				fn()
+			}
 
 			if eg.Wait() != nil {
 				return

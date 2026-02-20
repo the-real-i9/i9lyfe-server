@@ -113,8 +113,8 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 	return map[string]any{"new_msg_id": newMessage.Id, "che_cursor": newMessage.Cursor}, nil
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, at int64) (map[string]any, error) {
-	lastMsgCursor, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgIdList, at)
+func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, at int64) (map[string]any, error) {
+	lastMsgCursor, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgIds, at)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string
 			Event: "chat: messages delivered",
 			Data: map[string]any{
 				"chat_partner": clientUsername,
-				"msg_ids":      msgIdList,
+				"msg_ids":      msgIds,
 				"delivered_at": at,
 			},
 		})
@@ -132,7 +132,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string
 		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
 			FromUser:   clientUsername,
 			ToUser:     partnerUsername,
-			CHEIdList:  msgIdList,
+			CHEIds:     msgIds,
 			Ack:        "delivered",
 			At:         at,
 			ChatCursor: lastMsgCursor,
@@ -142,8 +142,8 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string
 	return map[string]any{"updated_chat_cursor": lastMsgCursor}, nil
 }
 
-func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, at int64) (bool, error) {
-	done, err := chat.AckMsgRead(ctx, clientUsername, partnerUsername, msgIdList, at)
+func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, at int64) (bool, error) {
+	done, err := chat.AckMsgRead(ctx, clientUsername, partnerUsername, msgIds, at)
 	if err != nil {
 		return false, err
 	}
@@ -153,17 +153,17 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msg
 			Event: "chat: messages read",
 			Data: map[string]any{
 				"chat_partner": clientUsername,
-				"msg_ids":      msgIdList,
+				"msg_ids":      msgIds,
 				"read_at":      at,
 			},
 		})
 
 		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
-			FromUser:  clientUsername,
-			ToUser:    partnerUsername,
-			CHEIdList: msgIdList,
-			Ack:       "read",
-			At:        at,
+			FromUser: clientUsername,
+			ToUser:   partnerUsername,
+			CHEIds:   msgIds,
+			Ack:      "read",
+			At:       at,
 		})
 	}
 

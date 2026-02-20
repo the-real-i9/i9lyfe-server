@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 func XTestUserPostCommentStory(t *testing.T) {
@@ -54,11 +56,10 @@ func XTestUserPostCommentStory(t *testing.T) {
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(err)
 
-				req, err := http.NewRequest("POST", signupPath+"/request_new_account", reqBody)
-				require.NoError(err)
+				req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
 				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-				res, err := http.DefaultClient.Do(req)
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -84,12 +85,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 				reqBody, err := makeReqBody(map[string]any{"code": verfCode})
 				require.NoError(err)
 
-				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-				require.NoError(err)
+				req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
+
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-				res, err := http.DefaultClient.Do(req)
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -119,12 +120,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 				})
 				require.NoError(err)
 
-				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-				require.NoError(err)
+				req := httptest.NewRequest("POST", signupPath+"/register_user", reqBody)
+
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-				res, err := http.DefaultClient.Do(req)
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -174,6 +175,7 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 			go func() {
 				userCommChan := user.ServerEventMsg
+				defer close(userCommChan)
 
 				for {
 					userCommChan := userCommChan
@@ -181,9 +183,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 					var wsMsg map[string]any
 
-					if err := userWSConn.ReadJSON(&wsMsg); err != nil {
-						break
-					}
+					msgT, wsMsgBt, err := userWSConn.ReadMessage()
+					require.NoError(err)
+					require.Equal(websocket.BinaryMessage, msgT)
+
+					err = msgpack.Unmarshal(wsMsgBt, &wsMsg)
+					require.NoError(err)
 
 					if wsMsg == nil {
 						continue
@@ -192,7 +197,6 @@ func XTestUserPostCommentStory(t *testing.T) {
 					userCommChan <- wsMsg
 				}
 
-				close(userCommChan)
 			}()
 		}
 	}
@@ -225,12 +229,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/post_upload/authorize", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/post_upload/authorize", reqBody)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -301,12 +305,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/new_post", reqBody)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -320,10 +324,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_post_id": td.Ignore(),
+			"post_cursor": td.Ignore(),
 		}, nil))
 
-		user1Post1Id = rb["id"].(string)
+		user1Post1Id = rb["new_post_id"].(string)
 	}
 
 	{
@@ -335,12 +340,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -378,12 +383,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/react", reqBody)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -415,11 +420,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 checks reactors to her post1")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -448,11 +453,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user1 filters reactors to her post1 by a certain emoji")
 
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors/🤔", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -480,11 +485,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user3 removes her reaction from user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/remove_reaction", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/remove_reaction", nil)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -503,11 +508,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		<-(time.NewTimer(200 * time.Millisecond).C)
 		t.Log("Action: user1 rechecks reactors to her post1 | user3's reaction gone")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/reactors", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -557,12 +562,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 			})
 			require.NoError(err)
 
-			req, err := http.NewRequest("POST", appPathPriv+"/comment_upload/authorize", reqBody)
-			require.NoError(err)
+			req := httptest.NewRequest("POST", appPathPriv+"/comment_upload/authorize", reqBody)
+
 			req.Header.Set("Cookie", user1.SessionCookie)
 			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-			res, err := http.DefaultClient.Do(req)
+			res, err := app.Test(req)
 			require.NoError(err)
 
 			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -606,12 +611,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -625,10 +630,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_comment_id": td.Ignore(),
+			"comment_cursor": td.Ignore(),
 		}, nil))
 
-		user2Comment1User1Post1Id = rb["id"].(string)
+		user2Comment1User1Post1Id = rb["new_comment_id"].(string)
 
 		// user1 is notified
 		ServerEventMsg := <-user1.ServerEventMsg
@@ -656,12 +662,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user1Post1Id+"/comment", reqBody)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -675,10 +681,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_comment_id": td.Ignore(),
+			"comment_cursor": td.Ignore(),
 		}, nil))
 
-		user3Comment1User1Post1Id = rb["id"].(string)
+		user3Comment1User1Post1Id = rb["new_comment_id"].(string)
 
 		// user1 is notified
 		ServerEventMsg := <-user1.ServerEventMsg
@@ -698,11 +705,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 checks comments on her post1")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -734,11 +741,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user3 removes her comment on user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/comments/"+user3Comment1User1Post1Id, nil)
-		require.NoError(err)
+		req := httptest.NewRequest("DELETE", appPathPriv+"/posts/"+user1Post1Id+"/comments/"+user3Comment1User1Post1Id, nil)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -757,11 +764,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user1 rechecks comments on her post1 | user3's comment is gone")
 
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -793,11 +800,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 views user2's comment on her post1")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id, nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id, nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -826,12 +833,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -845,10 +852,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_comment_id": td.Ignore(),
+			"comment_cursor": td.Ignore(),
 		}, nil))
 
-		user1Reply1User2Comment1User1Post1Id = rb["id"].(string)
+		user1Reply1User2Comment1User1Post1Id = rb["new_comment_id"].(string)
 
 		// user2 is notified
 		ServerEventMsg := <-user2.ServerEventMsg
@@ -876,12 +884,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comment", reqBody)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -895,10 +903,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_comment_id": td.Ignore(),
+			"comment_cursor": td.Ignore(),
 		}, nil))
 
-		user3Reply1User2Comment1User1Post1Id = rb["id"].(string)
+		user3Reply1User2Comment1User1Post1Id = rb["new_comment_id"].(string)
 
 		// user2 is notified
 		ServerEventMsg := <-user2.ServerEventMsg
@@ -918,11 +927,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user2 checks replies to her comment1 on user1's post1")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -954,11 +963,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user3 removes her reply to user2's comment1 on user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments/"+user3Reply1User2Comment1User1Post1Id, nil)
-		require.NoError(err)
+		req := httptest.NewRequest("DELETE", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments/"+user3Reply1User2Comment1User1Post1Id, nil)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -978,11 +987,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 			t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
 
 
-			req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
-			require.NoError(err)
+			req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
+
 			req.Header.Set("Cookie", user2.SessionCookie)
 
-			res, err := http.DefaultClient.Do(req)
+			res, err := app.Test(req)
 			require.NoError(err)
 
 			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1020,12 +1029,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -1063,12 +1072,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/react", reqBody)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -1100,11 +1109,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 checks reactors to her reply to user2's comment1 on her post1")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1133,11 +1142,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 		t.Log("Action: user1 filters reactors to her reply to user2's comment1 on her post1 by a certain emoji")
 
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors/😆", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1165,11 +1174,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user3 removes her reaction to user1's reply to user2's comment1 on user1's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/remove_reaction", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("DELETE", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/remove_reaction", nil)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1187,11 +1196,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 rechecks reactors to her reply to user2's comment1 on her post1 | user3's reaction gone")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user1Reply1User2Comment1User1Post1Id+"/reactors", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1229,12 +1238,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/new_post", reqBody)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -1249,10 +1258,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(
 			map[string]any{
-				"id": td.Ignore(),
+				"new_post_id": td.Ignore(),
+				"post_cursor": td.Ignore(),
 			}, nil))
 
-		user1Post2Id = rb["id"].(string)
+		user1Post2Id = rb["new_post_id"].(string)
 
 		ServerEventMsg := <-user2.ServerEventMsg
 
@@ -1271,11 +1281,11 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user2 views user1's post2 following the mention notification received")
 
-		req, err := http.NewRequest("GET", appPathPriv+"/posts/"+user1Post2Id, nil)
-		require.NoError(err)
+		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post2Id, nil)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1306,12 +1316,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req, err := http.NewRequest("POST", appPathPriv+"/new_post", reqBody)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/new_post", reqBody)
+
 		req.Header.Set("Cookie", user3.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -1325,21 +1335,22 @@ func XTestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"id": td.Ignore(),
+			"new_post_id": td.Ignore(),
+			"post_cursor": td.Ignore(),
 		}, nil))
 
-		user3Post1Id = rb["id"].(string)
+		user3Post1Id = rb["new_post_id"].(string)
 	}
 
 	{
 		t.Log("Action: user2 reposts user3's post1 | user3 is notified")
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/repost", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/repost", nil)
+
 		req.Header.Set("Cookie", user2.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1370,12 +1381,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 saves user3's post1")
 
-		req, err := http.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/save", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("POST", appPathPriv+"/posts/"+user3Post1Id+"/save", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -1393,12 +1404,12 @@ func XTestUserPostCommentStory(t *testing.T) {
 	{
 		t.Log("Action: user1 unsaves user3's post1")
 
-		req, err := http.NewRequest("DELETE", appPathPriv+"/posts/"+user3Post1Id+"/unsave", nil)
-		require.NoError(err)
+		req := httptest.NewRequest("DELETE", appPathPriv+"/posts/"+user3Post1Id+"/unsave", nil)
+
 		req.Header.Set("Cookie", user1.SessionCookie)
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := app.Test(req)
 		require.NoError(err)
 
 		if !assert.Equal(t, http.StatusOK, res.StatusCode) {

@@ -154,7 +154,7 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 }
 
 func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (int64, error) {
-	followCursor, err := pgDB.QueryRowType[int64](
+	followCursor, err := pgDB.QueryRowField[int64](
 		ctx,
 		/* sql */ `
 		INSERT INTO user_follows_user (follower_username, following_username, at_)

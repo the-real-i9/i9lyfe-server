@@ -50,7 +50,7 @@ func postDeletionsStreamBgWorker(rdb *redis.Client) {
 
 				msg.OwnerUser = stmsg.Values["ownerUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.Mentions = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
+				msg.Mentions = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["mentions"].(string))
 
 				msgs = append(msgs, msg)
 

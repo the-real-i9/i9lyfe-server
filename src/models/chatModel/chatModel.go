@@ -94,12 +94,12 @@ type ackResT struct {
 	Done          bool  `db:"done"`
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, deliveredAt int64) (int64, error) {
+func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, deliveredAt int64) (int64, error) {
 	res, err := pgDB.QueryRowType[ackResT](
 		ctx,
 		/* sql */ `
-		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
-		`, clientUsername, partnerUsername, msgIdList, "delivered", deliveredAt,
+		SELECT last_msg_cursor, done FROM ack_msg($1, $2, $3, $4, $5)
+		`, clientUsername, partnerUsername, msgIds, "delivered", deliveredAt,
 	)
 	if err != nil {
 		helpers.LogError(err)
@@ -109,12 +109,12 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string
 	return res.LastMsgCursor, nil
 }
 
-func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIdList []string, readAt int64) (bool, error) {
+func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, readAt int64) (bool, error) {
 	res, err := pgDB.QueryRowType[ackResT](
 		ctx,
 		/* sql */ `
 		SELECT * FROM ack_msg($1, $2, $3, $4, $5)
-		`, clientUsername, partnerUsername, msgIdList, "read", readAt,
+		`, clientUsername, partnerUsername, msgIds, "read", readAt,
 	)
 	if err != nil {
 		helpers.LogError(err)

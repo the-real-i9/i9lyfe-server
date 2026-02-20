@@ -53,10 +53,10 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 
 				msg.FromUser = stmsg.Values["fromUser"].(string)
 				msg.ToUser = stmsg.Values["toUser"].(string)
-				msg.CHEIdList = helpers.FromMsgPack[appTypes.BinableSlice](stmsg.Values["cheIdList"].(string))
+				msg.CHEIds = helpers.FromJson[appTypes.BinableSlice](stmsg.Values["cHEIds"].(string))
 				msg.Ack = stmsg.Values["ack"].(string)
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.ChatCursor = helpers.FromMsgPack[int64](stmsg.Values["chatCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.ChatCursor = helpers.ParseInt(stmsg.Values["chatCursor"].(string))
 
 				msgs = append(msgs, msg)
 
@@ -72,7 +72,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 			// batch data for batch processing
 			for _, msg := range msgs {
 
-				for _, cheId := range msg.CHEIdList {
+				for _, cheId := range msg.CHEIds {
 					ackMessages = append(ackMessages, [3]any{cheId, msg.Ack, msg.At})
 				}
 
@@ -87,7 +87,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 						userChatUnreadMsgs[msg.FromUser] = make(map[string][]any)
 					}
 
-					for _, cheId := range msg.CHEIdList {
+					for _, cheId := range msg.CHEIds {
 						userChatUnreadMsgs[msg.FromUser][msg.ToUser] = append(userChatUnreadMsgs[msg.FromUser][msg.ToUser], cheId)
 					}
 				}
@@ -97,7 +97,7 @@ func msgAcksStreamBgWorker(rdb *redis.Client) {
 						userChatReadMsgs[msg.FromUser] = make(map[string][]any)
 					}
 
-					for _, cheId := range msg.CHEIdList {
+					for _, cheId := range msg.CHEIds {
 						userChatReadMsgs[msg.FromUser][msg.ToUser] = append(userChatReadMsgs[msg.FromUser][msg.ToUser], cheId)
 					}
 				}

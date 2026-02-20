@@ -153,7 +153,7 @@ type NewMsgReactionEvent struct {
 type MsgsAckEvent struct {
 	FromUser   string                `redis:"fromUser" msgpack:"fromUser"`
 	ToUser     string                `redis:"toUser" msgpack:"toUser"`
-	CHEIdList  appTypes.BinableSlice `redis:"cheIdList" msgpack:"cheIdList"`
+	CHEIds     appTypes.BinableSlice `redis:"cHEIds" msgpack:"cHEIds"`
 	Ack        string                `redis:"ack" msgpack:"ack"`
 	At         int64                 `redis:"at" msgpack:"at"`
 	ChatCursor int64                 `redis:"chatCursor" msgpack:"chatCursor"`

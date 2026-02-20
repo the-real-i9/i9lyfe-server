@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -12,9 +13,10 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
-func XTestUserChatStory(t *testing.T) {
+func TestUserChatStory(t *testing.T) {
 	// t.Parallel()
 	require := require.New(t)
 
@@ -40,13 +42,14 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Setup: create new account for users")
 
 		for _, user := range []*UserT{&user1, &user2} {
-			user := user
-
 			{
 				reqBody, err := makeReqBody(map[string]any{"email": user.Email})
 				require.NoError(err)
 
-				res, err := http.Post(signupPath+"/request_new_account", "application/vnd.msgpack", reqBody)
+				req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
+				req.Header.Add("Content-Type", "application/vnd.msgpack")
+
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -72,12 +75,11 @@ func XTestUserChatStory(t *testing.T) {
 				reqBody, err := makeReqBody(map[string]any{"code": verfCode})
 				require.NoError(err)
 
-				req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-				require.NoError(err)
+				req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-				res, err := http.DefaultClient.Do(req)
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -107,12 +109,11 @@ func XTestUserChatStory(t *testing.T) {
 				})
 				require.NoError(err)
 
-				req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-				require.NoError(err)
+				req := httptest.NewRequest("POST", signupPath+"/register_user", reqBody)
 				req.Header.Set("Cookie", user.SessionCookie)
 				req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-				res, err := http.DefaultClient.Do(req)
+				res, err := app.Test(req)
 				require.NoError(err)
 
 				if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
@@ -139,8 +140,6 @@ func XTestUserChatStory(t *testing.T) {
 		t.Log("Setup: Init user sockets")
 
 		for _, user := range []*UserT{&user1, &user2} {
-			user := user
-
 			header := http.Header{}
 			header.Set("Cookie", user.SessionCookie)
 			wsConn, res, err := websocket.DefaultDialer.Dial(wsPath, header)
@@ -162,6 +161,7 @@ func XTestUserChatStory(t *testing.T) {
 
 			go func() {
 				userCommChan := user.ServerEventMsg
+				defer close(userCommChan)
 
 				for {
 					userCommChan := userCommChan
@@ -169,9 +169,12 @@ func XTestUserChatStory(t *testing.T) {
 
 					var wsMsg map[string]any
 
-					if err := userWSConn.ReadJSON(&wsMsg); err != nil {
-						break
-					}
+					msgT, wsMsgBt, err := userWSConn.ReadMessage()
+					require.NoError(err)
+					require.Equal(websocket.BinaryMessage, msgT)
+
+					err = msgpack.Unmarshal(wsMsgBt, &wsMsg)
+					require.NoError(err)
 
 					if wsMsg == nil {
 						continue
@@ -180,7 +183,6 @@ func XTestUserChatStory(t *testing.T) {
 					userCommChan <- wsMsg
 				}
 
-				close(userCommChan)
 			}()
 		}
 	}
@@ -192,7 +194,7 @@ func XTestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 sends message to user2")
 
-		err := user1.WSConn.WriteJSON(map[string]any{
+		err := wsWriteMsgPack(user1.WSConn, map[string]any{
 			"action": "chat: send message",
 			"data": map[string]any{
 				"msg": map[string]any{
@@ -215,6 +217,7 @@ func XTestUserChatStory(t *testing.T) {
 			"toAction": "chat: send message",
 			"data": td.Map(map[string]any{
 				"new_msg_id": td.Ignore(),
+				"che_cursor": td.Ignore(),
 			}, nil),
 		}, nil))
 
@@ -227,27 +230,36 @@ func XTestUserChatStory(t *testing.T) {
 		user2NewMsgReceived := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2NewMsgReceived, td.Map(map[string]any{
-			"event": "chat: new message",
-			"data": td.SuperMapOf(map[string]any{
-				"id": user1NewMsgId,
-				"content": td.SuperMapOf(map[string]any{
-					"type": "text",
-					"props": td.SuperMapOf(map[string]any{
-						"text_content": "Hi. How're you doing?",
+			"event": "new chat",
+			"data": td.Map(map[string]any{
+				"chat": td.SuperMapOf(map[string]any{
+					"partner_user": td.SuperMapOf(map[string]any{
+						"username": user1.Username,
 					}, nil),
+					"unread_messages_count": td.Ignore(),
+					"cursor":                td.Ignore(),
 				}, nil),
-				"delivery_status": "sent",
-				"sender": td.SuperMapOf(map[string]any{
-					"username": user1.Username,
-				}, nil),
+				"history": td.Contains(td.SuperMapOf(map[string]any{
+					"id": user1NewMsgId,
+					"content": td.SuperMapOf(map[string]any{
+						"type": "text",
+						"props": td.SuperMapOf(map[string]any{
+							"text_content": "Hi. How're you doing?",
+						}, nil),
+					}, nil),
+					"delivery_status": "sent",
+					"sender": td.SuperMapOf(map[string]any{
+						"username": user1.Username,
+					}, nil),
+				}, nil)),
 			}, nil),
 		}, nil))
 
-		err := user2.WSConn.WriteJSON(map[string]any{
-			"action": "chat: ack message delivered",
+		err := wsWriteMsgPack(user2.WSConn, map[string]any{
+			"action": "chat: ack messages delivered",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
-				"msgId":           user1NewMsgId,
+				"msgIds":          []string{user1NewMsgId},
 				"at":              time.Now().UTC().UnixMilli(),
 			},
 		})
@@ -257,8 +269,10 @@ func XTestUserChatStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
-			"toAction": "chat: ack message delivered",
-			"data":     true,
+			"toAction": "chat: ack messages delivered",
+			"data": td.Map(map[string]any{
+				"updated_chat_cursor": td.Ignore(),
+			}, nil),
 		}, nil))
 	}
 
@@ -268,10 +282,10 @@ func XTestUserChatStory(t *testing.T) {
 		user1DelvAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1DelvAckReceipt, td.Map(map[string]any{
-			"event": "chat: message delivered",
+			"event": "chat: messages delivered",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user2.Username,
-				"msg_id":           user1NewMsgId,
+				"chat_partner": user2.Username,
+				"msg_ids":      td.Contains(user1NewMsgId),
 			}, nil),
 		}, nil))
 	}
@@ -279,11 +293,11 @@ func XTestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 then acknowledges 'read'")
 
-		err := user2.WSConn.WriteJSON(map[string]any{
-			"action": "chat: ack message read",
+		err := wsWriteMsgPack(user2.WSConn, map[string]any{
+			"action": "chat: ack messages read",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
-				"msgId":           user1NewMsgId,
+				"msgIds":          []string{user1NewMsgId},
 				"at":              time.Now().UTC().UnixMilli(),
 			},
 		})
@@ -293,7 +307,7 @@ func XTestUserChatStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
-			"toAction": "chat: ack message read",
+			"toAction": "chat: ack messages read",
 			"data":     true,
 		}, nil))
 	}
@@ -304,10 +318,10 @@ func XTestUserChatStory(t *testing.T) {
 		user1ReadAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
-			"event": "chat: message read",
+			"event": "chat: messages read",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user2.Username,
-				"msg_id":           user1NewMsgId,
+				"chat_partner": user2.Username,
+				"msg_ids":      td.Contains(user1NewMsgId),
 			}, nil),
 		}, nil))
 	}
@@ -315,7 +329,7 @@ func XTestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 reacts to user1's message")
 
-		err := user2.WSConn.WriteJSON(map[string]any{
+		err := wsWriteMsgPack(user2.WSConn, map[string]any{
 			"action": "chat: react to message",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
@@ -332,7 +346,9 @@ func XTestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
 			"toAction": "chat: react to message",
-			"data":     true,
+			"data": td.Map(map[string]any{
+				"che_cursor": td.Ignore(),
+			}, nil),
 		}, nil))
 	}
 
@@ -344,11 +360,13 @@ func XTestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message reaction",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user2.Username,
-				"to_msg_id":        user1NewMsgId,
-				"reaction": td.Map(map[string]any{
-					"emoji":   "🚀",
-					"reactor": td.Ignore(),
+				"chat_partner": user2.Username,
+				"msg_reaction": td.SuperMapOf(map[string]any{
+					"msg_id": user1NewMsgId,
+					"reaction": td.Map(map[string]any{
+						"emoji":   "🚀",
+						"reactor": td.Ignore(),
+					}, nil),
 				}, nil),
 			}, nil),
 		}, nil))
@@ -383,12 +401,11 @@ func XTestUserChatStory(t *testing.T) {
 			})
 			require.NoError(err)
 
-			req, err := http.NewRequest("POST", appPathPriv+"/chat_upload/authorize/visual", reqBody)
-			require.NoError(err)
+			req := httptest.NewRequest("POST", appPathPriv+"/chat_upload/authorize/visual", reqBody)
 			req.Header.Set("Cookie", user1.SessionCookie)
 			req.Header.Add("Content-Type", "application/vnd.msgpack")
 
-			res, err := http.DefaultClient.Do(req)
+			res, err := app.Test(req)
 			require.NoError(err)
 
 			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
@@ -444,7 +461,7 @@ func XTestUserChatStory(t *testing.T) {
 			t.Log("Upload complete")
 		}
 
-		err = user2.WSConn.WriteJSON(map[string]any{
+		err = wsWriteMsgPack(user2.WSConn, map[string]any{
 			"action": "chat: send message",
 			"data": map[string]any{
 				"msg": map[string]any{
@@ -468,6 +485,7 @@ func XTestUserChatStory(t *testing.T) {
 			"toAction": "chat: send message",
 			"data": td.Map(map[string]any{
 				"new_msg_id": td.Ignore(),
+				"che_cursor": td.Ignore(),
 			}, nil),
 		}, nil))
 
@@ -480,7 +498,7 @@ func XTestUserChatStory(t *testing.T) {
 		user1NewMsgReceived := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1NewMsgReceived, td.Map(map[string]any{
-			"event": "chat: new message",
+			"event": "chat: new che: message",
 			"data": td.SuperMapOf(map[string]any{
 				"id": user2NewMsgId,
 				"content": td.SuperMapOf(map[string]any{
@@ -497,11 +515,11 @@ func XTestUserChatStory(t *testing.T) {
 			}, nil),
 		}, nil))
 
-		err := user1.WSConn.WriteJSON(map[string]any{
-			"action": "chat: ack message delivered",
+		err := wsWriteMsgPack(user1.WSConn, map[string]any{
+			"action": "chat: ack messages delivered",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
-				"msgId":           user2NewMsgId,
+				"msgIds":          []string{user2NewMsgId},
 				"at":              time.Now().UTC().UnixMilli(),
 			},
 		})
@@ -511,8 +529,10 @@ func XTestUserChatStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
-			"toAction": "chat: ack message delivered",
-			"data":     true,
+			"toAction": "chat: ack messages delivered",
+			"data": td.Map(map[string]any{
+				"updated_chat_cursor": td.Ignore(),
+			}, nil),
 		}, nil))
 	}
 
@@ -522,10 +542,10 @@ func XTestUserChatStory(t *testing.T) {
 		user2DelvAckReceipt := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2DelvAckReceipt, td.Map(map[string]any{
-			"event": "chat: message delivered",
+			"event": "chat: messages delivered",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user1.Username,
-				"msg_id":           user2NewMsgId,
+				"chat_partner": user1.Username,
+				"msg_ids":      td.Contains(user2NewMsgId),
 			}, nil),
 		}, nil))
 	}
@@ -533,11 +553,11 @@ func XTestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user1 then acknowledges 'read'")
 
-		err := user1.WSConn.WriteJSON(map[string]any{
-			"action": "chat: ack message read",
+		err := wsWriteMsgPack(user1.WSConn, map[string]any{
+			"action": "chat: ack messages read",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
-				"msgId":           user2NewMsgId,
+				"msgIds":          []string{user2NewMsgId},
 				"at":              time.Now().UTC().UnixMilli(),
 			},
 		})
@@ -547,7 +567,7 @@ func XTestUserChatStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
-			"toAction": "chat: ack message read",
+			"toAction": "chat: ack messages read",
 			"data":     true,
 		}, nil))
 	}
@@ -558,10 +578,10 @@ func XTestUserChatStory(t *testing.T) {
 		user2ReadAckReceipt := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2ReadAckReceipt, td.Map(map[string]any{
-			"event": "chat: message read",
+			"event": "chat: messages read",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user1.Username,
-				"msg_id":           user2NewMsgId,
+				"chat_partner": user1.Username,
+				"msg_ids":      td.Contains(user2NewMsgId),
 			}, nil),
 		}, nil))
 	}
@@ -570,7 +590,7 @@ func XTestUserChatStory(t *testing.T) {
 		<-(time.NewTimer(200 * time.Millisecond).C)
 		t.Log("Action: user1 opens his chat history with user2")
 
-		err := user1.WSConn.WriteJSON(map[string]any{
+		err := wsWriteMsgPack(user1.WSConn, map[string]any{
 			"action": "chat: get history",
 			"data": map[string]any{
 				"partnerUsername": user2.Username,
@@ -626,7 +646,7 @@ func XTestUserChatStory(t *testing.T) {
 	{
 		t.Log("Action: user2 removes reaction to user1's message")
 
-		err := user2.WSConn.WriteJSON(map[string]any{
+		err := wsWriteMsgPack(user2.WSConn, map[string]any{
 			"action": "chat: remove reaction to message",
 			"data": map[string]any{
 				"partnerUsername": user1.Username,
@@ -654,8 +674,8 @@ func XTestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
 			"event": "chat: message reaction removed",
 			"data": td.SuperMapOf(map[string]any{
-				"partner_username": user2.Username,
-				"msg_id":           user1NewMsgId,
+				"chat_partner": user2.Username,
+				"msg_id":       user1NewMsgId,
 			}, nil),
 		}, nil))
 	}

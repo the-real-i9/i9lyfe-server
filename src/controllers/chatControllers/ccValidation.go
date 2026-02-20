@@ -271,14 +271,14 @@ func (vb sendMsgAcd) Validate(ctx context.Context) error {
 
 type ackMsgDeliveredAcd struct {
 	PartnerUsername string   `msgpack:"partnerUsername"`
-	MsgIdList       []string `msgpack:"msgIdList"`
+	MsgIds          []string `msgpack:"msgIds"`
 	At              int64    `msgpack:"at"`
 }
 
 func (d ackMsgDeliveredAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
-		validation.Field(&d.MsgIdList, validation.Required),
+		validation.Field(&d.MsgIds, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 
@@ -287,14 +287,14 @@ func (d ackMsgDeliveredAcd) Validate() error {
 
 type ackMsgReadAcd struct {
 	PartnerUsername string   `msgpack:"partnerUsername"`
-	MsgIdList       []string `msgpack:"msgIdList"`
+	MsgIds          []string `msgpack:"msgIds"`
 	At              int64    `msgpack:"at"`
 }
 
 func (d ackMsgReadAcd) Validate() error {
 	err := validation.ValidateStruct(&d,
 		validation.Field(&d.PartnerUsername, validation.Required),
-		validation.Field(&d.MsgIdList, validation.Required),
+		validation.Field(&d.MsgIds, validation.Required),
 		validation.Field(&d.At, validation.Required),
 	)
 

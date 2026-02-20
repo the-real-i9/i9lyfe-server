@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/initializers"
 	"i9lyfe/src/routes/authRoute"
 	"i9lyfe/src/routes/privateRoutes"
 	"i9lyfe/src/routes/publicRoutes"
-	"i9lyfe/src/routes/testSessionRoute"
 	"io"
 	"log"
 	"net/http"
@@ -18,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
@@ -41,8 +38,6 @@ const signoutPath string = "/api/app/private/me/signout"
 const appPathPriv = "/api/app/private"
 const appPathPublic = "/api/app/public"
 const wsPath = WSHOST_URL + "/api/app/private/ws"
-
-const testSessionPath = "/__test_session"
 
 type UserT struct {
 	Email          string              `msgpack:"email"`
@@ -79,9 +74,8 @@ func TestMain(m *testing.M) {
 	app.Route("/api/auth", authRoute.Route)
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
-	app.Route("/__test_session", testSessionRoute.Route)
 
-	/* var PORT string
+	var PORT string
 
 	if os.Getenv("GO_ENV") != "production" {
 		PORT = "8000"
@@ -91,7 +85,7 @@ func TestMain(m *testing.M) {
 
 	go func() {
 		app.Listen("0.0.0.0:" + PORT)
-	}() */
+	}()
 
 	waitReady := time.NewTimer(2 * time.Second)
 	<-waitReady.C
@@ -101,10 +95,6 @@ func TestMain(m *testing.M) {
 	app.Shutdown()
 
 	os.Exit(c)
-}
-
-func rdb() *redis.Client {
-	return appGlobals.RedisClient
 }
 
 func makeReqBody(data map[string]any) (io.Reader, error) {
@@ -139,6 +129,15 @@ func errResBody(body io.ReadCloser) (string, error) {
 	}
 
 	return string(bt), nil
+}
+
+func wsWriteMsgPack(wsConn *websocket.Conn, data any) error {
+	bt, err := msgpack.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return wsConn.WriteMessage(websocket.BinaryMessage, bt)
 }
 
 func bday(bdaystr string) int64 {

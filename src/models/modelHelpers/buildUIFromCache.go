@@ -14,72 +14,32 @@ func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (p
 	if err != nil {
 		return nilVal, err
 	}
-	var reposterUsername string = "/nil/"
-	if postUI.ReposterUser != nil {
-		reposterUsername = postUI.ReposterUser.(string)
-	}
+	postUI.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(postUI.MediaUrls)
+
+	reposterUsername, _ := postUI.ReposterUser.(string)
 
 	pud, err := cache.GetPostUIData(ctx, postId, postUI.OwnerUser.(string), reposterUsername, clientUsername)
 	if err != nil {
 		return nilVal, err
 	}
 
-	postUI.MediaUrls = cloudStorageService.PostMediaCloudNamesToUrl(postUI.MediaUrls)
+	pud.OwnerUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(pud.OwnerUser.ProfilePicUrl)
 
-	puiou, err := pud.OwnerUser()
-	if err != nil {
-		return nilVal, err
-	}
-
-	puiou.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(puiou.ProfilePicUrl)
-
-	postUI.OwnerUser = puiou
+	postUI.OwnerUser = pud.OwnerUser
 
 	if postUI.ReposterUser != nil {
-		puiru, err := pud.ReposterUser()
-		if err != nil {
-			return nilVal, err
-		}
+		pud.ReposterUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(pud.ReposterUser.ProfilePicUrl)
 
-		puiru.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(puiru.ProfilePicUrl)
-
-		postUI.ReposterUser = puiru
+		postUI.ReposterUser = pud.ReposterUser
 	}
 
-	postUI.ReactionsCount, err = pud.ReactionsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.CommentsCount, err = pud.CommentsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.RepostsCount, err = pud.RepostsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.SavesCount, err = pud.SavesCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.MeReaction, err = pud.MeReaction()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.MeSaved, err = pud.MeSaved()
-	if err != nil {
-		return nilVal, err
-	}
-
-	postUI.MeReposted, err = pud.MeReposted()
-	if err != nil {
-		return nilVal, err
-	}
+	postUI.ReactionsCount = pud.ReactionsCount
+	postUI.CommentsCount = pud.CommentsCount
+	postUI.RepostsCount = pud.RepostsCount
+	postUI.SavesCount = pud.SavesCount
+	postUI.MeReaction = pud.MeReaction
+	postUI.MeSaved = pud.MeSaved
+	postUI.MeReposted = pud.MeReposted
 
 	return postUI, nil
 }
@@ -92,36 +52,19 @@ func BuildCommentUIFromCache(ctx context.Context, commentId, clientUsername stri
 		return nilVal, err
 	}
 
+	commentUI.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(commentUI.AttachmentUrl)
+
 	cud, err := cache.GetCommentUIData(ctx, commentId, commentUI.OwnerUser.(string), clientUsername)
 	if err != nil {
 		return nilVal, err
 	}
 
-	commentUI.AttachmentUrl = cloudStorageService.CommentAttachCloudNameToUrl(commentUI.AttachmentUrl)
+	cud.OwnerUser.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(cud.OwnerUser.ProfilePicUrl)
 
-	cuiou, err := cud.OwnerUser()
-	if err != nil {
-		return nilVal, err
-	}
-
-	cuiou.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(cuiou.ProfilePicUrl)
-
-	commentUI.OwnerUser = cuiou
-
-	commentUI.ReactionsCount, err = cud.ReactionsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	commentUI.CommentsCount, err = cud.CommentsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	commentUI.MeReaction, err = cud.MeReaction()
-	if err != nil {
-		return nilVal, err
-	}
+	commentUI.OwnerUser = cud.OwnerUser
+	commentUI.ReactionsCount = cud.ReactionsCount
+	commentUI.CommentsCount = cud.CommentsCount
+	commentUI.MeReaction = cud.MeReaction
 
 	return commentUI, nil
 }
@@ -134,22 +77,11 @@ func buildUserSnippetUIFromCache(ctx context.Context, username, clientUsername s
 		return nilVal, err
 	}
 
-	userSnippetUI, err = usud.User()
-	if err != nil {
-		return nilVal, err
-	}
+	usud.User.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(usud.User.ProfilePicUrl)
 
-	userSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userSnippetUI.ProfilePicUrl)
-
-	userSnippetUI.MeFollow, err = usud.MeFollow()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userSnippetUI.FollowsMe, err = usud.FollowsMe()
-	if err != nil {
-		return nilVal, err
-	}
+	userSnippetUI = usud.User
+	userSnippetUI.MeFollow = usud.MeFollow
+	userSnippetUI.FollowsMe = usud.FollowsMe
 
 	return userSnippetUI, nil
 }
@@ -161,18 +93,10 @@ func buildReactorSnippetUIFromCache(ctx context.Context, username, postOrComment
 	if err != nil {
 		return nilVal, err
 	}
+	rsud.User.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(rsud.User.ProfilePicUrl)
 
-	reactorSnippetUI, err = rsud.User()
-	if err != nil {
-		return nilVal, err
-	}
-
-	reactorSnippetUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(reactorSnippetUI.ProfilePicUrl)
-
-	reactorSnippetUI.Emoji, err = rsud.UserReaction()
-	if err != nil {
-		return nilVal, err
-	}
+	reactorSnippetUI = rsud.User
+	reactorSnippetUI.Emoji = rsud.UserReaction
 
 	return reactorSnippetUI, nil
 }
@@ -184,38 +108,14 @@ func BuildUserProfileUIFromCache(ctx context.Context, username, clientUsername s
 	if err != nil {
 		return nilVal, err
 	}
+	upud.User.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(upud.User.ProfilePicUrl)
 
-	userProfileUI, err = upud.User()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.ProfilePicUrl = cloudStorageService.ProfilePicCloudNameToUrl(userProfileUI.ProfilePicUrl)
-
-	userProfileUI.MeFollow, err = upud.MeFollow()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.FollowsMe, err = upud.FollowsMe()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.PostsCount, err = upud.PostsCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.FollowersCount, err = upud.FollowersCount()
-	if err != nil {
-		return nilVal, err
-	}
-
-	userProfileUI.FollowingsCount, err = upud.FollowingsCount()
-	if err != nil {
-		return nilVal, err
-	}
+	userProfileUI = upud.User
+	userProfileUI.MeFollow = upud.MeFollow
+	userProfileUI.FollowsMe = upud.FollowsMe
+	userProfileUI.PostsCount = upud.PostsCount
+	userProfileUI.FollowersCount = upud.FollowersCount
+	userProfileUI.FollowingsCount = upud.FollowingsCount
 
 	return userProfileUI, nil
 }

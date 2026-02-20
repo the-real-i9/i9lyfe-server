@@ -57,8 +57,8 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.RxnCursor = helpers.FromMsgPack[int64](stmsg.Values["rxnCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.RxnCursor = helpers.ParseInt(stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 

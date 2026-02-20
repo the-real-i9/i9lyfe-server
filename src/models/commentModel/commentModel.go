@@ -114,7 +114,7 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 		WITH comment_on AS (
 			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
-			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_
+			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_, cursor_
 		)
 		SELECT comment_id, owner_user, comment_text, attachment_url, at_, cursor_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at,

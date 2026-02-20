@@ -55,8 +55,8 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 				msg.FollowerUser = stmsg.Values["followerUser"].(string)
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.FollowCursor = helpers.FromMsgPack[int64](stmsg.Values["followCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.FollowCursor = helpers.ParseInt(stmsg.Values["followCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}

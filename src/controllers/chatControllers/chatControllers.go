@@ -106,7 +106,7 @@ func AckMsgDelivered(ctx context.Context, clientUsername string, actionData msgp
 		return nil, err
 	}
 
-	return chatService.AckMsgDelivered(ctx, clientUsername, data.PartnerUsername, data.MsgIdList, data.At)
+	return chatService.AckMsgDelivered(ctx, clientUsername, data.PartnerUsername, data.MsgIds, data.At)
 }
 
 func AckMsgRead(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {
@@ -116,7 +116,7 @@ func AckMsgRead(ctx context.Context, clientUsername string, actionData msgpack.R
 		return nil, err
 	}
 
-	return chatService.AckMsgRead(ctx, clientUsername, data.PartnerUsername, data.MsgIdList, data.At)
+	return chatService.AckMsgRead(ctx, clientUsername, data.PartnerUsername, data.MsgIds, data.At)
 }
 
 func GetChatHistory(ctx context.Context, clientUsername string, actionData msgpack.RawMessage) (any, error) {

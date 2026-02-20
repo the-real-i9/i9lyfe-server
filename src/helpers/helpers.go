@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
@@ -133,6 +134,15 @@ func FromBtMsgPack[T any](msgPackBt []byte) (res T) {
 	}
 
 	return
+}
+
+func ParseInt(intStr string) int64 {
+	i, err := strconv.ParseInt(intStr, 10, 64)
+	if err != nil {
+		LogError(err)
+	}
+
+	return i
 }
 
 func BuildNotification(notifId, notifType string, at int64, details map[string]any) map[string]any {

@@ -57,8 +57,8 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				msg.CommentId = stmsg.Values["commentId"].(string)
 				msg.CommentOwner = stmsg.Values["commentOwner"].(string)
 				msg.Emoji = stmsg.Values["emoji"].(string)
-				msg.At = helpers.FromMsgPack[int64](stmsg.Values["at"].(string))
-				msg.RxnCursor = helpers.FromMsgPack[int64](stmsg.Values["rxnCursor"].(string))
+				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
+				msg.RxnCursor = helpers.ParseInt(stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 
