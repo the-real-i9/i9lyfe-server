@@ -1,1271 +1,1286 @@
 {
-    "components": {
-        "schemas": {
-            "UITypes.ClientUser": {
+  "components": {
+    "schemas": {
+      "UITypes.ClientUser": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "profile_pic_url": {
+            "format": "url",
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "appErrors.HTTPError": {
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "description": "JWT API key in encrypted cookie to protect private endpoints",
+        "in": "header",
+        "name": "Cookie",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "oluwarinolasam@gmail.com",
+      "name": "i9ine"
+    },
+    "description": "i9lyfe Social Media Backend API.",
+    "title": "i9lyfe Backend API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/app/private/comment_upload/authorize": {
+      "post": {
+        "description": "Authorization for comment upload",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "type": "object",
                 "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "profile_pic_url": {
-                        "format": "url",
-                        "type": "string"
-                    },
-                    "username": {
-                        "type": "string"
-                    }
+                  "attachment_mime": {
+                    "enum": [
+                      "image/jpeg",
+                      "image/png",
+                      "image/webp",
+                      "image/avif",
+                      "image/gif"
+                    ],
+                    "type": "string"
+                  },
+                  "attachment_size": {
+                    "type": "integer"
+                  }
                 },
-                "type": "object"
-            },
-            "appErrors.HTTPError": {
-                "properties": {
-                    "code": {
-                        "type": "integer"
-                    },
-                    "message": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetControllers.confirmEmailBody": {
-                "properties": {
-                    "token": {
-                        "maxLength": 6,
-                        "minLength": 6,
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetControllers.requestPasswordResetBody": {
-                "properties": {
-                    "email": {
-                        "format": "email",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetControllers.resetPasswordBody": {
-                "properties": {
-                    "confirmNewPassword": {
-                        "format": "password",
-                        "type": "string"
-                    },
-                    "newPassword": {
-                        "format": "password",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetService.passReset1RespT": {
-                "properties": {
-                    "msg": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetService.passReset2RespT": {
-                "properties": {
-                    "msg": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "passwordResetService.passReset3RespT": {
-                "properties": {
-                    "msg": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "postCommentControllers.authorizeCommentUploadBody": {
-                "properties": {
-                    "attachment_mime": {
-                        "enum": [
-                            "image/jpeg",
-                            "image/png",
-                            "image/webp",
-                            "image/avif",
-                            "image/gif"
-                        ],
-                        "type": "string"
-                    },
-                    "attachment_size": {
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "postCommentControllers.authorizePostUploadBody": {
-                "properties": {
-                    "media_mime": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "media_sizes": {
-                        "items": {
-                            "items": {
-                                "type": "integer"
-                            },
-                            "type": "array"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "post_type": {
-                        "enum": [
-                            "photo:portrait",
-                            "photo:square",
-                            "photo:landscape",
-                            "video:portrait",
-                            "video:square",
-                            "video:landscape",
-                            "reel"
-                        ],
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "postCommentService.AuthCommAttDataT": {
-                "properties": {
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
                     "attachmentCloudName": {
-                        "format": "path",
-                        "type": "string"
+                      "format": "path",
+                      "type": "string"
                     },
                     "uploadUrl": {
-                        "format": "url",
-                        "type": "string"
+                      "format": "url",
+                      "type": "string"
                     }
-                },
-                "type": "object"
+                  },
+                  "type": "object"
+                }
+              }
             },
-            "postCommentService.AuthPostMediaDataT": {
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Server Error"
+          }
+        },
+        "summary": "Authorize comment upload",
+        "tags": [
+          "upload authorization"
+        ]
+      }
+    },
+    "/app/private/me": {
+      "get": {
+        "description": "Get info on the user currently in session",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/UITypes.ClientUser"
+                }
+              }
+            },
+            "description": "User info"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get session user",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/app/private/me/change_profile_picture": {
+      "put": {
+        "description": "Change user profile picture",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
                 "properties": {
-                    "mediaCloudName": {
+                  "profile_pic_cloud_name": {
+                    "format": "path",
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Done"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Change user profile picture",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/app/private/me/edit_profile": {
+      "put": {
+        "description": "Edit user profile",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "bio": {
+                    "maxLength": 150,
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Done"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Edit user profile",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/app/private/me/signout": {
+      "get": {
+        "description": "Signout the user currently in session",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Bye message"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Signout user",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/app/private/post_upload/authorize": {
+      "post": {
+        "description": "Authorization for post upload",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "media_mime": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": false
+                  },
+                  "media_sizes": {
+                    "items": {
+                      "items": {
+                        "type": "integer"
+                      },
+                      "type": "array"
+                    },
+                    "type": "array",
+                    "uniqueItems": false
+                  },
+                  "post_type": {
+                    "enum": [
+                      "photo:portrait",
+                      "photo:square",
+                      "photo:landscape",
+                      "video:portrait",
+                      "video:square",
+                      "video:landscape",
+                      "reel"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "items": {
+                    "properties": {
+                      "mediaCloudName": {
                         "format": "path",
                         "type": "string"
+                      },
+                      "uploadUrl": {
+                        "format": "url",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "description": "A list of to-be media cloud identifiers for the image along with their upload URLs"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Server Error"
+          }
+        },
+        "summary": "Authorize post upload",
+        "tags": [
+          "upload authorization"
+        ]
+      }
+    },
+    "/app/private/me/profile_pic_upload/authorize": {
+      "post": {
+        "description": "Authorization for profile picture upload",
+        "parameters": [
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "pic_mime": {
+                    "type": "string",
+                    "format": "mime",
+                    "examples": [
+                      "image/jpeg"
+                    ]
+                  },
+                  "pic_size": {
+                    "items": {
+                      "type": "integer",
+                      "examples": [
+                        4223142
+                      ]
+                    },
+                    "maxItems": 3,
+                    "minItems": 3,
+                    "type": "array",
+                    "uniqueItems": false
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "profilePicCloudName": {
+                      "format": "path",
+                      "type": "string"
                     },
                     "uploadUrl": {
-                        "format": "url",
-                        "type": "string"
+                      "format": "url",
+                      "type": "string"
                     }
-                },
-                "type": "object"
+                  },
+                  "type": "object",
+                  "description": "A cloud identifier for the image along with its upload URL"
+                }
+              }
             },
-            "signinControllers.signInBody": {
-                "properties": {
-                    "emailOrUsername": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "format": "password",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
             },
-            "signinService.signinRespT": {
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Server Error"
+          }
+        },
+        "summary": "Authorize profile picture upload",
+        "tags": [
+          "upload authorization"
+        ]
+      }
+    },
+    "/app/private/users/:username/follow": {
+      "post": {
+        "description": "Follow user",
+        "parameters": [
+          {
+            "description": "User to follow",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Done"
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Validation error | User trying to follow self"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Follow user",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/app/private/users/:username/unfollow": {
+      "delete": {
+        "description": "Unfollow user",
+        "parameters": [
+          {
+            "description": "User to unfollow",
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "User session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Done"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Unfollow user",
+        "tags": [
+          "client user operations"
+        ]
+      }
+    },
+    "/auth/forgot_password/confirm_email": {
+      "post": {
+        "description": "Provide the 6-digit token sent to email",
+        "parameters": [
+          {
+            "description": "Password Reset session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "type": "object",
                 "properties": {
+                  "token": {
+                    "maxLength": 6,
+                    "minLength": 6,
+                    "type": "string"
+                  }
+                },
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
                     "msg": {
-                        "type": "string"
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Email confirmed. You're about to reset your password",
+            "headers": {
+              "Set-cookie": {
+                "description": "Password Reset session request cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Incorrect or expired confirmation token"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Password Reset - Step 2",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/forgot_password/request_password_reset": {
+      "post": {
+        "description": "Submit your email to request a password reset",
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "format": "email",
+                    "type": "string"
+                  }
+                },
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Proceed to email confirmation",
+            "headers": {
+              "Set-cookie": {
+                "description": "Password Reset session response cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "No user with this email exists"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Password Reset - Step 1",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/forgot_password/reset_password": {
+      "post": {
+        "description": "Set new password",
+        "parameters": [
+          {
+            "description": "Password Reset session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "confirmNewPassword": {
+                    "format": "password",
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "format": "password",
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Choose a new password"
+              }
+            }
+          },
+          "description": "Choose a new password",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Password changed successfully"
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Passwords mismatch."
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Password Reset user - Step 3",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/signin": {
+      "post": {
+        "description": "Signin with email/username and password",
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "emailOrUsername": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "format": "password",
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "msg": {
+                      "type": "string"
                     },
                     "user": {
-                        "$ref": "#/components/schemas/UITypes.ClientUser"
+                      "$ref": "#/components/schemas/UITypes.ClientUser"
                     }
-                },
-                "type": "object"
+                  },
+                  "type": "object"
+                }
+              }
             },
-            "signupControllers.registerUserBody": {
-                "properties": {
-                    "bio": {
-                        "maxLength": 150,
-                        "type": "string"
-                    },
-                    "birthday": {
-                        "type": "integer"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "format": "password",
-                        "type": "string"
-                    },
-                    "username": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+            "description": "Signin Success!",
+            "headers": {
+              "Set-cookie": {
+                "description": "Authenticated user session response cookie containing auth JWT",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
             },
-            "signupControllers.requestNewAccountBody": {
-                "properties": {
-                    "email": {
-                        "format": "email",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
             },
-            "signupControllers.verifyEmailBody": {
-                "properties": {
-                    "code": {
-                        "maxLength": 6,
-                        "minLength": 6,
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+            "description": "Incorrect credentials"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
             },
-            "signupService.signup1RespT": {
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Signin user",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/signup/register_user": {
+      "post": {
+        "description": "Provide remaining user credentials",
+        "parameters": [
+          {
+            "description": "Signup session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
                 "properties": {
+                  "bio": {
+                    "maxLength": 150,
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "format": "password",
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Request body"
+              }
+            }
+          },
+          "description": "Request body",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
                     "msg": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "signupService.signup2RespT": {
-                "properties": {
-                    "msg": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "signupService.signup3RespT": {
-                "properties": {
-                    "msg": {
-                        "type": "string"
+                      "type": "string"
                     },
                     "user": {
-                        "$ref": "#/components/schemas/UITypes.ClientUser"
+                      "$ref": "#/components/schemas/UITypes.ClientUser"
                     }
-                },
-                "type": "object"
+                  },
+                  "type": "object"
+                }
+              }
             },
-            "userControllers.changeProfilePictureBody": {
-                "properties": {
-                    "profile_pic_cloud_name": {
-                        "format": "path",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+            "description": "Signup Success",
+            "headers": {
+              "Set-cookie": {
+                "description": "Authenticated user session response cookie containing auth JWT",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
             },
-            "userControllers.editProfileBody": {
+            "description": "Incorrect or expired verification code"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Signup user - Step 3",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/signup/request_new_account": {
+      "post": {
+        "description": "Submit email to request a new account",
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
                 "properties": {
-                    "bio": {
-                        "maxLength": 150,
-                        "type": "string"
-                    },
-                    "birthday": {
-                        "type": "integer"
-                    },
-                    "name": {
-                        "type": "string"
-                    }
+                  "email": {
+                    "format": "email",
+                    "type": "string"
+                  }
                 },
-                "type": "object"
+                "type": "object",
+                "description": "Request body"
+              }
             }
+          },
+          "description": "Request body",
+          "required": true
         },
-        "securitySchemes": {
-            "ApiKeyAuth": {
-                "description": "JWT API key in encrypted cookie to protect private endpoints",
-                "in": "header",
-                "name": "Cookie",
-                "type": "apiKey"
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Proceed to email verification",
+            "headers": {
+              "Set-cookie": {
+                "description": "Signup session response cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
-        }
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "An account with email already exists"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Signup user - Step 1",
+        "tags": [
+          "authentication"
+        ]
+      }
     },
-    "info": {
-        "contact": {
-            "email": "oluwarinolasam@gmail.com",
-            "name": "i9ine"
-        },
-        "description": "i9lyfe Social Media Backend API.",
-        "title": "i9lyfe Backend API",
-        "version": "1.0"
-    },
-    "externalDocs": {
-        "description": "",
-        "url": ""
-    },
-    "paths": {
-        "/app/private/comment_upload/authorize": {
-            "post": {
-                "description": "Authorization for comment upload",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/postCommentControllers.authorizeCommentUploadBody",
-                                "summary": "authorizeCommentUploadBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/postCommentService.AuthCommAttDataT"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Validation Error"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Server Error"
-                    }
-                },
-                "summary": "Authorize comment upload",
-                "tags": [
-                    "app/private"
-                ]
+    "/auth/signup/verify_email": {
+      "post": {
+        "description": "Provide the 6-digit code sent to email",
+        "parameters": [
+          {
+            "description": "Signup session request cookie",
+            "in": "header",
+            "name": "Cookie",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
             }
-        },
-        "/app/private/me": {
-            "get": {
-                "description": "Get info on the user currently in session",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UITypes.ClientUser"
-                                }
-                            }
-                        },
-                        "description": "User info"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.msgpack": {
+              "schema": {
+                "properties": {
+                  "code": {
+                    "maxLength": 6,
+                    "minLength": 6,
+                    "type": "string"
+                  }
                 },
-                "summary": "Get session user",
-                "tags": [
-                    "app/private"
-                ]
+                "type": "object",
+                "description": "Request body"
+              }
             }
+          },
+          "description": "Request body",
+          "required": true
         },
-        "/app/private/me/change_profile_picture": {
-            "put": {
-                "description": "Change user profile picture",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "properties": {
+                    "msg": {
+                      "type": "string"
                     }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/userControllers.changeProfilePictureBody",
-                                "summary": "changeProfilePictureBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "description": "Done"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Change user profile picture",
-                "tags": [
-                    "app/private"
-                ]
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Email verified",
+            "headers": {
+              "Set-cookie": {
+                "description": "Signup session response cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
+          },
+          "400": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Incorrect or expired verification code"
+          },
+          "500": {
+            "content": {
+              "application/vnd.msgpack": {
+                "schema": {
+                  "$ref": "#/components/schemas/appErrors.HTTPError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
         },
-        "/app/private/me/edit_profile": {
-            "put": {
-                "description": "Edit user profile",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/userControllers.editProfileBody",
-                                "summary": "editProfileBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body"
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "description": "Done"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Edit user profile",
-                "tags": [
-                    "app/private"
-                ]
-            }
-        },
-        "/app/private/me/signout": {
-            "get": {
-                "description": "Signout the user currently in session",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "description": "Bye message"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Signout user",
-                "tags": [
-                    "app/private"
-                ]
-            }
-        },
-        "/app/private/post_upload/authorize": {
-            "post": {
-                "description": "Authorization for post upload",
-                "parameters": [
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/postCommentControllers.authorizePostUploadBody",
-                                "summary": "authorizePostUploadBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/postCommentService.AuthPostMediaDataT"
-                                    },
-                                    "type": "array"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Validation Error"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Server Error"
-                    }
-                },
-                "summary": "Authorize post upload",
-                "tags": [
-                    "app/private"
-                ]
-            }
-        },
-        "/app/private/users/:username/follow": {
-            "post": {
-                "description": "Follow user",
-                "parameters": [
-                    {
-                        "description": "User to follow",
-                        "in": "path",
-                        "name": "username",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "description": "Done"
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Validation error | User trying to follow self"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Follow user",
-                "tags": [
-                    "app/private"
-                ]
-            }
-        },
-        "/app/private/users/:username/unfollow": {
-            "delete": {
-                "description": "Unfollow user",
-                "parameters": [
-                    {
-                        "description": "User to unfollow",
-                        "in": "path",
-                        "name": "username",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "User session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "description": "Done"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Unfollow user",
-                "tags": [
-                    "app/private"
-                ]
-            }
-        },
-        "/auth/forgot_password/confirm_email": {
-            "post": {
-                "description": "Provide the 6-digit token sent to email",
-                "parameters": [
-                    {
-                        "description": "Password Reset session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/passwordResetControllers.confirmEmailBody",
-                                "summary": "confirmEmailBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/passwordResetService.passReset2RespT"
-                                }
-                            }
-                        },
-                        "description": "Email confirmed. You're about to reset your password",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Password Reset session request cookie",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Incorrect or expired confirmation token"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Password Reset - Step 2",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/forgot_password/request_password_reset": {
-            "post": {
-                "description": "Submit your email to request a password reset",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/passwordResetControllers.requestPasswordResetBody",
-                                "summary": "requestPasswordResetBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/passwordResetService.passReset1RespT"
-                                }
-                            }
-                        },
-                        "description": "Proceed to email confirmation",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Password Reset session response cookie",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "No user with this email exists"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Password Reset - Step 1",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/forgot_password/reset_password": {
-            "post": {
-                "description": "Set new password",
-                "parameters": [
-                    {
-                        "description": "Password Reset session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/passwordResetControllers.resetPasswordBody",
-                                "summary": "resetPasswordBody",
-                                "description": "Choose a new password"
-                            }
-                        },
-                        "application/vnd.msgpack": {
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "description": "Choose a new password",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/passwordResetService.passReset3RespT"
-                                }
-                            }
-                        },
-                        "description": "Password changed successfully"
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Passwords mismatch."
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Password Reset user - Step 3",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/signin": {
-            "post": {
-                "description": "Signin with email/username and password",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/signinControllers.signInBody",
-                                "summary": "signInBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/signinService.signinRespT"
-                                }
-                            }
-                        },
-                        "description": "Signin Success!",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Authenticated user session response cookie containing auth JWT",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Incorrect credentials"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Signin user",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/signup/register_user": {
-            "post": {
-                "description": "Provide remaining user credentials",
-                "parameters": [
-                    {
-                        "description": "Signup session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/signupControllers.registerUserBody",
-                                "summary": "registerUserBody",
-                                "description": "Request body"
-                            }
-                        },
-                        "application/vnd.msgpack": {
-                            "schema": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/signupService.signup3RespT"
-                                }
-                            }
-                        },
-                        "description": "Signup Success",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Authenticated user session response cookie containing auth JWT",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Incorrect or expired verification code"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Signup user - Step 3",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/signup/request_new_account": {
-            "post": {
-                "description": "Submit email to request a new account",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/signupControllers.requestNewAccountBody",
-                                "summary": "requestNewAccountBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/signupService.signup1RespT"
-                                }
-                            }
-                        },
-                        "description": "Proceed to email verification",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Signup session response cookie",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "An account with email already exists"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Signup user - Step 1",
-                "tags": [
-                    "auth"
-                ]
-            }
-        },
-        "/auth/signup/verify_email": {
-            "post": {
-                "description": "Provide the 6-digit code sent to email",
-                "parameters": [
-                    {
-                        "description": "Signup session request cookie",
-                        "in": "header",
-                        "name": "Cookie",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/signupControllers.verifyEmailBody",
-                                "summary": "verifyEmailBody",
-                                "description": "Request body"
-                            }
-                        }
-                    },
-                    "description": "Request body",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/signupService.signup2RespT"
-                                }
-                            }
-                        },
-                        "description": "Email verified",
-                        "headers": {
-                            "Set-cookie": {
-                                "description": "Signup session response cookie",
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Incorrect or expired verification code"
-                    },
-                    "500": {
-                        "content": {
-                            "application/vnd.msgpack": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/appErrors.HTTPError"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "summary": "Signup user - Step 2",
-                "tags": [
-                    "auth"
-                ]
-            }
-        }
-    },
-    "openapi": "3.1.0",
-    "servers": [
-        {
-            "url": "https://localhost:8000/api"
-        }
-    ]
+        "summary": "Signup user - Step 2",
+        "tags": [
+          "authentication"
+        ]
+      }
+    }
+  },
+  "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "https://localhost:8000/api"
+    }
+  ]
 }

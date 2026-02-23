@@ -14,7 +14,7 @@ import (
 )
 
 type passReset1RespT struct {
-	Msg string `msgpack:"msg" json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func RequestPasswordReset(ctx context.Context, email string) (passReset1RespT, map[string]any, error) {
@@ -45,7 +45,7 @@ func RequestPasswordReset(ctx context.Context, email string) (passReset1RespT, m
 }
 
 type passReset2RespT struct {
-	Msg string `msgpack:"msg" json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func ConfirmEmail(ctx context.Context, sessionData msgpack.RawMessage, inputResetToken string) (passReset2RespT, map[string]any, error) {
@@ -73,7 +73,7 @@ func ConfirmEmail(ctx context.Context, sessionData msgpack.RawMessage, inputRese
 }
 
 type passReset3RespT struct {
-	Msg string `msgpack:"msg" json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func ResetPassword(ctx context.Context, sessionData msgpack.RawMessage, newPassword string) (passReset3RespT, error) {

@@ -13,8 +13,8 @@ import (
 )
 
 type signinRespT struct {
-	Msg  string             `msgpack:"msg" json:"msg"`
-	User UITypes.ClientUser `msgpack:"user" json:"user"`
+	Msg  string             `msgpack:"msg"`
+	User UITypes.ClientUser `msgpack:"user"`
 }
 
 func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {

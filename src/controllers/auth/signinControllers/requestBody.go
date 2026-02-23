@@ -9,8 +9,8 @@ import (
 )
 
 type signInBody struct {
-	EmailOrUsername string `msgpack:"emailOrUsername" json:"emailOrUsername"`
-	Password        string `msgpack:"password" json:"password" format:"password"`
+	EmailOrUsername string `msgpack:"emailOrUsername"`
+	Password        string `msgpack:"password"`
 }
 
 func (b signInBody) Validate() error {

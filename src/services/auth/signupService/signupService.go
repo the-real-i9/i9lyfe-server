@@ -18,7 +18,7 @@ import (
 )
 
 type signup1RespT struct {
-	Msg string `msgpack:"msg" json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[string]any, error) {
@@ -49,7 +49,7 @@ func RequestNewAccount(ctx context.Context, email string) (signup1RespT, map[str
 }
 
 type signup2RespT struct {
-	Msg string `msgpack:"msg" json:"msg"`
+	Msg string `msgpack:"msg"`
 }
 
 func VerifyEmail(ctx context.Context, sessionData msgpack.RawMessage, inputVerfCode string) (signup2RespT, map[string]any, error) {
@@ -79,8 +79,8 @@ func VerifyEmail(ctx context.Context, sessionData msgpack.RawMessage, inputVerfC
 }
 
 type signup3RespT struct {
-	Msg  string             `msgpack:"msg" json:"msg"`
-	User UITypes.ClientUser `msgpack:"user" json:"user"`
+	Msg  string             `msgpack:"msg"`
+	User UITypes.ClientUser `msgpack:"user"`
 }
 
 func RegisterUser(ctx context.Context, sessionData msgpack.RawMessage, username, name, bio string, birthday int64, password string) (signup3RespT, string, error) {

@@ -15,9 +15,9 @@ import (
 )
 
 type authorizePostUploadBody struct {
-	PostType   string     `msgpack:"post_type" json:"post_type" enums:"photo:portrait,photo:square,photo:landscape,video:portrait,video:square,video:landscape,reel"`
-	MediaMIME  [2]string  `msgpack:"media_mime" json:"media_mime" minItems:"2" maxItems:"2"`
-	MediaSizes [][2]int64 `msgpack:"media_sizes" json:"media_sizes"`
+	PostType   string     `msgpack:"post_type"`
+	MediaMIME  [2]string  `msgpack:"media_mime"`
+	MediaSizes [][2]int64 `msgpack:"media_sizes"`
 }
 
 func (b authorizePostUploadBody) Validate() error {
@@ -189,8 +189,8 @@ func (b reactToPostBody) Validate() error {
 }
 
 type authorizeCommentUploadBody struct {
-	AttachmentMIME string `msgpack:"attachment_mime" json:"attachment_mime" enums:"image/jpeg,image/png,image/webp,image/avif,image/gif"`
-	AttachmentSize int64  `msgpack:"attachment_size" json:"attachment_size"`
+	AttachmentMIME string `msgpack:"attachment_mime"`
+	AttachmentSize int64  `msgpack:"attachment_size"`
 }
 
 func (b authorizeCommentUploadBody) Validate() error {

@@ -11,20 +11,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// Get session user
-//
-//	@Summary		Get session user
-//	@Description	Get info on the user currently in session
-//	@Tags			app/private
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			Cookie	header		[]string			true	"User session request cookie"
-//
-//	@Success		200		{object}	UITypes.ClientUser	"User info"
-//
-//	@Failure		500		{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/me [get]
 func GetSessionUser(c fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -36,20 +22,6 @@ func GetSessionUser(c fiber.Ctx) error {
 	return c.MsgPack(UITypes.ClientUser{Username: user.Username, Name: user.Name, ProfilePicUrl: user.ProfilePicUrl})
 }
 
-// Signout session user
-//
-//	@Summary		Signout user
-//	@Description	Signout the user currently in session
-//	@Tags			app/private
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			Cookie	header		[]string	true	"User session request cookie"
-//
-//	@Success		200		{string}	string		"Bye message"
-//
-//	@Failure		500		{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/me/signout [get]
 func Signout(c fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
@@ -58,23 +30,6 @@ func Signout(c fiber.Ctx) error {
 	return c.MsgPack(fmt.Sprintf("Bye, %s! See you again!", clientUser.Username))
 }
 
-// Edit user profile
-//
-//	@Summary		Edit user profile
-//	@Description	Edit user profile
-//	@Tags			app/private
-//	@Accepts		application/vnd.msgpack
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			editProfileBody		body		editProfileBody		false	"Request body"
-//
-//	@Param			Cookie		header		[]string	true	"User session request cookie"
-//
-//	@Success		200			{object}	boolean		"Done"
-//
-//	@Failure		500			{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/me/edit_profile [put]
 func EditUserProfile(c fiber.Ctx) error {
 	ctx := c.Context()
 
@@ -123,22 +78,6 @@ func AuthorizePPicUpload(c fiber.Ctx) error {
 	return c.MsgPack(respData)
 }
 
-// Change user profile picture
-//
-//	@Summary		Change user profile picture
-//	@Description	Change user profile picture
-//	@Tags			app/private
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			changeProfilePictureBody	body		changeProfilePictureBody		true	"Request body"
-//
-//	@Param			Cookie			header		[]string	true	"User session request cookie"
-//
-//	@Success		200				{object}	boolean		"Done"
-//
-//	@Failure		500				{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/me/change_profile_picture [put]
 func ChangeUserProfilePicture(c fiber.Ctx) error {
 	ctx := c.Context()
 
@@ -165,24 +104,6 @@ func ChangeUserProfilePicture(c fiber.Ctx) error {
 	return c.MsgPack(respData)
 }
 
-// Follow user
-//
-//	@Summary		Follow user
-//	@Description	Follow user
-//	@Tags			app/private
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			username	path		string				true	"User to follow"
-//
-//	@Param			Cookie		header		[]string			true	"User session request cookie"
-//
-//	@Success		200			{object}	boolean				"Done"
-//
-//	@Success		400			{object}	appErrors.HTTPError	"Validation error | User trying to follow self"
-//
-//	@Failure		500			{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/users/:username/follow [post]
 func FollowUser(c fiber.Ctx) error {
 	ctx := c.Context()
 
@@ -196,22 +117,6 @@ func FollowUser(c fiber.Ctx) error {
 	return c.MsgPack(respData)
 }
 
-// Unfollow user
-//
-//	@Summary		Unfollow user
-//	@Description	Unfollow user
-//	@Tags			app/private
-//	@Produce		application/vnd.msgpack
-//
-//	@Param			username	path		string		true	"User to unfollow"
-//
-//	@Param			Cookie		header		[]string	true	"User session request cookie"
-//
-//	@Success		200			{object}	boolean		"Done"
-//
-//	@Failure		500			{object}	appErrors.HTTPError
-//
-//	@Router			/app/private/users/:username/unfollow [delete]
 func UnfollowUser(c fiber.Ctx) error {
 	ctx := c.Context()
 
