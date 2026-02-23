@@ -32,8 +32,7 @@ func TestUserAuthStory(t *testing.T) {
 		require.NoError(err)
 
 		req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
-
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -65,7 +64,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -94,7 +93,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", signupPath+"/verify_email", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -132,7 +131,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", signupPath+"/register_user", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -185,7 +184,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		req := httptest.NewRequest("POST", signinPath, reqBody)
 
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -213,7 +212,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		req := httptest.NewRequest("POST", signinPath, reqBody)
 
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -262,7 +261,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		req := httptest.NewRequest("POST", forgotPasswordPath+"/request_password_reset", reqBody)
 
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -294,7 +293,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -322,7 +321,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", forgotPasswordPath+"/confirm_email", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -358,7 +357,7 @@ func TestUserAuthStory(t *testing.T) {
 		req := httptest.NewRequest("POST", forgotPasswordPath+"/reset_password", reqBody)
 
 		req.Header.Set("Cookie", user1.SessionCookie)
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -392,7 +391,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		req := httptest.NewRequest("POST", signinPath, reqBody)
 
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)
@@ -421,7 +420,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		req := httptest.NewRequest("POST", signupPath+"/request_new_account", reqBody)
 
-		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
 		res, err := app.Test(req)
 		require.NoError(err)

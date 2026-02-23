@@ -49,7 +49,7 @@
   "paths": {
     "/app/private/comment_upload/authorize": {
       "post": {
-        "description": "Authorization for comment upload",
+        "description": "Authorization for comment attachment upload",
         "parameters": [
           {
             "description": "User session request cookie",
@@ -133,7 +133,7 @@
             "description": "Server Error"
           }
         },
-        "summary": "Authorize comment upload",
+        "summary": "Authorize comment attachment upload",
         "tags": [
           "upload authorization"
         ]
@@ -362,7 +362,7 @@
     },
     "/app/private/post_upload/authorize": {
       "post": {
-        "description": "Authorization for post upload",
+        "description": "Authorization for post media items upload",
         "parameters": [
           {
             "description": "User session request cookie",
@@ -466,7 +466,7 @@
             "description": "Server Error"
           }
         },
-        "summary": "Authorize post upload",
+        "summary": "Authorize post media items upload",
         "tags": [
           "upload authorization"
         ]

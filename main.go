@@ -5,7 +5,6 @@ import (
 	"i9lyfe/src/routes/authRoute"
 	"i9lyfe/src/routes/privateRoutes"
 	"i9lyfe/src/routes/publicRoutes"
-	"i9lyfe/src/routes/testSessionRoute"
 	"log"
 	"os"
 
@@ -15,8 +14,6 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/vmihailenco/msgpack/v5"
-
-	_ "i9lyfe/docs"
 )
 
 func init() {
@@ -25,22 +22,6 @@ func init() {
 	}
 }
 
-//	@title			i9lyfe Backend API
-//	@version		1.0
-//	@description	i9lyfe Social Media Backend API.
-
-//	@contact.name	i9ine
-//	@contact.email	oluwarinolasam@gmail.com
-
-//	@servers.url	https://localhost:8000/api
-
-//	@securityDefinitions.apikey	ApiKeyAuth
-//	@in							header
-//	@name						Cookie
-//	@description				JWT API key in encrypted cookie to protect private endpoints
-
-// @accepts	application/vnd.msgpack
-// @produces	application/vnd.msgpack
 func main() {
 	defer initializers.CleanUp()
 
@@ -68,8 +49,6 @@ func main() {
 
 	app.Route("/api/app/private", privateRoutes.Routes)
 	app.Route("/api/app/public", publicRoutes.Routes)
-
-	app.Route("/__test_session", testSessionRoute.Route)
 
 	var PORT string
 
