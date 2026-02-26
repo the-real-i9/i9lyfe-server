@@ -62,8 +62,7 @@ i9lyfe is a full-fledged social media API server built in Go. It supports all of
   - [Architecture Diagram](#architecture-diagram)
   - [ER Diagram](#entity-relationship-diagram)
   - [Sequence Diagrams](#sequence-diagrams)
-- [API Code Testing](#api-code-testing-)
-- [API Load Testing](#api-load-testing-)
+- [API Tests](#api-tests-)
 
 ## Features
 
@@ -180,9 +179,9 @@ Mermaid version: [Here](./diagrams/ER.mermaid).
 
 API sequence diagrams: [Here](./diagrams/sequence-diagrams.md)
 
-## API Code Testing &#x1f9ea;
+## API Tests &#x1f9ea;
 
-We employ a testing approach where test cases are in the form of user stories. These stories simulate real-world API usage activity by a client/user, confirming that enpoints work as expected on both the client and server side.
+We employ a testing approach where test cases are in the form of user stories. These stories simulate real-world API usage activity by a client/user, confirming that endpoints work as expected on both the client and server side.
 
 ### Feature Tests
 
@@ -212,6 +211,3 @@ Here we'll build client stories that intend to break the API.
 
 Here we'll test the API's security guards and potential vulnerabilities
 
-## API Load Testing &#x1f9ea;
-
-*Coming Up...*

@@ -19,7 +19,7 @@ func StoreNewUsers(ctx context.Context, newUsers []string) error {
 	return nil
 }
 
-func StoreOfflineUsers(ctx context.Context, user_lastSeen_Pairs map[string]int64) error {
+func StoreOfflineUsers(pipe redis.Pipeliner, ctx context.Context, user_lastSeen_Pairs map[string]int64) {
 	members := []redis.Z{}
 	membersUnsorted := []any{}
 
@@ -33,19 +33,8 @@ func StoreOfflineUsers(ctx context.Context, user_lastSeen_Pairs map[string]int64
 		membersUnsorted = append(membersUnsorted, user)
 	}
 
-	if err := rdb().ZAdd(ctx, "offline_users", members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	if err := rdb().SAdd(ctx, "offline_users_unsorted", membersUnsorted...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, "offline_users", members...)
+	pipe.SAdd(ctx, "offline_users_unsorted", membersUnsorted...)
 }
 
 func StoreUserFeedPosts(pipe redis.Pipeliner, ctx context.Context, user string, postId_score_Pairs [][2]any) {

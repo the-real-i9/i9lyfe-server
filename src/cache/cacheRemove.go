@@ -8,14 +8,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func RemoveOfflineUsers(ctx context.Context, users []any) error {
-	if err := rdb().ZRem(ctx, "offline_users", users...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveOfflineUsers(pipe redis.Pipeliner, ctx context.Context, users []any) {
+	pipe.ZRem(ctx, "offline_users", users...)
 }
 
 func RemovePostReactions(pipe redis.Pipeliner, ctx context.Context, postId string, reactorUsers []string) {
