@@ -31,12 +31,19 @@ func FanOutPostToFollowers(postId string, postCursor float64, user string) {
 		go func(followers []string) {
 			ctx := context.Background()
 
-			for _, fuser := range followers {
-				if err := cache.StoreUserFeedPosts(ctx, fuser, [][2]any{{postId, postCursor}}); err != nil {
-					helpers.LogError(err)
-					continue
+			_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for _, fuser := range followers {
+					cache.StoreUserFeedPosts(pipe, ctx, fuser, [][2]any{{postId, postCursor}})
 				}
 
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			for _, fuser := range followers {
 				postUI, err := modelHelpers.BuildPostUIFromCache(ctx, postId, fuser)
 				if err != nil {
 					helpers.LogError(err)

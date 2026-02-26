@@ -13,7 +13,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func repostsStreamBgWorker(rdb *redis.Client) {
@@ -123,102 +122,91 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				})
 
 				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					go contentRecommendationService.FanOutPostToFollowers(msg.RepostId, float64(msg.RepostCursor), msg.ReposterUser)
+					contentRecommendationService.FanOutPostToFollowers(msg.RepostId, float64(msg.RepostCursor), msg.ReposterUser)
 				})
 			}
 
 			// batch processing
-			if err := cache.StoreNewPosts(ctx, reposts); err != nil {
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				cache.StoreNewPosts(pipe, ctx, reposts)
+
+				if len(notifications) > 0 {
+					cache.StoreNewNotifications(pipe, ctx, notifications)
+
+					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
 				return
 			}
 
-			if len(notifications) > 0 {
-				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-					return
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+
+				for postId, repostIds := range postReposts {
+					cache.StorePostReposts(pipe, ctx, postId, repostIds)
 				}
 
-				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-					return
+				for user, postId_score_Pairs := range userPosts {
+					cache.StoreUserPosts(pipe, ctx, user, postId_score_Pairs)
 				}
-			}
 
-			eg, sharedCtx := errgroup.WithContext(ctx)
+				for user, postId_score_Pairs := range userFeedPosts {
+					cache.StoreUserFeedPosts(pipe, ctx, user, postId_score_Pairs)
+				}
 
-			for postId, repostIds := range postReposts {
-				eg.Go(func() error {
-					postId, repostIds := postId, repostIds
+				for user, postId_score_Pairs := range userRepostedPosts {
+					cache.StoreUserRepostedPosts(pipe, ctx, user, postId_score_Pairs)
+				}
 
-					if err := cache.StorePostReposts(sharedCtx, postId, repostIds); err != nil {
-						return err
-					}
+				for user, notifId_score_Pairs := range userNotifications {
+					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
+				}
 
-					go func() {
-						ctx := context.Background()
-						for postId := range postReposts {
-							totalRepostsCount, err := cache.GetPostRepostsCount(ctx, postId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishPostMetric(ctx, map[string]any{
-								"post_id":              postId,
-								"latest_reposts_count": totalRepostsCount,
-							})
-						}
-					}()
-
-					return nil
-				})
-			}
-
-			for user, postId_score_Pairs := range userPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					return cache.StoreUserPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
-
-			for user, postId_score_Pairs := range userFeedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					if err := cache.StoreUserFeedPosts(sharedCtx, user, postId_score_Pairs); err != nil {
-						return err
-					}
-
-					return nil
-				})
-			}
-
-			for user, postId_score_Pairs := range userRepostedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					return cache.StoreUserRepostedPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
-
-			for user, notifId_score_Pairs := range userNotifications {
-				eg.Go(func() error {
-					user, notifId_score_Pairs := user, notifId_score_Pairs
-
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
-				})
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
 			}
 
 			go func() {
-				for _, fn := range sendNotifEventMsgFuncs {
-					fn()
+				ctx := context.Background()
+				postId_IntCmd := make(map[string]*redis.IntCmd)
+
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for postId := range postReposts {
+						postId_IntCmd[postId] = cache.GetPostRepostsCount(pipe, ctx, postId)
+					}
+
+					return nil
+				})
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
+
+				for postId, lc := range postId_IntCmd {
+					totalRepostsCount, err := lc.Result()
+					if err != nil {
+						continue
+					}
+
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":              postId,
+						"latest_reposts_count": totalRepostsCount,
+					})
 				}
 			}()
 
-			for _, fn := range fanOutPostFuncs {
-				fn()
+			for _, fn := range sendNotifEventMsgFuncs {
+				go fn()
 			}
 
-			if eg.Wait() != nil {
-				return
+			for _, fn := range fanOutPostFuncs {
+				go fn()
 			}
 
 			// acknowledge messages

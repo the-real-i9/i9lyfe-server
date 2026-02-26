@@ -3,13 +3,12 @@ package backgroundWorkers
 import (
 	"context"
 	"i9lyfe/src/appTypes"
-	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"log"
+	"maps"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func editUsersStreamBgWorker(rdb *redis.Client) {
@@ -65,19 +64,44 @@ func editUsersStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			user_updateKVMap_StringCmd := make(map[string][2]any)
 
-			for user, updateKVMap := range editUsers {
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for user, updateKVMap := range editUsers {
+					user_updateKVMap_StringCmd[user] = [2]any{updateKVMap, pipe.HGet(ctx, "users", user)}
+				}
 
-				eg.Go(func() error {
-					user, updateKVMap := user, updateKVMap
-
-					return cache.UpdateUser(sharedCtx, user, updateKVMap)
-				})
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
 			}
 
-			if eg.Wait() != nil {
-				return
+			userUpdates := []string{}
+
+			for user, updateKVMap_StringCmd := range user_updateKVMap_StringCmd {
+				updateKVMap, stringCmd := updateKVMap_StringCmd[0].(map[string]any), updateKVMap_StringCmd[1].(*redis.StringCmd)
+
+				userDataMsgPack, err := stringCmd.Result()
+				if err != nil {
+					helpers.LogError(err)
+					continue
+				}
+
+				userData := helpers.FromMsgPack[map[string]any](userDataMsgPack)
+
+				maps.Copy(userData, updateKVMap)
+
+				userUpdates = append(userUpdates, user, helpers.ToMsgPack(userData))
+			}
+
+			if len(userUpdates) != 0 {
+				err = rdb.HSet(ctx, "users", userUpdates).Err()
+				if err != nil {
+					helpers.LogError(err)
+					return
+				}
 			}
 
 			// acknowledge messages

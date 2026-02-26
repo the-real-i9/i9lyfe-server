@@ -12,7 +12,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func usersFollowedStreamBgWorker(rdb *redis.Client) {
@@ -101,50 +100,43 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			if len(notifications) > 0 {
-				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-					return
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				if len(notifications) > 0 {
+					cache.StoreNewNotifications(pipe, ctx, notifications)
+
+					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
 				}
 
-				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-					return
-				}
-			}
-
-			eg, sharedCtx := errgroup.WithContext(ctx)
-
-			for followerUser, followingUser_score_Pairs := range userFollowings {
-				eg.Go(func() error {
-					followerUser, followingUser_score_Pairs := followerUser, followingUser_score_Pairs
-
-					return cache.StoreUserFollowings(sharedCtx, followerUser, followingUser_score_Pairs)
-				})
-			}
-
-			for followingUser, followerUser_score_Pairs := range userFollowers {
-				eg.Go(func() error {
-					followingUser, followerUser_score_Pairs := followingUser, followerUser_score_Pairs
-
-					return cache.StoreUserFollowers(sharedCtx, followingUser, followerUser_score_Pairs)
-				})
-			}
-
-			for user, notifId_score_Pairs := range userNotifications {
-				eg.Go(func() error {
-					user, notifId_score_Pairs := user, notifId_score_Pairs
-
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
-				})
-			}
-
-			go func() {
-				for _, fn := range sendNotifEventMsgFuncs {
-					fn()
-				}
-			}()
-
-			if eg.Wait() != nil {
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
 				return
+			}
+
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+
+				for followerUser, followingUser_score_Pairs := range userFollowings {
+					cache.StoreUserFollowings(pipe, ctx, followerUser, followingUser_score_Pairs)
+				}
+
+				for followingUser, followerUser_score_Pairs := range userFollowers {
+					cache.StoreUserFollowers(pipe, ctx, followingUser, followerUser_score_Pairs)
+				}
+
+				for user, notifId_score_Pairs := range userNotifications {
+					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			for _, fn := range sendNotifEventMsgFuncs {
+				go fn()
 			}
 
 			// acknowledge messages

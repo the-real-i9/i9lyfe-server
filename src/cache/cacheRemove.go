@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/helpers"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func RemoveOfflineUsers(ctx context.Context, users []any) error {
@@ -16,74 +18,32 @@ func RemoveOfflineUsers(ctx context.Context, users []any) error {
 	return nil
 }
 
-func RemovePostReactions(ctx context.Context, postId string, reactorUsers []string) error {
-	if err := rdb().HDel(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), reactorUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemovePostReactions(pipe redis.Pipeliner, ctx context.Context, postId string, reactorUsers []string) {
+	pipe.HDel(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), reactorUsers...)
 }
 
-func RemovePostReactors(ctx context.Context, postId string, reactorUsers []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), reactorUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemovePostReactors(pipe redis.Pipeliner, ctx context.Context, postId string, reactorUsers []any) {
+	pipe.ZRem(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), reactorUsers...)
 }
 
-func RemovePostSaves(ctx context.Context, postId string, users []any) error {
-	if err := rdb().SRem(ctx, fmt.Sprintf("saved_post:%s:saves", postId), users...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemovePostSaves(pipe redis.Pipeliner, ctx context.Context, postId string, users []any) {
+	pipe.SRem(ctx, fmt.Sprintf("saved_post:%s:saves", postId), users...)
 }
 
-func RemoveCommentReactions(ctx context.Context, commentId string, reactorUsers []string) error {
-	if err := rdb().HDel(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), reactorUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveCommentReactions(pipe redis.Pipeliner, ctx context.Context, commentId string, reactorUsers []string) {
+	pipe.HDel(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), reactorUsers...)
 }
 
-func RemoveCommentReactors(ctx context.Context, commentId string, reactorUsers []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), reactorUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveCommentReactors(pipe redis.Pipeliner, ctx context.Context, commentId string, reactorUsers []any) {
+	pipe.ZRem(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), reactorUsers...)
 }
 
-func RemoveUserReactedPosts(ctx context.Context, user string, postIds []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("user:%s:reacted_posts", user), postIds...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveUserReactedPosts(pipe redis.Pipeliner, ctx context.Context, user string, postIds []any) {
+	pipe.ZRem(ctx, fmt.Sprintf("user:%s:reacted_posts", user), postIds...)
 }
 
-func RemoveUserSavedPosts(ctx context.Context, user string, postIds []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("user:%s:saved_posts", user), postIds...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveUserSavedPosts(pipe redis.Pipeliner, ctx context.Context, user string, postIds []any) {
+	pipe.ZRem(ctx, fmt.Sprintf("user:%s:saved_posts", user), postIds...)
 }
 
 func RemoveChatHistoryEntries(ctx context.Context, CHEIds []string) error {
@@ -96,20 +56,9 @@ func RemoveChatHistoryEntries(ctx context.Context, CHEIds []string) error {
 	return nil
 }
 
-func RemoveUserChatHistory(ctx context.Context, ownerUser, partnerUser string, CHEIds []any) error {
-	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", ownerUser, partnerUser), CHEIds...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	if err := rdb().ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", partnerUser, ownerUser), CHEIds...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveUserChatHistory(pipe redis.Pipeliner, ctx context.Context, ownerUser, partnerUser string, CHEIds []any) {
+	pipe.ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", ownerUser, partnerUser), CHEIds...)
+	pipe.ZRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", partnerUser, ownerUser), CHEIds...)
 }
 
 func RemoveUserFollowers(ctx context.Context, followingUser string, followerUsers []any) error {
@@ -132,14 +81,8 @@ func RemoveUserFollowings(ctx context.Context, followerUser string, followingUse
 	return nil
 }
 
-func RemoveMsgReactions(ctx context.Context, msgId string, reactorUsers []string) error {
-	if err := rdb().HDel(ctx, fmt.Sprintf("message:%s:reactions", msgId), reactorUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveMsgReactions(pipe redis.Pipeliner, ctx context.Context, msgId string, reactorUsers []string) {
+	pipe.HDel(ctx, fmt.Sprintf("message:%s:reactions", msgId), reactorUsers...)
 }
 
 func RemoveUnreadMessages(ctx context.Context, readMessages []string) error {
@@ -162,12 +105,6 @@ func RemoveUnreadNotifications(ctx context.Context, readNotifications ...any) er
 	return nil
 }
 
-func RemoveUserChatUnreadMsgs(ctx context.Context, ownerUser, partnerUser string, readMsgs []any) error {
-	if err := rdb().SRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), readMsgs...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func RemoveUserChatUnreadMsgs(pipe redis.Pipeliner, ctx context.Context, ownerUser, partnerUser string, readMsgs []any) {
+	pipe.SRem(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), readMsgs...)
 }

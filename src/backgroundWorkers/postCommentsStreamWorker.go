@@ -73,7 +73,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 			userCommentedPosts := make(map[string][][2]any)
 
-			newCommentDBExtrasFuncs := []func() error{}
+			newCommentDBExtrasFuncs := []func(context.Context) error{}
 
 			notifications := []string{}
 			unreadNotifications := []any{}
@@ -90,7 +90,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 
 				userCommentedPosts[msg.CommenterUser] = append(userCommentedPosts[msg.CommenterUser], [2]any{msg.PostId, float64(msg.CommentCursor)})
 
-				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func() error {
+				newCommentDBExtrasFuncs = append(newCommentDBExtrasFuncs, func(ctx context.Context) error {
 					return postModel.CommentOnExtras(ctx, msg.CommentId, msg.Mentions)
 				})
 
@@ -146,78 +146,85 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			if err := cache.StoreNewComments(ctx, newComments); err != nil {
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				cache.StoreNewComments(pipe, ctx, newComments)
+
+				if len(notifications) > 0 {
+					cache.StoreNewNotifications(pipe, ctx, notifications)
+
+					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
 				return
 			}
 
-			if len(notifications) > 0 {
-				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-					return
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+
+				for postId, commentId_score_Pairs := range postComments {
+					cache.StorePostComments(pipe, ctx, postId, commentId_score_Pairs)
 				}
 
-				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-					return
+				for user, postId_score_Pairs := range userCommentedPosts {
+					cache.StoreUserCommentedPosts(pipe, ctx, user, postId_score_Pairs)
 				}
+
+				for user, notifId_score_Pairs := range userNotifications {
+					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
 			}
 
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			go func() {
+				ctx := context.Background()
+				postId_IntCmd := make(map[string]*redis.IntCmd)
 
-			for postId, commentId_score_Pairs := range postComments {
-				eg.Go(func() error {
-					postId, commentId_score_Pairs := postId, commentId_score_Pairs
-
-					if err := cache.StorePostComments(sharedCtx, postId, commentId_score_Pairs); err != nil {
-						return err
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for postId := range postComments {
+						postId_IntCmd[postId] = cache.GetPostCommentsCount(pipe, ctx, postId)
 					}
-
-					go func() {
-						ctx := context.Background()
-						for postId := range postComments {
-							totalCommentsCount, err := cache.GetPostCommentsCount(ctx, postId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishPostMetric(ctx, map[string]any{
-								"post_id":               postId,
-								"latest_comments_count": totalCommentsCount,
-							})
-						}
-					}()
 
 					return nil
 				})
-			}
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
 
-			for user, postId_score_Pairs := range userCommentedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
+				for postId, tcc := range postId_IntCmd {
+					totalCommentsCount, err := tcc.Result()
+					if err != nil {
+						continue
+					}
 
-					return cache.StoreUserCommentedPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":               postId,
+						"latest_comments_count": totalCommentsCount,
+					})
+				}
+			}()
 
-			for user, notifId_score_Pairs := range userNotifications {
-				eg.Go(func() error {
-					user, notifId_score_Pairs := user, notifId_score_Pairs
-
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
-				})
-			}
+			eg, sharedCtx := errgroup.WithContext(ctx)
 
 			for _, fn := range newCommentDBExtrasFuncs {
 				eg.Go(func() error {
 					fn := fn
 
-					return fn()
+					return fn(sharedCtx)
 				})
 			}
 
-			go func() {
-				for _, fn := range sendNotifEventMsgFuncs {
-					fn()
-				}
-			}()
+			for _, fn := range sendNotifEventMsgFuncs {
+				go fn()
+			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

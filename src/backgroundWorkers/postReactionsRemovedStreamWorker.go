@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
@@ -76,54 +75,58 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for postId, users := range postReactionsRemoved {
+					cache.RemovePostReactions(pipe, ctx, postId, users)
+				}
 
-			for postId, users := range postReactionsRemoved {
-				eg.Go(func() error {
-					postId, users := postId, users
+				for postId, rUsers := range postReactorsRemoved {
+					cache.RemovePostReactors(pipe, ctx, postId, rUsers)
+				}
 
-					if err := cache.RemovePostReactions(sharedCtx, postId, users); err != nil {
-						return err
+				for user, postIds := range userReactionRemovedPosts {
+					cache.RemoveUserReactedPosts(pipe, ctx, user, postIds)
+				}
+
+				for postId, rUsers := range postReactorsRemoved {
+					cache.RemovePostReactors(pipe, ctx, postId, rUsers)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			go func() {
+				ctx := context.Background()
+				postId_IntCmd := make(map[string]*redis.IntCmd)
+
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for postId := range postReactionsRemoved {
+						postId_IntCmd[postId] = cache.GetPostReactionsCount(pipe, ctx, postId)
 					}
-
-					go func() {
-						ctx := context.Background()
-						for postId := range postReactionsRemoved {
-							latestCount, err := cache.GetPostReactionsCount(ctx, postId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishPostMetric(ctx, map[string]any{
-								"post_id":                postId,
-								"latest_reactions_count": latestCount,
-							})
-						}
-					}()
 
 					return nil
 				})
-			}
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
 
-			for user, postIds := range userReactionRemovedPosts {
-				eg.Go(func() error {
-					user, postIds := user, postIds
+				for postId, lc := range postId_IntCmd {
+					latestCount, err := lc.Result()
+					if err != nil {
+						continue
+					}
 
-					return cache.RemoveUserReactedPosts(sharedCtx, user, postIds)
-				})
-			}
-
-			for postId, rUsers := range postReactorsRemoved {
-				eg.Go(func() error {
-					postId, rUsers := postId, rUsers
-
-					return cache.RemovePostReactors(sharedCtx, postId, rUsers)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":                postId,
+						"latest_reactions_count": latestCount,
+					})
+				}
+			}()
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

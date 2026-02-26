@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func postSavesStreamBgWorker(rdb *redis.Client) {
@@ -70,46 +69,50 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for postId, saverUsers := range postSaves {
+					cache.StorePostSaves(pipe, ctx, postId, saverUsers)
+				}
 
-			for postId, saverUsers := range postSaves {
-				eg.Go(func() error {
-					postId, saverUsers := postId, saverUsers
+				for user, postId_score_Pairs := range userSavedPosts {
+					cache.StoreUserSavedPosts(pipe, ctx, user, postId_score_Pairs)
+				}
 
-					if err := cache.StorePostSaves(sharedCtx, postId, saverUsers); err != nil {
-						return err
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			go func() {
+				ctx := context.Background()
+				postId_IntCmd := make(map[string]*redis.IntCmd)
+
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for postId := range postSaves {
+						postId_IntCmd[postId] = cache.GetPostSavesCount(pipe, ctx, postId)
 					}
-
-					go func() {
-						ctx := context.Background()
-						for postId := range postSaves {
-							totalSavesCount, err := cache.GetPostSavesCount(ctx, postId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishPostMetric(ctx, map[string]any{
-								"post_id":            postId,
-								"latest_saves_count": totalSavesCount,
-							})
-						}
-					}()
 
 					return nil
 				})
-			}
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
 
-			for user, postId_score_Pairs := range userSavedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
+				for postId, lc := range postId_IntCmd {
+					totalSavesCount, err := lc.Result()
+					if err != nil {
+						continue
+					}
 
-					return cache.StoreUserSavedPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":            postId,
+						"latest_saves_count": totalSavesCount,
+					})
+				}
+			}()
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

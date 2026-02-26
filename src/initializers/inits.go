@@ -6,6 +6,7 @@ import (
 	"i9lyfe/src/backgroundWorkers"
 	"i9lyfe/src/helpers"
 	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -47,9 +48,10 @@ func initDBPool() error {
 
 func initRedisClient() error {
 	client := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASS"),
-		DB:       0,
+		Addr:         os.Getenv("REDIS_ADDR"),
+		Password:     os.Getenv("REDIS_PASS"),
+		DB:           0,
+		WriteTimeout: 10 * time.Second, // the likelihood of a big write pipeline
 
 		// Explicitly disable maintenance notifications
 		// This prevents the client from sending CLIENT MAINT_NOTIFICATIONS ON

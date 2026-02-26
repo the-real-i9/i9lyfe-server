@@ -28,62 +28,26 @@ func GetComment[T any](ctx context.Context, commentId string) (comment T, err er
 	return helpers.FromMsgPack[T](commentMsgPack), nil
 }
 
-func GetPostReactionsCount(ctx context.Context, postId string) (int64, error) {
-	count, err := rdb().HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetPostReactionsCount(pipe redis.Pipeliner, ctx context.Context, postId string) *redis.IntCmd {
+	return pipe.HLen(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId))
 }
 
-func GetPostCommentsCount(ctx context.Context, postId string) (int64, error) {
-	count, err := rdb().ZCard(ctx, fmt.Sprintf("commented_post:%s:comments", postId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetPostCommentsCount(pipe redis.Pipeliner, ctx context.Context, postId string) *redis.IntCmd {
+	return pipe.ZCard(ctx, fmt.Sprintf("commented_post:%s:comments", postId))
 }
 
-func GetPostSavesCount(ctx context.Context, postId string) (int64, error) {
-	count, err := rdb().SCard(ctx, fmt.Sprintf("saved_post:%s:saves", postId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetPostSavesCount(pipe redis.Pipeliner, ctx context.Context, postId string) *redis.IntCmd {
+	return pipe.SCard(ctx, fmt.Sprintf("saved_post:%s:saves", postId))
 }
 
-func GetPostRepostsCount(ctx context.Context, postId string) (int64, error) {
-	count, err := rdb().SCard(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetPostRepostsCount(pipe redis.Pipeliner, ctx context.Context, postId string) *redis.IntCmd {
+	return pipe.SCard(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId))
 }
 
-func GetCommentReactionsCount(ctx context.Context, commentId string) (int64, error) {
-	count, err := rdb().HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetCommentReactionsCount(pipe redis.Pipeliner, ctx context.Context, commentId string) *redis.IntCmd {
+	return pipe.HLen(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId))
 }
 
-func GetCommentCommentsCount(ctx context.Context, parentCommentId string) (int64, error) {
-	count, err := rdb().ZCard(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId)).Result()
-	if err != nil && err != redis.Nil {
-		helpers.LogError(err)
-		return 0, err
-	}
-
-	return count, nil
+func GetCommentCommentsCount(pipe redis.Pipeliner, ctx context.Context, parentCommentId string) *redis.IntCmd {
+	return pipe.ZCard(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId))
 }

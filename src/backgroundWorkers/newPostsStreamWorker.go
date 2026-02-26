@@ -80,7 +80,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 			userNotifications := make(map[string][][2]any)
 
-			newPostDBExtrasFuncs := []func() error{}
+			newPostDBExtrasFuncs := []func(context.Context) error{}
 
 			sendNotifEventMsgFuncs := []func(){}
 
@@ -94,7 +94,7 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 
 				userFeedPosts[msg.OwnerUser] = append(userFeedPosts[msg.OwnerUser], [2]any{msg.PostId, float64(msg.PostCursor)})
 
-				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, func() error {
+				newPostDBExtrasFuncs = append(newPostDBExtrasFuncs, func(ctx context.Context) error {
 					return postModel.NewPostExtras(ctx, msg.PostId, msg.Mentions, msg.Hashtags)
 				})
 
@@ -126,80 +126,68 @@ func newPostsStreamBgWorker(rdb *redis.Client) {
 					})
 
 					fanOutPostFuncs = append(fanOutPostFuncs, func() {
-						go contentRecommendationService.FanOutPostToFollowers(msg.PostId, float64(msg.PostCursor), msg.OwnerUser)
+						contentRecommendationService.FanOutPostToFollowers(msg.PostId, float64(msg.PostCursor), msg.OwnerUser)
 					})
 				}
 			}
 
 			// batch processing
-			if err := cache.StoreNewPosts(ctx, newPosts); err != nil {
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				cache.StoreNewPosts(pipe, ctx, newPosts)
+
+				if len(notifications) > 0 {
+					cache.StoreNewNotifications(pipe, ctx, notifications)
+					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
 				return
 			}
 
-			if len(notifications) > 0 {
-				if err := cache.StoreNewNotifications(ctx, notifications); err != nil {
-					return
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+
+				for user, postId_score_Pairs := range userPosts {
+					cache.StoreUserPosts(pipe, ctx, user, postId_score_Pairs)
 				}
 
-				if err := cache.StoreUnreadNotifications(ctx, unreadNotifications); err != nil {
-					return
+				for user, postId_score_Pairs := range userFeedPosts {
+					cache.StoreUserFeedPosts(pipe, ctx, user, postId_score_Pairs)
 				}
+
+				for user, postId_score_Pairs := range userMentionedPosts {
+					cache.StoreUserMentionedPosts(pipe, ctx, user, postId_score_Pairs)
+				}
+
+				for user, notifId_score_Pairs := range userNotifications {
+					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
+				}
+
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
 			}
 
 			eg, sharedCtx := errgroup.WithContext(ctx)
-
-			for user, postId_score_Pairs := range userPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					return cache.StoreUserPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
-
-			for user, postId_score_Pairs := range userFeedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					if err := cache.StoreUserFeedPosts(sharedCtx, user, postId_score_Pairs); err != nil {
-						return err
-					}
-
-					return nil
-				})
-			}
-
-			for user, postId_score_Pairs := range userMentionedPosts {
-				eg.Go(func() error {
-					user, postId_score_Pairs := user, postId_score_Pairs
-
-					return cache.StoreUserMentionedPosts(sharedCtx, user, postId_score_Pairs)
-				})
-			}
-
-			for user, notifId_score_Pairs := range userNotifications {
-				eg.Go(func() error {
-					user, notifId_score_Pairs := user, notifId_score_Pairs
-
-					return cache.StoreUserNotifications(sharedCtx, user, notifId_score_Pairs)
-				})
-			}
 
 			for _, fn := range newPostDBExtrasFuncs {
 				eg.Go(func() error {
 					fn := fn
 
-					return fn()
+					return fn(sharedCtx)
 				})
 			}
 
-			go func() {
-				for _, fn := range sendNotifEventMsgFuncs {
-					fn()
-				}
-			}()
+			for _, fn := range sendNotifEventMsgFuncs {
+				go fn()
+			}
 
 			for _, fn := range fanOutPostFuncs {
-				fn()
+				go fn()
 			}
 
 			if eg.Wait() != nil {

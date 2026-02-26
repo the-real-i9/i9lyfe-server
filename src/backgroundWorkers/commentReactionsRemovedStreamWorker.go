@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
@@ -71,47 +70,50 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for commentId, users := range commentReactionsRemoved {
+					cache.RemoveCommentReactions(pipe, ctx, commentId, users)
+				}
 
-			for commentId, users := range commentReactionsRemoved {
+				for commentId, rUsers := range commentReactorsRemoved {
+					cache.RemoveCommentReactors(pipe, ctx, commentId, rUsers)
+				}
 
-				eg.Go(func() error {
-					commentId, users := commentId, users
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
 
-					if err := cache.RemoveCommentReactions(sharedCtx, commentId, users); err != nil {
-						return err
+			go func() {
+				ctx := context.Background()
+				commentId_IntCmd := make(map[string]*redis.IntCmd)
+
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for commentId := range commentReactionsRemoved {
+						commentId_IntCmd[commentId] = cache.GetCommentReactionsCount(pipe, ctx, commentId)
 					}
-
-					go func() {
-						ctx := context.Background()
-						for commentId := range commentReactionsRemoved {
-							latestCount, err := cache.GetCommentReactionsCount(ctx, commentId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishCommentMetric(ctx, map[string]any{
-								"comment_id":             commentId,
-								"latest_reactions_count": latestCount,
-							})
-						}
-					}()
 
 					return nil
 				})
-			}
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
 
-			for commentId, rUsers := range commentReactorsRemoved {
-				eg.Go(func() error {
-					commentId, rUsers := commentId, rUsers
+				for commentId, lc := range commentId_IntCmd {
+					latestCount, err := lc.Result()
+					if err != nil {
+						continue
+					}
 
-					return cache.RemoveCommentReactors(sharedCtx, commentId, rUsers)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
+					realtimeService.PublishCommentMetric(ctx, map[string]any{
+						"comment_id":             commentId,
+						"latest_reactions_count": latestCount,
+					})
+				}
+			}()
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

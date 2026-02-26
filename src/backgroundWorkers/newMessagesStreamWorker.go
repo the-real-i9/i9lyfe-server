@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func newMessagesStreamBgWorker(rdb *redis.Client) {
@@ -108,45 +107,31 @@ func newMessagesStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for ownerUser, partnerUserWithChatInfoPairs := range newUserChats {
+					cache.StoreUserChats(pipe, ctx, ownerUser, partnerUserWithChatInfoPairs)
+				}
 
-			for ownerUser, partnerUserWithChatInfoPairs := range newUserChats {
-				eg.Go(func() error {
-					ownerUser, partnerUserWithChatInfoPairs := ownerUser, partnerUserWithChatInfoPairs
+				for ownerUser, partnerUser_score_Pairs := range userChats {
+					cache.StoreUserChatsSorted(pipe, ctx, ownerUser, partnerUser_score_Pairs)
+				}
 
-					return cache.StoreUserChats(sharedCtx, ownerUser, partnerUserWithChatInfoPairs)
-				})
-			}
+				for ownerUser, partnerUser_score_Pairs := range updatedFromUserChats {
+					cache.StoreUserChatsSorted(pipe, ctx, ownerUser, partnerUser_score_Pairs)
+				}
 
-			for ownerUser, partnerUser_score_Pairs := range userChats {
-				eg.Go(func() error {
-					ownerUser, partnerUser_score_Pairs := ownerUser, partnerUser_score_Pairs
-
-					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_score_Pairs)
-				})
-			}
-
-			for ownerUser, partnerUser_score_Pairs := range updatedFromUserChats {
-				eg.Go(func() error {
-					ownerUser, partnerUser_score_Pairs := ownerUser, partnerUser_score_Pairs
-
-					return cache.StoreUserChatsSorted(sharedCtx, ownerUser, partnerUser_score_Pairs)
-				})
-			}
-
-			for ownerUserPartnerUser, CHEId_score_Pairs := range chatMessages {
-				eg.Go(func() error {
-					ownerUserPartnerUser, CHEId_score_Pairs := ownerUserPartnerUser, CHEId_score_Pairs
-
+				for ownerUserPartnerUser, CHEId_score_Pairs := range chatMessages {
 					var ownerUser, partnerUser string
 
 					fmt.Sscanf(ownerUserPartnerUser, "%s %s", &ownerUser, &partnerUser)
 
-					return cache.StoreUserChatHistory(sharedCtx, ownerUser, partnerUser, CHEId_score_Pairs)
-				})
-			}
+					cache.StoreUserChatHistory(pipe, ctx, ownerUser, partnerUser, CHEId_score_Pairs)
+				}
 
-			if eg.Wait() != nil {
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
 				return
 			}
 

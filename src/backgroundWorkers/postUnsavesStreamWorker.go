@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func postUnsavesStreamBgWorker(rdb *redis.Client) {
@@ -70,46 +69,50 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for postId, users := range postUnsaves {
+					cache.RemovePostSaves(pipe, ctx, postId, users)
+				}
 
-			for postId, users := range postUnsaves {
-				eg.Go(func() error {
-					postId, users := postId, users
+				for user, postIds := range userUnsavedPosts {
+					cache.RemoveUserSavedPosts(pipe, ctx, user, postIds)
+				}
 
-					if err := cache.RemovePostSaves(sharedCtx, postId, users); err != nil {
-						return err
+				return nil
+			})
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			go func() {
+				ctx := context.Background()
+				postId_IntCmd := make(map[string]*redis.IntCmd)
+
+				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+					for postId := range postUnsaves {
+						postId_IntCmd[postId] = cache.GetPostSavesCount(pipe, ctx, postId)
 					}
-
-					go func() {
-						ctx := context.Background()
-						for postId := range postUnsaves {
-							latestCount, err := cache.GetPostSavesCount(ctx, postId)
-							if err != nil {
-								continue
-							}
-
-							realtimeService.PublishPostMetric(ctx, map[string]any{
-								"post_id":            postId,
-								"latest_saves_count": latestCount,
-							})
-						}
-					}()
 
 					return nil
 				})
-			}
+				if err != nil && err != redis.Nil {
+					helpers.LogError(err)
+					return
+				}
 
-			for user, postIds := range userUnsavedPosts {
-				eg.Go(func() error {
-					user, postIds := user, postIds
+				for postId, lc := range postId_IntCmd {
+					latestCount, err := lc.Result()
+					if err != nil {
+						continue
+					}
 
-					return cache.RemoveUserSavedPosts(sharedCtx, user, postIds)
-				})
-			}
-
-			if eg.Wait() != nil {
-				return
-			}
+					realtimeService.PublishPostMetric(ctx, map[string]any{
+						"post_id":            postId,
+						"latest_saves_count": latestCount,
+					})
+				}
+			}()
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

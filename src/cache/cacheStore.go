@@ -48,7 +48,7 @@ func StoreOfflineUsers(ctx context.Context, user_lastSeen_Pairs map[string]int64
 	return nil
 }
 
-func StoreUserFeedPosts(ctx context.Context, user string, postId_score_Pairs [][2]any) error {
+func StoreUserFeedPosts(pipe redis.Pipeliner, ctx context.Context, user string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -59,16 +59,10 @@ func StoreUserFeedPosts(ctx context.Context, user string, postId_score_Pairs [][
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:feed", user), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:feed", user), members...)
 }
 
-func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_score_Pair [][2]any) error {
+func StoreUserFollowers(pipe redis.Pipeliner, ctx context.Context, followingUser string, followerUser_score_Pair [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range followerUser_score_Pair {
 		user := pair[0]
@@ -79,16 +73,10 @@ func StoreUserFollowers(ctx context.Context, followingUser string, followerUser_
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:followers", followingUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:followers", followingUser), members...)
 }
 
-func StoreUserFollowings(ctx context.Context, followerUser string, followingUser_score_Pairs [][2]any) error {
+func StoreUserFollowings(pipe redis.Pipeliner, ctx context.Context, followerUser string, followingUser_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range followingUser_score_Pairs {
 		user := pair[0]
@@ -99,16 +87,10 @@ func StoreUserFollowings(ctx context.Context, followerUser string, followingUser
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:followings", followerUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:followings", followerUser), members...)
 }
 
-func StoreUserPosts(ctx context.Context, user string, postId_score_Pairs [][2]any) error {
+func StoreUserPosts(pipe redis.Pipeliner, ctx context.Context, user string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -119,16 +101,10 @@ func StoreUserPosts(ctx context.Context, user string, postId_score_Pairs [][2]an
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:posts", user), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:posts", user), members...)
 }
 
-func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_score_Pairs [][2]any) error {
+func StoreUserMentionedPosts(pipe redis.Pipeliner, ctx context.Context, mentionedUser string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -139,16 +115,10 @@ func StoreUserMentionedPosts(ctx context.Context, mentionedUser string, postId_s
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:mentioned_posts", mentionedUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:mentioned_posts", mentionedUser), members...)
 }
 
-func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_score_Pairs [][2]any) error {
+func StoreUserReactedPosts(pipe redis.Pipeliner, ctx context.Context, reactorUser string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -159,16 +129,10 @@ func StoreUserReactedPosts(ctx context.Context, reactorUser string, postId_score
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:reacted_posts", reactorUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:reacted_posts", reactorUser), members...)
 }
 
-func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_score_Pairs [][2]any) error {
+func StoreUserCommentedPosts(pipe redis.Pipeliner, ctx context.Context, commenterUser string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -179,16 +143,10 @@ func StoreUserCommentedPosts(ctx context.Context, commenterUser string, postId_s
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:commented_posts", commenterUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:commented_posts", commenterUser), members...)
 }
 
-func StoreUserRepostedPosts(ctx context.Context, user string, postId_score_Pairs [][2]any) error {
+func StoreUserRepostedPosts(pipe redis.Pipeliner, ctx context.Context, user string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -199,16 +157,10 @@ func StoreUserRepostedPosts(ctx context.Context, user string, postId_score_Pairs
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:reposted_posts", user), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:reposted_posts", user), members...)
 }
 
-func StoreUserNotifications(ctx context.Context, user string, notifId_score_Pairs [][2]any) error {
+func StoreUserNotifications(pipe redis.Pipeliner, ctx context.Context, user string, notifId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range notifId_score_Pairs {
 		notifId := pair[0]
@@ -218,16 +170,11 @@ func StoreUserNotifications(ctx context.Context, user string, notifId_score_Pair
 			Member: notifId,
 		})
 	}
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...).Err(); err != nil {
-		helpers.LogError(err)
 
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", user, time.Now().Year(), time.Now().Month()), members...)
 }
 
-func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_score_Pairs [][2]any) error {
+func StoreUserSavedPosts(pipe redis.Pipeliner, ctx context.Context, saverUser string, postId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range postId_score_Pairs {
 		postId := pair[0]
@@ -238,26 +185,14 @@ func StoreUserSavedPosts(ctx context.Context, saverUser string, postId_score_Pai
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:saved_posts", saverUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:saved_posts", saverUser), members...)
 }
 
-func StorePostReactions(ctx context.Context, postId string, userWithEmojiPairs []string) error {
-	if err := rdb().HSet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), userWithEmojiPairs).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StorePostReactions(pipe redis.Pipeliner, ctx context.Context, postId string, userWithEmojiPairs []string) {
+	pipe.HSet(ctx, fmt.Sprintf("reacted_post:%s:reactions", postId), userWithEmojiPairs)
 }
 
-func StorePostReactors(ctx context.Context, postId string, reactorUser_score_Pairs [][2]any) error {
+func StorePostReactors(pipe redis.Pipeliner, ctx context.Context, postId string, reactorUser_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range reactorUser_score_Pairs {
 		rUser := pair[0]
@@ -268,26 +203,14 @@ func StorePostReactors(ctx context.Context, postId string, reactorUser_score_Pai
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("reacted_post:%s:reactors", postId), members...)
 }
 
-func StoreCommentReactions(ctx context.Context, commentId string, userWithEmojiPairs []string) error {
-	if err := rdb().HSet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), userWithEmojiPairs).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreCommentReactions(pipe redis.Pipeliner, ctx context.Context, commentId string, userWithEmojiPairs []string) {
+	pipe.HSet(ctx, fmt.Sprintf("reacted_comment:%s:reactions", commentId), userWithEmojiPairs)
 }
 
-func StoreCommentReactors(ctx context.Context, commentId string, reactorUser_score_Pairs [][2]any) error {
+func StoreCommentReactors(pipe redis.Pipeliner, ctx context.Context, commentId string, reactorUser_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range reactorUser_score_Pairs {
 		rUser := pair[0]
@@ -298,16 +221,10 @@ func StoreCommentReactors(ctx context.Context, commentId string, reactorUser_sco
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("reacted_comment:%s:reactors", commentId), members...)
 }
 
-func StorePostComments(ctx context.Context, postId string, commentId_score_Pairs [][2]any) error {
+func StorePostComments(pipe redis.Pipeliner, ctx context.Context, postId string, commentId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range commentId_score_Pairs {
 		commentId := pair[0]
@@ -318,36 +235,18 @@ func StorePostComments(ctx context.Context, postId string, commentId_score_Pairs
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("commented_post:%s:comments", postId), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("commented_post:%s:comments", postId), members...)
 }
 
-func StorePostSaves(ctx context.Context, postId string, saverUsers []any) error {
-	if err := rdb().SAdd(ctx, fmt.Sprintf("saved_post:%s:saves", postId), saverUsers...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StorePostSaves(pipe redis.Pipeliner, ctx context.Context, postId string, saverUsers []any) {
+	pipe.SAdd(ctx, fmt.Sprintf("saved_post:%s:saves", postId), saverUsers...)
 }
 
-func StorePostReposts(ctx context.Context, postId string, repostIds []any) error {
-	if err := rdb().SAdd(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId), repostIds...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StorePostReposts(pipe redis.Pipeliner, ctx context.Context, postId string, repostIds []any) {
+	pipe.SAdd(ctx, fmt.Sprintf("reposted_post:%s:reposts", postId), repostIds...)
 }
 
-func StoreCommentComments(ctx context.Context, parentCommentId string, commentId_score_Pairs [][2]any) error {
+func StoreCommentComments(pipe redis.Pipeliner, ctx context.Context, parentCommentId string, commentId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range commentId_score_Pairs {
 		commentId := pair[0]
@@ -358,76 +257,34 @@ func StoreCommentComments(ctx context.Context, parentCommentId string, commentId
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("commented_comment:%s:comments", parentCommentId), members...)
 }
 
-func StoreNewPosts(ctx context.Context, newPosts []string) error {
-	if err := rdb().HSet(ctx, "posts", newPosts).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreNewPosts(pipe redis.Pipeliner, ctx context.Context, newPosts []string) {
+	pipe.HSet(ctx, "posts", newPosts)
 }
 
-func StoreNewComments(ctx context.Context, newComments []string) error {
-	if err := rdb().HSet(ctx, "comments", newComments).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreNewComments(pipe redis.Pipeliner, ctx context.Context, newComments []string) {
+	pipe.HSet(ctx, "comments", newComments)
 }
 
-func StoreNewNotifications(ctx context.Context, newNotifs []string) error {
-	if err := rdb().HSet(ctx, "notifications", newNotifs).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreNewNotifications(pipe redis.Pipeliner, ctx context.Context, newNotifs []string) {
+	pipe.HSet(ctx, "notifications", newNotifs)
 }
 
-func StoreUnreadNotifications(ctx context.Context, unreadNotifs []any) error {
-	if err := rdb().SAdd(ctx, "unread_notifications", unreadNotifs...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreUnreadNotifications(pipe redis.Pipeliner, ctx context.Context, unreadNotifs []any) {
+	pipe.SAdd(ctx, "unread_notifications", unreadNotifs...)
 }
 
-func StoreUserChats(ctx context.Context, ownerUser string, partnerUserWithChatInfoPairs []string) error {
-	if err := rdb().HSet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUserWithChatInfoPairs).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreUserChats(pipe redis.Pipeliner, ctx context.Context, ownerUser string, partnerUserWithChatInfoPairs []string) {
+	pipe.HSet(ctx, fmt.Sprintf("user:%s:chats", ownerUser), partnerUserWithChatInfoPairs)
 }
 
-func StoreUserChatUnreadMsgs(ctx context.Context, ownerUser, partnerUser string, unreadMsgs []any) error {
-	if err := rdb().SAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), unreadMsgs...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreUserChatUnreadMsgs(pipe redis.Pipeliner, ctx context.Context, ownerUser, partnerUser string, unreadMsgs []any) {
+	pipe.SAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:unread_messages", ownerUser, partnerUser), unreadMsgs...)
 }
 
-func StoreUserChatsSorted(ctx context.Context, ownerUser string, partnerUser_score_Pairs map[string]float64) error {
+func StoreUserChatsSorted(pipe redis.Pipeliner, ctx context.Context, ownerUser string, partnerUser_score_Pairs map[string]float64) {
 	members := []redis.Z{}
 	for partnerUser, score := range partnerUser_score_Pairs {
 
@@ -437,13 +294,7 @@ func StoreUserChatsSorted(ctx context.Context, ownerUser string, partnerUser_sco
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("user:%s:chats_sorted", ownerUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("user:%s:chats_sorted", ownerUser), members...)
 }
 
 func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
@@ -456,7 +307,7 @@ func StoreChatHistoryEntries(ctx context.Context, newCHEs []string) error {
 	return nil
 }
 
-func StoreUserChatHistory(ctx context.Context, ownerUser, partnerUser string, CHEId_score_Pairs [][2]any) error {
+func StoreUserChatHistory(pipe redis.Pipeliner, ctx context.Context, ownerUser, partnerUser string, CHEId_score_Pairs [][2]any) {
 	members := []redis.Z{}
 	for _, pair := range CHEId_score_Pairs {
 		CHEId := pair[0]
@@ -467,27 +318,10 @@ func StoreUserChatHistory(ctx context.Context, ownerUser, partnerUser string, CH
 		})
 	}
 
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", ownerUser, partnerUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	if err := rdb().ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", partnerUser, ownerUser), members...).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+	pipe.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", ownerUser, partnerUser), members...)
+	pipe.ZAdd(ctx, fmt.Sprintf("chat:owner:%s:partner:%s:history", partnerUser, ownerUser), members...)
 }
 
-func StoreMsgReactions(ctx context.Context, msgId string, userWithEmojiPairs []string) error {
-	if err := rdb().HSet(ctx, fmt.Sprintf("message:%s:reactions", msgId), userWithEmojiPairs).Err(); err != nil {
-		helpers.LogError(err)
-
-		return err
-	}
-
-	return nil
+func StoreMsgReactions(pipe redis.Pipeliner, ctx context.Context, msgId string, userWithEmojiPairs []string) {
+	pipe.HSet(ctx, fmt.Sprintf("message:%s:reactions", msgId), userWithEmojiPairs)
 }

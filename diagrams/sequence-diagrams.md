@@ -1,5 +1,7 @@
 # Sequence Diagrams
 
+## User Signup
+
 ```mermaid
 sequenceDiagram
   Alice->>John: Hello John, how are you?
@@ -8,7 +10,7 @@ sequenceDiagram
   John-->>Alice: I feel great!
 ```
 
-Another one
+## User Signin
 
 ```mermaid
 sequenceDiagram
