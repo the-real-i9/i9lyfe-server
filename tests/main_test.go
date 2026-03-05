@@ -25,6 +25,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/encryptcookie"
 	"github.com/gofiber/fiber/v3/middleware/helmet"
+	"github.com/gofiber/utils/v2"
 )
 
 const HOST_URL string = "http://localhost:8000"
@@ -128,7 +129,7 @@ func errResBody(body io.ReadCloser) (string, error) {
 		return "", err
 	}
 
-	return string(bt), nil
+	return utils.UnsafeString(bt), nil
 }
 
 func wsWriteMsgPack(wsConn *websocket.Conn, data any) error {

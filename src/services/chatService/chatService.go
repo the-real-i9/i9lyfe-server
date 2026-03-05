@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
+	"github.com/gofiber/utils/v2"
 )
 
 func GetChats(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.ChatSnippet, error) {
@@ -282,7 +282,7 @@ type AuthMediaDataT struct {
 func AuthorizeUpload(ctx context.Context, msgType, mediaMIME string) (AuthMediaDataT, error) {
 	var res AuthMediaDataT
 
-	mediaCloudName := fmt.Sprintf("uploads/chat/%s/%d%d/%s", msgType, time.Now().Year(), time.Now().Month(), uuid.NewString())
+	mediaCloudName := fmt.Sprintf("uploads/chat/%s/%d%d/%s", msgType, time.Now().Year(), time.Now().Month(), utils.UUIDv4())
 
 	url, err := cloudStorageService.GetUploadUrl(mediaCloudName, mediaMIME)
 	if err != nil {
@@ -302,7 +302,7 @@ func AuthorizeVisualUpload(ctx context.Context, msgType string, mediaMIME [2]str
 
 		which := [2]string{"blur_placeholder", "actual"}
 
-		mediaCloudName := fmt.Sprintf("uploads/chat/%s/%d%d/%s-%s", msgType, time.Now().Year(), time.Now().Month(), uuid.NewString(), which[blurPlch0_actual1])
+		mediaCloudName := fmt.Sprintf("uploads/chat/%s/%d%d/%s-%s", msgType, time.Now().Year(), time.Now().Month(), utils.UUIDv4(), which[blurPlch0_actual1])
 
 		url, err := cloudStorageService.GetUploadUrl(mediaCloudName, mime)
 		if err != nil {

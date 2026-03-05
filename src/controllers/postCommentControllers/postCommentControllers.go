@@ -22,29 +22,7 @@ func AuthorizePostUpload(c fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := postCommentService.AuthorizePostMediaUpload(ctx, body.PostType, body.MediaMIME, len(body.MediaSizes))
-	if err != nil {
-		return err
-	}
-
-	return c.MsgPack(respData)
-}
-
-func AuthorizeCommentUpload(c fiber.Ctx) error {
-	ctx := c.Context()
-
-	var body authorizeCommentUploadBody
-
-	err := c.Bind().MsgPack(&body)
-	if err != nil {
-		return err
-	}
-
-	if err = body.Validate(); err != nil {
-		return err
-	}
-
-	respData, err := postCommentService.AuthorizeCommAttUpload(ctx, body.AttachmentMIME)
+	respData, err := postCommentService.AuthorizedPostMediaUpload(ctx, body.PostType, body.MediaMIME, len(body.MediaSizes))
 	if err != nil {
 		return err
 	}
@@ -176,6 +154,28 @@ func RemoveReactionToPost(c fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
 	respData, err := postCommentService.RemoveReactionToPost(ctx, clientUser.Username, c.Params("postId"))
+	if err != nil {
+		return err
+	}
+
+	return c.MsgPack(respData)
+}
+
+func AuthorizeCommentUpload(c fiber.Ctx) error {
+	ctx := c.Context()
+
+	var body authorizeCommentUploadBody
+
+	err := c.Bind().MsgPack(&body)
+	if err != nil {
+		return err
+	}
+
+	if err = body.Validate(); err != nil {
+		return err
+	}
+
+	respData, err := postCommentService.AuthorizedCommAttUpload(ctx, body.AttachmentMIME)
 	if err != nil {
 		return err
 	}

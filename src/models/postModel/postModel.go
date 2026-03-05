@@ -44,8 +44,6 @@ func New(ctx context.Context, clientUsername string, mediaCloudNames []string, p
 		return NewPostT{}, fiber.ErrInternalServerError
 	}
 
-	newPost.Cursor += time.Now().UnixMicro()
-
 	return *newPost, nil
 }
 

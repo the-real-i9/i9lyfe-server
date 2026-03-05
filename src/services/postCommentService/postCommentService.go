@@ -12,10 +12,11 @@ import (
 	"i9lyfe/src/services/eventStreamService/eventTypes"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
+	"github.com/gofiber/utils/v2"
 )
 
 func extractHashtags(description string) []string {
@@ -75,17 +76,17 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 		return nil, nil
 	}
 
-	go func(newPost post.NewPostT, clientUsername string, hashtags, mentions []string, at int64) {
-		eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
-			OwnerUser:  clientUsername,
-			PostId:     newPost.Id,
-			PostData:   helpers.ToMsgPack(newPost),
-			Hashtags:   hashtags,
-			Mentions:   mentions,
-			At:         at,
-			PostCursor: newPost.Cursor,
-		})
-	}(newPost, clientUsername, hashtags, mentions, at)
+	newPost.Cursor += time.Now().UnixMicro()
+
+	go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
+		OwnerUser:  clientUsername,
+		PostId:     newPost.Id,
+		PostData:   helpers.ToMsgPack(newPost),
+		Hashtags:   hashtags,
+		Mentions:   mentions,
+		At:         at,
+		PostCursor: newPost.Cursor,
+	})
 
 	return map[string]any{"new_post_id": newPost.Id, "post_cursor": newPost.Cursor}, nil
 }
@@ -442,10 +443,10 @@ type AuthCommAttDataT struct {
 	AttachmentCloudName string `msgpack:"attachmentCloudName"`
 }
 
-func AuthorizeCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCommAttDataT, error) {
+func AuthorizedCommAttUpload(ctx context.Context, attachmentMIME string) (AuthCommAttDataT, error) {
 	var res AuthCommAttDataT
 
-	attachmentCloudName := fmt.Sprintf("uploads/comment/%d%d/%s", time.Now().Year(), time.Now().Month(), uuid.NewString())
+	attachmentCloudName := fmt.Sprintf("uploads/comment/%d%d/%s", time.Now().Year(), time.Now().Month(), utils.UUIDv4())
 
 	url, err := cloudStorageService.GetUploadUrl(attachmentCloudName, attachmentMIME)
 	if err != nil {
@@ -463,18 +464,18 @@ type AuthPostMediaDataT struct {
 	MediaCloudName string `msgpack:"mediaCloudName"`
 }
 
-func AuthorizePostMediaUpload(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthPostMediaDataT, error) {
+func AuthorizedPostMediaUpload(ctx context.Context, postType string, mediaMIME [2]string, mediaCount int) ([]AuthPostMediaDataT, error) {
 	var res []AuthPostMediaDataT
 
 	for i := range mediaCount {
-		var blurPlchActualUrl string
-		var blurPlchActualMediaCloudName string
+		var blurPlchActualUrl strings.Builder
+		var blurPlchActualMediaCloudName strings.Builder
 
 		for blurPlch0_actual1, mime := range mediaMIME {
 
 			which := [2]string{"blur_placeholder", "actual"}
 
-			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), uuid.NewString(), i, which[blurPlch0_actual1])
+			mediaCloudName := fmt.Sprintf("uploads/post/%s/%d%d/%s-media_%d_%s", postType, time.Now().Year(), time.Now().Month(), utils.UUIDv4(), i, which[blurPlch0_actual1])
 
 			url, err := cloudStorageService.GetUploadUrl(mediaCloudName, mime)
 			if err != nil {
@@ -482,23 +483,23 @@ func AuthorizePostMediaUpload(ctx context.Context, postType string, mediaMIME [2
 			}
 
 			if blurPlch0_actual1 == 0 {
-				blurPlchActualUrl += "blur_placeholder:"
-				blurPlchActualMediaCloudName += "blur_placeholder:"
+				blurPlchActualUrl.WriteString("blur_placeholder:")
+				blurPlchActualMediaCloudName.WriteString("blur_placeholder:")
 			} else {
-				blurPlchActualUrl += "actual:"
-				blurPlchActualMediaCloudName += "actual:"
+				blurPlchActualUrl.WriteString("actual:")
+				blurPlchActualMediaCloudName.WriteString("actual:")
 			}
 
-			blurPlchActualUrl += url
-			blurPlchActualMediaCloudName += mediaCloudName
+			blurPlchActualUrl.WriteString(url)
+			blurPlchActualMediaCloudName.WriteString(mediaCloudName)
 
 			if blurPlch0_actual1 == 0 {
-				blurPlchActualUrl += " "
-				blurPlchActualMediaCloudName += " "
+				blurPlchActualUrl.WriteString(" ")
+				blurPlchActualMediaCloudName.WriteString(" ")
 			}
 		}
 
-		res = append(res, AuthPostMediaDataT{UploadUrl: blurPlchActualUrl, MediaCloudName: blurPlchActualMediaCloudName})
+		res = append(res, AuthPostMediaDataT{UploadUrl: blurPlchActualUrl.String(), MediaCloudName: blurPlchActualMediaCloudName.String()})
 	}
 
 	return res, nil
