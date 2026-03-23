@@ -160,7 +160,7 @@ WebSockets API: [Here](./docs/asyncapi.json) Open in [AsyncAPI Editor](studio.as
 ## API Diagrams &#x1f3a8;
 
 ### Architecture Diagram
-API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](editor.platuml.com))
+API (C4) Component Level Diagram: [Here](./diagrams/arch.pu). (Open in [PlantUML Editor](editor.platuml.com))
 
 <details>
   <summary>Show Diagram</summary>
@@ -193,7 +193,7 @@ Here we just want to test that the API endpoints/features work under normal, san
 
 #### User Post & Comment Story
 
-[This test case](./tests//userPostCommentStory_test.go) builds a story around post creation, mentioned user notifications, post fan-outs, commenting on a post, notifying the post owner, notifying users mentioned in comments, reacting to a post or comment etc.
+[This test case](./tests/userPostCommentStory_test.go) builds a story around post creation, mentioned user notifications, post fan-outs, commenting on a post, notifying the post owner, notifying users mentioned in comments, reacting to a post or comment etc.
 
 More feature tests can be found [here](./tests)
 
