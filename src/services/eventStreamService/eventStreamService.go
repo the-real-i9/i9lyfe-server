@@ -3,8 +3,8 @@ package eventStreamService
 import (
 	"context"
 	"i9lyfe/src/appGlobals"
-	"i9lyfe/src/domain/.types/eventTypes"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/eventTypes"
 
 	"github.com/redis/go-redis/v9"
 )

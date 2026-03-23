@@ -1,9 +1,9 @@
 package postCommentControllers
 
 import (
-	"i9lyfe/src/domain/.types/appTypes"
 	"i9lyfe/src/domain/postComment/postCommentService"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/appTypes"
 
 	"github.com/gofiber/fiber/v3"
 )

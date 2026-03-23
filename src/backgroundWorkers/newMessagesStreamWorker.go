@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/eventStreamService/eventTypes"
+	"i9lyfe/src/types/eventTypes"
 	"log"
 
 	"github.com/redis/go-redis/v9"

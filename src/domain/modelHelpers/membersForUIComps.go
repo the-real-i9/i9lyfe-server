@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"i9lyfe/src/domain/.types/UITypes"
+	"i9lyfe/src/types/UITypes"
 
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"

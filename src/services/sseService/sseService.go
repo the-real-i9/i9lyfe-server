@@ -2,8 +2,8 @@ package sseService
 
 import (
 	"context"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/appTypes"
 	"sync"
 
 	"github.com/gofiber/contrib/v3/websocket"

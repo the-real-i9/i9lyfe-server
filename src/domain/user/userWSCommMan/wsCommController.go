@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"i9lyfe/src/domain/.services/pubsubService"
-	"i9lyfe/src/domain/.services/sseService"
-	"i9lyfe/src/domain/.types/appTypes"
 	"i9lyfe/src/domain/chat/chatControllers"
 	"i9lyfe/src/domain/user/userService"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/sseService"
+	"i9lyfe/src/types/appTypes"
 
 	"log"
 

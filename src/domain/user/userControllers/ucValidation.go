@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"i9lyfe/src/domain/.services/mediaStorageService"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/mediaStorageService"
 
 	"regexp"
 

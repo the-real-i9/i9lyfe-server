@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/cache"
+	"i9lyfe/src/domain/modelHelpers"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/modelHelpers"
-	"i9lyfe/src/services/realtimeService"
+	"i9lyfe/src/services/sseService"
+	"i9lyfe/src/types/appTypes"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -51,7 +51,7 @@ func FanOutPostToFollowers(postId string, postCursor float64, user string) {
 					continue
 				}
 
-				realtimeService.SendEventMsg(fuser, appTypes.ServerEventMsg{
+				sseService.SendEventMsg(fuser, appTypes.ServerEventMsg{
 					Event: "new feed post",
 					Data:  postUI,
 				})

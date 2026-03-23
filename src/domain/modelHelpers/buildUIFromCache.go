@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/.services/mediaStorageService"
-	"i9lyfe/src/domain/.types/UITypes"
+	"i9lyfe/src/services/mediaStorageService"
+	"i9lyfe/src/types/UITypes"
 )
 
 func BuildPostUIFromCache(ctx context.Context, postId, clientUsername string) (postUI UITypes.Post, err error) {

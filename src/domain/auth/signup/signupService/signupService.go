@@ -3,10 +3,10 @@ package signupService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/domain/.types/UITypes"
-	"i9lyfe/src/domain/.types/appTypes"
 	"i9lyfe/src/domain/user/userService"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/UITypes"
+	"i9lyfe/src/types/appTypes"
 
 	"i9lyfe/src/services/mailService"
 	"i9lyfe/src/services/securityServices"

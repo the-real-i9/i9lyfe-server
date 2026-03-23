@@ -1,6 +1,6 @@
 package eventTypes
 
-import "i9lyfe/src/domain/.types/appTypes"
+import "i9lyfe/src/types/appTypes"
 
 type NewUserEvent struct {
 	Username string `redis:"username" msgpack:"username"`

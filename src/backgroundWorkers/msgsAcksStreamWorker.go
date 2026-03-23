@@ -3,10 +3,10 @@ package backgroundWorkers
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/cache"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/eventStreamService/eventTypes"
+	"i9lyfe/src/types/appTypes"
+	"i9lyfe/src/types/eventTypes"
 	"log"
 	"maps"
 

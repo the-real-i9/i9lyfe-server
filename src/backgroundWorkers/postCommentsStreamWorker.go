@@ -3,13 +3,15 @@ package backgroundWorkers
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/appTypes"
 	"i9lyfe/src/cache"
+	"i9lyfe/src/domain/modelHelpers"
+	"i9lyfe/src/domain/postComment/postModel"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/models/modelHelpers"
-	"i9lyfe/src/models/postModel"
-	"i9lyfe/src/services/eventStreamService/eventTypes"
-	"i9lyfe/src/services/realtimeService"
+	"i9lyfe/src/services/pubsubService"
+	"i9lyfe/src/services/sseService"
+
+	"i9lyfe/src/types/appTypes"
+	"i9lyfe/src/types/eventTypes"
 	"log"
 
 	"github.com/redis/go-redis/v9"
@@ -111,7 +113,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), copNotifUniqueId)
 
-						realtimeService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
+						sseService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
 							Event: "new notification",
 							Data:  notifSnippet,
 						})
@@ -137,7 +139,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 					sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
 						notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), micNotifUniqueId)
 
-						realtimeService.SendEventMsg(mu, appTypes.ServerEventMsg{
+						sseService.SendEventMsg(mu, appTypes.ServerEventMsg{
 							Event: "new notification",
 							Data:  notifSnippet,
 						})
@@ -205,7 +207,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 						continue
 					}
 
-					realtimeService.PublishPostMetric(ctx, map[string]any{
+					pubsubService.PublishPostMetric(ctx, map[string]any{
 						"post_id":               postId,
 						"latest_comments_count": totalCommentsCount,
 					})

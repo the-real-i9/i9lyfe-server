@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"i9lyfe/src/domain/.services/cache"
-	"i9lyfe/src/domain/.services/eventStreamService"
-	"i9lyfe/src/domain/.services/mediaStorageService"
-	"i9lyfe/src/domain/.services/sseService"
-	"i9lyfe/src/domain/.types/UITypes"
-	"i9lyfe/src/domain/.types/appTypes"
-	"i9lyfe/src/domain/.types/eventTypes"
+	"i9lyfe/src/cache"
 	chat "i9lyfe/src/domain/chat/chatModel"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/mediaStorageService"
+	"i9lyfe/src/services/sseService"
+	"i9lyfe/src/types/UITypes"
+	"i9lyfe/src/types/appTypes"
+	"i9lyfe/src/types/eventTypes"
 
 	"time"
 

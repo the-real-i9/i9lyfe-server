@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
-	"i9lyfe/src/appTypes"
-	"i9lyfe/src/domain/.intServices/sseService"
+	"i9lyfe/src/services/sseService"
+
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/appTypes"
 
 	"github.com/gofiber/contrib/v3/websocket"
 	"github.com/redis/go-redis/v9"

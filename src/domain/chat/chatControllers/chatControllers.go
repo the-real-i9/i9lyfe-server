@@ -3,9 +3,9 @@ package chatControllers
 import (
 	"context"
 
-	"i9lyfe/src/domain/.types/appTypes"
 	"i9lyfe/src/domain/chat/chatService"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/appTypes"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/vmihailenco/msgpack/v5"

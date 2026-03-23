@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"i9lyfe/src/appGlobals"
-	"i9lyfe/src/domain/.helpers/modelHelpers"
-	"i9lyfe/src/domain/.types/UITypes"
+	"i9lyfe/src/domain/modelHelpers"
+	"i9lyfe/src/types/UITypes"
 
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"i9lyfe/src/appGlobals"
 
-	"i9lyfe/src/domain/.helpers/modelHelpers"
-	"i9lyfe/src/domain/.services/cache"
-	"i9lyfe/src/domain/.types/UITypes"
+	"i9lyfe/src/cache"
+	"i9lyfe/src/domain/modelHelpers"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
+	"i9lyfe/src/types/UITypes"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"

@@ -3,13 +3,14 @@ package userService
 import (
 	"context"
 	"fmt"
-	"i9lyfe/src/domain/.intServices/mediaStorageService"
-	"i9lyfe/src/domain/.services/eventStreamService"
-	"i9lyfe/src/domain/.services/pubsubService"
-	"i9lyfe/src/domain/.types/UITypes"
-	"i9lyfe/src/domain/.types/eventTypes"
+
 	user "i9lyfe/src/domain/user/userModel"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/services/eventStreamService"
+	"i9lyfe/src/services/mediaStorageService"
+	"i9lyfe/src/services/pubsubService"
+	"i9lyfe/src/types/UITypes"
+	"i9lyfe/src/types/eventTypes"
 	"maps"
 	"time"
 

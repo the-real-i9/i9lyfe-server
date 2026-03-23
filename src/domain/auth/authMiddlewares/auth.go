@@ -2,9 +2,9 @@ package authMiddlewares
 
 import (
 	"encoding/base64"
-	"i9lyfe/src/domain/.types/appTypes"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/securityServices"
+	"i9lyfe/src/types/appTypes"
 	"os"
 
 	"github.com/gofiber/fiber/v3"
