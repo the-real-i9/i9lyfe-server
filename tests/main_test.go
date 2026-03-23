@@ -4,6 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"i9lyfe/src/domain/auth/authMiddlewares"
+	"i9lyfe/src/domain/auth/authRoutes"
+	"i9lyfe/src/domain/chat/chatRoutes"
+	"i9lyfe/src/domain/postComment/postCommentRoutes"
+	"i9lyfe/src/domain/user/privateUserRoutes"
+	"i9lyfe/src/domain/user/publicUserRoutes"
+	"i9lyfe/src/domain/user/userWSCommMan/wsCommRoute"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/initializers"
 	"io"
@@ -69,9 +76,22 @@ func TestMain(m *testing.M) {
 		Key: os.Getenv("COOKIE_SECRET"),
 	}))
 
-	app.Route("/api/auth", authRoute.Route)
-	app.Route("/api/app/private", privateRoutes.Routes)
-	app.Route("/api/app/public", publicRoutes.Routes)
+	app.Route("/api/auth", authRoutes.Routes)
+
+	app.Route("/api/app/private", func(router fiber.Router) {
+		router.Use(authMiddlewares.UserAuthRequired)
+
+		router.Route("", postCommentRoutes.Routes)
+		router.Route("", privateUserRoutes.Routes)
+		router.Route("", chatRoutes.Routes)
+		router.Route("", wsCommRoute.Route)
+	})
+	app.Route("/api/app/public", func(router fiber.Router) {
+		router.Use(authMiddlewares.UserAuthOptional)
+
+		router.Route("", publicUserRoutes.Routes)
+
+	})
 
 	var PORT string
 

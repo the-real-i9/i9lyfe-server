@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Route(router fiber.Router) {
+func Routes(router fiber.Router) {
 	router.Get("/:username", UC.GetUserProfile)
 
 	router.Get("/:username/followers", UC.GetUserFollowers)

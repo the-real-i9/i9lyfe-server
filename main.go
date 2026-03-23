@@ -1,10 +1,14 @@
 package main
 
 import (
+	"i9lyfe/src/domain/auth/authMiddlewares"
 	"i9lyfe/src/domain/auth/authRoutes"
+	"i9lyfe/src/domain/chat/chatRoutes"
+	"i9lyfe/src/domain/postComment/postCommentRoutes"
+	"i9lyfe/src/domain/user/privateUserRoutes"
+	"i9lyfe/src/domain/user/publicUserRoutes"
 	"i9lyfe/src/domain/user/userWSCommMan/wsCommRoute"
 	"i9lyfe/src/initializers"
-	"i9lyfe/src/middlewares/authMiddlewares"
 	"log"
 	"os"
 
@@ -50,15 +54,15 @@ func main() {
 	app.Route("/api/app/private", func(router fiber.Router) {
 		router.Use(authMiddlewares.UserAuthRequired)
 
-		router.Route("", postCommentRoute.Route)
-		router.Route("", privateUserRoute.Route)
-		router.Route("", chatRoute.Route)
+		router.Route("", postCommentRoutes.Routes)
+		router.Route("", privateUserRoutes.Routes)
+		router.Route("", chatRoutes.Routes)
 		router.Route("", wsCommRoute.Route)
 	})
 	app.Route("/api/app/public", func(router fiber.Router) {
 		router.Use(authMiddlewares.UserAuthOptional)
 
-		router.Route("", publicUserRoute.Route)
+		router.Route("", publicUserRoutes.Routes)
 
 	})
 
