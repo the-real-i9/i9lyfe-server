@@ -12,15 +12,15 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-type signinRespT struct {
+type loginRespT struct {
 	Msg  string             `msgpack:"msg"`
 	User UITypes.ClientUser `msgpack:"user"`
 }
 
-func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinRespT, string, error) {
-	var resp signinRespT
+func Login(ctx context.Context, emailOrUsername, inputPassword string) (loginRespT, string, error) {
+	var resp loginRespT
 
-	theUser, err := userService.SigninUserFind(ctx, emailOrUsername)
+	theUser, err := userService.LoginUserFind(ctx, emailOrUsername)
 	if err != nil {
 		return resp, "", err
 	}
@@ -48,7 +48,7 @@ func Signin(ctx context.Context, emailOrUsername, inputPassword string) (signinR
 		return resp, "", err
 	}
 
-	resp.Msg = "Signin success!"
+	resp.Msg = "Login success!"
 	resp.User = UITypes.ClientUser{Username: theUser.Username, Name: theUser.Name, ProfilePicUrl: theUser.ProfilePicUrl}
 
 	return resp, authJwt, nil

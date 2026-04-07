@@ -38,8 +38,8 @@ func NewUser(ctx context.Context, email, username, name, bio string, birthday in
 	return newUser, nil
 }
 
-func SigninUserFind(ctx context.Context, uniqueIdent string) (user.SignedInUserT, error) {
-	fUser, err := user.SigninFind(ctx, uniqueIdent)
+func LoginUserFind(ctx context.Context, uniqueIdent string) (user.SignedInUserT, error) {
+	fUser, err := user.LoginFind(ctx, uniqueIdent)
 	if err != nil {
 		return fUser, err
 	}

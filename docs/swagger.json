@@ -927,9 +927,9 @@
         ]
       }
     },
-    "/auth/signin": {
+    "/auth/login": {
       "post": {
-        "description": "Signin with email/username and password",
+        "description": "Login with email/username and password",
         "requestBody": {
           "content": {
             "application/vnd.msgpack": {
@@ -968,7 +968,7 @@
                 }
               }
             },
-            "description": "Signin Success!",
+            "description": "Login Success!",
             "headers": {
               "Set-cookie": {
                 "description": "Authenticated user session response cookie containing auth JWT",
@@ -1009,7 +1009,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Signin user",
+        "summary": "Login user",
         "tags": [
           "authentication"
         ]

@@ -38,14 +38,14 @@ func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at in
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
-			INSERT INTO user_reacts_to_comment(username, comment_id, emoji, at_)
+			INSERT INTO comment_reactions(username, comment_id, emoji, at_)
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT ON CONSTRAINT no_dup_comment_rxn DO UPDATE 
 			SET emoji = $3, at_ = $4
 			RETURNING cursor_
 		)
 		SELECT c.username AS owner_user, r.cursor_ AS rxn_cursor 
-		FROM user_comments_on c, react_to r
+		FROM comments c, react_to r
 		WHERE comment_id = $2 AND r.cursor_ IS NOT NULL
 		`, clientUsername, commentId, emoji, at,
 	)
@@ -85,7 +85,7 @@ func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_reacts_to_comment
+		DELETE FROM comment_reactions
 		WHERE username = $1 AND comment_id = $2
 		RETURNING true AS done
 		`, clientUsername, commentId,
@@ -113,11 +113,11 @@ func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
-			INSERT INTO user_comments_on(username, parent_comment_id, comment_text, attachment_url, at_)
+			INSERT INTO comments(username, parent_comment_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_, cursor_
 		)
-		SELECT comment_id, owner_user, comment_text, attachment_url, at_, cursor_, (SELECT username FROM user_comments_on WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
+		SELECT comment_id, owner_user, comment_text, attachment_url, at_, cursor_, (SELECT username FROM comments WHERE comment_id = $2) AS parent_comment_owner FROM comment_on
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at,
 	)
 	if err != nil {
@@ -141,7 +141,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 		_, err := tx.Exec(
 			ctx,
 			/* sql */ `
-				INSERT INTO comment_mentions_user (comment_id, username)
+				INSERT INTO comment_mentions (comment_id, username)
 				VALUES ($1, $2)
 				ON CONFLICT ON CONSTRAINT no_dup_comment_ment DO NOTHING
 				`, newCommentId, mu,
@@ -185,7 +185,7 @@ func RemoveComment(ctx context.Context, clientUsername, parentCommentId, comment
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_comments_on
+		DELETE FROM comments
 		WHERE username = $1 AND parent_comment_id = $2 AND comment_id = $3
 		RETURNING true AS done
 		`, clientUsername, parentCommentId, commentId,

@@ -8,10 +8,10 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Signin(c fiber.Ctx) error {
+func Login(c fiber.Ctx) error {
 	ctx := c.Context()
 
-	var body signInBody
+	var body loginBody
 
 	err := c.Bind().MsgPack(&body)
 	if err != nil {
@@ -22,7 +22,7 @@ func Signin(c fiber.Ctx) error {
 		return err
 	}
 
-	respData, authJwt, err := loginService.Signin(ctx, body.EmailOrUsername, body.Password)
+	respData, authJwt, err := loginService.Login(ctx, body.EmailOrUsername, body.Password)
 	if err != nil {
 		return err
 	}

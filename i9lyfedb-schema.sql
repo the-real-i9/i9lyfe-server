@@ -272,17 +272,17 @@ RAISE EXCEPTION
 			MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
 END IF;
 
-IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = from_user AND partner_user = to_user) THEN
+IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = from_user AND partner_user = to_user) THEN
 	first_from_user := true;
 	
-	INSERT INTO user_chats_user (owner_user, partner_user)
+	INSERT INTO chats (owner_user, partner_user)
 	VALUES (from_user, to_user);
 END IF;
 
-IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = to_user AND partner_user = from_user) THEN
+IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = to_user AND partner_user = from_user) THEN
 	first_to_user := true;
 	
-	INSERT INTO user_chats_user (owner_user, partner_user)
+	INSERT INTO chats (owner_user, partner_user)
 	VALUES (to_user, from_user);
 END IF;
 
@@ -323,17 +323,17 @@ first_from_user boolean := false;
 first_to_user boolean := false;
 BEGIN
 
-IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = from_user AND partner_user = to_user) THEN
+IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = from_user AND partner_user = to_user) THEN
 	first_from_user := true;
 	
-	INSERT INTO user_chats_user (owner_user, partner_user)
+	INSERT INTO chats (owner_user, partner_user)
 	VALUES (from_user, to_user);
 END IF;
 
-IF NOT EXISTS (SELECT 1 FROM user_chats_user WHERE owner_user = to_user AND partner_user = from_user) THEN
+IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = to_user AND partner_user = from_user) THEN
 	first_to_user := true;
 	
-	INSERT INTO user_chats_user (owner_user, partner_user)
+	INSERT INTO chats (owner_user, partner_user)
 	VALUES (to_user, from_user);
 END IF;
 
@@ -403,16 +403,16 @@ CREATE TABLE public.chat_history_entry_in_chat (
 ALTER TABLE public.chat_history_entry_in_chat OWNER TO i9;
 
 --
--- Name: comment_mentions_user; Type: TABLE; Schema: public; Owner: i9
+-- Name: comment_mentions; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.comment_mentions_user (
+CREATE TABLE public.comment_mentions (
 	comment_id uuid NOT NULL,
 	username text NOT NULL
 );
 
 
-ALTER TABLE public.comment_mentions_user OWNER TO i9;
+ALTER TABLE public.comment_mentions OWNER TO i9;
 
 --
 -- Name: hashtags; Type: TABLE; Schema: public; Owner: i9
@@ -426,28 +426,28 @@ CREATE TABLE public.hashtags (
 ALTER TABLE public.hashtags OWNER TO i9;
 
 --
--- Name: post_includes_hashtag; Type: TABLE; Schema: public; Owner: i9
+-- Name: post_hashtags; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.post_includes_hashtag (
+CREATE TABLE public.post_hashtags (
 	post_id uuid NOT NULL,
 	htname text NOT NULL
 );
 
 
-ALTER TABLE public.post_includes_hashtag OWNER TO i9;
+ALTER TABLE public.post_hashtags OWNER TO i9;
 
 --
--- Name: post_mentions_user; Type: TABLE; Schema: public; Owner: i9
+-- Name: post_mentions; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.post_mentions_user (
+CREATE TABLE public.post_mentions (
 	post_id uuid NOT NULL,
 	username text NOT NULL
 );
 
 
-ALTER TABLE public.post_mentions_user OWNER TO i9;
+ALTER TABLE public.post_mentions OWNER TO i9;
 
 --
 -- Name: posts; Type: TABLE; Schema: public; Owner: i9
@@ -472,22 +472,22 @@ CREATE TABLE public.posts (
 ALTER TABLE public.posts OWNER TO i9;
 
 --
--- Name: user_chats_user; Type: TABLE; Schema: public; Owner: i9
+-- Name: chats; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_chats_user (
+CREATE TABLE public.chats (
 	owner_user text NOT NULL,
 	partner_user text NOT NULL
 );
 
 
-ALTER TABLE public.user_chats_user OWNER TO i9;
+ALTER TABLE public.chats OWNER TO i9;
 
 --
--- Name: user_comments_on; Type: TABLE; Schema: public; Owner: i9
+-- Name: comments; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_comments_on (
+CREATE TABLE public.comments (
 	comment_id uuid DEFAULT gen_random_uuid() NOT NULL,
 	username text NOT NULL,
 	parent_comment_id uuid,
@@ -502,13 +502,13 @@ CREATE TABLE public.user_comments_on (
 );
 
 
-ALTER TABLE public.user_comments_on OWNER TO i9;
+ALTER TABLE public.comments OWNER TO i9;
 
 --
--- Name: user_follows_user; Type: TABLE; Schema: public; Owner: i9
+-- Name: follows; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_follows_user (
+CREATE TABLE public.follows (
 	follower_username text NOT NULL,
 	following_username text NOT NULL,
 	at_ bigint,
@@ -516,13 +516,13 @@ CREATE TABLE public.user_follows_user (
 );
 
 
-ALTER TABLE public.user_follows_user OWNER TO i9;
+ALTER TABLE public.follows OWNER TO i9;
 
 --
--- Name: user_reacts_to_comment; Type: TABLE; Schema: public; Owner: i9
+-- Name: comment_reactions; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_reacts_to_comment (
+CREATE TABLE public.comment_reactions (
 	username text NOT NULL,
 	comment_id uuid NOT NULL,
 	emoji text NOT NULL,
@@ -531,13 +531,13 @@ CREATE TABLE public.user_reacts_to_comment (
 );
 
 
-ALTER TABLE public.user_reacts_to_comment OWNER TO i9;
+ALTER TABLE public.comment_reactions OWNER TO i9;
 
 --
--- Name: user_reacts_to_post; Type: TABLE; Schema: public; Owner: i9
+-- Name: post_reactions; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_reacts_to_post (
+CREATE TABLE public.post_reactions (
 	username text NOT NULL,
 	post_id uuid NOT NULL,
 	emoji text NOT NULL,
@@ -546,20 +546,20 @@ CREATE TABLE public.user_reacts_to_post (
 );
 
 
-ALTER TABLE public.user_reacts_to_post OWNER TO i9;
+ALTER TABLE public.post_reactions OWNER TO i9;
 
 --
--- Name: user_saves_post; Type: TABLE; Schema: public; Owner: i9
+-- Name: post_saves; Type: TABLE; Schema: public; Owner: i9
 --
 
-CREATE TABLE public.user_saves_post (
+CREATE TABLE public.post_saves (
 	username text NOT NULL,
 	post_id uuid NOT NULL,
 	cursor_ bigserial
 );
 
 
-ALTER TABLE public.user_saves_post OWNER TO i9;
+ALTER TABLE public.post_saves OWNER TO i9;
 
 --
 -- Name: users; Type: TABLE; Schema: public; Owner: i9
@@ -597,33 +597,33 @@ ALTER TABLE ONLY public.hashtags
 	ADD CONSTRAINT hashtags_pkey PRIMARY KEY (htname);
 
 --
--- Name: user_follows_user no_dup_follow; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: follows no_dup_follow; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_follows_user
+ALTER TABLE ONLY public.follows
 	ADD CONSTRAINT no_dup_follow UNIQUE (follower_username, following_username);
 
 --
--- Name: comment_mentions_user no_dup_comment_ment; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: comment_mentions no_dup_comment_ment; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.comment_mentions_user
+ALTER TABLE ONLY public.comment_mentions
 	ADD CONSTRAINT no_dup_comment_ment UNIQUE (comment_id, username);
 
 
 --
--- Name: user_reacts_to_comment no_dup_comment_rxn; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: comment_reactions no_dup_comment_rxn; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_reacts_to_comment
+ALTER TABLE ONLY public.comment_reactions
 	ADD CONSTRAINT no_dup_comment_rxn UNIQUE (username, comment_id);
 
 
 --
--- Name: post_includes_hashtag no_dup_htname; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_hashtags no_dup_htname; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.post_includes_hashtag
+ALTER TABLE ONLY public.post_hashtags
 	ADD CONSTRAINT no_dup_htname UNIQUE (post_id, htname);
 
 
@@ -636,26 +636,26 @@ ALTER TABLE ONLY public.chat_history_entry
 
 
 --
--- Name: post_mentions_user no_dup_post_ment; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_mentions no_dup_post_ment; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.post_mentions_user
+ALTER TABLE ONLY public.post_mentions
 	ADD CONSTRAINT no_dup_post_ment UNIQUE (post_id, username);
 
 
 --
--- Name: user_reacts_to_post no_dup_post_rxn; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_reactions no_dup_post_rxn; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_reacts_to_post
+ALTER TABLE ONLY public.post_reactions
 	ADD CONSTRAINT no_dup_post_rxn UNIQUE (username, post_id);
 
 
 --
--- Name: user_saves_post no_dup_saves; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_saves no_dup_saves; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_saves_post
+ALTER TABLE ONLY public.post_saves
 	ADD CONSTRAINT no_dup_saves UNIQUE (username, post_id);
 
 
@@ -676,19 +676,19 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- Name: user_chats_user ucu_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: chats ucu_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_chats_user
+ALTER TABLE ONLY public.chats
 	ADD CONSTRAINT ucu_pkey PRIMARY KEY (owner_user, partner_user);
 
 
 --
--- Name: user_comments_on user_comments_on_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_comments_on
-	ADD CONSTRAINT user_comments_on_pkey PRIMARY KEY (comment_id);
+ALTER TABLE ONLY public.comments
+	ADD CONSTRAINT comments_pkey PRIMARY KEY (comment_id);
 
 
 --
@@ -748,19 +748,19 @@ ALTER TABLE ONLY public.chat_history_entry_in_chat
 
 
 --
--- Name: comment_mentions_user comment_mentions_user_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: comment_mentions comment_mentions_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.comment_mentions_user
-	ADD CONSTRAINT comment_mentions_user_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.user_comments_on(comment_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.comment_mentions
+	ADD CONSTRAINT comment_mentions_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(comment_id) ON DELETE CASCADE;
 
 
 --
--- Name: comment_mentions_user comment_mentions_user_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: comment_mentions comment_mentions_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.comment_mentions_user
-	ADD CONSTRAINT comment_mentions_user_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.comment_mentions
+	ADD CONSTRAINT comment_mentions_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -768,39 +768,39 @@ ALTER TABLE ONLY public.comment_mentions_user
 --
 
 ALTER TABLE ONLY public.chat_history_entry_in_chat
-	ADD CONSTRAINT hist_in_chat FOREIGN KEY (owner_user, partner_user) REFERENCES public.user_chats_user(owner_user, partner_user) ON DELETE CASCADE;
+	ADD CONSTRAINT hist_in_chat FOREIGN KEY (owner_user, partner_user) REFERENCES public.chats(owner_user, partner_user) ON DELETE CASCADE;
 
 
 --
--- Name: post_includes_hashtag post_includes_hashtag_htname_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_hashtags post_hashtags_htname_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.post_includes_hashtag
-	ADD CONSTRAINT post_includes_hashtag_htname_fkey FOREIGN KEY (htname) REFERENCES public.hashtags(htname) ON DELETE CASCADE;
-
-
---
--- Name: post_includes_hashtag post_includes_hashtag_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.post_includes_hashtag
-	ADD CONSTRAINT post_includes_hashtag_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.post_hashtags
+	ADD CONSTRAINT post_hashtags_htname_fkey FOREIGN KEY (htname) REFERENCES public.hashtags(htname) ON DELETE CASCADE;
 
 
 --
--- Name: post_mentions_user post_mentions_user_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_hashtags post_hashtags_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.post_mentions_user
-	ADD CONSTRAINT post_mentions_user_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.post_hashtags
+	ADD CONSTRAINT post_hashtags_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
 
 
 --
--- Name: post_mentions_user post_mentions_user_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: post_mentions post_mentions_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.post_mentions_user
-	ADD CONSTRAINT post_mentions_user_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.post_mentions
+	ADD CONSTRAINT post_mentions_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+
+
+--
+-- Name: post_mentions post_mentions_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.post_mentions
+	ADD CONSTRAINT post_mentions_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -828,107 +828,107 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- Name: user_chats_user user_chats_user_owner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chats chats_owner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_chats_user
-	ADD CONSTRAINT user_chats_user_owner_user_fkey FOREIGN KEY (owner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_chats_user user_chats_user_partner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_chats_user
-	ADD CONSTRAINT user_chats_user_partner_user_fkey FOREIGN KEY (partner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.chats
+	ADD CONSTRAINT chats_owner_user_fkey FOREIGN KEY (owner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: user_comments_on user_comments_on_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: chats chats_partner_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_comments_on
-	ADD CONSTRAINT user_comments_on_parent_comment_id_fkey FOREIGN KEY (parent_comment_id) REFERENCES public.user_comments_on(comment_id) ON DELETE CASCADE;
-
-
---
--- Name: user_comments_on user_comments_on_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_comments_on
-	ADD CONSTRAINT user_comments_on_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.chats
+	ADD CONSTRAINT chats_partner_user_fkey FOREIGN KEY (partner_user) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: user_comments_on user_comments_on_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: comments comments_parent_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_comments_on
-	ADD CONSTRAINT user_comments_on_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_follows_user user_follows_user_follower_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_follows_user
-	ADD CONSTRAINT user_follows_user_follower_username_fkey FOREIGN KEY (follower_username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.comments
+	ADD CONSTRAINT comments_parent_comment_id_fkey FOREIGN KEY (parent_comment_id) REFERENCES public.comments(comment_id) ON DELETE CASCADE;
 
 
 --
--- Name: user_follows_user user_follows_user_following_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_follows_user
-	ADD CONSTRAINT user_follows_user_following_username_fkey FOREIGN KEY (following_username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_reacts_to_comment user_reacts_to_comment_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_reacts_to_comment
-	ADD CONSTRAINT user_reacts_to_comment_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.user_comments_on(comment_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.comments
+	ADD CONSTRAINT comments_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
 
 
 --
--- Name: user_reacts_to_comment user_reacts_to_comment_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: comments comments_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_reacts_to_comment
-	ADD CONSTRAINT user_reacts_to_comment_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_reacts_to_post user_reacts_to_post_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_reacts_to_post
-	ADD CONSTRAINT user_reacts_to_post_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.comments
+	ADD CONSTRAINT comments_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: user_reacts_to_post user_reacts_to_post_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: follows follows_follower_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_reacts_to_post
-	ADD CONSTRAINT user_reacts_to_post_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_saves_post user_saves_post_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.user_saves_post
-	ADD CONSTRAINT user_saves_post_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+ALTER TABLE ONLY public.follows
+	ADD CONSTRAINT follows_follower_username_fkey FOREIGN KEY (follower_username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: user_saves_post user_saves_post_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+-- Name: follows follows_following_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
 --
 
-ALTER TABLE ONLY public.user_saves_post
-	ADD CONSTRAINT user_saves_post_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY public.follows
+	ADD CONSTRAINT follows_following_username_fkey FOREIGN KEY (following_username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: comment_reactions comment_reactions_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.comment_reactions
+	ADD CONSTRAINT comment_reactions_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(comment_id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_reactions comment_reactions_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.comment_reactions
+	ADD CONSTRAINT comment_reactions_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: post_reactions post_reactions_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.post_reactions
+	ADD CONSTRAINT post_reactions_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+
+
+--
+-- Name: post_reactions post_reactions_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.post_reactions
+	ADD CONSTRAINT post_reactions_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: post_saves post_saves_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.post_saves
+	ADD CONSTRAINT post_saves_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id_) ON DELETE CASCADE;
+
+
+--
+-- Name: post_saves post_saves_username_fkey; Type: FK CONSTRAINT; Schema: public; Owner: i9
+--
+
+ALTER TABLE ONLY public.post_saves
+	ADD CONSTRAINT post_saves_username_fkey FOREIGN KEY (username) REFERENCES public.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

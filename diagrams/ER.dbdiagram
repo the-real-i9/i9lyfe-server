@@ -11,7 +11,7 @@
       "y": 520
     },
     {
-      "name": "user_follows_user",
+      "name": "follows",
       "schemaName": "public",
       "x": 48,
       "y": 184
@@ -29,49 +29,49 @@
       "y": 616
     },
     {
-      "name": "post_mentions_user",
+      "name": "post_mentions",
       "schemaName": "public",
       "x": 1024,
       "y": 576
     },
     {
-      "name": "post_includes_hashtag",
+      "name": "post_hashtags",
       "schemaName": "public",
       "x": 792,
       "y": 904
     },
     {
-      "name": "user_reacts_to_post",
+      "name": "post_reactions",
       "schemaName": "public",
       "x": 224,
       "y": 792
     },
     {
-      "name": "user_saves_post",
+      "name": "post_saves",
       "schemaName": "public",
       "x": 360,
       "y": 1008
     },
     {
-      "name": "user_comments_on",
+      "name": "comments",
       "schemaName": "public",
       "x": 336,
       "y": 280
     },
     {
-      "name": "comment_mentions_user",
+      "name": "comment_mentions",
       "schemaName": "public",
       "x": 432,
       "y": 48
     },
     {
-      "name": "user_reacts_to_comment",
+      "name": "comment_reactions",
       "schemaName": "public",
       "x": 576,
       "y": 1072
     },
     {
-      "name": "user_chats_user",
+      "name": "chats",
       "schemaName": "public",
       "x": 88,
       "y": 480
@@ -102,7 +102,7 @@
       "secondFieldNames": [
         "follower_username"
       ],
-      "secondTableName": "user_follows_user",
+      "secondTableName": "follows",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -117,7 +117,7 @@
       "secondFieldNames": [
         "following_username"
       ],
-      "secondTableName": "user_follows_user",
+      "secondTableName": "follows",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -162,7 +162,7 @@
       "secondFieldNames": [
         "post_id"
       ],
-      "secondTableName": "post_mentions_user",
+      "secondTableName": "post_mentions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -177,7 +177,7 @@
       "secondFieldNames": [
         "username"
       ],
-      "secondTableName": "post_mentions_user",
+      "secondTableName": "post_mentions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -192,7 +192,7 @@
       "secondFieldNames": [
         "post_id"
       ],
-      "secondTableName": "post_includes_hashtag",
+      "secondTableName": "post_hashtags",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -207,7 +207,7 @@
       "secondFieldNames": [
         "htname"
       ],
-      "secondTableName": "post_includes_hashtag",
+      "secondTableName": "post_hashtags",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -222,7 +222,7 @@
       "secondFieldNames": [
         "username"
       ],
-      "secondTableName": "user_reacts_to_post",
+      "secondTableName": "post_reactions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -237,7 +237,7 @@
       "secondFieldNames": [
         "post_id"
       ],
-      "secondTableName": "user_reacts_to_post",
+      "secondTableName": "post_reactions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -252,7 +252,7 @@
       "secondFieldNames": [
         "username"
       ],
-      "secondTableName": "user_saves_post",
+      "secondTableName": "post_saves",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -267,7 +267,7 @@
       "secondFieldNames": [
         "post_id"
       ],
-      "secondTableName": "user_saves_post",
+      "secondTableName": "post_saves",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -282,7 +282,7 @@
       "secondFieldNames": [
         "username"
       ],
-      "secondTableName": "user_comments_on",
+      "secondTableName": "comments",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -291,13 +291,13 @@
       "firstFieldNames": [
         "comment_id"
       ],
-      "firstTableName": "user_comments_on",
+      "firstTableName": "comments",
       "firstSchemaName": "public",
       "firstRelation": "1",
       "secondFieldNames": [
         "parent_comment_id"
       ],
-      "secondTableName": "user_comments_on",
+      "secondTableName": "comments",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -312,7 +312,7 @@
       "secondFieldNames": [
         "post_id"
       ],
-      "secondTableName": "user_comments_on",
+      "secondTableName": "comments",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -321,28 +321,13 @@
       "firstFieldNames": [
         "comment_id"
       ],
-      "firstTableName": "user_comments_on",
+      "firstTableName": "comments",
       "firstSchemaName": "public",
       "firstRelation": "1",
       "secondFieldNames": [
         "comment_id"
       ],
-      "secondTableName": "comment_mentions_user",
-      "secondSchemaName": "public",
-      "secondRelation": "*",
-      "checkPoints": []
-    },
-    {
-      "firstFieldNames": [
-        "username"
-      ],
-      "firstTableName": "users",
-      "firstSchemaName": "public",
-      "firstRelation": "1",
-      "secondFieldNames": [
-        "username"
-      ],
-      "secondTableName": "comment_mentions_user",
+      "secondTableName": "comment_mentions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -357,7 +342,22 @@
       "secondFieldNames": [
         "username"
       ],
-      "secondTableName": "user_reacts_to_comment",
+      "secondTableName": "comment_mentions",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "username"
+      ],
+      "firstTableName": "users",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "username"
+      ],
+      "secondTableName": "comment_reactions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -366,13 +366,13 @@
       "firstFieldNames": [
         "comment_id"
       ],
-      "firstTableName": "user_comments_on",
+      "firstTableName": "comments",
       "firstSchemaName": "public",
       "firstRelation": "1",
       "secondFieldNames": [
         "comment_id"
       ],
-      "secondTableName": "user_reacts_to_comment",
+      "secondTableName": "comment_reactions",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -387,7 +387,7 @@
       "secondFieldNames": [
         "owner_user"
       ],
-      "secondTableName": "user_chats_user",
+      "secondTableName": "chats",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -402,7 +402,7 @@
       "secondFieldNames": [
         "partner_user"
       ],
-      "secondTableName": "user_chats_user",
+      "secondTableName": "chats",
       "secondSchemaName": "public",
       "secondRelation": "*",
       "checkPoints": []
@@ -494,7 +494,7 @@
         "owner_user",
         "partner_user"
       ],
-      "secondTableName": "user_chats_user",
+      "secondTableName": "chats",
       "secondSchemaName": "public",
       "secondRelation": "1",
       "checkPoints": []

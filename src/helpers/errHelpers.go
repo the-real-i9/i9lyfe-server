@@ -44,28 +44,28 @@ func HandleDBError(err error) error {
 func humanizeForeignKeyError(pgErr *pgconn.PgError) error {
 	switch pgErr.ConstraintName {
 
-	case "user_comments_on_post_id_fkey":
+	case "comments_post_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
 
-	case "user_comments_on_parent_comment_id_fkey":
+	case "comments_parent_comment_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified comment does not exist")
 
-	case "user_reacts_to_post_post_id_fkey":
+	case "post_reactions_post_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
 
-	case "user_reacts_to_comment_comment_id_fkey":
+	case "comment_reactions_comment_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified comment does not exist")
 
 	case "posts_reposted_post_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
 
-	case "user_saves_post_post_id_fkey":
+	case "post_saves_post_id_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified post does not exist")
 
-	case "user_follows_user_following_username_fkey":
+	case "follows_following_username_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified user does not exist")
 
-	case "user_chats_user_partner_user_fkey":
+	case "chats_partner_user_fkey":
 		return fiber.NewError(fiber.StatusNotFound, "the specified user does not exist")
 
 	default:

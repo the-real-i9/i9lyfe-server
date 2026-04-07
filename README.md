@@ -189,7 +189,7 @@ Here we just want to test that the API endpoints/features work under normal, san
 
 #### User Authentication Story
 
-[This test case](./tests/userAuthStory_test.go) builds a story around user signup, signout, signin, and password reset features of the API. It is structured by a series of user/client actions or steps that simulate a real-world authentication scenario by a user.
+[This test case](./tests/userAuthStory_test.go) builds a story around user signup, signout, login, and password reset features of the API. It is structured by a series of user/client actions or steps that simulate a real-world authentication scenario by a user.
 
 #### User Post & Comment Story
 

@@ -8,12 +8,12 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type signInBody struct {
+type loginBody struct {
 	EmailOrUsername string `msgpack:"emailOrUsername"`
 	Password        string `msgpack:"password"`
 }
 
-func (b signInBody) Validate() error {
+func (b loginBody) Validate() error {
 
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.EmailOrUsername,
@@ -29,6 +29,6 @@ func (b signInBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "signinControllers_requestBody.go", "signInBody")
+	return helpers.ValidationError(err, "loginControllers_requestBody.go", "loginBody")
 
 }

@@ -28,7 +28,7 @@ func (b rtActionBody) Validate() error {
 		),
 	)
 
-	return helpers.ValidationError(err, "rcValidation.go", "rtActionBody")
+	return helpers.ValidationError(err, "wsMsgValidation.go", "rtActionBody")
 }
 
 type subToUserPresenceAcd struct {
@@ -40,7 +40,7 @@ func (vb subToUserPresenceAcd) Validate() error {
 		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
 	)
 
-	return helpers.ValidationError(err, "rcValidation.go", "subToUserPresenceAcd")
+	return helpers.ValidationError(err, "wsMsgValidation.go", "subToUserPresenceAcd")
 }
 
 type unsubFromUserPresenceAcd struct {
@@ -52,5 +52,5 @@ func (vb unsubFromUserPresenceAcd) Validate() error {
 		validation.Field(&vb.Usernames, validation.Required, validation.Length(1, 0)),
 	)
 
-	return helpers.ValidationError(err, "rcValidation.go", "unsubFromUserPresenceAcd")
+	return helpers.ValidationError(err, "wsMsgValidation.go", "unsubFromUserPresenceAcd")
 }

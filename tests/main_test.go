@@ -36,7 +36,7 @@ const HOST_URL string = "http://localhost:8000"
 const WSHOST_URL string = "ws://localhost:8000"
 
 const signupPath string = "/api/auth/signup"
-const signinPath string = "/api/auth/signin"
+const loginPath string = "/api/auth/login"
 const forgotPasswordPath string = "/api/auth/forgot_password"
 const signoutPath string = "/api/app/private/me/signout"
 

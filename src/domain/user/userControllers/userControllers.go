@@ -16,7 +16,7 @@ import (
 func GetSessionUser(c fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	user, err := userService.SigninUserFind(c.Context(), clientUser.Username)
+	user, err := userService.LoginUserFind(c.Context(), clientUser.Username)
 	if err != nil {
 		return err
 	}

@@ -7,35 +7,24 @@ config:
 erDiagram
     users ||--o{ posts : creates
 
-    users ||--o{ user_follows_user : follows
-    users ||--o{ user_follows_user : is_followed
+    users }|--o{ users: follows
 
-    posts ||--o{ post_mentions_user : mentions
-    users ||--o{ post_mentions_user : is_mentioned
+    posts }|--o{ users: mentions
 
-    posts ||--o{ post_includes_hashtag : includes
-    hashtags ||--|{ post_includes_hashtag : is_included
+    posts }|--o{ hashtags: includes
 
-    users ||--o{ user_reacts_to_post: reacts_to
-    posts ||--o{ user_reacts_to_post: is_reacted_to
+    users }|--o{ posts: reacts_to
 
-    users ||--o{ user_saves_post: saves
-    posts ||--o{ user_saves_post: is_saved
+    users }|--o{ posts: saves
 
-    users ||--o{ user_comments_on_post: comments_on
-    posts ||--o{ user_comments_on_post: is_commented_on
+    users }|--o{ posts: comments_on
 
-    comments ||--o{ comment_mentions_user : mentions
-    users ||--o{ comment_mentions_user : is_mentioned
+    comments }|--o{ users: mentions
 
-    users ||--o{ user_reacts_to_comment: reacts_to
-    comments ||--o{ user_reacts_to_comment: is_reacted_to
+    users }|--o{ comments: reacts_to
 
-    users }o--o{ posts : reposts
-    posts ||--o{ posts : has_repost
+    users }|--o{ posts: reposts
 
-    users ||--o{ user_chats_user : chats
-    users ||--o{ user_chats_user : is_chatted
+    users }|--o{ users: chats
 
-    user_chats_user ||--o{ chat_history_entry_in_chat : contains
-    chat_history_entry ||--|| chat_history_entry_in_chat : exists
+    chats ||--o{ chat_history_entry: contains

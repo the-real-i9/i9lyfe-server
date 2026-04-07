@@ -29,7 +29,7 @@ func Routes(router fiber.Router) {
 
 	router.Post(
 		"/login",
-		loginControllers.Signin,
+		loginControllers.Login,
 	)
 
 	router.Post(

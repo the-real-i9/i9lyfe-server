@@ -62,7 +62,7 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 		_, err := tx.Exec(
 			ctx,
 			/* sql */ `
-				INSERT INTO post_mentions_user (post_id, username)
+				INSERT INTO post_mentions (post_id, username)
 				VALUES ($1, $2)
 				ON CONFLICT ON CONSTRAINT no_dup_post_ment DO NOTHING
 				`, newPostId, mu,
@@ -92,7 +92,7 @@ func NewPostExtras(ctx context.Context, newPostId string, mentions, hashtags []s
 		_, err = tx.Exec(
 			ctx,
 			/* sql */ `
-				INSERT INTO post_includes_hashtag (post_id, htname)
+				INSERT INTO post_hashtags (post_id, htname)
 				VALUES ($1, $2)
 				ON CONFLICT ON CONSTRAINT no_dup_htname DO NOTHING
 				`, newPostId, ht,
@@ -132,7 +132,7 @@ func Delete(ctx context.Context, clientUsername, postId string) (mentionedUsers 
 			WHERE id_ = $1 AND owner_user = $2
 			RETURNING true AS done
 		)
-		SELECT username FROM post_mentions_user
+		SELECT username FROM post_mentions
 		WHERE post_id = $1 AND (SELECT done FROM delete_post) = true
 		`, postId, clientUsername,
 	)
@@ -158,7 +158,7 @@ func ReactTo(ctx context.Context, clientUsername, postId, emoji string, at int64
 		ctx,
 		/* sql */ `
 		WITH react_to AS (
-			INSERT INTO user_reacts_to_post(username, post_id, emoji, at_)
+			INSERT INTO post_reactions(username, post_id, emoji, at_)
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT ON CONSTRAINT no_dup_post_rxn DO UPDATE 
 			SET emoji = $3, at_ = $4
@@ -205,7 +205,7 @@ func RemoveReaction(ctx context.Context, clientUsername, postId string) (bool, e
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_reacts_to_post
+		DELETE FROM post_reactions
 		WHERE username = $1 AND post_id = $2
 		RETURNING true AS done
 		`, clientUsername, postId,
@@ -233,7 +233,7 @@ func CommentOn(ctx context.Context, clientUsername, postId, commentText, attachm
 		ctx,
 		/* sql */ `
 		WITH comment_on AS (
-			INSERT INTO user_comments_on(username, post_id, comment_text, attachment_url, at_)
+			INSERT INTO comments(username, post_id, comment_text, attachment_url, at_)
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING comment_id, username AS owner_user, comment_text, attachment_url, at_, cursor_
 		)
@@ -261,7 +261,7 @@ func CommentOnExtras(ctx context.Context, newCommentId string, mentions []string
 		_, err := tx.Exec(
 			ctx,
 			/* sql */ `
-				INSERT INTO comment_mentions_user (comment_id, username)
+				INSERT INTO comment_mentions (comment_id, username)
 				VALUES ($1, $2)
 				ON CONFLICT ON CONSTRAINT no_dup_comment_ment DO NOTHING
 				`, newCommentId, mu,
@@ -307,7 +307,7 @@ func RemoveComment(ctx context.Context, clientUsername, postId, commentId string
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_comments_on
+		DELETE FROM comments
 		WHERE username = $1 AND post_id = $2 AND comment_id = $3
 		RETURNING true AS done
 		`, clientUsername, postId, commentId,
@@ -356,7 +356,7 @@ func Save(ctx context.Context, clientUsername, postId string) (int64, error) {
 	saveCursor, err := pgDB.QueryRowField[int64](
 		ctx,
 		/* sql */ `
-		INSERT INTO user_saves_post(username, post_id)
+		INSERT INTO post_saves(username, post_id)
 		VALUES ($1, $2)
 		RETURNING cursor_
 		`, clientUsername, postId,
@@ -373,7 +373,7 @@ func Unsave(ctx context.Context, clientUsername, postId string) (bool, error) {
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_saves_post
+		DELETE FROM post_saves
 		WHERE username = $1 AND post_id = $2
 		RETURNING true AS done
 		`, clientUsername, postId,

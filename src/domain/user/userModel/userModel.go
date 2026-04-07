@@ -66,7 +66,7 @@ type SignedInUserT struct {
 	Password      string `msgpack:"-" db:"password_"`
 }
 
-func SigninFind(ctx context.Context, uniqueIdent string) (SignedInUserT, error) {
+func LoginFind(ctx context.Context, uniqueIdent string) (SignedInUserT, error) {
 	user, err := pgDB.QueryRowType[SignedInUserT](
 		ctx,
 		/* sql */ `
@@ -158,7 +158,7 @@ func Follow(ctx context.Context, clientUsername, targetUsername string, at int64
 	followCursor, err := pgDB.QueryRowField[int64](
 		ctx,
 		/* sql */ `
-		INSERT INTO user_follows_user (follower_username, following_username, at_)
+		INSERT INTO follows (follower_username, following_username, at_)
 		VALUES ($1, $2, $3)
 		ON CONFLICT ON CONSTRAINT no_dup_follow DO NOTHING
 		RETURNING cursor_
@@ -176,7 +176,7 @@ func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool,
 	done, err := pgDB.QueryRowField[bool](
 		ctx,
 		/* sql */ `
-		DELETE FROM user_follows_user
+		DELETE FROM follows
 		WHERE follower_username = $1 AND following_username = $2
 		RETURNING true AS done
 		`, clientUsername, targetUsername,

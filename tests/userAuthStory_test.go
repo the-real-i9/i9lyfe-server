@@ -182,7 +182,7 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req := httptest.NewRequest("POST", loginPath, reqBody)
 
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
@@ -210,7 +210,7 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req := httptest.NewRequest("POST", loginPath, reqBody)
 
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
@@ -229,7 +229,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(
 			map[string]any{
-				"msg": "Signin success!",
+				"msg": "Login success!",
 			}, nil))
 
 		user1.SessionCookie = res.Header.Get("Set-Cookie")
@@ -389,7 +389,7 @@ func TestUserAuthStory(t *testing.T) {
 		})
 		require.NoError(err)
 
-		req := httptest.NewRequest("POST", signinPath, reqBody)
+		req := httptest.NewRequest("POST", loginPath, reqBody)
 
 		req.Header.Add("Content-Type", "application/vnd.msgpack")
 
@@ -408,7 +408,7 @@ func TestUserAuthStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(
 			map[string]any{
-				"msg": "Signin success!",
+				"msg": "Login success!",
 			}, nil))
 	}
 
