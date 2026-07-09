@@ -62,7 +62,7 @@ func GetChats(c fiber.Ctx) error {
 
 	var query struct {
 		Limit  int64
-		Cursor float64
+		Cursor int64
 	}
 
 	if err := c.Bind().Query(&query); err != nil {

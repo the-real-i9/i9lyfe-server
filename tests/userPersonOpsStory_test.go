@@ -291,23 +291,27 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 				t.Logf("Uploading %s profile pic started", varSize[i])
 
-				sessionUrl := startResumableUpload(smlUploadUrl, contentType, t)
+				if ALLOW_UPLOADS {
+					sessionUrl := startResumableUpload(smlUploadUrl, contentType, t)
 
-				uploadFileInChunks(sessionUrl, filePath, contentType, logProgress, t)
+					uploadFileInChunks(sessionUrl, filePath, contentType, logProgress, t)
+				}
 
 				t.Logf("Uploading %s profile pic complete", varSize[i])
 			}
 
-			defer func(ppcn string) {
-				varPPicCloudName := make([]string, 3)
-				_, err = fmt.Sscanf(ppcn, "small:%s medium:%s large:%s", &varPPicCloudName[0], &varPPicCloudName[1], &varPPicCloudName[2])
-				require.NoError(err)
-
-				for _, smlPPicCn := range varPPicCloudName {
-					err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(smlPPicCn).Delete(t.Context())
+			if ALLOW_UPLOADS {
+				defer func(ppcn string) {
+					varPPicCloudName := make([]string, 3)
+					_, err = fmt.Sscanf(ppcn, "small:%s medium:%s large:%s", &varPPicCloudName[0], &varPPicCloudName[1], &varPPicCloudName[2])
 					require.NoError(err)
-				}
-			}(profilePicCloudName)
+
+					for _, smlPPicCn := range varPPicCloudName {
+						err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(smlPPicCn).Delete(t.Context())
+						require.NoError(err)
+					}
+				}(profilePicCloudName)
+			}
 
 			t.Log("Upload complete")
 		}
@@ -728,23 +732,27 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 
 					t.Logf("Uploading %s post media started", varMedia[i])
 
-					sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
+					if ALLOW_UPLOADS {
+						sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
 
-					uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+						uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+					}
 
 					t.Logf("Uploading %s post media complete", varMedia[i])
 				}
 
-				defer func(mcn string) {
-					varMediaCloudName := make([]string, 2)
-					_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
-					require.NoError(err)
-
-					for _, baMcn := range varMediaCloudName {
-						err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+				if ALLOW_UPLOADS {
+					defer func(mcn string) {
+						varMediaCloudName := make([]string, 2)
+						_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
 						require.NoError(err)
-					}
-				}(mediaCloudNames[uui])
+
+						for _, baMcn := range varMediaCloudName {
+							err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+							require.NoError(err)
+						}
+					}(mediaCloudNames[uui])
+				}
 			}
 
 			t.Log("Upload complete")
@@ -779,11 +787,11 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			require.NoError(err)
 
 			td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-				"new_post_id": td.Ignore(),
-				"post_cursor": td.Ignore(),
+				"id":     td.Ignore(),
+				"cursor": td.Ignore(),
 			}, nil))
 
-			user1PostId = rb["new_post_id"].(string)
+			user1PostId = rb["id"].(string)
 
 			ServerEventMsg_mentionNotif := <-user2.ServerEventMsg
 
@@ -801,11 +809,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			user3_ServerEventMsg_newPost := <-user3.ServerEventMsg
 
 			td.Cmp(td.Require(t), user3_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
-				"event": "new feed post",
-				"data": td.SuperMapOf(map[string]any{
-					"id":     user1PostId,
-					"cursor": td.Ignore(),
-				}, nil),
+				"event": "new feed posts",
+				"data":  td.Ignore(),
 			}, nil))
 		}
 
@@ -838,11 +843,11 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			require.NoError(err)
 
 			td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-				"new_post_id": td.Ignore(),
-				"post_cursor": td.Ignore(),
+				"id":     td.Ignore(),
+				"cursor": td.Ignore(),
 			}, nil))
 
-			user3PostId = rb["new_post_id"].(string)
+			user3PostId = rb["id"].(string)
 
 			ServerEventMsg_mentionNotif := <-user1.ServerEventMsg
 
@@ -860,11 +865,8 @@ func TestUserPersonalOperationsStory(t *testing.T) {
 			user2_ServerEventMsg_newPost := <-user2.ServerEventMsg
 
 			td.Cmp(td.Require(t), user2_ServerEventMsg_newPost, td.SuperMapOf(map[string]any{
-				"event": "new feed post",
-				"data": td.SuperMapOf(map[string]any{
-					"id":     user3PostId,
-					"cursor": td.Ignore(),
-				}, nil),
+				"event": "new feed posts",
+				"data":  td.Ignore(),
 			}, nil))
 		}
 

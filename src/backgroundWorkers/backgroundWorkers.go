@@ -13,15 +13,11 @@ import (
 //
 // Courtesy of Redis Streams
 func Start(rdc *redis.Client) error {
-	newUsersStreamBgWorker(rdc)
-	editUsersStreamBgWorker(rdc)
-	userPresenceChangesStreamBgWorker(rdc)
-
 	usersFollowedStreamBgWorker(rdc)
 	usersUnfollowedStreamBgWorker(rdc)
 
 	newPostsStreamBgWorker(rdc)
-	postDeletionsStreamBgWorker(rdc)
+	// postDeletionsStreamBgWorker(rdc)
 
 	postReactionsStreamBgWorker(rdc)
 	postReactionRemovedStreamBgWorker(rdc)
@@ -33,17 +29,12 @@ func Start(rdc *redis.Client) error {
 	commentReactionRemovedStreamBgWorker(rdc)
 
 	commentCommentsStreamBgWorker(rdc)
+	commentCommentsRemovedStreamBgWorker(rdc)
 
 	repostsStreamBgWorker(rdc)
 
 	postSavesStreamBgWorker(rdc)
 	postUnsavesStreamBgWorker(rdc)
-
-	newMessagesStreamBgWorker(rdc)
-	msgAcksStreamBgWorker(rdc)
-
-	msgReactionsStreamBgWorker(rdc)
-	msgReactionsRemovedStreamBgWorker(rdc)
 
 	return nil
 }

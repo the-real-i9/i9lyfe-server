@@ -3,6 +3,7 @@ package mediaStorageService
 import (
 	"fmt"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/types/UITypes"
 	"maps"
 )
 
@@ -98,4 +99,31 @@ func CommentAttachCloudNameToUrl(attachmentCloudName string) string {
 	}
 
 	return attachmentUrl
+}
+
+// this function, for the users participating in a notification,
+// replaces their profile picture cloud name with a download URL for the client
+func NotifMediaCloudNamesToUrl(notifs []*UITypes.NotifSnippet) {
+	for _, notif := range notifs {
+		setNotifUserDetail := func(userKey string) {
+			userData := notif.Details[userKey].(map[string]any)
+
+			userData["profile_pic_url"] = ProfilePicCloudNameToUrl(userData["profile_pic_url"].(string))
+
+			notif.Details[userKey] = userData
+		}
+
+		switch notif.Type {
+		case "user_follow":
+			setNotifUserDetail("follower_user")
+		case "repost":
+			setNotifUserDetail("reposter_user")
+		case "reaction_to_post", "reaction_to_comment":
+			setNotifUserDetail("reactor_user")
+		case "mention_in_post", "mention_in_comment":
+			setNotifUserDetail("mentioning_user")
+		case "comment_on_post", "comment_on_comment":
+			setNotifUserDetail("commenter_user")
+		}
+	}
 }

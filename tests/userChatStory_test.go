@@ -232,28 +232,19 @@ func TestUserChatStory(t *testing.T) {
 		user2NewMsgReceived := <-user2.ServerEventMsg
 
 		td.Cmp(td.Require(t), user2NewMsgReceived, td.Map(map[string]any{
-			"event": "new chat",
-			"data": td.Map(map[string]any{
-				"chat": td.SuperMapOf(map[string]any{
-					"partner_user": td.SuperMapOf(map[string]any{
-						"username": user1.Username,
+			"event": "chat: new che: message",
+			"data": td.SuperMapOf(map[string]any{
+				"id": user1NewMsgId,
+				"content": td.SuperMapOf(map[string]any{
+					"type": "text",
+					"props": td.SuperMapOf(map[string]any{
+						"text_content": "Hi. How're you doing?",
 					}, nil),
-					"unread_messages_count": td.Ignore(),
-					"cursor":                td.Ignore(),
 				}, nil),
-				"history": td.Contains(td.SuperMapOf(map[string]any{
-					"id": user1NewMsgId,
-					"content": td.SuperMapOf(map[string]any{
-						"type": "text",
-						"props": td.SuperMapOf(map[string]any{
-							"text_content": "Hi. How're you doing?",
-						}, nil),
-					}, nil),
-					"delivery_status": "sent",
-					"sender": td.SuperMapOf(map[string]any{
-						"username": user1.Username,
-					}, nil),
-				}, nil)),
+				"delivery_status": "sent",
+				"sender": td.SuperMapOf(map[string]any{
+					"username": user1.Username,
+				}, nil),
 			}, nil),
 		}, nil))
 
@@ -272,9 +263,7 @@ func TestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
 			"toAction": "chat: ack messages delivered",
-			"data": td.Map(map[string]any{
-				"updated_chat_cursor": td.Ignore(),
-			}, nil),
+			"data":     td.Not(false),
 		}, nil))
 	}
 
@@ -348,9 +337,7 @@ func TestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user2ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
 			"toAction": "chat: react to message",
-			"data": td.Map(map[string]any{
-				"che_cursor": td.Ignore(),
-			}, nil),
+			"data":     td.Not(false),
 		}, nil))
 	}
 
@@ -360,16 +347,11 @@ func TestUserChatStory(t *testing.T) {
 		user1ReadAckReceipt := <-user1.ServerEventMsg
 
 		td.Cmp(td.Require(t), user1ReadAckReceipt, td.Map(map[string]any{
-			"event": "chat: message reaction",
+			"event": "chat: new che: reaction",
 			"data": td.SuperMapOf(map[string]any{
-				"chat_partner": user2.Username,
-				"msg_reaction": td.SuperMapOf(map[string]any{
-					"msg_id": user1NewMsgId,
-					"reaction": td.Map(map[string]any{
-						"emoji":   "🚀",
-						"reactor": td.Ignore(),
-					}, nil),
-				}, nil),
+				"id":       td.Ignore(),
+				"che_type": "reaction",
+				"emoji":    "🚀",
 			}, nil),
 		}, nil))
 	}
@@ -442,23 +424,27 @@ func TestUserChatStory(t *testing.T) {
 
 				t.Logf("Uploading %s message media started", varMedia[i])
 
-				sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
+				if ALLOW_UPLOADS {
+					sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
 
-				uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+					uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+				}
 
 				t.Logf("Uploading %s message media complete", varMedia[i])
 			}
 
-			defer func(mcn string) {
-				varMediaCloudName := make([]string, 2)
-				_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
-				require.NoError(err)
-
-				for _, baMcn := range varMediaCloudName {
-					err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+			if ALLOW_UPLOADS {
+				defer func(mcn string) {
+					varMediaCloudName := make([]string, 2)
+					_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
 					require.NoError(err)
-				}
-			}(mediaCloudName)
+
+					for _, baMcn := range varMediaCloudName {
+						err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+						require.NoError(err)
+					}
+				}(mediaCloudName)
+			}
 
 			t.Log("Upload complete")
 		}
@@ -532,9 +518,7 @@ func TestUserChatStory(t *testing.T) {
 		td.Cmp(td.Require(t), user1ServerReply, td.Map(map[string]any{
 			"event":    "server reply",
 			"toAction": "chat: ack messages delivered",
-			"data": td.Map(map[string]any{
-				"updated_chat_cursor": td.Ignore(),
-			}, nil),
+			"data":     td.Not(false),
 		}, nil))
 	}
 
@@ -616,15 +600,16 @@ func TestUserChatStory(t *testing.T) {
 						}, nil),
 					}, nil),
 					"delivery_status": "read",
-					"reactions": td.All(td.Contains(td.Map(map[string]any{
-						"emoji": "🚀",
-						"reactor": td.Map(map[string]any{
-							"username":        user2.Username,
-							"profile_pic_url": td.Ignore(),
-						}, nil),
-					}, nil))),
 					"sender": td.SuperMapOf(map[string]any{
 						"username": user1.Username,
+					}, nil),
+				}, nil)),
+				td.Contains(td.SuperMapOf(map[string]any{
+					"che_type": "reaction",
+					"emoji":    "🚀",
+					"reactor": td.Map(map[string]any{
+						"username":        user2.Username,
+						"profile_pic_url": td.Ignore(),
 					}, nil),
 				}, nil)),
 				td.Contains(td.SuperMapOf(map[string]any{

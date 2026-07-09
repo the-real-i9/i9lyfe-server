@@ -7,12 +7,12 @@ sequenceDiagram
   client->>signupController: POST: I want to signup: (email)
   signupController->>signupService: Person wants<br> to signup (email)
   signupService->>userService: Do we have an<br> account associated <br>with this (email)?
-  userService->>userModel: Check if a user <br>with (email) exists in DB.
+  userService->>userDBM: Check if a user <br>with (email) exists in DB.
   participant PostgresDB@{ "type": "database" }
-  userModel->>PostgresDB: SELECT EXISTS..., $email
+  userDBM->>PostgresDB: SELECT EXISTS..., $email
   alt account with email doesn't exists
-    PostgresDB->>userModel: False
-    userModel->>userService: No, user does not exist.
+    PostgresDB->>userDBM: False
+    userDBM->>userService: No, user does not exist.
     userService->>signupService: No, we don't.
     signupService->>securityServices: GenerateTokenAndExpiration()
     securityServices->>signupService: (Token: 123456, Exp: 4345234)
@@ -21,8 +21,8 @@ sequenceDiagram
     signupService->>signupController: OK. Verification email <br>has been sent. <br> {signupSessionData}
     signupController->>client: 200: "A 6-digit verf...has been..." <br> Set-cookie(session: {signupSessionData})
   else account with email already exists
-    PostgresDB->>userModel: True
-    userModel->>userService: Yes, user exists.
+    PostgresDB->>userDBM: True
+    userDBM->>userService: Yes, user exists.
     userService->>signupService: Yes, we do.
     signupService->>signupController: Not allowed. <br> An account...already exists.
     signupController->>client: 400: "An account with...".
@@ -48,19 +48,19 @@ sequenceDiagram
   client->>signupController: POST: User info (username, password, ...) <br>Cookie(session: {signupSessionData})
   signupController->>signupService: Person signing up <br> wants to submit their info <br>(sessionData, (username, password, ...)).
   signupService->>userService: Do we have an<br> account associated <br>with this (username)?
-  userService->>userModel: Check if a user <br>with (username) exists in DB.
-  userModel->>PostgresDB: SELECT EXISTS..., $username
+  userService->>userDBM: Check if a user <br>with (username) exists in DB.
+  userDBM->>PostgresDB: SELECT EXISTS..., $username
   alt account with username doesn't exists
-    PostgresDB->>userModel: False
-    userModel->>userService: No, user does not exist.
+    PostgresDB->>userDBM: False
+    userDBM->>userService: No, user does not exist.
     userService->>signupService: No, we don't.
     signupService->>securityServices: HashPassword (password)
     securityServices->>signupService: (ha$hEdPa$$w0rd)
     signupService->>userService: Create new user <br> (email, username, ...)
-    userService->>userModel: Create new user in DB <br> (email, username, ...)
-    userModel->>PostgresDB: INSERT INTO users...<br>RETURNING...
-    PostgresDB->>userModel: newUser{...}
-    userModel->>userService: newUser{...}
+    userService->>userDBM: Create new user in DB <br> (email, username, ...)
+    userDBM->>PostgresDB: INSERT INTO users...<br>RETURNING...
+    PostgresDB->>userDBM: newUser{...}
+    userDBM->>userService: newUser{...}
     userService-->>eventStreamService: go QueueNewUserEvent({...})
     userService->>cloudStorageService: Change user profile_picture_url field <br> from objectCloudId to download URL.
     participant RedisStreams@{ "type": "queue" }
@@ -71,8 +71,8 @@ sequenceDiagram
     signupService->>signupController: (respData:{msg, userData}, authJwt)
     signupController->>client: 201: respData{...} <br> Set-cookie(session: {userSessionData{authJwt...}})
   else account with username already exists
-    PostgresDB->>userModel: True
-    userModel->>userService: Yes, user exists.
+    PostgresDB->>userDBM: True
+    userDBM->>userService: Yes, user exists.
     userService->>signupService: Yes, we do.
     signupService->>signupController: Username unavailable.
     signupController->>client: 400: "Username (username) unavailable".
@@ -98,11 +98,11 @@ sequenceDiagram
 
   client->>postCommentController: POST .../new_post <br>Body: {media_cloud_names, type, ...}
   postCommentController->>postCommentService: CreateNewPost(media_cloud_names, descripton, ...)
-  postCommentService->>postModel: New(media_cloud_names, type, descripton, ...)
+  postCommentService->>postDBM: New(media_cloud_names, type, descripton, ...)
   participant PostgresDB@{ "type": "database" }
-  postModel->>PostgresDB: INSERT INTO posts...,<br>RETURNING ...
-  PostgresDB->>postModel: newPost{...}
-  postModel->>postCommentService: Post created newPost{...}
+  postDBM->>PostgresDB: INSERT INTO posts...,<br>RETURNING ...
+  PostgresDB->>postDBM: newPost{...}
+  postDBM->>postCommentService: Post created newPost{...}
   postCommentService-->>eventStreamService: go QueueNewPostEvent({...})
   participant RedisStreams@{ "type": "queue" }
   eventStreamService-->>RedisStreams: XADD command <br> streamName:"new_user" data{...}

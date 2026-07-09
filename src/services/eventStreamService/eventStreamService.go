@@ -49,184 +49,186 @@ func QueueUserPresenceChangeEvent(upce eventTypes.UserPresenceChangeEvent) {
 	}
 }
 
-func QueueUserFollowEvent(ufe eventTypes.UserFollowEvent) {
-	ctx := context.Background()
-
+func QueueUserFollowEvent(ctx context.Context, ufe eventTypes.UserFollowEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_followed",
 		Values: ufe,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueUserUnfollowEvent(uue eventTypes.UserUnfollowEvent) {
-	ctx := context.Background()
-
+func QueueUserUnfollowEvent(ctx context.Context, uue eventTypes.UserUnfollowEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "users_unfollowed",
 		Values: uue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueNewPostEvent(npe eventTypes.NewPostEvent) {
-	ctx := context.Background()
-
+func QueueNewPostEvent(ctx context.Context, npe eventTypes.NewPostEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "new_posts",
 		Values: npe,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostDeletionEvent(pde eventTypes.PostDeletionEvent) {
-	ctx := context.Background()
-
-	err := rdb().XAdd(ctx, &redis.XAddArgs{
-		Stream: "post_deletions",
-		Values: pde,
-	}).Err()
-	if err != nil {
-		helpers.LogError(err)
-	}
-}
-
-func QueuePostReactionEvent(pre eventTypes.PostReactionEvent) {
-	ctx := context.Background()
-
+func QueuePostReactionEvent(ctx context.Context, pre eventTypes.PostReactionEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions",
 		Values: pre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostReactionRemovedEvent(rpre eventTypes.PostReactionRemovedEvent) {
-	ctx := context.Background()
-
+func QueuePostReactionRemovedEvent(ctx context.Context, rpre eventTypes.PostReactionRemovedEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_reactions_removed",
 		Values: rpre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostCommentEvent(pce eventTypes.PostCommentEvent) {
-	ctx := context.Background()
-
+func QueuePostCommentEvent(ctx context.Context, pce eventTypes.PostCommentEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments",
 		Values: pce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostCommentRemovedEvent(rpce eventTypes.PostCommentRemovedEvent) {
-	ctx := context.Background()
-
+func QueuePostCommentRemovedEvent(ctx context.Context, rpce eventTypes.PostCommentRemovedEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_comments_removed",
 		Values: rpce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueCommentReactionEvent(cre eventTypes.CommentReactionEvent) {
-	ctx := context.Background()
-
+func QueueCommentReactionEvent(ctx context.Context, cre eventTypes.CommentReactionEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions",
 		Values: cre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueCommentReactionRemovedEvent(rcre eventTypes.CommentReactionRemovedEvent) {
-	ctx := context.Background()
-
+func QueueCommentReactionRemovedEvent(ctx context.Context, rcre eventTypes.CommentReactionRemovedEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_reactions_removed",
 		Values: rcre,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueCommentCommentEvent(cce eventTypes.CommentCommentEvent) {
-	ctx := context.Background()
-
+func QueueCommentCommentEvent(ctx context.Context, cce eventTypes.CommentCommentEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments",
 		Values: cce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueCommentCommentRemovedEvent(rcce eventTypes.CommentCommentRemovedEvent) {
-	ctx := context.Background()
-
+func QueueCommentCommentRemovedEvent(ctx context.Context, rcce eventTypes.CommentCommentRemovedEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "comment_comments_removed",
 		Values: rcce,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueueRepostEvent(re eventTypes.RepostEvent) {
-	ctx := context.Background()
-
+func QueueRepostEvent(ctx context.Context, re eventTypes.RepostEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "reposts",
 		Values: re,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostSaveEvent(pse eventTypes.PostSaveEvent) {
-	ctx := context.Background()
-
+func QueuePostSaveEvent(ctx context.Context, pse eventTypes.PostSaveEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_saves",
 		Values: pse,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
-func QueuePostUnsaveEvent(pue eventTypes.PostUnsaveEvent) {
-	ctx := context.Background()
-
+func QueuePostUnsaveEvent(ctx context.Context, pue eventTypes.PostUnsaveEvent) error {
 	err := rdb().XAdd(ctx, &redis.XAddArgs{
 		Stream: "post_unsaves",
 		Values: pue,
 	}).Err()
 	if err != nil {
 		helpers.LogError(err)
+		return err
 	}
+
+	return nil
 }
 
 func QueueNewMessageEvent(nme eventTypes.NewMessageEvent) {

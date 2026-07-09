@@ -3,8 +3,9 @@ package backgroundWorkers
 import (
 	"context"
 
-	"i9lyfe/src/cache"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/pubsubService"
 	"i9lyfe/src/types/eventTypes"
 
@@ -50,69 +51,69 @@ func commentReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				stmsgIds = append(stmsgIds, stmsg.ID)
 				var msg eventTypes.CommentReactionRemovedEvent
 
-				msg.ReactorUser = stmsg.Values["reactorUser"].(string)
 				msg.CommentId = stmsg.Values["commentId"].(string)
 
 				msgs = append(msgs, msg)
 
 			}
 
-			commentReactionsRemoved := make(map[string][]string)
-
-			commentReactorsRemoved := make(map[string][]any)
+			commentReactionsRemoved := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-
-				commentReactionsRemoved[msg.CommentId] = append(commentReactionsRemoved[msg.CommentId], msg.ReactorUser)
-				// these two above and below follow a similar implemtation,
-				// i.e. we can use commentReactionsRemoved to remove comment reactors too
-				// but we're just separating concerns here
-				commentReactorsRemoved[msg.CommentId] = append(commentReactorsRemoved[msg.CommentId], msg.ReactorUser)
+				commentReactionsRemoved[msg.CommentId]++
 			}
 
 			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for commentId, users := range commentReactionsRemoved {
-					cache.RemoveCommentReactions(pipe, ctx, commentId, users)
-				}
+			sqls := []string{}
+			params := [][]any{}
 
-				for commentId, rUsers := range commentReactorsRemoved {
-					cache.RemoveCommentReactors(pipe, ctx, commentId, rUsers)
-				}
+			for commentId, rc := range commentReactionsRemoved {
 
-				return nil
-			})
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE public.comments SET reactions_count = reactions_count - $2 WHERE comment_id = $1
+					RETURNING comment_id, reactions_count AS rxns_count
+					`,
+				)
+				params = append(params, []any{commentId, rc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			type res struct {
+				CommentId string `db:"comment_id"`
+				RxnsCount int    `db:"rxns_count"`
+			}
+
+			commentIdRxns, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
 			go func() {
-				ctx := context.Background()
-				commentId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for commentId := range commentReactionsRemoved {
-						commentId_IntCmd[commentId] = cache.GetCommentReactionsCount(pipe, ctx, commentId)
-					}
-
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for commentId, lc := range commentId_IntCmd {
-					latestCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
-					pubsubService.PublishCommentMetric(ctx, map[string]any{
-						"comment_id":             commentId,
-						"latest_reactions_count": latestCount,
+				for _, cr := range commentIdRxns {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"comment_id":             cr.CommentId,
+						"latest_reactions_count": cr.RxnsCount,
 					})
 				}
 			}()

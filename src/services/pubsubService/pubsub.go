@@ -34,16 +34,16 @@ func PublishCommentMetric(ctx context.Context, data any) {
 	publishContentMetric(ctx, data, "comment")
 }
 
-func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, ctxCancel context.CancelFunc) {
+func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string) func() {
 	pubsub := rdb().Subscribe(ctx, "live_content_metrics")
 
-	defer func() {
+	closeFunc := func() {
 		if err := pubsub.Close(); err != nil {
 			helpers.LogError(err)
 		}
-	}()
+	}
 
-	go func(ctxCancel context.CancelFunc) {
+	go func(pubsub *redis.PubSub, closeFunc func()) {
 		ch := pubsub.Channel()
 
 		for msg := range ch {
@@ -53,11 +53,15 @@ func SubscribeToLiveContentMetrics(ctx context.Context, clientUsername string, c
 
 				if err := sock.WriteMessage(websocket.BinaryMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
-					ctxCancel()
+					closeFunc()
 				}
+			} else {
+				closeFunc()
 			}
 		}
-	}(ctxCancel)
+	}(pubsub, closeFunc)
+
+	return closeFunc
 }
 
 func PublishUserPresenceChange(ctx context.Context, targetUsername string, data map[string]any) {
@@ -69,16 +73,16 @@ func PublishUserPresenceChange(ctx context.Context, targetUsername string, data 
 	}
 }
 
-func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetUsername string, ctxCancel context.CancelFunc) {
+func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetUsername string) func() {
 	pubsub := rdb().Subscribe(ctx, fmt.Sprintf("user_%s_presence_change", targetUsername))
 
-	defer func() {
+	closeFunc := func() {
 		if err := pubsub.Close(); err != nil {
 			helpers.LogError(err)
 		}
-	}()
+	}
 
-	go func(ctxCancel context.CancelFunc) {
+	go func(pubsub *redis.PubSub, closeFunc func()) {
 		ch := pubsub.Channel()
 
 		for msg := range ch {
@@ -87,9 +91,13 @@ func SubscribeToUserPresence(ctx context.Context, clientUsername string, targetU
 
 				if err := sock.WriteMessage(websocket.BinaryMessage, []byte(msg.Payload)); err != nil {
 					helpers.LogError(err)
-					ctxCancel()
+					closeFunc()
 				}
+			} else {
+				closeFunc()
 			}
 		}
-	}(ctxCancel)
+	}(pubsub, closeFunc)
+
+	return closeFunc
 }

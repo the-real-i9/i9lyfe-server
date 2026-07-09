@@ -111,8 +111,6 @@ func ReactToPost(c fiber.Ctx) error {
 func GetReactorsToPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
-	clientUser := c.Locals("user").(appTypes.ClientUser)
-
 	var query struct {
 		Limit  int64
 		Cursor float64
@@ -122,7 +120,7 @@ func GetReactorsToPost(c fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := postCommentService.GetReactorsToPost(ctx, clientUser.Username, c.Params("postId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
+	respData, err := postCommentService.GetReactorsToPost(ctx, c.Params("postId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
@@ -231,19 +229,6 @@ func GetCommentsOnPost(c fiber.Ctx) error {
 	return c.MsgPack(respData)
 }
 
-func GetComment(c fiber.Ctx) error {
-	ctx := c.Context()
-
-	clientUser := c.Locals("user").(appTypes.ClientUser)
-
-	respData, err := postCommentService.GetComment(ctx, clientUser.Username, c.Params("commentId"))
-	if err != nil {
-		return err
-	}
-
-	return c.MsgPack(respData)
-}
-
 func RemoveCommentOnPost(c fiber.Ctx) error {
 	ctx := c.Context()
 
@@ -286,8 +271,6 @@ func ReactToComment(c fiber.Ctx) error {
 func GetReactorsToComment(c fiber.Ctx) error {
 	ctx := c.Context()
 
-	clientUser := c.Locals("user").(appTypes.ClientUser)
-
 	var query struct {
 		Limit  int64
 		Cursor float64
@@ -297,7 +280,7 @@ func GetReactorsToComment(c fiber.Ctx) error {
 		return err
 	}
 
-	respData, err := postCommentService.GetReactorsToComment(ctx, clientUser.Username, c.Params("commentId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
+	respData, err := postCommentService.GetReactorsToComment(ctx, c.Params("commentId"), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
@@ -390,6 +373,19 @@ func RemoveCommentOnComment(c fiber.Ctx) error {
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
 	respData, err := postCommentService.RemoveCommentOnComment(ctx, clientUser.Username, c.Params("parentCommentId"), c.Params("childCommentId"))
+	if err != nil {
+		return err
+	}
+
+	return c.MsgPack(respData)
+}
+
+func GetComment(c fiber.Ctx) error {
+	ctx := c.Context()
+
+	clientUser := c.Locals("user").(appTypes.ClientUser)
+
+	respData, err := postCommentService.GetComment(ctx, clientUser.Username, c.Params("commentId"))
 	if err != nil {
 		return err
 	}

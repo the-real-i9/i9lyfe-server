@@ -13,10 +13,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func postCommentsStreamBgWorker(rdb *redis.Client) {
+func commentCommentsRemovedStreamBgWorker(rdb *redis.Client) {
 	var (
-		streamName   = "post_comments"
-		groupName    = "post_comment_listeners"
+		streamName   = "comment_comments_removed"
+		groupName    = "comment_comment_removed_listeners"
 		consumerName = "worker-1"
 	)
 
@@ -34,7 +34,7 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 				Group:    groupName,
 				Consumer: consumerName,
 				Streams:  []string{streamName, ">"},
-				Count:    500,
+				Count:    1000,
 				Block:    0,
 			}).Result()
 
@@ -44,40 +44,39 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			var stmsgIds []string
-			var msgs []eventTypes.PostCommentEvent
+			var msgs []eventTypes.CommentCommentRemovedEvent
 
 			for _, stmsg := range streams[0].Messages {
 				stmsgIds = append(stmsgIds, stmsg.ID)
 
-				var msg eventTypes.PostCommentEvent
+				var msg eventTypes.CommentCommentRemovedEvent
 
-				msg.PostId = stmsg.Values["postId"].(string)
+				msg.ParentCommentId = stmsg.Values["parentCommentId"].(string)
 
 				msgs = append(msgs, msg)
-
 			}
 
-			postComments := make(map[string]int)
+			parentCommentComments := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-				postComments[msg.PostId]++
+				parentCommentComments[msg.ParentCommentId]++
 			}
 
 			// batch processing
 			sqls := []string{}
 			params := [][]any{}
 
-			for postId, cc := range postComments {
+			for parentCommentId, cc := range parentCommentComments {
 
 				sqls = append(
 					sqls,
 					/* sql */ `
-					UPDATE posts SET comments_count = comments_count + $2 WHERE id_ = $1
-					RETURNING id_ AS post_id, comments_count
+					UPDATE public.comments SET comments_count = comments_count - $2 WHERE parent_comment_id = $1
+					RETURNING parent_comment_id, comments_count
 					`,
 				)
-				params = append(params, []any{postId, cc})
+				params = append(params, []any{parentCommentId, cc})
 			}
 
 			pgTx, err := appGlobals.DBPool.Begin(ctx)
@@ -93,11 +92,11 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			}()
 
 			type res struct {
-				PostId        string `db:"post_id"`
-				CommentsCount int    `db:"comments_count"`
+				ParentCommentId string `db:"parent_comment_id"`
+				CommentsCount   int    `db:"comments_count"`
 			}
 
-			postIdComments, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			parentCommentIdComments, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return
@@ -110,9 +109,9 @@ func postCommentsStreamBgWorker(rdb *redis.Client) {
 			}
 
 			go func() {
-				for _, pc := range postIdComments {
+				for _, pc := range parentCommentIdComments {
 					pubsubService.PublishPostMetric(context.Background(), map[string]any{
-						"post_id":               pc.PostId,
+						"comment_id":            pc.ParentCommentId,
 						"latest_comments_count": pc.CommentsCount,
 					})
 				}

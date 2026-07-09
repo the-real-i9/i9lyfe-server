@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"i9lyfe/src/cache"
-	chat "i9lyfe/src/domain/chat/chatModel"
-	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/eventStreamService"
+	chat "i9lyfe/src/domain/chat/chatDBM"
 	"i9lyfe/src/services/mediaStorageService"
 	"i9lyfe/src/services/sseService"
 	"i9lyfe/src/types/UITypes"
 	"i9lyfe/src/types/appTypes"
-	"i9lyfe/src/types/eventTypes"
 
 	"time"
 
@@ -20,16 +16,19 @@ import (
 	"github.com/gofiber/utils/v2"
 )
 
-func GetChats(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.ChatSnippet, error) {
+func GetChats(ctx context.Context, clientUsername string, limit int64, cursor int64) ([]*UITypes.ChatSnippet, error) {
 	chats, err := chat.MyChats(ctx, clientUsername, limit, cursor)
 	if err != nil {
 		return nil, err
 	}
 
+	for _, c := range chats {
+		c.PartnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(c.PartnerUser["profile_pic_url"].(string))
+	}
+
 	return chats, nil
 }
 
-// not implemented
 func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (bool, error) {
 	done, err := chat.Delete(ctx, clientUsername, partnerUsername)
 	if err != nil {
@@ -39,10 +38,16 @@ func DeleteChat(ctx context.Context, clientUsername, partnerUsername string) (bo
 	return done, nil
 }
 
-func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, limit int64, cursor float64) ([]UITypes.ChatHistoryEntry, error) {
+func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string, limit int64, cursor float64) ([]*UITypes.ChatHistoryEntry, error) {
 	history, err := chat.History(ctx, clientUsername, partnerUsername, limit, cursor)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, h := range history {
+		if h.CHEType == "message" {
+			h.Content = mediaStorageService.MessageMediaCloudNameToUrl(h.Content)
+		}
 	}
 
 	return history, nil
@@ -70,58 +75,32 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 		return nil, nil
 	}
 
-	go func(msg chat.NewMessageT, clientUsername, partnerUsername string) {
-		uisender, _ := cache.GetUser[UITypes.ClientUser](context.Background(), clientUsername)
-
-		uisender.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(uisender.ProfilePicUrl)
+	go func(msg chat.NewMessageT) {
+		msg.Sender["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(msg.Sender["profile_pic_url"].(string))
 
 		UImsg := UITypes.ChatHistoryEntry{
 			CHEType: msg.CHEType, Id: msg.Id,
 			Content:        mediaStorageService.MessageMediaCloudNameToUrl(msg.Content),
-			DeliveryStatus: msg.DeliveryStatus, CreatedAt: msg.CreatedAt, Sender: uisender,
+			DeliveryStatus: msg.DeliveryStatus, CreatedAt: msg.CreatedAt, Sender: msg.Sender,
 			ReplyTargetMsg: msg.ReplyTargetMsg, Cursor: msg.Cursor,
-		}
-
-		if newMessage.FirstToUser {
-			sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-				Event: "new chat",
-				Data: map[string]any{
-					"chat":    UITypes.ChatSnippet{PartnerUser: uisender, UnreadMC: 1, Cursor: msg.Cursor},
-					"history": []UITypes.ChatHistoryEntry{UImsg},
-				},
-			})
-
-			return
 		}
 
 		sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: new che: message",
 			Data:  UImsg,
 		})
-	}(newMessage, clientUsername, partnerUsername)
-
-	go func(newMessage chat.NewMessageT, clientUsername, partnerUsername string) {
-		eventStreamService.QueueNewMessageEvent(eventTypes.NewMessageEvent{
-			FirstFromUser: newMessage.FirstFromUser,
-			FirstToUser:   newMessage.FirstToUser,
-			FromUser:      clientUsername,
-			ToUser:        partnerUsername,
-			CHEId:         newMessage.Id,
-			MsgData:       helpers.ToMsgPack(newMessage),
-			CHECursor:     newMessage.Cursor,
-		})
-	}(newMessage, clientUsername, partnerUsername)
+	}(newMessage)
 
 	return map[string]any{"new_msg_id": newMessage.Id, "che_cursor": newMessage.Cursor}, nil
 }
 
-func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, at int64) (map[string]any, error) {
-	lastMsgCursor, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgIds, at)
+func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, at int64) (bool, error) {
+	done, err := chat.AckMsgDelivered(ctx, clientUsername, partnerUsername, msgIds, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if lastMsgCursor != 0 {
+	if done {
 		go sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 			Event: "chat: messages delivered",
 			Data: map[string]any{
@@ -130,18 +109,9 @@ func AckMsgDelivered(ctx context.Context, clientUsername, partnerUsername string
 				"delivered_at": at,
 			},
 		})
-
-		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
-			FromUser:   clientUsername,
-			ToUser:     partnerUsername,
-			CHEIds:     msgIds,
-			Ack:        "delivered",
-			At:         at,
-			ChatCursor: lastMsgCursor,
-		})
 	}
 
-	return map[string]any{"updated_chat_cursor": lastMsgCursor}, nil
+	return done, nil
 }
 
 func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msgIds []string, at int64) (bool, error) {
@@ -159,63 +129,31 @@ func AckMsgRead(ctx context.Context, clientUsername, partnerUsername string, msg
 				"read_at":      at,
 			},
 		})
-
-		go eventStreamService.QueueMsgsAckEvent(eventTypes.MsgsAckEvent{
-			FromUser: clientUsername,
-			ToUser:   partnerUsername,
-			CHEIds:   msgIds,
-			Ack:      "read",
-			At:       at,
-		})
 	}
 
 	return done, nil
 }
 
-func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (map[string]any, error) {
+func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emoji string, at int64) (bool, error) {
 	rxnToMessage, err := chat.ReactToMsg(ctx, clientUsername, partnerUsername, msgId, emoji, at)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if rxnToMessage.CHEId == "" {
-		return nil, nil
+	done := rxnToMessage.CHEId != ""
+
+	if done {
+		go func(rxnToMessage chat.RxnToMessageT, clientUsername, partnerUsername string) {
+			rxnToMessage.Reactor["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(rxnToMessage.Reactor["profile_pic_url"].(string))
+
+			sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
+				Event: "chat: new che: reaction",
+				Data:  UITypes.ChatHistoryEntry{Id: rxnToMessage.CHEId, CHEType: rxnToMessage.CHEType, Reactor: rxnToMessage.Reactor, Emoji: rxnToMessage.Emoji, ToMsg: rxnToMessage.ToMsg, Cursor: rxnToMessage.Cursor},
+			})
+		}(rxnToMessage, clientUsername, partnerUsername)
 	}
 
-	go func(rxnToMessage chat.RxnToMessageT, clientUsername, partnerUsername string) {
-		uireactor, _ := cache.GetUser[UITypes.MsgReactor](context.Background(), clientUsername)
-
-		uireactor.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(uireactor.ProfilePicUrl)
-
-		sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
-			Event: "chat: message reaction",
-			Data: map[string]any{
-				"chat_partner": clientUsername,
-				"che":          UITypes.ChatHistoryEntry{CHEType: rxnToMessage.CHEType, Reactor: clientUsername, Emoji: rxnToMessage.Emoji, Cursor: rxnToMessage.Cursor},
-				"msg_reaction": map[string]any{
-					"msg_id": rxnToMessage.ToMsgId,
-					"reaction": UITypes.MsgReaction{
-						Emoji:   rxnToMessage.Emoji,
-						Reactor: uireactor,
-					},
-				},
-			},
-		})
-	}(rxnToMessage, clientUsername, partnerUsername)
-
-	go func(rxnToMessage chat.RxnToMessageT, clientUsername, partnerUsername string) {
-		eventStreamService.QueueNewMsgReactionEvent(eventTypes.NewMsgReactionEvent{
-			FromUser:  clientUsername,
-			ToUser:    partnerUsername,
-			CHEId:     rxnToMessage.CHEId,
-			RxnData:   helpers.ToMsgPack(rxnToMessage),
-			ToMsgId:   rxnToMessage.ToMsgId,
-			Emoji:     rxnToMessage.Emoji,
-			CHECursor: rxnToMessage.Cursor,
-		})
-	}(rxnToMessage, clientUsername, partnerUsername)
-
-	return map[string]any{"che_cursor": rxnToMessage.Cursor}, nil
+	return done, nil
 }
 
 func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, msgId string) (bool, error) {
@@ -231,15 +169,9 @@ func RemoveReactionToMsg(ctx context.Context, clientUsername, partnerUsername, m
 			Event: "chat: message reaction removed",
 			Data: map[string]any{
 				"chat_partner": clientUsername,
+				"che_id":       CHEId,
 				"msg_id":       msgId,
 			},
-		})
-
-		go eventStreamService.QueueMsgReactionRemovedEvent(eventTypes.MsgReactionRemovedEvent{
-			FromUser: clientUsername,
-			ToUser:   partnerUsername,
-			ToMsgId:  msgId,
-			CHEId:    CHEId,
 		})
 	}
 
@@ -264,11 +196,6 @@ func DeleteMsg(ctx context.Context, clientUsername, partnerUsername, msgId, dele
 				},
 			})
 		}
-
-		go eventStreamService.QueueMsgDeletionEvent(eventTypes.MsgDeletionEvent{
-			CHEId: msgId,
-			For:   deleteFor,
-		})
 	}
 
 	return done, nil

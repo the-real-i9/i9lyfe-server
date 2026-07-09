@@ -2,11 +2,10 @@ package contentRecommendationService
 
 import (
 	"context"
-	"fmt"
 	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/modelHelpers"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/sseService"
 	"i9lyfe/src/types/appTypes"
 
@@ -17,51 +16,53 @@ func rdb() *redis.Client {
 	return appGlobals.RedisClient
 }
 
-func FanOutPostToFollowers(postId string, postCursor float64, user string) {
-	ctx := context.Background()
+func FanOutPostToFollowers(ctx context.Context, postId string, postCursor float64, user string) error {
 
-	var nextCursor uint64
+	var nextCursor int64
 
 	for {
-		followers, cursor, err := rdb().ZScan(ctx, fmt.Sprintf("user:%s:followers", user), nextCursor, "*", 100).Result()
-		if err != nil && err != redis.Nil {
+		type f struct {
+			Username string `db:"follower_username"`
+			Cursor   int64  `db:"cursor_"`
+		}
+		// pull user followers from DB (cursor based)
+		followers, err := pgDB.QueryRowsType[f](
+			ctx,
+			/* sql */ `
+			SELECT follower_username, cursor_ FROM follows
+			WHERE following_username = $1 AND cursor_ > $2
+			`, user, nextCursor,
+		)
+		if err != nil {
 			helpers.LogError(err)
+			return err
+		}
+
+		if len(followers) == 0 {
 			break
 		}
 
-		go func(followers []string) {
-			ctx := context.Background()
+		_, err = rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
+			for _, f := range followers {
+				cache.StoreUserFeedPosts(pipe, ctx, f.Username, [][2]any{{postId, postCursor}})
+			}
 
-			_, err := rdb().Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for _, fuser := range followers {
-					cache.StoreUserFeedPosts(pipe, ctx, fuser, [][2]any{{postId, postCursor}})
-				}
+			return nil
+		})
+		if err != nil {
+			helpers.LogError(err)
+			return err
+		}
 
-				return nil
+		for _, f := range followers {
+			sseService.SendEventMsg(f.Username, appTypes.ServerEventMsg{
+				Event: "new feed posts",
+				Data:  nil,
 			})
-			if err != nil {
-				helpers.LogError(err)
-				return
-			}
-
-			for _, fuser := range followers {
-				postUI, err := modelHelpers.BuildPostUIFromCache(ctx, postId, fuser)
-				if err != nil {
-					helpers.LogError(err)
-					continue
-				}
-
-				sseService.SendEventMsg(fuser, appTypes.ServerEventMsg{
-					Event: "new feed post",
-					Data:  postUI,
-				})
-			}
-		}(followers)
-
-		if cursor == 0 {
-			break
 		}
 
-		nextCursor = cursor
+		nextCursor = (followers[len(followers)-1]).Cursor
 	}
+
+	return nil
 }

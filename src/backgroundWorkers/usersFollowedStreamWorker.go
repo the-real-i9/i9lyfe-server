@@ -2,19 +2,19 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
-	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/modelHelpers"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
-	"i9lyfe/src/services/sseService"
+	"i9lyfe/src/helpers/pgDB"
 
-	"i9lyfe/src/types/appTypes"
 	"i9lyfe/src/types/eventTypes"
 	"log"
 
 	"github.com/redis/go-redis/v9"
 )
 
+// This Worker processes the user follow action queue,
+// to updates users' followers and followings count in a sequential manner,
+// avoiding possible concurrency problems, race condition, to be precise.
 func usersFollowedStreamBgWorker(rdb *redis.Client) {
 	var (
 		streamName   = "users_followed"
@@ -36,7 +36,7 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 				Group:    groupName,
 				Consumer: consumerName,
 				Streams:  []string{streamName, ">"},
-				Count:    500,
+				Count:    1000,
 				Block:    0,
 			}).Result()
 
@@ -55,89 +55,57 @@ func usersFollowedStreamBgWorker(rdb *redis.Client) {
 
 				msg.FollowerUser = stmsg.Values["followerUser"].(string)
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
-				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
-				msg.FollowCursor = helpers.ParseInt(stmsg.Values["followCursor"].(string))
 
 				msgs = append(msgs, msg)
 			}
 
-			userFollowers := make(map[string][][2]any)
-			userFollowings := make(map[string][][2]any)
-
-			notifications := []string{}
-
-			unreadNotifications := []any{}
-
-			userNotifications := make(map[string][][2]any)
-
-			sendNotifEventMsgFuncs := []func(){}
+			userFollowers := make(map[string]int)
+			userFollowings := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
+				userFollowings[msg.FollowerUser]++
 
-				userFollowings[msg.FollowerUser] = append(userFollowings[msg.FollowerUser], [2]any{msg.FollowingUser, float64(msg.FollowCursor)})
-
-				userFollowers[msg.FollowingUser] = append(userFollowers[msg.FollowingUser], [2]any{msg.FollowerUser, float64(msg.FollowCursor)})
-
-				notifUniqueId := fmt.Sprintf("user_%s_follows_user_%s", msg.FollowerUser, msg.FollowingUser)
-				notif := helpers.BuildNotification(notifUniqueId, "user_follow", msg.At, map[string]any{
-					"follower_user": msg.FollowerUser,
-				})
-
-				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
-				unreadNotifications = append(unreadNotifications, notifUniqueId)
-
-				userNotifications[msg.FollowingUser] = append(userNotifications[msg.FollowingUser], [2]any{notifUniqueId, float64(msg.FollowCursor)})
-
-				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
-
-					sseService.SendEventMsg(msg.FollowingUser, appTypes.ServerEventMsg{
-						Event: "new notification",
-						Data:  notifSnippet,
-					})
-				})
-
+				userFollowers[msg.FollowingUser]++
 			}
 
-			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				if len(notifications) > 0 {
-					cache.StoreNewNotifications(pipe, ctx, notifications)
+			sqls := []string{}
+			params := [][]any{}
 
-					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
-				}
+			for username, fc := range userFollowings {
 
-				return nil
-			})
+				sqls = append(sqls /* sql */, `UPDATE users SET followings_count = followings_count + $2 WHERE username = $1`)
+				params = append(params, []any{username, fc})
+			}
+
+			for username, fc := range userFollowers {
+
+				sqls = append(sqls /* sql */, `UPDATE users SET followers_count = followers_count + $2 WHERE username = $1`)
+				params = append(params, []any{username, fc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-
-				for followerUser, followingUser_score_Pairs := range userFollowings {
-					cache.StoreUserFollowings(pipe, ctx, followerUser, followingUser_score_Pairs)
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
 				}
+			}()
 
-				for followingUser, followerUser_score_Pairs := range userFollowers {
-					cache.StoreUserFollowers(pipe, ctx, followingUser, followerUser_score_Pairs)
-				}
-
-				for user, notifId_score_Pairs := range userNotifications {
-					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
-				}
-
-				return nil
-			})
+			err = pgDB.BatchExecTx(ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
-			for _, fn := range sendNotifEventMsgFuncs {
-				go fn()
+			err = pgTx.Commit(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
 			}
 
 			// acknowledge messages

@@ -44,6 +44,8 @@ const appPathPriv = "/api/app/private"
 const appPathPublic = "/api/app/public"
 const wsPath = WSHOST_URL + "/api/app/private/ws"
 
+const ALLOW_UPLOADS bool = false
+
 type UserT struct {
 	Email          string              `msgpack:"email"`
 	Username       string              `msgpack:"username"`

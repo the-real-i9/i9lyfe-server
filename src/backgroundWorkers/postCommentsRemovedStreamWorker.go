@@ -2,7 +2,10 @@ package backgroundWorkers
 
 import (
 	"context"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
+	"i9lyfe/src/services/pubsubService"
 	"i9lyfe/src/types/eventTypes"
 	"log"
 
@@ -47,17 +50,72 @@ func postCommentsRemovedStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostCommentRemovedEvent
 
-				msg.CommenterUser = stmsg.Values["commenterUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.CommentId = stmsg.Values["commentId"].(string)
 
 				msgs = append(msgs, msg)
 
 			}
 
-			_ = len(msgs)
+			postCommentsRemoved := make(map[string]int)
 
-			/* DO WHAT'S NEEDED */
+			// batch data for batch processing
+			for _, msg := range msgs {
+				postCommentsRemoved[msg.PostId]++
+			}
+
+			// batch processing
+			sqls := []string{}
+			params := [][]any{}
+
+			for postId, rc := range postCommentsRemoved {
+
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET comments_count = comments_count - $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, comments_count
+					`,
+				)
+				params = append(params, []any{postId, rc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			type res struct {
+				PostId        string `db:"post_id"`
+				CommentsCount int    `db:"comments_count"`
+			}
+
+			postIdComments, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			go func() {
+				for _, pc := range postIdComments {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"post_id":               pc.PostId,
+						"latest_comments_count": pc.CommentsCount,
+					})
+				}
+			}()
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

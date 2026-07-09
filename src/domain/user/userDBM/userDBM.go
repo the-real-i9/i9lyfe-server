@@ -1,18 +1,18 @@
-package userModel
+package userDBM
 
 import (
 	"context"
 	"fmt"
 	"i9lyfe/src/appGlobals"
 
-	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/modelHelpers"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/types/UITypes"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func redisDB() *redis.Client {
@@ -59,15 +59,15 @@ func New(ctx context.Context, email, username, name, bio string, birthday int64,
 	return *newUser, nil
 }
 
-type SignedInUserT struct {
+type LoggedInUserT struct {
 	Username      string `msgpack:"username"`
 	Name          string `msgpack:"name" db:"name_"`
 	ProfilePicUrl string `msgpack:"profile_pic_url" db:"profile_pic_url"`
 	Password      string `msgpack:"-" db:"password_"`
 }
 
-func LoginFind(ctx context.Context, uniqueIdent string) (SignedInUserT, error) {
-	user, err := pgDB.QueryRowType[SignedInUserT](
+func LoginFind(ctx context.Context, uniqueIdent string) (LoggedInUserT, error) {
+	user, err := pgDB.QueryRowType[LoggedInUserT](
 		ctx,
 		/* sql */ `
 		SELECT username, name_, profile_pic_url, password_ 
@@ -77,7 +77,7 @@ func LoginFind(ctx context.Context, uniqueIdent string) (SignedInUserT, error) {
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return SignedInUserT{}, fiber.ErrInternalServerError
+		return LoggedInUserT{}, fiber.ErrInternalServerError
 	}
 
 	return *user, nil
@@ -154,31 +154,26 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 	return *done, nil
 }
 
-func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (int64, error) {
-	followCursor, err := pgDB.QueryRowField[int64](
-		ctx,
+func Follow(ctx context.Context, tx pgx.Tx, clientUsername, targetUsername string, at int64) (string, error) {
+	followNotifId, err := pgDB.QueryRowFieldTx[string](
+		ctx, tx,
 		/* sql */ `
-		INSERT INTO follows (follower_username, following_username, at_)
-		VALUES ($1, $2, $3)
-		ON CONFLICT ON CONSTRAINT no_dup_follow DO NOTHING
-		RETURNING cursor_
+		SELECT * FROM follow_user ($1, $2, $3)
 		`, clientUsername, targetUsername, at,
 	)
 	if err != nil {
 		helpers.LogError(err)
-		return 0, helpers.HandleDBError(err)
+		return "", helpers.HandleDBError(err)
 	}
 
-	return *followCursor, nil
+	return *followNotifId, nil
 }
 
-func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool, error) {
-	done, err := pgDB.QueryRowField[bool](
-		ctx,
+func Unfollow(ctx context.Context, tx pgx.Tx, clientUsername, targetUsername string) (bool, error) {
+	done, err := pgDB.QueryRowFieldTx[bool](
+		ctx, tx,
 		/* sql */ `
-		DELETE FROM follows
-		WHERE follower_username = $1 AND following_username = $2
-		RETURNING true AS done
+		SELECT * FROM unfollow_user ($1, $2)
 		`, clientUsername, targetUsername,
 	)
 	if err != nil {
@@ -189,18 +184,13 @@ func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool,
 	return *done, nil
 }
 
-func GetMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
-	mentPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:mentioned_posts", clientUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	mentPosts, err := modelHelpers.PostMembersForUIPosts(ctx, mentPostsMembers, clientUsername)
+func GetMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor int64) ([]*UITypes.Post, error) {
+	mentPosts, err := pgDB.QueryRowsType[UITypes.Post](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_mentioned_posts($1, $2, $3)
+		`, clientUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
@@ -209,18 +199,13 @@ func GetMentionedPosts(ctx context.Context, clientUsername string, limit int64, 
 	return mentPosts, nil
 }
 
-func GetReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
-	reactedPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:reacted_posts", clientUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	reactedPosts, err := modelHelpers.PostMembersForUIPosts(ctx, reactedPostsMembers, clientUsername)
+func GetReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	reactedPosts, err := pgDB.QueryRowsType[UITypes.Post](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_reacted_posts($1, $2, $3)
+		`, clientUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
@@ -229,18 +214,13 @@ func GetReactedPosts(ctx context.Context, clientUsername string, limit int64, cu
 	return reactedPosts, nil
 }
 
-func GetSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
-	savedPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:saved_posts", clientUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	savedPosts, err := modelHelpers.PostMembersForUIPosts(ctx, savedPostsMembers, clientUsername)
+func GetSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	savedPosts, err := pgDB.QueryRowsType[UITypes.Post](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_saved_posts($1, $2, $3)
+		`, clientUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
@@ -249,110 +229,112 @@ func GetSavedPosts(ctx context.Context, clientUsername string, limit int64, curs
 	return savedPosts, nil
 }
 
-func GetNotifications(ctx context.Context, clientUsername string, year, month, limit int64, cursor float64) ([]UITypes.NotifSnippet, error) {
-	notifsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:notifications:%d-%d", clientUsername, year, month), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
+func GetManyNotifs(ctx context.Context, notifIds []string) ([]*UITypes.NotifSnippet, error) {
+	notifs, err := pgDB.QueryRowsType[UITypes.NotifSnippet](
+		ctx,
+		/* sql */ `
+		SELECT * FROM fetch_notifs ($1)
+		`, notifIds,
+	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	notifs, err := modelHelpers.NotifMembersForUINotifSnippets(ctx, notifsMembers)
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
+		return nil, helpers.HandleDBError(err)
 	}
 
 	return notifs, nil
 }
 
-func ReadNotification(ctx context.Context, clientUsername, year, month, notifId string) (bool, error) {
-	itIs, err := cache.IsUserNotification(ctx, clientUsername, year, month, notifId)
+func GetMyNotifications(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.NotifSnippet, error) {
+	notifs, err := pgDB.QueryRowsType[UITypes.NotifSnippet](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_my_notifs ($1, $2, $3)
+		`, clientUsername, limit, cursor,
+	)
 	if err != nil {
+		helpers.LogError(err)
+		return nil, helpers.HandleDBError(err)
+	}
+
+	return notifs, nil
+}
+
+func ReadNotification(ctx context.Context, clientUsername, notifId string) (bool, error) {
+	done, err := pgDB.QueryRowField[bool](
+		ctx,
+		/* sql */ `
+		UPDATE notifications
+		SET unread = false
+		WHERE id_ = $1 AND owner_user = $2
+		RETURNING true
+		`, notifId, clientUsername,
+	)
+	if err != nil {
+		helpers.LogError(err)
 		return false, fiber.ErrInternalServerError
 	}
 
-	if !itIs {
-		return false, nil
-	}
-
-	err = cache.RemoveUnreadNotifications(ctx, notifId)
-	if err != nil {
-		return false, fiber.ErrInternalServerError
-	}
-
-	return true, nil
+	return *done, nil
 }
 
 func GetProfile(ctx context.Context, clientUsername, targetUsername string) (UITypes.UserProfile, error) {
-	userProfile, err := modelHelpers.BuildUserProfileUIFromCache(ctx, targetUsername, clientUsername)
+	profile, err := pgDB.QueryRowType[UITypes.UserProfile](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_user_profile($1, $2)
+		`, clientUsername, targetUsername,
+	)
 	if err != nil {
 		helpers.LogError(err)
 		return UITypes.UserProfile{}, fiber.ErrInternalServerError
 	}
 
-	return userProfile, nil
+	return *profile, nil
 }
 
-func GetFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
-	followerMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:followers", targetUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
+func GetFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.UserSnippet, error) {
+	followers, err := pgDB.QueryRowsType[UITypes.UserSnippet](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_user_followers($1, $2, $3, $4)
+		`, clientUsername, targetUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	followers, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followerMembers, clientUsername)
-	if err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
 	return followers, nil
 }
 
-func GetFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
-	followingMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:followings", targetUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
+func GetFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.UserSnippet, error) {
+	followings, err := pgDB.QueryRowsType[UITypes.UserSnippet](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_user_followings($1, $2, $3, $4)
+		`, clientUsername, targetUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	followings, err := modelHelpers.UserMembersForUIUserSnippets(ctx, followingMembers, clientUsername)
-	if err != nil {
 		return nil, fiber.ErrInternalServerError
 	}
 
 	return followings, nil
 }
 
-func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
-	userPostsMembers, err := redisDB().ZRevRangeByScoreWithScores(ctx, fmt.Sprintf("user:%s:posts", targetUsername), &redis.ZRangeBy{
-		Max:   helpers.MaxCursor(cursor),
-		Min:   "-inf",
-		Count: limit,
-	}).Result()
+func GetPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	posts, err := pgDB.QueryRowsType[UITypes.Post](
+		ctx,
+		/* sql */ `
+		SELECT * FROM get_user_posts($1, $2, $3, $4)
+		`, clientUsername, targetUsername, limit, cursor,
+	)
 	if err != nil {
 		helpers.LogError(err)
 		return nil, fiber.ErrInternalServerError
 	}
 
-	userPosts, err := modelHelpers.PostMembersForUIPosts(ctx, userPostsMembers, clientUsername)
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
-
-	return userPosts, nil
+	return posts, nil
 }
 
 func ChangePresence(ctx context.Context, clientUsername, presence string, lastSeen int64) bool {

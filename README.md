@@ -179,35 +179,30 @@ Mermaid version: [Here](./diagrams/ER.mermaid).
 
 API sequence diagrams: [Here](./diagrams/sequence-diagrams.md)
 
-## API Tests &#x1f9ea;
+## Noteworthy Design Decisions
 
-We employ a testing approach where test cases are in the form of user stories. These stories simulate real-world API usage activity by a client/user, confirming that endpoints work as expected on both the client and server side.
+### Realtime message delivery -- (notifications, chat messages, etc.)
 
-### Feature Tests
+If a client isn't connected to receive realtime delivery of messages, particularly those that are "collection items", those messages are lost. i.e there's no dedicated queue for undelivered messages.
 
-Here we just want to test that the API endpoints/features work under normal, sane circumstances.
+**Why?** Imagine a user who goes offline for a very long time, but we keep queueing messages for this user. This will accumulate load on our infrastructure, taking space that's needed by other users. This isn't an efficient user of server resources.
+- Another is that, suppose we queue undelivered messages, by the time the user comes back online, we'll have to spend a lot of time dequeueing messages to the client. This will stress our WebSocket stream.
 
-#### User Authentication Story
+**So how do we ensure users who come online are kept up to date?** When a client is reconnected, it first requests (HTTP) for new items that might have been added to the collection since it went offline using the last item as a cursor. After this, he then connects to the realtime stream for realtime delivery of messages again.
+- Even if there's an enormous amount of data to be fetched, we can fetch it in chunks (pagination) as the user browses towards the latest item in the collection.
 
-[This test case](./tests/userAuthStory_test.go) builds a story around user signup, signout, login, and password reset features of the API. It is structured by a series of user/client actions or steps that simulate a real-world authentication scenario by a user.
+**Tradeoff?** No messages are returned on this HTTP request, which may seem like a wasted effort. But, queueing undelivered messages plus long realtime streaming of those messages is very costly in the worst case scenario.
 
-#### User Post & Comment Story
+### Feed posts delivery
 
-[This test case](./tests/userPostCommentStory_test.go) builds a story around post creation, mentioned user notifications, post fan-outs, commenting on a post, notifying the post owner, notifying users mentioned in comments, reacting to a post or comment etc.
+When a post is needed to be delivered to target users, we add the `postId` to each user's feed cache, then we signal each client of new feed posts. At its convenient time (based on UX decisions), the client requests for available new posts (with the cursor value of the latest post on their end as a starting point for the server).
 
-More feature tests can be found [here](./tests)
+Apart from this, the user can also forcibly "pull refresh" for available new posts.
 
-### Upcoming tests
+### Aggregration problem: Post and Comment metrics, User follows count
 
-#### Error tests
+### Chat History
 
-Here we'll build user stories around everywhere error should occur in the API, including validation errors, business layer errors, database errors, and more.
+**What's in a chat history?** To the normal viewer's eyes, a chat history only contains a ordered sequence of messages. But that's not true.
 
-#### Bad API Usage Tests
-
-Here we'll build client stories that intend to break the API.
-
-#### Attack Simulation Tests
-
-Here we'll test the API's security guards and potential vulnerabilities
-
+A chat history actually contains everything that happens in a chat including messages, message reactions, chat activities (for group chats), etc.

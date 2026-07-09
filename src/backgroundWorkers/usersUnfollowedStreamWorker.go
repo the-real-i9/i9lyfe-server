@@ -2,13 +2,13 @@ package backgroundWorkers
 
 import (
 	"context"
-	"i9lyfe/src/cache"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/types/eventTypes"
 	"log"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/sync/errgroup"
 )
 
 func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
@@ -32,7 +32,7 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 				Group:    groupName,
 				Consumer: consumerName,
 				Streams:  []string{streamName, ">"},
-				Count:    500,
+				Count:    1000,
 				Block:    0,
 			}).Result()
 
@@ -53,41 +53,55 @@ func usersUnfollowedStreamBgWorker(rdb *redis.Client) {
 				msg.FollowingUser = stmsg.Values["followingUser"].(string)
 
 				msgs = append(msgs, msg)
-
 			}
 
-			userFollowingsRemoved := make(map[string][]any)
-			userFollowersRemoved := make(map[string][]any)
+			userFollowingsRemoved := make(map[string]int)
+			userFollowersRemoved := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
+				userFollowingsRemoved[msg.FollowerUser]++
 
-				userFollowingsRemoved[msg.FollowerUser] = append(userFollowingsRemoved[msg.FollowerUser], msg.FollowingUser)
-
-				userFollowersRemoved[msg.FollowingUser] = append(userFollowersRemoved[msg.FollowingUser], msg.FollowerUser)
-
+				userFollowersRemoved[msg.FollowingUser]++
 			}
 
 			// batch processing
-			eg, sharedCtx := errgroup.WithContext(ctx)
+			sqls := []string{}
+			params := [][]any{}
 
-			for followerUser, followingUsers := range userFollowingsRemoved {
-				eg.Go(func() error {
-					followerUser, followingUsers := followerUser, followingUsers
+			for username, fc := range userFollowingsRemoved {
 
-					return cache.RemoveUserFollowings(sharedCtx, followerUser, followingUsers)
-				})
+				sqls = append(sqls /* sql */, `UPDATE users SET followings_count = followings_count - $2 WHERE username = $1`)
+				params = append(params, []any{username, fc})
 			}
 
-			for followingUser, followerUsers := range userFollowersRemoved {
-				eg.Go(func() error {
-					followingUser, followerUsers := followingUser, followerUsers
+			for username, fc := range userFollowersRemoved {
 
-					return cache.RemoveUserFollowers(sharedCtx, followingUser, followerUsers)
-				})
+				sqls = append(sqls /* sql */, `UPDATE users SET followers_count = followers_count - $2 WHERE username = $1`)
+				params = append(params, []any{username, fc})
 			}
 
-			if eg.Wait() != nil {
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			err = pgDB.BatchExecTx(ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
+			if err != nil {
+				helpers.LogError(err)
 				return
 			}
 

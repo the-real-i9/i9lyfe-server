@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/contrib/v3/websocket"
 )
 
-var AllClientSockets = &sync.Map{}
+var AllClientSockets = new(sync.Map)
 
 func SendEventMsg(toUser string, msg appTypes.ServerEventMsg) {
 	if userSock, ok := AllClientSockets.Load(toUser); ok {

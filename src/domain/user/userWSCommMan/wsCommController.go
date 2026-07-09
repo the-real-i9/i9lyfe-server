@@ -54,20 +54,17 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		var (
-			lcmCtx       context.Context
-			cancelLcmSub context.CancelFunc
-		)
+		var unsubLcm func()
 
-		cancelUserPresenceSub := make(map[string]context.CancelFunc)
+		unsubUserPresenceChange := make(map[string]func())
 
 		switch body.Action {
 		case "subscribe to live content metrics":
-			lcmCtx, cancelLcmSub = context.WithCancel(ctx)
 
-			pubsubService.SubscribeToLiveContentMetrics(lcmCtx, clientUser.Username, cancelLcmSub)
+			unsubLcm = pubsubService.SubscribeToLiveContentMetrics(ctx, clientUser.Username)
+
 		case "unsubscribe from live content metrics":
-			cancelLcmSub()
+			unsubLcm()
 		case "subscribe to user presence change":
 
 			data := helpers.FromBtMsgPack[subToUserPresenceAcd](body.Data)
@@ -78,11 +75,7 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			}
 
 			for _, tu := range data.Usernames {
-				ctx, cancel := context.WithCancel(ctx)
-
-				pubsubService.SubscribeToUserPresence(ctx, clientUser.Username, tu, cancel)
-
-				cancelUserPresenceSub[tu] = cancel
+				unsubUserPresenceChange[tu] = pubsubService.SubscribeToUserPresence(ctx, clientUser.Username, tu)
 			}
 		case "unsubscribe from user presence change":
 
@@ -94,11 +87,11 @@ var WSStream = websocket.New(func(c *websocket.Conn) {
 			}
 
 			for _, tu := range data.Usernames {
-				if cancel, ok := cancelUserPresenceSub[tu]; ok {
-					cancel()
+				if unsubUpc, ok := unsubUserPresenceChange[tu]; ok {
+					unsubUpc()
 				}
 
-				delete(cancelUserPresenceSub, tu)
+				delete(unsubUserPresenceChange, tu)
 			}
 		case "chat: send message":
 			res, err := chatControllers.SendMessage(ctx, clientUser.Username, body.Data)

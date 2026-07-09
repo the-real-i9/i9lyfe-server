@@ -30,5 +30,5 @@ func Routes(router fiber.Router) {
 
 	router.Get("/me/notifications", UC.GetUserNotifications)
 
-	router.Put("/me/notifications/:year/:month/:notification_id/read", UC.ReadUserNotification)
+	router.Put("/me/notifications/:notif_id/read", UC.ReadUserNotification)
 }

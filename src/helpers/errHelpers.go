@@ -23,6 +23,12 @@ func LogError(err error) {
 		fn = runtime.FuncForPC(pc).Name()
 	}
 
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		log.Printf("[ERROR] %s:%d %s(): %s\n%s\n", file, line, fn, pgErr.Message, pgErr.Where)
+		return
+	}
+
 	log.Printf("[ERROR] %s:%d %s(): %v\n", file, line, fn, err)
 }
 

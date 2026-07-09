@@ -2,8 +2,9 @@ package backgroundWorkers
 
 import (
 	"context"
-	"i9lyfe/src/cache"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/pubsubService"
 
 	"i9lyfe/src/types/eventTypes"
@@ -50,67 +51,69 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostUnsaveEvent
 
-				msg.SaverUser = stmsg.Values["saverUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 
 				msgs = append(msgs, msg)
 
 			}
 
-			postUnsaves := make(map[string][]any)
-
-			userUnsavedPosts := make(map[string][]any)
+			postUnsaves := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-
-				postUnsaves[msg.PostId] = append(postUnsaves[msg.PostId], msg.SaverUser)
-
-				userUnsavedPosts[msg.SaverUser] = append(userUnsavedPosts[msg.SaverUser], msg.PostId)
+				postUnsaves[msg.PostId]++
 			}
 
 			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for postId, users := range postUnsaves {
-					cache.RemovePostSaves(pipe, ctx, postId, users)
-				}
+			sqls := []string{}
+			params := [][]any{}
 
-				for user, postIds := range userUnsavedPosts {
-					cache.RemoveUserSavedPosts(pipe, ctx, user, postIds)
-				}
+			for postId, sc := range postUnsaves {
 
-				return nil
-			})
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET saves_count = saves_count - $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, saves_count
+					`,
+				)
+				params = append(params, []any{postId, sc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			type res struct {
+				PostId     string `db:"post_id"`
+				SavesCount int    `db:"saves_count"`
+			}
+
+			postIdUnsaves, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
 			go func() {
-				ctx := context.Background()
-				postId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for postId := range postUnsaves {
-						postId_IntCmd[postId] = cache.GetPostSavesCount(pipe, ctx, postId)
-					}
-
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for postId, lc := range postId_IntCmd {
-					latestCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
-					pubsubService.PublishPostMetric(ctx, map[string]any{
-						"post_id":            postId,
-						"latest_saves_count": latestCount,
+				for _, pr := range postIdUnsaves {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"post_id":            pr.PostId,
+						"latest_saves_count": pr.SavesCount,
 					})
 				}
 			}()

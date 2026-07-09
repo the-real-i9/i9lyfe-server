@@ -139,7 +139,7 @@ func GetUserMentionedPosts(c fiber.Ctx) error {
 
 	var query struct {
 		Limit  int64
-		Cursor float64
+		Cursor int64
 	}
 
 	if err := c.Bind().Query(&query); err != nil {
@@ -206,15 +206,13 @@ func GetUserNotifications(c fiber.Ctx) error {
 	var query struct {
 		Limit  int64
 		Cursor float64
-		Year   int64
-		Month  int64
 	}
 
 	if err := c.Bind().Query(&query); err != nil {
 		return err
 	}
 
-	respData, err := userService.GetUserNotifications(ctx, clientUser.Username, helpers.CoalesceInt(query.Year, int64(time.Now().Year())), helpers.CoalesceInt(query.Month, int64(time.Now().Month())), helpers.CoalesceInt(query.Limit, 20), query.Cursor)
+	respData, err := userService.GetUserNotifications(ctx, clientUser.Username, helpers.CoalesceInt(query.Limit, 20), query.Cursor)
 	if err != nil {
 		return err
 	}
@@ -227,7 +225,7 @@ func ReadUserNotification(c fiber.Ctx) error {
 
 	clientUser := c.Locals("user").(appTypes.ClientUser)
 
-	respData, err := userService.ReadUserNotification(ctx, clientUser.Username, c.Params("year", fmt.Sprint(time.Now().Year())), c.Params("month", fmt.Sprintf("%d", time.Now().Month())), c.Params("notification_id"))
+	respData, err := userService.ReadUserNotification(ctx, clientUser.Username, c.Params("notif_id"))
 	if err != nil {
 		return err
 	}

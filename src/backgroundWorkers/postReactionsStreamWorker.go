@@ -2,14 +2,11 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
-	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/modelHelpers"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/pubsubService"
-	"i9lyfe/src/services/sseService"
 
-	"i9lyfe/src/types/appTypes"
 	"i9lyfe/src/types/eventTypes"
 	"log"
 
@@ -37,7 +34,7 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 				Group:    groupName,
 				Consumer: consumerName,
 				Streams:  []string{streamName, ">"},
-				Count:    500,
+				Count:    1000,
 				Block:    0,
 			}).Result()
 
@@ -54,138 +51,71 @@ func postReactionsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostReactionEvent
 
-				msg.ReactorUser = stmsg.Values["reactorUser"].(string)
-				msg.PostOwner = stmsg.Values["postOwner"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.Emoji = stmsg.Values["emoji"].(string)
-				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
-				msg.RxnCursor = helpers.ParseInt(stmsg.Values["rxnCursor"].(string))
 
 				msgs = append(msgs, msg)
 
 			}
 
-			msgsLen := len(msgs)
-
-			postReactions := make(map[string][]string)
-
-			// having post reactors separate, allows us to
-			// paginate through the list of reactions on a post
-			postReactors := make(map[string][][2]any)
-
-			userReactedPosts := make(map[string][][2]any)
-
-			notifications := []string{}
-			unreadNotifications := []any{}
-
-			userNotifications := make(map[string][][2]any, msgsLen)
-
-			sendNotifEventMsgFuncs := []func(){}
+			postReactions := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-				postReactions[msg.PostId] = append(postReactions[msg.PostId], msg.ReactorUser, msg.Emoji)
-
-				postReactors[msg.PostId] = append(postReactors[msg.PostId], [2]any{msg.ReactorUser, float64(msg.RxnCursor)})
-
-				userReactedPosts[msg.ReactorUser] = append(userReactedPosts[msg.ReactorUser], [2]any{msg.PostId, float64(msg.RxnCursor)})
-
-				if msg.PostOwner == msg.ReactorUser {
-					continue
-				}
-
-				notifUniqueId := fmt.Sprintf("user_%s_reaction_to_post_%s", msg.ReactorUser, msg.PostId)
-				notif := helpers.BuildNotification(notifUniqueId, "reaction_to_post", msg.At, map[string]any{
-					"to_post_id":   msg.PostId,
-					"reactor_user": msg.ReactorUser,
-					"emoji":        msg.Emoji,
-				})
-
-				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
-				unreadNotifications = append(unreadNotifications, notifUniqueId)
-
-				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RxnCursor)})
-
-				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
-
-					sseService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
-						Event: "new notification",
-						Data:  notifSnippet,
-					})
-				})
+				postReactions[msg.PostId]++
 			}
 
-			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				if len(notifications) > 0 {
-					cache.StoreNewNotifications(pipe, ctx, notifications)
+			sqls := []string{}
+			params := [][]any{}
 
-					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
-				}
+			for postId, rc := range postReactions {
 
-				return nil
-			})
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET reactions_count = reactions_count + $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, reactions_count AS rxns_count
+					`,
+				)
+				params = append(params, []any{postId, rc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for postId, userWithEmojiPairs := range postReactions {
-					cache.StorePostReactions(pipe, ctx, postId, userWithEmojiPairs)
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
 				}
+			}()
 
-				for user, postId_score_Pairs := range userReactedPosts {
-					cache.StoreUserReactedPosts(pipe, ctx, user, postId_score_Pairs)
-				}
+			type res struct {
+				PostId    string `db:"post_id"`
+				RxnsCount int    `db:"rxns_count"`
+			}
 
-				for postId, rUser_score_Pairs := range postReactors {
-					cache.StorePostReactors(pipe, ctx, postId, rUser_score_Pairs)
-				}
+			postIdRxns, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
 
-				for user, notifId_stmsgId_Pairs := range userNotifications {
-					cache.StoreUserNotifications(pipe, ctx, user, notifId_stmsgId_Pairs)
-				}
-
-				return nil
-			})
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
 			go func() {
-				ctx := context.Background()
-				postId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for postId := range postReactions {
-						postId_IntCmd[postId] = cache.GetPostReactionsCount(pipe, ctx, postId)
-					}
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for postId, lc := range postId_IntCmd {
-					totalRxnsCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
-					pubsubService.PublishPostMetric(ctx, map[string]any{
-						"post_id":                postId,
-						"latest_reactions_count": totalRxnsCount,
+				for _, pr := range postIdRxns {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"post_id":                pr.PostId,
+						"latest_reactions_count": pr.RxnsCount,
 					})
 				}
 			}()
-
-			for _, fn := range sendNotifEventMsgFuncs {
-				go fn()
-			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

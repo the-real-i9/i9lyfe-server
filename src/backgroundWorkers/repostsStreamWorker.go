@@ -2,15 +2,14 @@ package backgroundWorkers
 
 import (
 	"context"
-	"fmt"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/cache"
-	"i9lyfe/src/domain/modelHelpers"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/contentRecommendationService"
 	"i9lyfe/src/services/pubsubService"
-	"i9lyfe/src/services/sseService"
+	"time"
 
-	"i9lyfe/src/types/appTypes"
 	"i9lyfe/src/types/eventTypes"
 	"log"
 
@@ -55,87 +54,40 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.RepostEvent
 
-				msg.ReposterUser = stmsg.Values["reposterUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.PostOwner = stmsg.Values["postOwner"].(string)
+				msg.ReposterUser = stmsg.Values["reposterUser"].(string)
 				msg.RepostId = stmsg.Values["repostId"].(string)
-				msg.RepostData = stmsg.Values["repostData"].(string)
-				msg.At = helpers.ParseInt(stmsg.Values["at"].(string))
 				msg.RepostCursor = helpers.ParseInt(stmsg.Values["repostCursor"].(string))
 
 				msgs = append(msgs, msg)
 
 			}
 
-			reposts := []string{}
-
-			postReposts := make(map[string][]any)
-
-			userRepostedPosts := make(map[string][][2]any)
-
-			userPosts := make(map[string][][2]any)
+			postReposts := make(map[string]int)
 
 			userFeedPosts := make(map[string][][2]any)
 
-			notifications := []string{}
-			unreadNotifications := []any{}
+			fanOutPostFuncs := []func(context.Context) error{}
 
-			userNotifications := make(map[string][][2]any)
-
-			sendNotifEventMsgFuncs := []func(){}
-
-			fanOutPostFuncs := []func(){}
+			rpc := float64(time.Now().UnixMicro())
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-				reposts = append(reposts, msg.RepostId, msg.RepostData)
 
-				postReposts[msg.PostId] = append(postReposts[msg.PostId], msg.RepostId)
+				postReposts[msg.PostId]++
 
-				userRepostedPosts[msg.ReposterUser] = append(userRepostedPosts[msg.ReposterUser], [2]any{msg.PostId, float64(msg.RepostCursor)})
+				userFeedPosts[msg.ReposterUser] = append(userFeedPosts[msg.ReposterUser], [2]any{msg.RepostId, float64(msg.RepostCursor)})
 
-				if msg.ReposterUser == msg.PostOwner {
-					continue
-				}
-
-				userPosts[msg.ReposterUser] = append(userPosts[msg.ReposterUser], [2]any{msg.RepostId, float64(msg.RepostCursor)})
-
-				userFeedPosts[msg.ReposterUser] = append(userFeedPosts[msg.ReposterUser], [2]any{msg.PostId, float64(msg.RepostCursor)})
-
-				notifUniqueId := fmt.Sprintf("user_%s_reposted_post_%s", msg.ReposterUser, msg.PostId)
-				notif := helpers.BuildNotification(notifUniqueId, "repost", msg.At, map[string]any{
-					"reposted_post_id": msg.PostId,
-					"reposter_user":    msg.ReposterUser,
-					"repost_id":        msg.RepostId,
-				})
-
-				notifications = append(notifications, notifUniqueId, helpers.ToMsgPack(notif))
-				unreadNotifications = append(unreadNotifications, notifUniqueId)
-
-				userNotifications[msg.PostOwner] = append(userNotifications[msg.PostOwner], [2]any{notifUniqueId, float64(msg.RepostCursor)})
-
-				sendNotifEventMsgFuncs = append(sendNotifEventMsgFuncs, func() {
-					notifSnippet, _ := modelHelpers.BuildNotifSnippetUIFromCache(context.Background(), notifUniqueId)
-
-					sseService.SendEventMsg(msg.PostOwner, appTypes.ServerEventMsg{
-						Event: "new notification",
-						Data:  notifSnippet,
-					})
-				})
-
-				fanOutPostFuncs = append(fanOutPostFuncs, func() {
-					contentRecommendationService.FanOutPostToFollowers(msg.RepostId, float64(msg.RepostCursor), msg.ReposterUser)
+				fanOutPostFuncs = append(fanOutPostFuncs, func(ctx context.Context) error {
+					return contentRecommendationService.FanOutPostToFollowers(ctx, msg.RepostId, rpc, msg.ReposterUser)
 				})
 			}
 
 			// batch processing
 			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				cache.StoreNewPosts(pipe, ctx, reposts)
 
-				if len(notifications) > 0 {
-					cache.StoreNewNotifications(pipe, ctx, notifications)
-
-					cache.StoreUnreadNotifications(pipe, ctx, unreadNotifications)
+				for user, postId_score_Pairs := range userFeedPosts {
+					cache.StoreUserFeedPosts(pipe, ctx, user, postId_score_Pairs)
 				}
 
 				return nil
@@ -145,71 +97,64 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				return
 			}
 
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+			sqls := []string{}
+			params := [][]any{}
 
-				for postId, repostIds := range postReposts {
-					cache.StorePostReposts(pipe, ctx, postId, repostIds)
+			for postId, rc := range postReposts {
+
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET reposts_count = reposts_count + $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, reposts_count
+					`,
+				)
+				params = append(params, []any{postId, rc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
 				}
+			}()
 
-				for user, postId_score_Pairs := range userPosts {
-					cache.StoreUserPosts(pipe, ctx, user, postId_score_Pairs)
+			type res struct {
+				PostId       string `db:"post_id"`
+				RepostsCount int    `db:"reposts_count"`
+			}
+
+			postIdReposts, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			for _, f := range fanOutPostFuncs {
+				if err := f(ctx); err != nil {
+					return
 				}
+			}
 
-				for user, postId_score_Pairs := range userFeedPosts {
-					cache.StoreUserFeedPosts(pipe, ctx, user, postId_score_Pairs)
-				}
-
-				for user, postId_score_Pairs := range userRepostedPosts {
-					cache.StoreUserRepostedPosts(pipe, ctx, user, postId_score_Pairs)
-				}
-
-				for user, notifId_score_Pairs := range userNotifications {
-					cache.StoreUserNotifications(pipe, ctx, user, notifId_score_Pairs)
-				}
-
-				return nil
-			})
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
 			go func() {
-				ctx := context.Background()
-				postId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for postId := range postReposts {
-						postId_IntCmd[postId] = cache.GetPostRepostsCount(pipe, ctx, postId)
-					}
-
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for postId, lc := range postId_IntCmd {
-					totalRepostsCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
-					pubsubService.PublishPostMetric(ctx, map[string]any{
-						"post_id":              postId,
-						"latest_reposts_count": totalRepostsCount,
+				for _, pr := range postIdReposts {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"post_id":              pr.PostId,
+						"latest_reposts_count": pr.RepostsCount,
 					})
 				}
 			}()
-
-			for _, fn := range sendNotifEventMsgFuncs {
-				go fn()
-			}
-
-			for _, fn := range fanOutPostFuncs {
-				go fn()
-			}
 
 			// acknowledge messages
 			if err := rdb.XAck(ctx, streamName, groupName, stmsgIds...).Err(); err != nil {

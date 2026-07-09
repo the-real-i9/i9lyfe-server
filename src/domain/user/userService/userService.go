@@ -4,19 +4,28 @@ import (
 	"context"
 	"fmt"
 
-	user "i9lyfe/src/domain/user/userModel"
+	"i9lyfe/src/appGlobals"
+	user "i9lyfe/src/domain/user/userDBM"
 	"i9lyfe/src/helpers"
 	"i9lyfe/src/services/eventStreamService"
 	"i9lyfe/src/services/mediaStorageService"
 	"i9lyfe/src/services/pubsubService"
+	"i9lyfe/src/services/sseService"
 	"i9lyfe/src/types/UITypes"
+	"i9lyfe/src/types/appTypes"
 	"i9lyfe/src/types/eventTypes"
 	"maps"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+func dbPool() *pgxpool.Pool {
+	return appGlobals.DBPool
+}
 
 func UserExists(ctx context.Context, uniqueIdent string) (bool, error) {
 	return user.Exists(ctx, uniqueIdent)
@@ -28,17 +37,12 @@ func NewUser(ctx context.Context, email, username, name, bio string, birthday in
 		return newUser, err
 	}
 
-	go eventStreamService.QueueNewUserEvent(eventTypes.NewUserEvent{
-		Username: newUser.Username,
-		UserData: helpers.ToMsgPack(newUser),
-	})
-
 	newUser.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(newUser.ProfilePicUrl)
 
 	return newUser, nil
 }
 
-func LoginUserFind(ctx context.Context, uniqueIdent string) (user.SignedInUserT, error) {
+func LoginUserFind(ctx context.Context, uniqueIdent string) (user.LoggedInUserT, error) {
 	fUser, err := user.LoginFind(ctx, uniqueIdent)
 	if err != nil {
 		return fUser, err
@@ -59,13 +63,6 @@ func ChangeUserPassword(ctx context.Context, email string, newPassword string) (
 
 	done := username != ""
 
-	if done {
-		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
-			Username:    username,
-			UpdateKVMap: map[string]any{"password": newPassword},
-		})
-	}
-
 	return done, nil
 }
 
@@ -75,13 +72,6 @@ func EditUserProfile(ctx context.Context, clientUsername string, updateKVStruct 
 	done, err := user.EditProfile(ctx, clientUsername, maps.Clone(updateKVMap))
 	if err != nil {
 		return false, err
-	}
-
-	if done {
-		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
-			Username:    clientUsername,
-			UpdateKVMap: updateKVMap,
-		})
 	}
 
 	return done, nil
@@ -136,107 +126,237 @@ func ChangeUserProfilePicture(ctx context.Context, clientUsername, profilePicClo
 		return false, err
 	}
 
-	if done {
-		go eventStreamService.QueueEditUserEvent(eventTypes.EditUserEvent{
-			Username:    clientUsername,
-			UpdateKVMap: map[string]any{"profile_pic_url": profilePicCloudName},
-		})
-	}
-
 	return done, nil
 }
 
-func FollowUser(ctx context.Context, clientUsername, targetUsername string, at int64) (any, error) {
+func FollowUser(ctx context.Context, clientUsername, targetUsername string, at int64) (bool, error) {
 	if clientUsername == targetUsername {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
+		return false, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	followCursor, err := user.Follow(ctx, clientUsername, targetUsername, at)
+	pgTx, err := dbPool().Begin(ctx)
 	if err != nil {
-		return nil, err
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
 	}
 
-	done := followCursor != 0
+	defer func() {
+		if err != nil {
+			go helpers.LogError(pgTx.Rollback(ctx))
+		}
+	}()
+
+	followNotifId, err := user.Follow(ctx, pgTx, clientUsername, targetUsername, at)
+	if err != nil {
+		return false, err
+	}
+
+	done := followNotifId != ""
 
 	if done {
-		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
+		err = eventStreamService.QueueUserFollowEvent(ctx, eventTypes.UserFollowEvent{
 			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
-			At:            at,
-			FollowCursor:  followCursor,
 		})
+		if err != nil {
+			return false, fiber.ErrInternalServerError
+		}
+
+		err = pgTx.Commit(ctx)
+		if err != nil {
+			helpers.LogError(err)
+			return false, fiber.ErrInternalServerError
+		}
+
+		go func() {
+			notif, err := GetOneNotif(ctx, followNotifId)
+			if err != nil {
+				return
+			}
+
+			sseService.SendEventMsg(targetUsername, appTypes.ServerEventMsg{
+				Event: "new notification",
+				Data:  notif,
+			})
+		}()
 	}
 
 	return done, nil
 }
 
 func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	done, err := user.Unfollow(ctx, clientUsername, targetUsername)
+	pgTx, err := dbPool().Begin(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
+	}
+
+	defer func() {
+		if err != nil {
+			go helpers.LogError(pgTx.Rollback(ctx))
+		}
+	}()
+
+	done, err := user.Unfollow(ctx, pgTx, clientUsername, targetUsername)
 	if err != nil {
 		return nil, err
 	}
 
 	if done {
-		go eventStreamService.QueueUserUnfollowEvent(eventTypes.UserUnfollowEvent{
+		err = eventStreamService.QueueUserUnfollowEvent(ctx, eventTypes.UserUnfollowEvent{
 			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
 		})
+		if err != nil {
+			return false, fiber.ErrInternalServerError
+		}
+	}
+
+	err = pgTx.Commit(ctx)
+	if err != nil {
+		helpers.LogError(err)
+		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
 }
 
-func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
-	return user.GetMentionedPosts(ctx, clientUsername, limit, cursor)
+func GetUserMentionedPosts(ctx context.Context, clientUsername string, limit int64, cursor int64) ([]*UITypes.Post, error) {
+	posts, err := user.GetMentionedPosts(ctx, clientUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
 
+	for _, p := range posts {
+		p.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(p.OwnerUser["profile_pic_url"].(string))
+
+		p.MediaUrls = mediaStorageService.PostMediaCloudNamesToUrl(p.MediaUrls)
+	}
+
+	return posts, nil
 }
 
-func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
-	return user.GetReactedPosts(ctx, clientUsername, limit, cursor)
+func GetUserReactedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	posts, err := user.GetReactedPosts(ctx, clientUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range posts {
+		p.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(p.OwnerUser["profile_pic_url"].(string))
+
+		p.MediaUrls = mediaStorageService.PostMediaCloudNamesToUrl(p.MediaUrls)
+	}
+
+	return posts, nil
 }
 
-func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) (any, error) {
-	return user.GetSavedPosts(ctx, clientUsername, limit, cursor)
+func GetUserSavedPosts(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	posts, err := user.GetSavedPosts(ctx, clientUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
 
+	for _, p := range posts {
+		p.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(p.OwnerUser["profile_pic_url"].(string))
+
+		p.MediaUrls = mediaStorageService.PostMediaCloudNamesToUrl(p.MediaUrls)
+	}
+
+	return posts, nil
 }
 
-func GetUserNotifications(ctx context.Context, clientUsername string, year int64, month int64, limit int64, cursor float64) (any, error) {
-	return user.GetNotifications(ctx, clientUsername, year, month, limit, cursor)
+func GetManyNotifs(ctx context.Context, notifIds []string) ([]*UITypes.NotifSnippet, error) {
+	notifs, err := user.GetManyNotifs(ctx, notifIds)
+	if err != nil {
+		return nil, err
+	}
 
+	mediaStorageService.NotifMediaCloudNamesToUrl(notifs)
+
+	return notifs, nil
+}
+func GetOneNotif(ctx context.Context, notifId string) (UITypes.NotifSnippet, error) {
+	n, err := GetManyNotifs(ctx, []string{notifId})
+	if err != nil {
+		return UITypes.NotifSnippet{}, err
+	}
+
+	return *(n[0]), nil
 }
 
-func ReadUserNotification(ctx context.Context, clientUsername, year, month, notifId string) (bool, error) {
-	return user.ReadNotification(ctx, clientUsername, year, month, notifId)
+func GetUserNotifications(ctx context.Context, clientUsername string, limit int64, cursor float64) ([]*UITypes.NotifSnippet, error) {
+	notifs, err := user.GetMyNotifications(ctx, clientUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaStorageService.NotifMediaCloudNamesToUrl(notifs)
+
+	return notifs, nil
+}
+
+func ReadUserNotification(ctx context.Context, clientUsername, notifId string) (bool, error) {
+	return user.ReadNotification(ctx, clientUsername, notifId)
 
 }
 
 func GetUserProfile(ctx context.Context, clientUsername, targetUsername string) (UITypes.UserProfile, error) {
-	return user.GetProfile(ctx, clientUsername, targetUsername)
+	p, err := user.GetProfile(ctx, clientUsername, targetUsername)
+	if err != nil {
+		return UITypes.UserProfile{}, err
+	}
 
+	p.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(p.ProfilePicUrl)
+
+	return p, nil
 }
 
-func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
-	return user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
+func GetUserFollowers(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.UserSnippet, error) {
+	folls, err := user.GetFollowers(ctx, clientUsername, targetUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range folls {
+		f.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(f.ProfilePicUrl)
+	}
+
+	return folls, nil
 }
 
-func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.UserSnippet, error) {
-	return user.GetFollowings(ctx, clientUsername, targetUsername, limit, cursor)
+func GetUserFollowings(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.UserSnippet, error) {
+	folls, err := user.GetFollowings(ctx, clientUsername, targetUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range folls {
+		f.ProfilePicUrl = mediaStorageService.ProfilePicCloudNameToUrl(f.ProfilePicUrl)
+	}
+
+	return folls, nil
 }
 
-func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]UITypes.Post, error) {
-	return user.GetPosts(ctx, clientUsername, targetUsername, limit, cursor)
+func GetUserPosts(ctx context.Context, clientUsername, targetUsername string, limit int64, cursor float64) ([]*UITypes.Post, error) {
+	posts, err := user.GetPosts(ctx, clientUsername, targetUsername, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range posts {
+		p.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(p.OwnerUser["profile_pic_url"].(string))
+
+		p.MediaUrls = mediaStorageService.PostMediaCloudNamesToUrl(p.MediaUrls)
+	}
+
+	return posts, nil
 }
 
 func GoOnline(ctx context.Context, clientUsername string) {
 	done := user.ChangePresence(ctx, clientUsername, "online", 0)
 
 	if done {
-		go eventStreamService.QueueUserPresenceChangeEvent(eventTypes.UserPresenceChangeEvent{
-			Username: clientUsername,
-			Presence: "online",
-			LastSeen: 0,
-		})
-
 		pubsubService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
 			"user":     clientUsername,
 			"presence": "online",
@@ -250,12 +370,6 @@ func GoOffline(ctx context.Context, clientUsername string) {
 	done := user.ChangePresence(ctx, clientUsername, "offline", lastSeen)
 
 	if done {
-		go eventStreamService.QueueUserPresenceChangeEvent(eventTypes.UserPresenceChangeEvent{
-			Username: clientUsername,
-			Presence: "offline",
-			LastSeen: lastSeen,
-		})
-
 		pubsubService.PublishUserPresenceChange(ctx, clientUsername, map[string]any{
 			"user":      clientUsername,
 			"presence":  "offline",

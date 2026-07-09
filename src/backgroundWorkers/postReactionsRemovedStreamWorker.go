@@ -2,8 +2,9 @@ package backgroundWorkers
 
 import (
 	"context"
-	"i9lyfe/src/cache"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/pubsubService"
 
 	"i9lyfe/src/types/eventTypes"
@@ -50,51 +51,59 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostReactionRemovedEvent
 
-				msg.ReactorUser = stmsg.Values["reactorUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
 
 				msgs = append(msgs, msg)
 
 			}
 
-			postReactionsRemoved := make(map[string][]string)
-
-			postReactorsRemoved := make(map[string][]any)
-
-			userReactionRemovedPosts := make(map[string][]any)
+			postReactionsRemoved := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-
-				postReactionsRemoved[msg.PostId] = append(postReactionsRemoved[msg.PostId], msg.ReactorUser)
-				// these two above and below follow a similar implemtation,
-				// i.e. we can use postReactionsRemoved to remove post reactors too
-				// but we're just separating concerns here
-				postReactorsRemoved[msg.PostId] = append(postReactorsRemoved[msg.PostId], msg.ReactorUser)
-
-				userReactionRemovedPosts[msg.ReactorUser] = append(userReactionRemovedPosts[msg.ReactorUser], msg.PostId)
+				postReactionsRemoved[msg.PostId]++
 			}
 
 			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for postId, users := range postReactionsRemoved {
-					cache.RemovePostReactions(pipe, ctx, postId, users)
-				}
+			sqls := []string{}
+			params := [][]any{}
 
-				for postId, rUsers := range postReactorsRemoved {
-					cache.RemovePostReactors(pipe, ctx, postId, rUsers)
-				}
+			for postId, rc := range postReactionsRemoved {
 
-				for user, postIds := range userReactionRemovedPosts {
-					cache.RemoveUserReactedPosts(pipe, ctx, user, postIds)
-				}
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET reactions_count = reactions_count - $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, reactions_count AS rxns_count
+					`,
+				)
+				params = append(params, []any{postId, rc})
+			}
 
-				for postId, rUsers := range postReactorsRemoved {
-					cache.RemovePostReactors(pipe, ctx, postId, rUsers)
-				}
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
 
-				return nil
-			})
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			type res struct {
+				PostId    string `db:"post_id"`
+				RxnsCount int    `db:"rxns_count"`
+			}
+
+			postIdRxns, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
@@ -102,29 +111,10 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 
 			go func() {
 				ctx := context.Background()
-				postId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for postId := range postReactionsRemoved {
-						postId_IntCmd[postId] = cache.GetPostReactionsCount(pipe, ctx, postId)
-					}
-
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for postId, lc := range postId_IntCmd {
-					latestCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
+				for _, pr := range postIdRxns {
 					pubsubService.PublishPostMetric(ctx, map[string]any{
-						"post_id":                postId,
-						"latest_reactions_count": latestCount,
+						"post_id":                pr.PostId,
+						"latest_reactions_count": pr.RxnsCount,
 					})
 				}
 			}()

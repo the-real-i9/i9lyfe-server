@@ -152,7 +152,6 @@ func TestUserPostCommentStory(t *testing.T) {
 		t.Log("Setup: Init user sockets")
 
 		for _, user := range []*UserT{&user1, &user2, &user3} {
-			user := user
 
 			header := http.Header{}
 			header.Set("Cookie", user.SessionCookie)
@@ -274,23 +273,27 @@ func TestUserPostCommentStory(t *testing.T) {
 
 				t.Logf("Uploading %s post media started", varMedia[i])
 
-				sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
+				if ALLOW_UPLOADS {
+					sessionUrl := startResumableUpload(baUploadUrl, contentType, t)
 
-				uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+					uploadFileInChunks(sessionUrl, varPath[i], contentType, logProgress, t)
+				}
 
 				t.Logf("Uploading %s post media complete", varMedia[i])
 			}
 
-			defer func(mcn string) {
-				varMediaCloudName := make([]string, 2)
-				_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
-				require.NoError(err)
-
-				for _, baMcn := range varMediaCloudName {
-					err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+			if ALLOW_UPLOADS {
+				defer func(mcn string) {
+					varMediaCloudName := make([]string, 2)
+					_, err = fmt.Sscanf(mcn, "blur_placeholder:%s actual:%s", &varMediaCloudName[0], &varMediaCloudName[1])
 					require.NoError(err)
-				}
-			}(mediaCloudNames[uui])
+
+					for _, baMcn := range varMediaCloudName {
+						err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(baMcn).Delete(t.Context())
+						require.NoError(err)
+					}
+				}(mediaCloudNames[uui])
+			}
 		}
 
 		t.Log("Upload complete")
@@ -326,11 +329,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_post_id": td.Ignore(),
-			"post_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user1Post1Id = rb["new_post_id"].(string)
+		user1Post1Id = rb["id"].(string)
 	}
 
 	{
@@ -594,14 +597,16 @@ func TestUserPostCommentStory(t *testing.T) {
 		{
 			t.Log("Upload session started:")
 
-			sessionUrl := startResumableUpload(uploadUrl, contentType, t)
+			if ALLOW_UPLOADS {
+				sessionUrl := startResumableUpload(uploadUrl, contentType, t)
 
-			uploadFileInChunks(sessionUrl, imagePath, contentType, logProgress, t)
+				uploadFileInChunks(sessionUrl, imagePath, contentType, logProgress, t)
 
-			defer func(attCn string) {
-				err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(attCn).Delete(t.Context())
-				require.NoError(err)
-			}(attachmentCloudName)
+				defer func(attCn string) {
+					err := appGlobals.GCSClient.Bucket(os.Getenv("GCS_BUCKET_NAME")).Object(attCn).Delete(t.Context())
+					require.NoError(err)
+				}(attachmentCloudName)
+			}
 
 			t.Log("Upload complete")
 		}
@@ -632,11 +637,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_comment_id": td.Ignore(),
-			"comment_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user2Comment1User1Post1Id = rb["new_comment_id"].(string)
+		user2Comment1User1Post1Id = rb["id"].(string)
 
 		// user1 is notified
 		ServerEventMsg := <-user1.ServerEventMsg
@@ -683,11 +688,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_comment_id": td.Ignore(),
-			"comment_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user3Comment1User1Post1Id = rb["new_comment_id"].(string)
+		user3Comment1User1Post1Id = rb["id"].(string)
 
 		// user1 is notified
 		ServerEventMsg := <-user1.ServerEventMsg
@@ -762,9 +767,8 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(rb)
 	}
 
-	/* {
+	{
 		t.Log("Action: user1 rechecks comments on her post1 | user3's comment is gone")
-
 
 		req := httptest.NewRequest("GET", appPathPriv+"/posts/"+user1Post1Id+"/comments", nil)
 
@@ -797,7 +801,7 @@ func TestUserPostCommentStory(t *testing.T) {
 				"comment_text": fmt.Sprintf("This is a comment from %s", user3.Username),
 			}, nil))),
 		))
-	} */
+	}
 
 	{
 		t.Log("Action: user1 views user2's comment on her post1")
@@ -854,11 +858,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_comment_id": td.Ignore(),
-			"comment_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user1Reply1User2Comment1User1Post1Id = rb["new_comment_id"].(string)
+		user1Reply1User2Comment1User1Post1Id = rb["id"].(string)
 
 		// user2 is notified
 		ServerEventMsg := <-user2.ServerEventMsg
@@ -905,11 +909,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_comment_id": td.Ignore(),
-			"comment_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user3Reply1User2Comment1User1Post1Id = rb["new_comment_id"].(string)
+		user3Reply1User2Comment1User1Post1Id = rb["id"].(string)
 
 		// user2 is notified
 		ServerEventMsg := <-user2.ServerEventMsg
@@ -984,43 +988,41 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.True(rb)
 	}
 
-	/*
-		{
-			t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
+	{
+		t.Log("Action: user2 rechecks replies to her comment1 on user1's post1 | user3's reply is gone")
 
+		req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
 
-			req := httptest.NewRequest("GET", appPathPriv+"/comments/"+user2Comment1User1Post1Id+"/comments", nil)
+		req.Header.Set("Cookie", user2.SessionCookie)
 
-			req.Header.Set("Cookie", user2.SessionCookie)
+		res, err := app.Test(req)
+		require.NoError(err)
 
-			res, err := app.Test(req)
+		if !assert.Equal(t, http.StatusOK, res.StatusCode) {
+			rb, err := errResBody(res.Body)
 			require.NoError(err)
+			t.Log("unexpected error:", rb)
+			return
+		}
 
-			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
-				rb, err := errResBody(res.Body)
-				require.NoError(err)
-				t.Log("unexpected error:", rb)
-				return
-			}
+		reactors, err := succResBody[[]map[string]any](res.Body)
+		require.NoError(err)
 
-			reactors, err := succResBody[[]map[string]any](res.Body)
-			require.NoError(err)
-
-			td.Cmp(td.Require(t), reactors, td.All(
-				td.Contains(td.SuperMapOf(map[string]any{
-					"owner_user": td.SuperMapOf(map[string]any{
-						"username": user1.Username,
-					}, nil),
-					"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
-				}, nil)),
-				td.Not(td.Contains(td.SuperMapOf(map[string]any{
-					"owner_user": td.SuperMapOf(map[string]any{
-						"username": user3.Username,
-					}, nil),
-					"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
-				}, nil))),
-			))
-		} */
+		td.Cmp(td.Require(t), reactors, td.All(
+			td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user1.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("This is a reply from %s", user1.Username),
+			}, nil)),
+			td.Not(td.Contains(td.SuperMapOf(map[string]any{
+				"owner_user": td.SuperMapOf(map[string]any{
+					"username": user3.Username,
+				}, nil),
+				"comment_text": fmt.Sprintf("I %s, second %s on this!", user3.Username, user1.Username),
+			}, nil))),
+		))
+	}
 
 	{
 		t.Log("Action: user2 reacts to user1's reply to her comment1 on user1's post1 | user1 is notified")
@@ -1260,11 +1262,11 @@ func TestUserPostCommentStory(t *testing.T) {
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(
 			map[string]any{
-				"new_post_id": td.Ignore(),
-				"post_cursor": td.Ignore(),
+				"id":     td.Ignore(),
+				"cursor": td.Ignore(),
 			}, nil))
 
-		user1Post2Id = rb["new_post_id"].(string)
+		user1Post2Id = rb["id"].(string)
 
 		ServerEventMsg := <-user2.ServerEventMsg
 
@@ -1337,11 +1339,11 @@ func TestUserPostCommentStory(t *testing.T) {
 		require.NoError(err)
 
 		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-			"new_post_id": td.Ignore(),
-			"post_cursor": td.Ignore(),
+			"id":     td.Ignore(),
+			"cursor": td.Ignore(),
 		}, nil))
 
-		user3Post1Id = rb["new_post_id"].(string)
+		user3Post1Id = rb["id"].(string)
 	}
 
 	{
@@ -1362,9 +1364,12 @@ func TestUserPostCommentStory(t *testing.T) {
 			return
 		}
 
-		rb, err := succResBody[bool](res.Body)
+		rb, err := succResBody[map[string]any](res.Body)
 		require.NoError(err)
-		require.True(rb)
+
+		td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
+			"repost_cursor": td.Ignore(),
+		}, nil))
 
 		ServerEventMsg := <-user3.ServerEventMsg
 

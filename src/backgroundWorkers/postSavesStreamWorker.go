@@ -2,8 +2,9 @@ package backgroundWorkers
 
 import (
 	"context"
-	"i9lyfe/src/cache"
+	"i9lyfe/src/appGlobals"
 	"i9lyfe/src/helpers"
+	"i9lyfe/src/helpers/pgDB"
 	"i9lyfe/src/services/pubsubService"
 
 	"i9lyfe/src/types/eventTypes"
@@ -50,67 +51,69 @@ func postSavesStreamBgWorker(rdb *redis.Client) {
 
 				var msg eventTypes.PostSaveEvent
 
-				msg.SaverUser = stmsg.Values["saverUser"].(string)
 				msg.PostId = stmsg.Values["postId"].(string)
-				msg.SaveCursor = helpers.ParseInt(stmsg.Values["saveCursor"].(string))
 
 				msgs = append(msgs, msg)
 
 			}
 
-			postSaves := make(map[string][]any)
-
-			userSavedPosts := make(map[string][][2]any)
+			postSaves := make(map[string]int)
 
 			// batch data for batch processing
 			for _, msg := range msgs {
-				postSaves[msg.PostId] = append(postSaves[msg.PostId], msg.SaverUser)
-
-				userSavedPosts[msg.SaverUser] = append(userSavedPosts[msg.SaverUser], [2]any{msg.PostId, float64(msg.SaveCursor)})
+				postSaves[msg.PostId]++
 			}
 
 			// batch processing
-			_, err = rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-				for postId, saverUsers := range postSaves {
-					cache.StorePostSaves(pipe, ctx, postId, saverUsers)
-				}
+			sqls := []string{}
+			params := [][]any{}
 
-				for user, postId_score_Pairs := range userSavedPosts {
-					cache.StoreUserSavedPosts(pipe, ctx, user, postId_score_Pairs)
-				}
+			for postId, sc := range postSaves {
 
-				return nil
-			})
+				sqls = append(
+					sqls,
+					/* sql */ `
+					UPDATE posts SET saves_count = saves_count + $2 WHERE id_ = $1
+					RETURNING id_ AS post_id, saves_count
+					`,
+				)
+				params = append(params, []any{postId, sc})
+			}
+
+			pgTx, err := appGlobals.DBPool.Begin(ctx)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			defer func() {
+				if err != nil {
+					helpers.LogError(pgTx.Rollback(ctx))
+				}
+			}()
+
+			type res struct {
+				PostId     string `db:"post_id"`
+				SavesCount int    `db:"saves_count"`
+			}
+
+			postIdSaves, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			if err != nil {
+				helpers.LogError(err)
+				return
+			}
+
+			err = pgTx.Commit(ctx)
 			if err != nil {
 				helpers.LogError(err)
 				return
 			}
 
 			go func() {
-				ctx := context.Background()
-				postId_IntCmd := make(map[string]*redis.IntCmd)
-
-				_, err := rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-					for postId := range postSaves {
-						postId_IntCmd[postId] = cache.GetPostSavesCount(pipe, ctx, postId)
-					}
-
-					return nil
-				})
-				if err != nil && err != redis.Nil {
-					helpers.LogError(err)
-					return
-				}
-
-				for postId, lc := range postId_IntCmd {
-					totalSavesCount, err := lc.Result()
-					if err != nil {
-						continue
-					}
-
-					pubsubService.PublishPostMetric(ctx, map[string]any{
-						"post_id":            postId,
-						"latest_saves_count": totalSavesCount,
+				for _, pr := range postIdSaves {
+					pubsubService.PublishPostMetric(context.Background(), map[string]any{
+						"post_id":            pr.PostId,
+						"latest_saves_count": pr.SavesCount,
 					})
 				}
 			}()
