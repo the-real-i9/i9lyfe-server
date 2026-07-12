@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict fdCArC4UfouvM7P1SHQ6QeHFHL4FCdO29OVQyD5i09h77zcWqyYbdgkRDBzPaK4
+\restrict IGaoKAwHuvxHcKAqOcHqHHt5cQNIjB2ggLUqI8j77A1t2YI5oTHnyCbvBqWG8Dm
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.4 (Ubuntu 18.4-1.pgdg24.04+1)
@@ -209,42 +209,28 @@ ALTER TYPE public.user_profile_struct OWNER TO i9ine;
 
 CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[], ack_val text, at_val bigint) RETURNS boolean
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-	msg_received_in_chat bool;
-	msg_id uuid;
-	last_msg_cursor bigint;
-	done boolean;
-BEGIN
-
-FOREACH msg_id IN ARRAY msg_id_list
-LOOP
-	SELECT EXISTS (SELECT true FROM chat_history_entry_in_chat 
-	WHERE owner_user = from_user AND partner_user = to_user AND che_id = msg_id AND receipt = 'received')
-	INTO msg_received_in_chat;
-
-	IF NOT msg_received_in_chat THEN
-		RAISE EXCEPTION
-			USING
-					ERRCODE = 'UX001',
-					MESSAGE = 'you do not have a chat with the specified user or a specified message is not received in the chat';
-	END IF;
-END LOOP;
+    AS $$BEGIN
 
 IF ack_val = 'delivered' THEN
-	WITH updated AS (
-		UPDATE chat_history_entry
-		SET delivery_status = ack_val, delivered_at = at_val
-		WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status = 'sent'
-		RETURNING cursor_
-	)
-	SELECT max(cursor_) INTO last_msg_cursor FROM updated;
-	
-	RETURN true;
+  UPDATE chat_history_entry che
+  SET delivery_status = ack_val, delivered_at = at_val
+  WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status = 'sent' AND (SELECT true FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_);
+  
+  IF FOUND THEN
+    UPDATE chats SET cursor_ = at_val
+	WHERE owner_user = from_user AND partner_user = to_user;
+    RETURN true;
+  END IF;
+
+  RETURN false;
 ELSIF ack_val = 'read' THEN
-	UPDATE chat_history_entry
+	UPDATE chat_history_entry che
 	SET delivery_status = ack_val, read_at = at_val, delivered_at = CASE WHEN delivered_at IS NULL THEN at_val ELSE delivered_at END
-	WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status <> 'read';
+	WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status <> 'read' AND (SELECT true FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_);
+	
+	IF NOT FOUND THEN
+	  RETURN false;
+	END IF;
 	
 	RETURN true;
 END IF;
@@ -435,12 +421,12 @@ BEGIN
 	  che.created_at,
 	  che.delivered_at,
 	  che.read_at,
-	  (SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url) FROM users WHERE username = che.sender_username) AS sender,
+	  CASE WHEN sndr.username IS NULL THEN NULL ELSE json_build_object('username', sndr.username, 'profile_pic_url', sndr.profile_pic_url) END AS sender,
 	  /* if  one is available */
 	  (SELECT json_build_object('id', id_, 'sender_username', sender_username, 'content', content_) FROM chat_history_entry WHERE id_ = che.reply_to) AS reply_target_msg,
 
 	  /* type: reaction */
-	  (SELECT json_build_object('username', username, 'profile_pic_url', profile_pic_url) FROM users WHERE username = che.reactor_username) AS reactor,
+	  CASE WHEN rctr.username IS NULL THEN NULL ELSE json_build_object('username', rctr.username, 'profile_pic_url', rctr.profile_pic_url) END AS reactor,
 	  che.emoji,
 	  (SELECT json_build_object('id', id_, 'sender_username', sender_username, 'content', content_) FROM chat_history_entry WHERE id_ = che.reaction_to) AS rxn_to_msg,
 
@@ -448,6 +434,8 @@ BEGIN
 	  che.cursor_
     FROM chat_history_entry che
 	INNER JOIN chat_history_entry_in_chat cheic ON cheic.che_id = che.id_ AND cheic.owner_user = owner_username AND cheic.partner_user = partner_username
+	LEFT JOIN users sndr ON sndr.username = che.sender_username
+	LEFT JOIN users rctr ON rctr.username = che.reactor_username
 	WHERE in_cursor = 0 OR ((rel = 'after' AND che.cursor_ > in_cursor) OR (rel = 'before' AND che.cursor_ < in_cursor))
 	ORDER BY che.cursor_ ASC
 	LIMIT in_limit;
@@ -1270,37 +1258,31 @@ ALTER FUNCTION public.remove_msg_reaction(from_user text, to_user text, msg_id u
 
 CREATE FUNCTION public.reply_to_msg(from_user text, to_user text, content_val json, created_at_val bigint, reply_target_msg_id uuid) RETURNS public.message_struct
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-msg_in_chat bool;
+    AS $$DECLARE
 che_id_val uuid;
 cursor_val bigint;
 reply_target_msg json;
 sender_user json;
 BEGIN
 
-SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat 
-WHERE owner_user = from_user AND partner_user = to_user AND che_id = reply_target_msg_id AND (
-SELECT type_ FROM chat_history_entry WHERE id_ = reply_target_msg_id) = 'message'
-)
-INTO msg_in_chat;
+SELECT 1 FROM chat_history_entry_in_chat 
+WHERE owner_user = from_user AND partner_user = to_user AND che_id = reply_target_msg_id AND (SELECT type_ FROM chat_history_entry WHERE id_ = reply_target_msg_id) = 'message';
 
-IF NOT msg_in_chat THEN
+IF NOT FOUND THEN
 RAISE EXCEPTION
 	USING
 			ERRCODE = 'UX001',
 			MESSAGE = 'you do not have a chat with the specified user or the specified message does not exist in the chat';
 END IF;
 
-IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = from_user AND partner_user = to_user) THEN
-	INSERT INTO chats (owner_user, partner_user)
-	VALUES (from_user, to_user);
-END IF;
+INSERT INTO chats (owner_user, partner_user)
+VALUES (from_user, to_user)
+ON CONFLICT ON CONSTRAINT ucu_pkey DO UPDATE
+SET cursor_ = created_at_val;
 
-IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = to_user AND partner_user = from_user) THEN
-	INSERT INTO chats (owner_user, partner_user)
-	VALUES (to_user, from_user);
-END IF;
+INSERT INTO chats (owner_user, partner_user)
+VALUES (to_user, from_user)
+ON CONFLICT ON CONSTRAINT ucu_pkey DO NOTHING;
 
 INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at, reply_to)
 VALUES ('message', content_val, from_user, 'sent', created_at_val, reply_target_msg_id)
@@ -1311,9 +1293,6 @@ VALUES (from_user, to_user, che_id_val, 'sent');
 
 INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
-
-UPDATE chats SET cursor_ = cursor_val
-WHERE (owner_user = from_user AND partner_user = to_user) OR (owner_user = to_user AND partner_user = from_user);
 
 SELECT json_build_object('username', username, 'name', name_, 'profile_pic_url', profile_pic_url) INTO sender_user
 FROM users WHERE username = from_user;
@@ -1375,15 +1354,15 @@ cursor_val bigint;
 sender_user json;
 BEGIN
 
-IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = from_user AND partner_user = to_user) THEN
-	INSERT INTO chats (owner_user, partner_user)
-	VALUES (from_user, to_user);
-END IF;
 
-IF NOT EXISTS (SELECT 1 FROM chats WHERE owner_user = to_user AND partner_user = from_user) THEN
-	INSERT INTO chats (owner_user, partner_user)
-	VALUES (to_user, from_user);
-END IF;
+INSERT INTO chats (owner_user, partner_user)
+VALUES (from_user, to_user)
+ON CONFLICT ON CONSTRAINT ucu_pkey DO UPDATE
+SET cursor_ = created_at_val;
+
+INSERT INTO chats (owner_user, partner_user)
+VALUES (to_user, from_user)
+ON CONFLICT ON CONSTRAINT ucu_pkey DO NOTHING;
 
 INSERT INTO chat_history_entry (type_, content_, sender_username, delivery_status, created_at)
 VALUES ('message', content_val, from_user, 'sent', created_at_val)
@@ -1394,9 +1373,6 @@ VALUES (from_user, to_user, che_id_val, 'sent');
 
 INSERT INTO chat_history_entry_in_chat (owner_user, partner_user, che_id, receipt)
 VALUES (to_user, from_user, che_id_val, 'received');
-
-UPDATE chats SET cursor_ = cursor_val
-WHERE (owner_user = from_user AND partner_user = to_user) OR (owner_user = to_user AND partner_user = from_user);
 
 SELECT json_build_object('username', username, 'name', name_, 'profile_pic_url', profile_pic_url) INTO sender_user
 FROM users WHERE username = from_user;
@@ -2401,5 +2377,5 @@ ALTER TABLE ONLY public.posts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fdCArC4UfouvM7P1SHQ6QeHFHL4FCdO29OVQyD5i09h77zcWqyYbdgkRDBzPaK4
+\unrestrict IGaoKAwHuvxHcKAqOcHqHHt5cQNIjB2ggLUqI8j77A1t2YI5oTHnyCbvBqWG8Dm
 
