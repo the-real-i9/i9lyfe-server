@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict IGaoKAwHuvxHcKAqOcHqHHt5cQNIjB2ggLUqI8j77A1t2YI5oTHnyCbvBqWG8Dm
+\restrict TLrEy1DfvQIg9iGPiLyMfsdNlBkvqeW0MIMKETZEDj9eUonkPIYb4YGPG4ee8aT
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.4 (Ubuntu 18.4-1.pgdg24.04+1)
@@ -214,7 +214,7 @@ CREATE FUNCTION public.ack_msg(from_user text, to_user text, msg_id_list uuid[],
 IF ack_val = 'delivered' THEN
   UPDATE chat_history_entry che
   SET delivery_status = ack_val, delivered_at = at_val
-  WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status = 'sent' AND (SELECT true FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_);
+  WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status = 'sent' AND (SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_));
   
   IF FOUND THEN
     UPDATE chats SET cursor_ = at_val
@@ -226,7 +226,7 @@ IF ack_val = 'delivered' THEN
 ELSIF ack_val = 'read' THEN
 	UPDATE chat_history_entry che
 	SET delivery_status = ack_val, read_at = at_val, delivered_at = CASE WHEN delivered_at IS NULL THEN at_val ELSE delivered_at END
-	WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status <> 'read' AND (SELECT true FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_);
+	WHERE id_ = ANY(msg_id_list) AND type_ = 'message' AND delivery_status <> 'read' AND (SELECT EXISTS (SELECT 1 FROM chat_history_entry_in_chat WHERE owner_user = from_user AND partner_user = to_user AND che_id = che.id_));
 	
 	IF NOT FOUND THEN
 	  RETURN false;
@@ -2377,5 +2377,5 @@ ALTER TABLE ONLY public.posts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict IGaoKAwHuvxHcKAqOcHqHHt5cQNIjB2ggLUqI8j77A1t2YI5oTHnyCbvBqWG8Dm
+\unrestrict TLrEy1DfvQIg9iGPiLyMfsdNlBkvqeW0MIMKETZEDj9eUonkPIYb4YGPG4ee8aT
 
