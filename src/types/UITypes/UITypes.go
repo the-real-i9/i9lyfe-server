@@ -71,8 +71,8 @@ type NewComment struct {
 	CommentsCount  int64          `msgpack:"comments_count" db:"comments_count"`
 	MeReaction     string         `msgpack:"me_reaction" db:"me_reaction"`
 	Cursor         int64          `msgpack:"cursor" db:"cursor_"`
-	MentNotifIds   []string       `msgpack:"_" db:"ment_notif_ids"`
-	CommentNotifId string         `msgpack:"_" db:"comment_notif_id"`
+	MentNotifIds   []string       `msgpack:"-" db:"ment_notif_ids"`
+	CommentNotifId string         `msgpack:"-" db:"comment_notif_id"`
 }
 
 // for displaying a list of followers and followings
