@@ -97,7 +97,7 @@ func postReactionRemovedStreamBgWorker(rdb *redis.Client) {
 				RxnsCount int    `db:"rxns_count"`
 			}
 
-			postIdRxns, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			postIdRxns, err := pgDB.BatchQueryTypeTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return

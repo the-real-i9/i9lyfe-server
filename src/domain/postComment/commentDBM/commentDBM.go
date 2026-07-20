@@ -9,7 +9,6 @@ import (
 	"i9lyfe/src/helpers/pgDB"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -32,9 +31,9 @@ func Get(ctx context.Context, clientUsername, commentId string) (UITypes.Comment
 	return *comment, nil
 }
 
-func ReactTo(ctx context.Context, tx pgx.Tx, clientUsername, commentId, emoji string, at int64) (string, error) {
-	reactNotifId, err := pgDB.QueryRowFieldTx[string](
-		ctx, tx,
+func ReactTo(ctx context.Context, clientUsername, commentId, emoji string, at int64) (string, error) {
+	reactNotifId, err := pgDB.QueryRowField[string](
+		ctx,
 		/* sql */ `
 		SELECT * FROM react_to_comment($1, $2, $3, $4)
 		`, clientUsername, commentId, emoji, at,
@@ -66,9 +65,9 @@ func GetReactors(ctx context.Context, commentId string, limit int64, cursor floa
 
 } */
 
-func RemoveReaction(ctx context.Context, tx pgx.Tx, clientUsername, commentId string) (bool, error) {
-	done, err := pgDB.QueryRowFieldTx[bool](
-		ctx, tx,
+func RemoveReaction(ctx context.Context, clientUsername, commentId string) (bool, error) {
+	done, err := pgDB.QueryRowField[bool](
+		ctx,
 		/* sql */ `
 		SELECT * FROM unreact_to_comment($1, $2)
 		`, clientUsername, commentId,
@@ -81,9 +80,9 @@ func RemoveReaction(ctx context.Context, tx pgx.Tx, clientUsername, commentId st
 	return *done, nil
 }
 
-func CommentOn(ctx context.Context, tx pgx.Tx, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64, mentions []string) (UITypes.NewComment, error) {
-	newComment, err := pgDB.QueryRowTypeTx[UITypes.NewComment](
-		ctx, tx,
+func CommentOn(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64, mentions []string) (UITypes.NewComment, error) {
+	newComment, err := pgDB.QueryRowType[UITypes.NewComment](
+		ctx,
 		/* sql */ `
 		SELECT * FROM comment_on_comment($1, $2, $3, $4, $5, $6)
 		`, clientUsername, parentCommentId, commentText, attachmentCloudName, at, mentions,
@@ -111,9 +110,9 @@ func GetComments(ctx context.Context, clientUsername, commentId string, limit in
 	return comments, nil
 }
 
-func RemoveComment(ctx context.Context, tx pgx.Tx, clientUsername, parentCommentId, commentId string) (bool, error) {
-	done, err := pgDB.QueryRowFieldTx[bool](
-		ctx, tx,
+func RemoveComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (bool, error) {
+	done, err := pgDB.QueryRowField[bool](
+		ctx,
 		/* sql */ `
 		SELECT * FROM uncomment_on_comment($1, $2, $3)
 		`, clientUsername, parentCommentId, commentId,

@@ -51,21 +51,21 @@ func History(ctx context.Context, clientUsername, partnerUsername string, limit 
 }
 
 type NewMessageT struct {
-	Id             string         `msgpack:"id" db:"id_"`
-	CHEType        string         `msgpack:"che_type" db:"che_type"`
-	Content        map[string]any `msgpack:"content" db:"content_"`
-	DeliveryStatus *string        `msgpack:"delivery_status" db:"delivery_status"`
-	CreatedAt      *int64         `msgpack:"created_at" db:"created_at"`
-	Sender         map[string]any `msgpack:"sender" db:"sender"`
-	ReplyTargetMsg map[string]any `msgpack:"reply_target_msg,omitempty" db:"reply_target_msg"`
-	Cursor         int64          `msgpack:"cursor" db:"cursor_"`
+	Id             string         `db:"id_"`
+	CHEType        string         `db:"che_type"`
+	Content        map[string]any `db:"content_"`
+	DeliveryStatus *string        `db:"delivery_status"`
+	CreatedAt      *int64         `db:"created_at"`
+	Sender         map[string]any `db:"sender"`
+	ReplyTargetMsg map[string]any `db:"reply_target_msg"`
+	Cursor         int64          `db:"cursor_"`
 }
 
 func SendMessage(ctx context.Context, clientUsername, partnerUsername, msgContent string, at int64) (NewMessageT, error) {
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, cursor_ FROM send_message($1, $2, $3, $4);
+		SELECT * FROM send_message($1, $2, $3, $4);
 		`, clientUsername, partnerUsername, msgContent, at,
 	)
 	if err != nil {
@@ -110,7 +110,7 @@ func ReplyMessage(ctx context.Context, clientUsername, partnerUsername, targetMs
 	newMessage, err := pgDB.QueryRowType[NewMessageT](
 		ctx,
 		/* sql */ `
-		SELECT id_, che_type, content_, delivery_status, created_at, sender, reply_target_msg, cursor_ FROM reply_to_msg($1, $2, $3, $4, $5);
+		SELECT * FROM reply_to_msg($1, $2, $3, $4, $5);
 		`, clientUsername, partnerUsername, msgContent, at, targetMsgId,
 	)
 	if err != nil {

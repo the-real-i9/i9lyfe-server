@@ -45,8 +45,13 @@ func GetChatHistory(ctx context.Context, clientUsername, partnerUsername string,
 	}
 
 	for _, h := range history {
-		if h.CHEType == "message" {
+		switch h.CHEType {
+		case "message":
 			h.Content = mediaStorageService.MessageMediaCloudNameToUrl(h.Content)
+			h.Sender["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(h.Sender["profile_pic_url"].(string))
+
+		case "reaction":
+			h.Reactor["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(h.Reactor["profile_pic_url"].(string))
 		}
 	}
 
@@ -75,11 +80,11 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 		return nil, nil
 	}
 
-	go func(msg chat.NewMessageT) {
+	go func(msg chat.NewMessageT, partnerUsername string) {
 		msg.Sender["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(msg.Sender["profile_pic_url"].(string))
 
 		UImsg := UITypes.ChatHistoryEntry{
-			CHEType: msg.CHEType, Id: msg.Id,
+			CHEType: msg.CHEType, Id: msg.Id, Receipt: "received",
 			Content:        mediaStorageService.MessageMediaCloudNameToUrl(msg.Content),
 			DeliveryStatus: msg.DeliveryStatus, CreatedAt: msg.CreatedAt, Sender: msg.Sender,
 			ReplyTargetMsg: msg.ReplyTargetMsg, Cursor: msg.Cursor,
@@ -89,7 +94,7 @@ func SendMessage(ctx context.Context, clientUsername, partnerUsername, replyTarg
 			Event: "chat: new che: message",
 			Data:  UImsg,
 		})
-	}(newMessage)
+	}(newMessage, partnerUsername)
 
 	return map[string]any{"new_msg_id": newMessage.Id, "che_cursor": newMessage.Cursor}, nil
 }
@@ -143,14 +148,14 @@ func ReactToMsg(ctx context.Context, clientUsername, partnerUsername, msgId, emo
 	done := rxnToMessage.CHEId != ""
 
 	if done {
-		go func(rxnToMessage chat.RxnToMessageT, clientUsername, partnerUsername string) {
+		go func(rxnToMessage chat.RxnToMessageT, partnerUsername string) {
 			rxnToMessage.Reactor["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(rxnToMessage.Reactor["profile_pic_url"].(string))
 
 			sseService.SendEventMsg(partnerUsername, appTypes.ServerEventMsg{
 				Event: "chat: new che: reaction",
-				Data:  UITypes.ChatHistoryEntry{Id: rxnToMessage.CHEId, CHEType: rxnToMessage.CHEType, Reactor: rxnToMessage.Reactor, Emoji: rxnToMessage.Emoji, ToMsg: rxnToMessage.ToMsg, Cursor: rxnToMessage.Cursor},
+				Data:  UITypes.ChatHistoryEntry{Id: rxnToMessage.CHEId, CHEType: rxnToMessage.CHEType, Receipt: "received", Reactor: rxnToMessage.Reactor, Emoji: rxnToMessage.Emoji, ToMsg: rxnToMessage.ToMsg, Cursor: rxnToMessage.Cursor},
 			})
-		}(rxnToMessage, clientUsername, partnerUsername)
+		}(rxnToMessage, partnerUsername)
 	}
 
 	return done, nil

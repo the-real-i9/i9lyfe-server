@@ -15,17 +15,6 @@ func dbPool() *pgxpool.Pool {
 	return appGlobals.DBPool
 }
 
-func Exec(ctx context.Context, sql string, params ...any) error {
-	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	if _, err := dbPool().Exec(dbOpCtx, sql, params...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func BatchExecTx(ctx context.Context, tx pgx.Tx, sqls []string, params [][]any) error {
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -50,23 +39,6 @@ func QueryRowField[T any](ctx context.Context, sql string, params ...any) (*T, e
 	defer cancel()
 
 	rows, _ := dbPool().Query(dbOpCtx, sql, params...)
-
-	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[T])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return res, err
-}
-
-func QueryRowFieldTx[T any](ctx context.Context, tx pgx.Tx, sql string, params ...any) (*T, error) {
-	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	rows, _ := tx.Query(dbOpCtx, sql, params...)
 
 	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[T])
 	if err != nil {
@@ -113,23 +85,6 @@ func QueryRowType[T any](ctx context.Context, sql string, params ...any) (*T, er
 	return res, nil
 }
 
-func QueryRowTypeTx[T any](ctx context.Context, tx pgx.Tx, sql string, params ...any) (*T, error) {
-	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	rows, _ := tx.Query(dbOpCtx, sql, params...)
-
-	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByNameLax[T])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return res, nil
-}
-
 func QueryRowsType[T any](ctx context.Context, sql string, params ...any) ([]*T, error) {
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -147,7 +102,7 @@ func QueryRowsType[T any](ctx context.Context, sql string, params ...any) ([]*T,
 	return res, nil
 }
 
-func BatchQueryTx[T any](ctx context.Context, tx pgx.Tx, sqls []string, params [][]any) ([]*T, error) {
+func BatchQueryTypeTx[T any](ctx context.Context, tx pgx.Tx, sqls []string, params [][]any) ([]*T, error) {
 	dbOpCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 

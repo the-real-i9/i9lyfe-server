@@ -97,7 +97,7 @@ func postUnsavesStreamBgWorker(rdb *redis.Client) {
 				SavesCount int    `db:"saves_count"`
 			}
 
-			postIdUnsaves, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			postIdUnsaves, err := pgDB.BatchQueryTypeTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return

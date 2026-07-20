@@ -134,19 +134,7 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string, at i
 		return false, fiber.NewError(fiber.StatusBadRequest, "are you trying to follow yourself???")
 	}
 
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
-
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	followNotifId, err := user.Follow(ctx, pgTx, clientUsername, targetUsername, at)
+	followNotifId, err := user.Follow(ctx, clientUsername, targetUsername, at)
 	if err != nil {
 		return false, err
 	}
@@ -154,19 +142,10 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string, at i
 	done := followNotifId != ""
 
 	if done {
-		err = eventStreamService.QueueUserFollowEvent(ctx, eventTypes.UserFollowEvent{
+		go eventStreamService.QueueUserFollowEvent(eventTypes.UserFollowEvent{
 			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-
-		err = pgTx.Commit(ctx)
-		if err != nil {
-			helpers.LogError(err)
-			return false, fiber.ErrInternalServerError
-		}
 
 		go func() {
 			notif, err := GetOneNotif(ctx, followNotifId)
@@ -185,37 +164,17 @@ func FollowUser(ctx context.Context, clientUsername, targetUsername string, at i
 }
 
 func UnfollowUser(ctx context.Context, clientUsername, targetUsername string) (any, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := user.Unfollow(ctx, pgTx, clientUsername, targetUsername)
+	done, err := user.Unfollow(ctx, clientUsername, targetUsername)
 	if err != nil {
 		return nil, err
 	}
 
 	if done {
-		err = eventStreamService.QueueUserUnfollowEvent(ctx, eventTypes.UserUnfollowEvent{
+		go eventStreamService.QueueUserUnfollowEvent(eventTypes.UserUnfollowEvent{
 			FollowerUser:  clientUsername,
 			FollowingUser: targetUsername,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil

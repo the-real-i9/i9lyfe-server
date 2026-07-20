@@ -11,8 +11,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func redisDB() *redis.Client {
@@ -154,9 +152,9 @@ func ChangeProfilePicture(ctx context.Context, clientUsername, pictureUrl string
 	return *done, nil
 }
 
-func Follow(ctx context.Context, tx pgx.Tx, clientUsername, targetUsername string, at int64) (string, error) {
-	followNotifId, err := pgDB.QueryRowFieldTx[string](
-		ctx, tx,
+func Follow(ctx context.Context, clientUsername, targetUsername string, at int64) (string, error) {
+	followNotifId, err := pgDB.QueryRowField[string](
+		ctx,
 		/* sql */ `
 		SELECT * FROM follow_user ($1, $2, $3)
 		`, clientUsername, targetUsername, at,
@@ -169,9 +167,9 @@ func Follow(ctx context.Context, tx pgx.Tx, clientUsername, targetUsername strin
 	return *followNotifId, nil
 }
 
-func Unfollow(ctx context.Context, tx pgx.Tx, clientUsername, targetUsername string) (bool, error) {
-	done, err := pgDB.QueryRowFieldTx[bool](
-		ctx, tx,
+func Unfollow(ctx context.Context, clientUsername, targetUsername string) (bool, error) {
+	done, err := pgDB.QueryRowField[bool](
+		ctx,
 		/* sql */ `
 		SELECT * FROM unfollow_user ($1, $2)
 		`, clientUsername, targetUsername,

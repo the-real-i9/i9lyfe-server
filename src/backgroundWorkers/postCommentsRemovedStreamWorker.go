@@ -96,7 +96,7 @@ func postCommentsRemovedStreamBgWorker(rdb *redis.Client) {
 				CommentsCount int    `db:"comments_count"`
 			}
 
-			postIdComments, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			postIdComments, err := pgDB.BatchQueryTypeTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return

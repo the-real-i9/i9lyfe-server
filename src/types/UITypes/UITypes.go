@@ -148,6 +148,7 @@ type ChatHistoryEntry struct {
 
 	CHEType string `msgpack:"che_type" db:"type_"`
 	Id      string `msgpack:"id" db:"id_"`
+	Receipt string `msgpack:"receipt" db:"receipt"`
 
 	// appears for message che_type
 

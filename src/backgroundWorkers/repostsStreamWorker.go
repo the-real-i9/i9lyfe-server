@@ -129,7 +129,7 @@ func repostsStreamBgWorker(rdb *redis.Client) {
 				RepostsCount int    `db:"reposts_count"`
 			}
 
-			postIdReposts, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			postIdReposts, err := pgDB.BatchQueryTypeTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return

@@ -90,7 +90,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 	hashtags := extractHashtags(description)
 	mentions := extractMentions(description)
 
-	newPost, err := post.New(ctx, pgTx, clientUsername, mediaCloudNames, postType, description, at, mentions, hashtags)
+	newPost, err := post.New(ctx, clientUsername, mediaCloudNames, postType, description, at, mentions, hashtags)
 	if err != nil {
 		return UITypes.NewPost{}, err
 	}
@@ -101,7 +101,7 @@ func CreateNewPost(ctx context.Context, clientUsername string, mediaCloudNames [
 
 	newPost.Cursor += time.Now().UnixMicro()
 
-	err = eventStreamService.QueueNewPostEvent(ctx, eventTypes.NewPostEvent{
+	go eventStreamService.QueueNewPostEvent(eventTypes.NewPostEvent{
 		OwnerUsername: clientUsername,
 		PostId:        newPost.Id,
 		PostCursor:    newPost.Cursor,
@@ -161,19 +161,8 @@ func DeletePost(ctx context.Context, clientUsername, postId string) (bool, error
 }
 
 func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at int64) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	reactNotifId, err := post.ReactTo(ctx, pgTx, clientUsername, postId, emoji, at)
+	reactNotifId, err := post.ReactTo(ctx, clientUsername, postId, emoji, at)
 	if err != nil {
 		return false, err
 	}
@@ -181,18 +170,9 @@ func ReactToPost(ctx context.Context, clientUsername, postId, emoji string, at i
 	done := reactNotifId != ""
 
 	if done {
-		err = eventStreamService.QueuePostReactionEvent(ctx, eventTypes.PostReactionEvent{
+		go eventStreamService.QueuePostReactionEvent(eventTypes.PostReactionEvent{
 			PostId: postId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	go func() {
@@ -233,57 +213,26 @@ func GetReactorsToPost(ctx context.Context, postId string, limit int64, cursor f
 } */
 
 func RemoveReactionToPost(ctx context.Context, clientUsername, postId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := post.RemoveReaction(ctx, pgTx, clientUsername, postId)
+	done, err := post.RemoveReaction(ctx, clientUsername, postId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueuePostReactionRemovedEvent(ctx, eventTypes.PostReactionRemovedEvent{
+		go eventStreamService.QueuePostReactionRemovedEvent(eventTypes.PostReactionRemovedEvent{
 			PostId: postId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
 }
 
 func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, attachmentCloudName string, at int64) (UITypes.NewComment, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
-
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
 
 	mentions := extractMentions(commentText)
 
-	newComment, err := post.CommentOn(ctx, pgTx, clientUsername, postId, commentText, attachmentCloudName, at, mentions)
+	newComment, err := post.CommentOn(ctx, clientUsername, postId, commentText, attachmentCloudName, at, mentions)
 	if err != nil {
 		return UITypes.NewComment{}, err
 	}
@@ -292,18 +241,9 @@ func CommentOnPost(ctx context.Context, clientUsername, postId, commentText, att
 		return UITypes.NewComment{}, nil
 	}
 
-	err = eventStreamService.QueuePostCommentEvent(ctx, eventTypes.PostCommentEvent{
+	go eventStreamService.QueuePostCommentEvent(eventTypes.PostCommentEvent{
 		PostId: postId,
 	})
-	if err != nil {
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
 
 	newComment.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(newComment.OwnerUser["profile_pic_url"].(string))
 
@@ -343,55 +283,24 @@ func GetCommentsOnPost(ctx context.Context, clientUsername, postId string, limit
 }
 
 func RemoveCommentOnPost(ctx context.Context, clientUsername, postId, commentId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := post.RemoveComment(ctx, pgTx, clientUsername, postId, commentId)
+	done, err := post.RemoveComment(ctx, clientUsername, postId, commentId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueuePostCommentRemovedEvent(ctx, eventTypes.PostCommentRemovedEvent{
+		go eventStreamService.QueuePostCommentRemovedEvent(eventTypes.PostCommentRemovedEvent{
 			PostId: postId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
 }
 
 func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string, at int64) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	reactNotifId, err := comment.ReactTo(ctx, pgTx, clientUsername, commentId, emoji, at)
+	reactNotifId, err := comment.ReactTo(ctx, clientUsername, commentId, emoji, at)
 	if err != nil {
 		return false, err
 	}
@@ -399,18 +308,9 @@ func ReactToComment(ctx context.Context, clientUsername, commentId, emoji string
 	done := reactNotifId != ""
 
 	if done {
-		err = eventStreamService.QueueCommentReactionEvent(ctx, eventTypes.CommentReactionEvent{
+		go eventStreamService.QueueCommentReactionEvent(eventTypes.CommentReactionEvent{
 			CommentId: commentId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	go func() {
@@ -451,57 +351,26 @@ func GetReactorsToComment(ctx context.Context, commentId string, limit int64, cu
 } */
 
 func RemoveReactionToComment(ctx context.Context, clientUsername, commentId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := comment.RemoveReaction(ctx, pgTx, clientUsername, commentId)
+	done, err := comment.RemoveReaction(ctx, clientUsername, commentId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueueCommentReactionRemovedEvent(ctx, eventTypes.CommentReactionRemovedEvent{
+		go eventStreamService.QueueCommentReactionRemovedEvent(eventTypes.CommentReactionRemovedEvent{
 			CommentId: commentId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
 }
 
 func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentText, attachmentCloudName string, at int64) (UITypes.NewComment, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
-
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
 
 	mentions := extractMentions(commentText)
 
-	newComment, err := comment.CommentOn(ctx, pgTx, clientUsername, parentCommentId, commentText, attachmentCloudName, at, mentions)
+	newComment, err := comment.CommentOn(ctx, clientUsername, parentCommentId, commentText, attachmentCloudName, at, mentions)
 	if err != nil {
 		return UITypes.NewComment{}, err
 	}
@@ -510,18 +379,9 @@ func CommentOnComment(ctx context.Context, clientUsername, parentCommentId, comm
 		return UITypes.NewComment{}, nil
 	}
 
-	err = eventStreamService.QueueCommentCommentEvent(ctx, eventTypes.CommentCommentEvent{
+	go eventStreamService.QueueCommentCommentEvent(eventTypes.CommentCommentEvent{
 		ParentCommentId: parentCommentId,
 	})
-	if err != nil {
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return UITypes.NewComment{}, fiber.ErrInternalServerError
-	}
 
 	newComment.OwnerUser["profile_pic_url"] = mediaStorageService.ProfilePicCloudNameToUrl(newComment.OwnerUser["profile_pic_url"].(string))
 
@@ -561,36 +421,16 @@ func GetCommentsOnComment(ctx context.Context, clientUsername, commentId string,
 }
 
 func RemoveCommentOnComment(ctx context.Context, clientUsername, parentCommentId, commentId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := comment.RemoveComment(ctx, pgTx, clientUsername, parentCommentId, commentId)
+	done, err := comment.RemoveComment(ctx, clientUsername, parentCommentId, commentId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueueCommentCommentRemovedEvent(ctx, eventTypes.CommentCommentRemovedEvent{
+		go eventStreamService.QueueCommentCommentRemovedEvent(eventTypes.CommentCommentRemovedEvent{
 			ParentCommentId: parentCommentId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
@@ -610,19 +450,8 @@ func GetComment(ctx context.Context, clientUsername, commentId string) (UITypes.
 }
 
 func RepostPost(ctx context.Context, clientUsername, postId string) (map[string]any, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	repost, err := post.Repost(ctx, pgTx, clientUsername, postId)
+	repost, err := post.Repost(ctx, clientUsername, postId)
 	if err != nil {
 		return nil, err
 	}
@@ -632,21 +461,12 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (map[string]
 	repost.Cursor += time.Now().UnixMicro()
 
 	if done {
-		err = eventStreamService.QueueRepostEvent(ctx, eventTypes.RepostEvent{
+		go eventStreamService.QueueRepostEvent(eventTypes.RepostEvent{
 			PostId:       postId,
 			ReposterUser: clientUsername,
 			RepostId:     repost.Id,
 			RepostCursor: repost.Cursor,
 		})
-		if err != nil {
-			return nil, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return nil, fiber.ErrInternalServerError
 	}
 
 	go func(repost post.RepostT) {
@@ -666,72 +486,32 @@ func RepostPost(ctx context.Context, clientUsername, postId string) (map[string]
 }
 
 func SavePost(ctx context.Context, clientUsername, postId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := post.Save(ctx, pgTx, clientUsername, postId)
+	done, err := post.Save(ctx, clientUsername, postId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueuePostSaveEvent(ctx, eventTypes.PostSaveEvent{
+		go eventStreamService.QueuePostSaveEvent(eventTypes.PostSaveEvent{
 			PostId: postId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil
 }
 
 func UnsavePost(ctx context.Context, clientUsername, postId string) (bool, error) {
-	pgTx, err := dbPool().Begin(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
-	}
 
-	defer func() {
-		if err != nil {
-			go helpers.LogError(pgTx.Rollback(ctx))
-		}
-	}()
-
-	done, err := post.Unsave(ctx, pgTx, clientUsername, postId)
+	done, err := post.Unsave(ctx, clientUsername, postId)
 	if err != nil {
 		return false, err
 	}
 
 	if done {
-		err = eventStreamService.QueuePostUnsaveEvent(ctx, eventTypes.PostUnsaveEvent{
+		go eventStreamService.QueuePostUnsaveEvent(eventTypes.PostUnsaveEvent{
 			PostId: postId,
 		})
-		if err != nil {
-			return false, fiber.ErrInternalServerError
-		}
-	}
-
-	err = pgTx.Commit(ctx)
-	if err != nil {
-		helpers.LogError(err)
-		return false, fiber.ErrInternalServerError
 	}
 
 	return done, nil

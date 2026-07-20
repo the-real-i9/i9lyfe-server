@@ -96,7 +96,7 @@ func commentReactionsStreamBgWorker(rdb *redis.Client) {
 				RxnsCount int    `db:"rxns_count"`
 			}
 
-			commentIdRxns, err := pgDB.BatchQueryTx[res](ctx, pgTx, sqls, params)
+			commentIdRxns, err := pgDB.BatchQueryTypeTx[res](ctx, pgTx, sqls, params)
 			if err != nil {
 				helpers.LogError(err)
 				return
